@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -117,8 +116,8 @@ export default function CustomerMachines() {
   const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false);
   const [salesFollowUpDialogOpen, setSalesFollowUpDialogOpen] = useState(false);
   const [newSalesFollowUp, setNewSalesFollowUp] = useState<Partial<SalesFollowUp>>({
-    status: "pending",
-    type: "quotation"
+    status: "pending" as "pending" | "completed",
+    type: "quotation" as "quotation" | "demo" | "negotiation" | "closure"
   });
   const [activeTab, setActiveTab] = useState("machines");
 
@@ -170,7 +169,7 @@ export default function CustomerMachines() {
           followUp: {
             date: followUpDate,
             notes: followUpNotes,
-            type: "service" as const  // Fixed: explicitly set as "service" literal type
+            type: "service" as const
           }
         };
       }
@@ -188,23 +187,22 @@ export default function CustomerMachines() {
       return;
     }
 
-    // Fixed: ensure proper types for status and type
     const newFollowUp: SalesFollowUp = {
       id: salesFollowUps.length + 1,
       date: newSalesFollowUp.date,
       customerId: Math.floor(Math.random() * 1000) + 100,
       customerName: newSalesFollowUp.customerName || "",
       notes: newSalesFollowUp.notes || "",
-      status: (newSalesFollowUp.status as "pending" | "completed") || "pending",
-      type: (newSalesFollowUp.type as "quotation" | "demo" | "negotiation" | "closure") || "quotation"
+      status: newSalesFollowUp.status as "pending" | "completed",
+      type: newSalesFollowUp.type as "quotation" | "demo" | "negotiation" | "closure"
     };
 
     setSalesFollowUps([...salesFollowUps, newFollowUp]);
     setSalesFollowUpDialogOpen(false);
     toast.success(`Sales follow-up scheduled for ${format(newFollowUp.date, "PPP")}`);
     setNewSalesFollowUp({
-      status: "pending",
-      type: "quotation"
+      status: "pending" as "pending" | "completed",
+      type: "quotation" as "quotation" | "demo" | "negotiation" | "closure"
     });
   };
 
@@ -397,7 +395,6 @@ export default function CustomerMachines() {
         </Tabs>
       </CardContent>
 
-      {/* Service Follow-up Dialog */}
       <Dialog open={followUpDialogOpen} onOpenChange={setFollowUpDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -459,7 +456,6 @@ export default function CustomerMachines() {
         </DialogContent>
       </Dialog>
 
-      {/* Sales Follow-up Dialog */}
       <Dialog open={salesFollowUpDialogOpen} onOpenChange={setSalesFollowUpDialogOpen}>
         <DialogContent>
           <DialogHeader>
