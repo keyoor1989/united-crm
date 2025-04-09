@@ -170,7 +170,7 @@ export default function CustomerMachines() {
           followUp: {
             date: followUpDate,
             notes: followUpNotes,
-            type: "service"
+            type: "service" as const  // Fixed: explicitly set as "service" literal type
           }
         };
       }
@@ -188,14 +188,15 @@ export default function CustomerMachines() {
       return;
     }
 
+    // Fixed: ensure proper types for status and type
     const newFollowUp: SalesFollowUp = {
       id: salesFollowUps.length + 1,
       date: newSalesFollowUp.date,
-      customerId: Math.floor(Math.random() * 1000) + 100, // Generate a random customerId for demo
+      customerId: Math.floor(Math.random() * 1000) + 100,
       customerName: newSalesFollowUp.customerName || "",
       notes: newSalesFollowUp.notes || "",
-      status: newSalesFollowUp.status as "pending" | "completed" || "pending",
-      type: newSalesFollowUp.type as "quotation" | "demo" | "negotiation" | "closure" || "quotation"
+      status: (newSalesFollowUp.status as "pending" | "completed") || "pending",
+      type: (newSalesFollowUp.type as "quotation" | "demo" | "negotiation" | "closure") || "quotation"
     };
 
     setSalesFollowUps([...salesFollowUps, newFollowUp]);
