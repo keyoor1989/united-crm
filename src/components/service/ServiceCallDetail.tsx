@@ -22,7 +22,9 @@ import {
   FileText,
   Image,
   PanelRight,
-  Send
+  Send,
+  AlertOctagon,
+  AlertCircle
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -93,19 +95,31 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
     ] : []),
   ]);
 
+  const getStatusBadge = () => {
+    switch (serviceCall.status.toLowerCase()) {
+      case "new":
+        return <Badge className="bg-blue-500">New</Badge>;
+      case "in progress":
+        return <Badge className="bg-amber-500">In Progress</Badge>;
+      case "delayed":
+        return <Badge className="bg-red-500">Delayed</Badge>;
+      case "escalated":
+        return <Badge className="bg-orange-500">Escalated</Badge>;
+      case "completed":
+        return <Badge className="bg-green-500">Completed</Badge>;
+      case "pending":
+        return <Badge className="bg-amber-500">Pending</Badge>;
+      default:
+        return <Badge className="bg-blue-500">New</Badge>;
+    }
+  };
+
   return (
     <>
       <DialogHeader>
         <DialogTitle className="text-xl flex items-center gap-2">
           Service Call {serviceCall.id}
-          <Badge className={serviceCall.status.toLowerCase() === "pending" 
-            ? "bg-amber-500" 
-            : serviceCall.status.toLowerCase() === "in progress"
-              ? "bg-blue-500"
-              : "bg-green-500"
-          }>
-            {serviceCall.status}
-          </Badge>
+          {getStatusBadge()}
         </DialogTitle>
         <DialogDescription>
           Created {formatDistanceToNow(new Date(serviceCall.createdAt), { addSuffix: true })}

@@ -16,7 +16,9 @@ import {
   CheckCircle2, 
   AlertTriangle,
   Calendar,
-  UserPlus
+  UserPlus,
+  AlertOctagon,
+  AlertCircle
 } from "lucide-react";
 import { Engineer, ServiceCall } from "@/types/service";
 import { mockEngineers, mockServiceCalls } from "@/data/mockData";
@@ -77,6 +79,44 @@ const EngineerDetail = () => {
     console.log("Saving engineer:", updatedEngineer);
     // Navigate back to service page after saving
     navigate("/service");
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "new":
+        return <Badge className="bg-blue-500">New</Badge>;
+      case "in progress":
+        return <Badge className="bg-amber-500">In Progress</Badge>;
+      case "delayed":
+        return <Badge className="bg-red-500">Delayed</Badge>;
+      case "escalated":
+        return <Badge className="bg-orange-500">Escalated</Badge>;
+      case "completed":
+        return <Badge className="bg-green-500">Completed</Badge>;
+      case "pending":
+        return <Badge className="bg-amber-500">Pending</Badge>;
+      default:
+        return <Badge className="bg-blue-500">New</Badge>;
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "new":
+        return <AlertCircle className="h-4 w-4 text-blue-500" />;
+      case "in progress":
+        return <Wrench className="h-4 w-4 text-amber-500" />;
+      case "delayed":
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      case "escalated":
+        return <AlertOctagon className="h-4 w-4 text-orange-500" />;
+      case "completed":
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+      case "pending":
+        return <AlertCircle className="h-4 w-4 text-amber-500" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-amber-500" />;
+    }
   };
 
   if (loading) {
@@ -218,27 +258,13 @@ const EngineerDetail = () => {
                   <div className="space-y-4">
                     {serviceCalls.map(call => (
                       <Card key={call.id} className="overflow-hidden">
-                        <div className={`p-2 ${
-                          call.status === "Pending" ? "bg-amber-50" :
-                          call.status === "In Progress" ? "bg-blue-50" :
-                          "bg-green-50"
-                        }`}>
+                        <div className="p-2 bg-gray-50">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <Wrench className={`h-4 w-4 ${
-                                call.status === "Pending" ? "text-amber-500" :
-                                call.status === "In Progress" ? "text-blue-500" :
-                                "text-green-500"
-                              }`} />
+                              {getStatusIcon(call.status)}
                               <span className="font-medium">{call.id}</span>
                             </div>
-                            <Badge className={
-                              call.status === "Pending" ? "bg-amber-500" :
-                              call.status === "In Progress" ? "bg-blue-500" :
-                              "bg-green-500"
-                            }>
-                              {call.status}
-                            </Badge>
+                            {getStatusBadge(call.status)}
                           </div>
                         </div>
                         

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,8 @@ import {
   User,
   Wrench,
   UserPlus,
+  AlertTriangle,
+  AlertOctagon,
 } from "lucide-react";
 import { ServiceCall, Engineer } from "@/types/service";
 import { 
@@ -73,14 +76,39 @@ export const ServiceCallCard: React.FC<ServiceCallCardProps> = ({
 
   const getStatusIcon = () => {
     switch (status.toLowerCase()) {
-      case "pending":
-        return <AlertCircle className="h-5 w-5 text-amber-500" />;
+      case "new":
+        return <AlertCircle className="h-5 w-5 text-blue-500" />;
       case "in progress":
-        return <Wrench className="h-5 w-5 text-blue-500" />;
+        return <Wrench className="h-5 w-5 text-amber-500" />;
+      case "delayed":
+        return <AlertTriangle className="h-5 w-5 text-red-500" />;
+      case "escalated":
+        return <AlertOctagon className="h-5 w-5 text-orange-500" />;
       case "completed":
         return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+      case "pending":
+        return <AlertCircle className="h-5 w-5 text-amber-500" />;
       default:
         return <AlertCircle className="h-5 w-5 text-amber-500" />;
+    }
+  };
+
+  const getStatusBadge = () => {
+    switch (status.toLowerCase()) {
+      case "new":
+        return <Badge className="bg-blue-500">New</Badge>;
+      case "in progress":
+        return <Badge className="bg-amber-500">In Progress</Badge>;
+      case "delayed":
+        return <Badge className="bg-red-500">Delayed</Badge>;
+      case "escalated":
+        return <Badge className="bg-orange-500">Escalated</Badge>;
+      case "completed":
+        return <Badge className="bg-green-500">Completed</Badge>;
+      case "pending":
+        return <Badge className="bg-amber-500">Pending</Badge>;
+      default:
+        return <Badge className="bg-blue-500">New</Badge>;
     }
   };
 
@@ -102,7 +130,10 @@ export const ServiceCallCard: React.FC<ServiceCallCardProps> = ({
             {getStatusIcon()}
             <h3 className="font-semibold">{customerName}</h3>
           </div>
-          {getPriorityBadge()}
+          <div className="flex items-center gap-2">
+            {getStatusBadge()}
+            {getPriorityBadge()}
+          </div>
         </div>
         <CardContent className="p-4">
           <div className="space-y-3">
