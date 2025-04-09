@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Edit, Trash2 } from "lucide-react";
+import { Package, Edit, Trash2, Plus } from "lucide-react";
+import { toast } from "sonner";
+import InventoryFormModal from "./InventoryFormModal";
 
 // Sample inventory data
 const inventoryItems = [
@@ -78,6 +80,28 @@ const inventoryItems = [
 ];
 
 const InventoryTable = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+
+  // Function to open modal for editing an item
+  const handleEditItem = (item: any) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
+  };
+
+  // Function to open modal for adding a new item
+  const handleAddItem = () => {
+    setSelectedItem(null);
+    setIsModalOpen(true);
+  };
+
+  // Function to handle deletion (would connect to API in real app)
+  const handleDeleteItem = (id: number) => {
+    // This would typically connect to an API or state management
+    console.log(`Delete item with ID: ${id}`);
+    toast.success("Item deleted successfully!");
+  };
+
   // Function to get status badge color
   const getBadgeVariant = (status: string) => {
     switch (status) {
@@ -93,53 +117,69 @@ const InventoryTable = () => {
   };
 
   return (
-    <div className="rounded-md border bg-card">
-      <Table>
-        <TableCaption>A list of your inventory items.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[300px]">Product Name</TableHead>
-            <TableHead>SKU</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Quantity</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead className="text-right">Price</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {inventoryItems.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium flex items-center gap-2">
-                <Package className="h-4 w-4 text-muted-foreground" />
-                {item.name}
-              </TableCell>
-              <TableCell>{item.sku}</TableCell>
-              <TableCell>{item.category}</TableCell>
-              <TableCell>{item.quantity}</TableCell>
-              <TableCell>{item.location}</TableCell>
-              <TableCell className="text-right">₹{item.price.toLocaleString()}</TableCell>
-              <TableCell>
-                <Badge variant={getBadgeVariant(item.status) as any}>
-                  {item.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button variant="ghost" size="icon">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
+    <>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Inventory Items</h2>
+        <Button onClick={handleAddItem} className="flex items-center gap-1">
+          <Plus className="h-4 w-4" />
+          <span>Add New Item</span>
+        </Button>
+      </div>
+      
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableCaption>A list of your inventory items.</TableCaption>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[300px]">Product Name</TableHead>
+              <TableHead>SKU</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead className="text-right">Price</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {inventoryItems.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell className="font-medium flex items-center gap-2">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                  {item.name}
+                </TableCell>
+                <TableCell>{item.sku}</TableCell>
+                <TableCell>{item.category}</TableCell>
+                <TableCell>{item.quantity}</TableCell>
+                <TableCell>{item.location}</TableCell>
+                <TableCell className="text-right">₹{item.price.toLocaleString()}</TableCell>
+                <TableCell>
+                  <Badge variant={getBadgeVariant(item.status) as any}>
+                    {item.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteItem(item.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <InventoryFormModal 
+        open={isModalOpen} 
+        onOpenChange={setIsModalOpen} 
+        itemToEdit={selectedItem} 
+      />
+    </>
   );
 };
 
