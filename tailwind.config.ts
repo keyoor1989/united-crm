@@ -54,25 +54,23 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
+					DEFAULT: '#FFFFFF',
+					foreground: '#0F172A',
+					hover: '#F1F5F9',
+					active: '#EFF6FF',
+					icon: '#64748B',
+					border: '#E2E8F0'
 				},
 				// Custom theme colors for our application
 				brand: {
-					50: '#e6f8fb',
-					100: '#b3e8f1',
+					50: 'hsl(var(--brand-50))',
+					100: 'hsl(var(--brand-100))',
 					200: '#80d7e7',
 					300: '#4dc7dd',
 					400: '#1ab6d3',
-					500: '#0E9BB5', // Primary teal
-					600: '#0c7f94',
-					700: '#096374',
+					500: 'hsl(var(--brand-500))', // Primary teal
+					600: 'hsl(var(--brand-600))',
+					700: 'hsl(var(--brand-700))',
 					800: '#064653',
 					900: '#042833',
 				},
@@ -82,7 +80,7 @@ export default {
 					200: '#80adcb',
 					300: '#4d8db6',
 					400: '#1A6CA1',
-					500: '#165785', // Primary blue
+					500: 'hsl(var(--darkblue-500))', // Primary blue
 					600: '#12476d',
 					700: '#0e3755',
 					800: '#09273d',
