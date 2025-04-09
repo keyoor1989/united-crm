@@ -7,9 +7,13 @@ import { Engineer } from "@/types/service";
 
 interface EngineerCardProps {
   engineer: Engineer;
+  showFullDetails?: boolean;
 }
 
-export const EngineerCard: React.FC<EngineerCardProps> = ({ engineer }) => {
+export const EngineerCard: React.FC<EngineerCardProps> = ({ 
+  engineer, 
+  showFullDetails = false 
+}) => {
   const { name, status, location, skillLevel, currentJob } = engineer;
 
   const getStatusBadge = () => {
@@ -54,14 +58,14 @@ export const EngineerCard: React.FC<EngineerCardProps> = ({ engineer }) => {
   };
 
   return (
-    <Card className="overflow-hidden transition-shadow hover:shadow-md">
-      <CardContent className="pt-6">
+    <Card className={`overflow-hidden transition-shadow hover:shadow-md ${showFullDetails ? 'border-brand-500' : ''}`}>
+      <CardContent className={`pt-6 ${showFullDetails ? 'pb-6' : ''}`}>
         <div className="flex items-start gap-2">
           <div className={`h-8 w-8 rounded-full flex items-center justify-center ${getStatusColor()}`}>
             <User className="h-4 w-4" />
           </div>
           <div className="flex-1">
-            <div className="font-medium flex items-center gap-1">
+            <div className={`font-medium flex items-center gap-1 ${showFullDetails ? 'text-lg' : ''}`}>
               {name}
               {getSkillIcon() && (
                 <span className="ml-1 text-amber-500 flex">
