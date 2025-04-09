@@ -82,6 +82,19 @@
   .sidebar-item.active svg {
     @apply text-brand-500;
   }
+
+  /* Custom table styles */
+  .table-header-cell {
+    @apply bg-gray-100 text-gray-800 font-semibold;
+  }
+  
+  .customer-table-row {
+    @apply hover:bg-brand-50;
+  }
+  
+  .customer-name-cell {
+    @apply text-gray-900 font-medium;
+  }
 }
 
 /* Typing animation */

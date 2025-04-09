@@ -53,14 +53,14 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
 
   return (
     <Table>
-      <TableHeader>
+      <TableHeader className="bg-gray-100">
         <TableRow>
-          <TableHead className="w-[250px]">Customer Name</TableHead>
-          <TableHead className="w-[200px]">Contact</TableHead>
-          <TableHead className="w-[120px]">Location</TableHead>
-          <TableHead className="w-[180px]">Machines</TableHead>
-          <TableHead className="w-[120px]">Status</TableHead>
-          <TableHead className="w-[120px] text-right">Actions</TableHead>
+          <TableHead className="w-[250px] font-bold text-gray-800">Customer Name</TableHead>
+          <TableHead className="w-[200px] font-bold text-gray-800">Contact</TableHead>
+          <TableHead className="w-[120px] font-bold text-gray-800">Location</TableHead>
+          <TableHead className="w-[180px] font-bold text-gray-800">Machines</TableHead>
+          <TableHead className="w-[120px] font-bold text-gray-800">Status</TableHead>
+          <TableHead className="w-[120px] text-right font-bold text-gray-800">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -71,25 +71,28 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             </TableCell>
           </TableRow>
         ) : (
-          customers.map((customer) => (
-            <TableRow key={customer.id}>
-              <TableCell className="font-medium">
-                <div className="text-base">{customer.name}</div>
+          customers.map((customer, index) => (
+            <TableRow 
+              key={customer.id}
+              className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+            >
+              <TableCell className="font-medium border-l-4 border-brand-500">
+                <div className="text-base font-semibold text-gray-900">{customer.name}</div>
                 <div className="text-xs text-muted-foreground">Last contact: {customer.lastContact}</div>
               </TableCell>
               <TableCell>
                 <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-1">
-                    <Phone className="h-3 w-3 flex-shrink-0" />
+                  <div className="flex items-center gap-1 text-gray-700">
+                    <Phone className="h-3 w-3 flex-shrink-0 text-gray-500" />
                     <span className="truncate">{customer.phone}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-3 w-3 flex-shrink-0" />
+                  <div className="flex items-center gap-1 text-gray-700">
+                    <Mail className="h-3 w-3 flex-shrink-0 text-gray-500" />
                     <span className="truncate">{customer.email}</span>
                   </div>
                 </div>
               </TableCell>
-              <TableCell>{customer.location}</TableCell>
+              <TableCell className="text-gray-700">{customer.location}</TableCell>
               <TableCell>
                 <div className="flex gap-1 flex-wrap">
                   {customer.machines.length > 1 ? (

@@ -75,7 +75,7 @@ const Customers = () => {
             </p>
           </div>
           <Link to="/customer-form">
-            <Button className="gap-1">
+            <Button className="gap-1 bg-brand-500 hover:bg-brand-600">
               <Plus className="h-4 w-4" />
               Add Customer
             </Button>
@@ -96,7 +96,7 @@ const Customers = () => {
           uniqueLocations={uniqueLocations}
         />
 
-        <div className="rounded-md border bg-white overflow-x-auto">
+        <div className="rounded-md border shadow-sm bg-white overflow-x-auto">
           <CustomerTable
             customers={customers}
             onCall={handleCall}
