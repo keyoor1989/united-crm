@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
@@ -49,7 +48,6 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-// Customer type definition
 type CustomerStatus = "Active" | "Contract Renewal" | "Need Toner" | "Inactive" | "Prospect";
 
 interface Customer {
@@ -63,7 +61,6 @@ interface Customer {
   status: CustomerStatus;
 }
 
-// Mock customer data
 const customerData: Customer[] = [
   {
     id: 1,
@@ -156,12 +153,10 @@ const Customers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Initialize with mock data
   useEffect(() => {
     setCustomers(customerData);
   }, []);
 
-  // Filter customers based on search term and filters
   const filteredCustomers = customers.filter((customer) => {
     const matchesSearch = 
       searchTerm === "" || 
@@ -180,24 +175,19 @@ const Customers = () => {
     return matchesSearch && matchesStatus && matchesLocation;
   });
 
-  // Get unique locations for filter dropdown
   const uniqueLocations = Array.from(new Set(customers.map(c => c.location)));
   
-  // Get unique statuses for filter dropdown
   const uniqueStatuses = Array.from(new Set(customers.map(c => c.status)));
 
-  // Pagination
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredCustomers.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // Reset all filters
   const resetFilters = () => {
     setSearchTerm("");
     setStatusFilter(null);
@@ -209,10 +199,8 @@ const Customers = () => {
     });
   };
 
-  // Show filter dropdown
   const [showFilters, setShowFilters] = useState(false);
 
-  // Handle action buttons functionality
   const handleCall = (phone: string) => {
     window.location.href = `tel:${phone}`;
     toast({
@@ -230,7 +218,6 @@ const Customers = () => {
   };
 
   const handleWhatsApp = (phone: string) => {
-    // Remove any non-numeric characters
     const cleanPhone = phone.replace(/\D/g, '');
     window.open(`https://wa.me/${cleanPhone}`, '_blank');
     toast({
@@ -239,7 +226,6 @@ const Customers = () => {
     });
   };
 
-  // Status badge color mapping
   const getStatusColor = (status: CustomerStatus) => {
     switch(status) {
       case "Active": return "bg-green-500";
@@ -330,16 +316,16 @@ const Customers = () => {
           </div>
         )}
 
-        <div className="rounded-md border bg-white">
+        <div className="rounded-md border bg-white overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer Name</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead className="hidden md:table-cell">Location</TableHead>
-                <TableHead className="hidden lg:table-cell">Machines</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-[250px]">Customer Name</TableHead>
+                <TableHead className="w-[200px]">Contact</TableHead>
+                <TableHead className="w-[120px]">Location</TableHead>
+                <TableHead className="w-[180px]">Machines</TableHead>
+                <TableHead className="w-[120px]">Status</TableHead>
+                <TableHead className="w-[120px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -353,23 +339,23 @@ const Customers = () => {
                 currentItems.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">
-                      {customer.name}
+                      <div className="text-base">{customer.name}</div>
                       <div className="text-xs text-muted-foreground">Last contact: {customer.lastContact}</div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          <span>{customer.phone}</span>
+                          <Phone className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{customer.phone}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          <span>{customer.email}</span>
+                          <Mail className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{customer.email}</span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{customer.location}</TableCell>
-                    <TableCell className="hidden lg:table-cell">
+                    <TableCell>{customer.location}</TableCell>
+                    <TableCell>
                       <div className="flex gap-1 flex-wrap">
                         {customer.machines.length > 1 ? (
                           <>
@@ -384,8 +370,8 @@ const Customers = () => {
                     <TableCell>
                       <Badge className={getStatusColor(customer.status)}>{customer.status}</Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
                         <Button 
                           variant="ghost" 
                           size="icon" 
