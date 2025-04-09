@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -88,7 +88,17 @@ const inventoryItems = [
   },
 ];
 
-const InventoryTable = () => {
+interface InventoryTableProps {
+  searchQuery?: string;
+  categoryFilter?: string;
+  locationFilter?: string;
+}
+
+const InventoryTable = ({ 
+  searchQuery = '', 
+  categoryFilter = 'all', 
+  locationFilter = 'all' 
+}: InventoryTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   
@@ -129,11 +139,36 @@ const InventoryTable = () => {
     }
   };
   
+  // Filter items based on search query and filters
+  const filteredItems = useMemo(() => {
+    return inventoryItems.filter(item => {
+      // Search query filter
+      const matchesSearch = searchQuery === '' || 
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.sku.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Category filter
+      const matchesCategory = categoryFilter === 'all' || 
+        item.category.toLowerCase() === categoryFilter.toLowerCase();
+      
+      // Location filter
+      const matchesLocation = locationFilter === 'all' || 
+        item.location.toLowerCase().includes(locationFilter.toLowerCase());
+      
+      return matchesSearch && matchesCategory && matchesLocation;
+    });
+  }, [searchQuery, categoryFilter, locationFilter]);
+  
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, categoryFilter, locationFilter]);
+  
   // Calculate pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = inventoryItems.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(inventoryItems.length / itemsPerPage);
+  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   
   // Handle page navigation
   const handlePageChange = (page: number) => {
@@ -143,7 +178,17 @@ const InventoryTable = () => {
   return (
     <>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Inventory Items</h2>
+        <div>
+          <h2 className="text-xl font-semibold">Inventory Items</h2>
+          {filteredItems.length > 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Showing {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'}
+              {searchQuery || categoryFilter !== 'all' || locationFilter !== 'all' ? ' (filtered)' : ''}
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">No items found</p>
+          )}
+        </div>
         <Button onClick={handleAddItem} className="flex items-center gap-1">
           <Plus className="h-4 w-4" />
           <span>Add New Item</span>
@@ -152,7 +197,11 @@ const InventoryTable = () => {
       
       <div className="rounded-md border bg-card">
         <Table>
-          <TableCaption>A list of your inventory items.</TableCaption>
+          <TableCaption>
+            {filteredItems.length === 0 ? 
+              'No inventory items found matching your criteria.' : 
+              'A list of your inventory items.'}
+          </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[300px]">Product Name</TableHead>
@@ -166,87 +215,97 @@ const InventoryTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentItems.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium flex items-center gap-2">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  {item.name}
-                </TableCell>
-                <TableCell>{item.sku}</TableCell>
-                <TableCell>{item.category}</TableCell>
-                <TableCell>{item.quantity}</TableCell>
-                <TableCell>{item.location}</TableCell>
-                <TableCell className="text-right">₹{item.price.toLocaleString()}</TableCell>
-                <TableCell>
-                  <Badge variant={getBadgeVariant(item.status) as any}>
-                    {item.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteItem(item.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {currentItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center">
+                  No results found. Try adjusting your filters.
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              currentItems.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium flex items-center gap-2">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    {item.name}
+                  </TableCell>
+                  <TableCell>{item.sku}</TableCell>
+                  <TableCell>{item.category}</TableCell>
+                  <TableCell>{item.quantity}</TableCell>
+                  <TableCell>{item.location}</TableCell>
+                  <TableCell className="text-right">₹{item.price.toLocaleString()}</TableCell>
+                  <TableCell>
+                    <Badge variant={getBadgeVariant(item.status) as any}>
+                      {item.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteItem(item.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
       
-      {/* Pagination */}
-      <div className="mt-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-              />
-            </PaginationItem>
-            
-            {Array.from({ length: totalPages }).map((_, index) => {
-              const pageNumber = index + 1;
-              const showPage = pageNumber === 1 || 
-                              pageNumber === totalPages || 
-                              (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1);
+      {/* Pagination - only show if we have items */}
+      {filteredItems.length > 0 && (
+        <div className="mt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
               
-              if (!showPage) {
-                if (pageNumber === 2 || pageNumber === totalPages - 1) {
-                  return (
-                    <PaginationItem key={`ellipsis-${pageNumber}`}>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                  );
+              {Array.from({ length: totalPages }).map((_, index) => {
+                const pageNumber = index + 1;
+                const showPage = pageNumber === 1 || 
+                                pageNumber === totalPages || 
+                                (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1);
+                
+                if (!showPage) {
+                  if (pageNumber === 2 || pageNumber === totalPages - 1) {
+                    return (
+                      <PaginationItem key={`ellipsis-${pageNumber}`}>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                    );
+                  }
+                  return null;
                 }
-                return null;
-              }
+                
+                return (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink
+                      isActive={pageNumber === currentPage}
+                      onClick={() => handlePageChange(pageNumber)}
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
               
-              return (
-                <PaginationItem key={pageNumber}>
-                  <PaginationLink
-                    isActive={pageNumber === currentPage}
-                    onClick={() => handlePageChange(pageNumber)}
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            })}
-            
-            <PaginationItem>
-              <PaginationNext 
-                onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <InventoryFormModal 
         open={isModalOpen} 

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { 
   Package, 
@@ -7,7 +7,8 @@ import {
   BarChart3, 
   Truck, 
   AlertTriangle,
-  Search
+  Search,
+  Filter
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,55 @@ import InventoryTable from "@/components/inventory/InventoryTable";
 import InventoryOverview from "@/components/inventory/InventoryOverview";
 import LowStockItems from "@/components/inventory/LowStockItems";
 
+// Sample data for filtering
+const categories = [
+  { value: "all", label: "All Categories" },
+  { value: "toner", label: "Toners" },
+  { value: "drum", label: "Drums" },
+  { value: "spare", label: "Spare Parts" },
+  { value: "machine", label: "Machines" }
+];
+
+const locations = [
+  { value: "all", label: "All Locations" },
+  { value: "indore", label: "Indore (HQ)" },
+  { value: "bhopal", label: "Bhopal Office" },
+  { value: "jabalpur", label: "Jabalpur Office" }
+];
+
 const Inventory = () => {
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [locationFilter, setLocationFilter] = useState("all");
+  const [isFilterActive, setIsFilterActive] = useState(false);
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setIsFilterActive(!!e.target.value || categoryFilter !== "all" || locationFilter !== "all");
+  };
+
+  // Handle category filter change
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    setIsFilterActive(!!searchQuery || value !== "all" || locationFilter !== "all");
+  };
+
+  // Handle location filter change
+  const handleLocationChange = (value: string) => {
+    setLocationFilter(value);
+    setIsFilterActive(!!searchQuery || categoryFilter !== "all" || value !== "all");
+  };
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setCategoryFilter("all");
+    setLocationFilter("all");
+    setIsFilterActive(false);
+  };
+
   return (
     <Layout>
       <div className="flex flex-col gap-6">
@@ -54,32 +103,46 @@ const Inventory = () => {
               type="search"
               placeholder="Search products..."
               className="pl-8 w-full bg-background"
+              value={searchQuery}
+              onChange={handleSearchChange}
             />
           </div>
           <div className="flex gap-2">
-            <Select defaultValue="all">
+            <Select value={categoryFilter} onValueChange={handleCategoryChange}>
               <SelectTrigger className="w-[140px] bg-background">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="toner">Toners</SelectItem>
-                <SelectItem value="drum">Drums</SelectItem>
-                <SelectItem value="spare">Spare Parts</SelectItem>
-                <SelectItem value="machine">Machines</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
-            <Select defaultValue="all">
+            <Select value={locationFilter} onValueChange={handleLocationChange}>
               <SelectTrigger className="w-[140px] bg-background">
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                <SelectItem value="indore">Indore (HQ)</SelectItem>
-                <SelectItem value="bhopal">Bhopal Office</SelectItem>
-                <SelectItem value="jabalpur">Jabalpur Office</SelectItem>
+                {locations.map((location) => (
+                  <SelectItem key={location.value} value={location.value}>
+                    {location.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            {isFilterActive && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleResetFilters}
+                className="flex items-center justify-center h-10 w-10 rounded-md"
+                title="Clear filters"
+              >
+                <Filter className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -147,8 +210,12 @@ const Inventory = () => {
           </div>
         </div>
 
-        {/* Inventory Table */}
-        <InventoryTable />
+        {/* Inventory Table with filters */}
+        <InventoryTable 
+          searchQuery={searchQuery}
+          categoryFilter={categoryFilter}
+          locationFilter={locationFilter}
+        />
       </div>
     </Layout>
   );
