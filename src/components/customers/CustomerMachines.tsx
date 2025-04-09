@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,6 @@ const mockMachines: Machine[] = [
   {
     id: 2,
     model: "Ricoh MP2014",
-    serialNumber: "RMP982321",
     serialNumber: "RMP982321",
     installationDate: "2023-08-22",
     status: "maintenance",
