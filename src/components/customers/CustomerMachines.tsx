@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -115,9 +116,15 @@ export default function CustomerMachines() {
   const [followUpNotes, setFollowUpNotes] = useState("");
   const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false);
   const [salesFollowUpDialogOpen, setSalesFollowUpDialogOpen] = useState(false);
-  const [newSalesFollowUp, setNewSalesFollowUp] = useState<Partial<SalesFollowUp>>({
-    status: "pending" as "pending" | "completed",
-    type: "quotation" as "quotation" | "demo" | "negotiation" | "closure"
+  const [newSalesFollowUp, setNewSalesFollowUp] = useState<{
+    date?: Date;
+    customerName?: string;
+    notes?: string;
+    status: "pending" | "completed";
+    type: "quotation" | "demo" | "negotiation" | "closure";
+  }>({
+    status: "pending",
+    type: "quotation"
   });
   const [activeTab, setActiveTab] = useState("machines");
 
@@ -191,18 +198,18 @@ export default function CustomerMachines() {
       id: salesFollowUps.length + 1,
       date: newSalesFollowUp.date,
       customerId: Math.floor(Math.random() * 1000) + 100,
-      customerName: newSalesFollowUp.customerName || "",
-      notes: newSalesFollowUp.notes || "",
-      status: newSalesFollowUp.status as "pending" | "completed",
-      type: newSalesFollowUp.type as "quotation" | "demo" | "negotiation" | "closure"
+      customerName: newSalesFollowUp.customerName,
+      notes: newSalesFollowUp.notes,
+      status: newSalesFollowUp.status,
+      type: newSalesFollowUp.type
     };
 
     setSalesFollowUps([...salesFollowUps, newFollowUp]);
     setSalesFollowUpDialogOpen(false);
     toast.success(`Sales follow-up scheduled for ${format(newFollowUp.date, "PPP")}`);
     setNewSalesFollowUp({
-      status: "pending" as "pending" | "completed",
-      type: "quotation" as "quotation" | "demo" | "negotiation" | "closure"
+      status: "pending",
+      type: "quotation"
     });
   };
 
@@ -211,7 +218,7 @@ export default function CustomerMachines() {
       if (followUp.id === id) {
         return {
           ...followUp,
-          status: "completed"
+          status: "completed" as const
         };
       }
       return followUp;
