@@ -14,6 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Package, Edit, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import InventoryFormModal from "./InventoryFormModal";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 // Sample inventory data
 const inventoryItems = [
@@ -82,7 +91,11 @@ const inventoryItems = [
 const InventoryTable = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  
   // Function to open modal for editing an item
   const handleEditItem = (item: any) => {
     setSelectedItem(item);
@@ -115,6 +128,17 @@ const InventoryTable = () => {
         return "secondary";
     }
   };
+  
+  // Calculate pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = inventoryItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(inventoryItems.length / itemsPerPage);
+  
+  // Handle page navigation
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   return (
     <>
@@ -142,7 +166,7 @@ const InventoryTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {inventoryItems.map((item) => (
+            {currentItems.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium flex items-center gap-2">
                   <Package className="h-4 w-4 text-muted-foreground" />
@@ -172,6 +196,56 @@ const InventoryTable = () => {
             ))}
           </TableBody>
         </Table>
+      </div>
+      
+      {/* Pagination */}
+      <div className="mt-4">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+            
+            {Array.from({ length: totalPages }).map((_, index) => {
+              const pageNumber = index + 1;
+              const showPage = pageNumber === 1 || 
+                              pageNumber === totalPages || 
+                              (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1);
+              
+              if (!showPage) {
+                if (pageNumber === 2 || pageNumber === totalPages - 1) {
+                  return (
+                    <PaginationItem key={`ellipsis-${pageNumber}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  );
+                }
+                return null;
+              }
+              
+              return (
+                <PaginationItem key={pageNumber}>
+                  <PaginationLink
+                    isActive={pageNumber === currentPage}
+                    onClick={() => handlePageChange(pageNumber)}
+                  >
+                    {pageNumber}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+            })}
+            
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
 
       <InventoryFormModal 
