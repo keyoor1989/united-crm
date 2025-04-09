@@ -17,7 +17,6 @@ const AppRoutes = () => (
     <Route path="/service" element={<Service />} />
     <Route path="/inventory" element={<Inventory />} />
     <Route path="/chat" element={<Chat />} />
-    {/* TODO: Add other routes as we implement them */}
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
