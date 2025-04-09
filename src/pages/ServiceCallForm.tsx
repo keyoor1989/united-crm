@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +41,6 @@ import {
 import { ServiceCall, Customer, Machine, Engineer } from "@/types/service";
 import { mockCustomers, mockMachines, mockEngineers } from "@/data/mockData";
 
-// Form validation schema
 const serviceCallSchema = z.object({
   customerId: z.string().min(1, { message: "Customer is required" }),
   phone: z.string().min(1, { message: "Phone number is required" }),
@@ -88,14 +86,12 @@ const ServiceCallForm = () => {
     },
   });
 
-  // Load mock data
   useEffect(() => {
     setCustomers(mockCustomers);
     setMachines(mockMachines);
     setEngineers(mockEngineers);
   }, []);
 
-  // Auto-fill customer details when selected
   const handleCustomerChange = (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
     if (customer) {
@@ -103,22 +99,18 @@ const ServiceCallForm = () => {
       form.setValue("phone", customer.phone);
       form.setValue("location", customer.location);
       
-      // Auto-set priority based on customer type
       const priority = determinePriority(customer.type);
       form.setValue("priority", priority);
       
-      // Filter machines for this customer
       const filteredMachines = machines.filter(
         (machine) => machine.customerId === customerId
       );
       setCustomerMachines(filteredMachines);
       
-      // Calculate SLA time based on customer type
       calculateSLA(customer.type);
     }
   };
 
-  // Auto-fill machine details when selected
   const handleMachineChange = (machineId: string) => {
     const machine = machines.find((m) => m.id === machineId);
     if (machine) {
@@ -127,9 +119,8 @@ const ServiceCallForm = () => {
     }
   };
 
-  // Calculate SLA time based on customer type
   const calculateSLA = (customerType: string) => {
-    let hours = 48; // Default Retail
+    let hours = 48;
     
     switch (customerType.toLowerCase()) {
       case "government":
@@ -140,13 +131,12 @@ const ServiceCallForm = () => {
         hours = 24;
         break;
       default:
-        hours = 48; // Retail
+        hours = 48;
     }
     
     setSlaTime(hours);
   };
 
-  // Determine priority based on customer type
   const determinePriority = (customerType: string): string => {
     switch (customerType.toLowerCase()) {
       case "government":
@@ -156,11 +146,10 @@ const ServiceCallForm = () => {
       case "rental":
         return "Medium";
       default:
-        return "Standard"; // Retail
+        return "Standard";
     }
   };
 
-  // Auto-assign to nearest engineer based on location
   const autoAssignEngineer = () => {
     if (!selectedCustomer) return;
     
@@ -170,8 +159,6 @@ const ServiceCallForm = () => {
     );
     
     if (availableEngineers.length > 0) {
-      // In a real app, we'd use distance calculation
-      // For mock, just pick the first available engineer in the same location
       const nearbyEngineer = availableEngineers.find(
         (engineer) => engineer.location === location
       );
@@ -201,7 +188,6 @@ const ServiceCallForm = () => {
   const onSubmit = (data: ServiceCallFormValues) => {
     setIsSubmitting(true);
     
-    // In a real app, this would be an API call
     setTimeout(() => {
       const newServiceCall: ServiceCall = {
         id: `SC-${Date.now()}`,
@@ -452,6 +438,7 @@ const ServiceCallForm = () => {
                             <SelectItem value="AMC">AMC</SelectItem>
                             <SelectItem value="Out of Warranty">Out of Warranty</SelectItem>
                             <SelectItem value="Rental">Rental</SelectItem>
+                            <SelectItem value="Paid Call">Paid Call</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
