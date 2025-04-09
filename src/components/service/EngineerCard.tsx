@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, User, Tool, Zap } from "lucide-react";
+import { MapPin, User, Wrench, Zap } from "lucide-react";
 import { Engineer } from "@/types/service";
 
 interface EngineerCardProps {
@@ -76,7 +76,7 @@ export const EngineerCard: React.FC<EngineerCardProps> = ({ engineer }) => {
             
             {currentJob && (
               <div className="flex items-center text-xs text-muted-foreground gap-1 mt-1">
-                <Tool className="h-3 w-3" /> Working at: {currentJob}
+                <Wrench className="h-3 w-3" /> Working at: {currentJob}
               </div>
             )}
             

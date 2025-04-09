@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   DialogHeader, 
@@ -16,7 +15,7 @@ import {
   Printer, 
   Mail, 
   User, 
-  Tool, 
+  Wrench, 
   AlertTriangle, 
   MessageSquare, 
   CheckCircle2,
@@ -215,7 +214,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
                 
                 {serviceCall.status === "In Progress" && (
                   <div className="flex items-center gap-2">
-                    <Tool className="h-4 w-4 text-gray-500" />
+                    <Wrench className="h-4 w-4 text-gray-500" />
                     <span>Started: {serviceCall.startTime ? format(new Date(serviceCall.startTime), "PPp") : "N/A"}</span>
                   </div>
                 )}
@@ -313,7 +312,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
                   {serviceCall.partsUsed.map((part, index) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                       <div className="flex items-center gap-2">
-                        <Tool className="h-4 w-4 text-gray-500" />
+                        <Wrench className="h-4 w-4 text-gray-500" />
                         <span>{part.name}</span>
                       </div>
                       <span>x{part.quantity}</span>
