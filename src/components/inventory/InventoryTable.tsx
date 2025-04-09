@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Package, Edit, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import InventoryFormModal from "./InventoryFormModal";
+import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
 import {
   Pagination,
   PaginationContent,
@@ -106,6 +107,10 @@ const InventoryTable = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   
+  // Delete confirmation dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: number, name: string } | null>(null);
+  
   // Function to open modal for editing an item
   const handleEditItem = (item: any) => {
     setSelectedItem(item);
@@ -118,11 +123,17 @@ const InventoryTable = ({
     setIsModalOpen(true);
   };
 
+  // Function to open delete confirmation dialog
+  const handleDeleteClick = (id: number, name: string) => {
+    setItemToDelete({ id, name });
+    setIsDeleteDialogOpen(true);
+  };
+
   // Function to handle deletion (would connect to API in real app)
   const handleDeleteItem = (id: number) => {
     // This would typically connect to an API or state management
     console.log(`Delete item with ID: ${id}`);
-    toast.success("Item deleted successfully!");
+    // The toast is now handled in the DeleteConfirmationDialog component
   };
 
   // Function to get status badge color
@@ -243,7 +254,11 @@ const InventoryTable = ({
                       <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteItem(item.id)}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteClick(item.id, item.name)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -307,11 +322,23 @@ const InventoryTable = ({
         </div>
       )}
 
+      {/* Form Modal for Add/Edit */}
       <InventoryFormModal 
         open={isModalOpen} 
         onOpenChange={setIsModalOpen} 
         itemToEdit={selectedItem} 
       />
+
+      {/* Delete Confirmation Dialog */}
+      {itemToDelete && (
+        <DeleteConfirmationDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          itemId={itemToDelete.id}
+          itemName={itemToDelete.name}
+          onConfirmDelete={handleDeleteItem}
+        />
+      )}
     </>
   );
 };
