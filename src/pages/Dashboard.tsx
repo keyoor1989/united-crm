@@ -1,9 +1,7 @@
-
 import React from "react";
 import Layout from "@/components/layout/Layout";
 import StatCard from "@/components/dashboard/StatCard";
 import { 
-  Indian,
   Users, 
   Wrench, 
   Package, 
