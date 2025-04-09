@@ -1,6 +1,6 @@
-
 import React from "react";
 import Layout from "@/components/layout/Layout";
+import { Link } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -44,10 +44,12 @@ const Customers = () => {
               Manage your customer relationships and follow-ups
             </p>
           </div>
-          <Button className="gap-1">
-            <Plus className="h-4 w-4" />
-            Add Customer
-          </Button>
+          <Link to="/customer-form">
+            <Button className="gap-1">
+              <Plus className="h-4 w-4" />
+              Add Customer
+            </Button>
+          </Link>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
