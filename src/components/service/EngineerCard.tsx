@@ -54,7 +54,7 @@ export const EngineerCard: React.FC<EngineerCardProps> = ({ engineer }) => {
   };
 
   return (
-    <Card>
+    <Card className="overflow-hidden transition-shadow hover:shadow-md">
       <CardContent className="pt-6">
         <div className="flex items-start gap-2">
           <div className={`h-8 w-8 rounded-full flex items-center justify-center ${getStatusColor()}`}>

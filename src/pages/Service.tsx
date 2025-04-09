@@ -1,22 +1,11 @@
-
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import {
   CalendarCheck,
-  MapPin,
-  Phone,
-  Clock,
-  User,
-  Printer,
-  Wrench,
-  ChevronRight,
-  AlertCircle,
-  CheckCircle2,
   Filter,
   Search,
   RefreshCw,
@@ -24,10 +13,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ServiceCallCard } from "@/components/service/ServiceCallCard";
@@ -39,13 +24,13 @@ import { useToast } from "@/hooks/use-toast";
 
 const Service = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>(mockServiceCalls);
   const [engineers, setEngineers] = useState<Engineer[]>(mockEngineers);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedServiceCall, setSelectedServiceCall] = useState<ServiceCall | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   
-  // Filter service calls based on tab and search term
   const filterCalls = (status: string) => {
     if (status === "all") {
       return serviceCalls.filter(call => 
@@ -87,7 +72,22 @@ const Service = () => {
       return call;
     });
     
+    const updatedEngineers = engineers.map(eng => {
+      if (eng.id === engineerId) {
+        const serviceCall = serviceCalls.find(call => call.id === serviceCallId);
+        return {
+          ...eng,
+          status: "On Call",
+          currentJob: `Service Call #${serviceCallId}`,
+          currentLocation: serviceCall?.location || eng.location
+        };
+      }
+      return eng;
+    });
+    
     setServiceCalls(updatedCalls);
+    setEngineers(updatedEngineers);
+    
     toast({
       title: "Engineer Assigned",
       description: "The service call has been assigned to the engineer",
@@ -95,12 +95,14 @@ const Service = () => {
   };
   
   const handleReassignCall = (serviceCallId: string) => {
-    // This would open a dialog to reassign the call
-    // For now, just show a toast
     toast({
       title: "Reassignment",
       description: "Engineer reassignment feature coming soon",
     });
+  };
+  
+  const handleEngineerCardClick = (engineerId: string) => {
+    navigate(`/engineer/${engineerId}`);
   };
 
   return (
@@ -192,6 +194,7 @@ const Service = () => {
                   <ServiceCallCard
                     key={call.id}
                     serviceCall={call}
+                    engineers={engineers}
                     onShowDetails={() => handleShowDetails(call)}
                     onAssign={handleAssignEngineer}
                     onReassign={() => handleReassignCall(call.id)}
@@ -212,6 +215,7 @@ const Service = () => {
                   <ServiceCallCard
                     key={call.id}
                     serviceCall={call}
+                    engineers={engineers}
                     onShowDetails={() => handleShowDetails(call)}
                     onAssign={handleAssignEngineer}
                     onReassign={() => handleReassignCall(call.id)}
@@ -232,6 +236,7 @@ const Service = () => {
                   <ServiceCallCard
                     key={call.id}
                     serviceCall={call}
+                    engineers={engineers}
                     onShowDetails={() => handleShowDetails(call)}
                     onAssign={handleAssignEngineer}
                     onReassign={() => handleReassignCall(call.id)}
@@ -252,6 +257,7 @@ const Service = () => {
                   <ServiceCallCard
                     key={call.id}
                     serviceCall={call}
+                    engineers={engineers}
                     onShowDetails={() => handleShowDetails(call)}
                     onAssign={handleAssignEngineer}
                     onReassign={() => handleReassignCall(call.id)}
@@ -266,13 +272,18 @@ const Service = () => {
           <h2 className="text-lg font-semibold mb-4">Engineer Locations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {engineers.map((engineer) => (
-              <EngineerCard key={engineer.id} engineer={engineer} />
+              <div 
+                key={engineer.id} 
+                className="cursor-pointer hover:scale-[1.01] transition-transform"
+                onClick={() => handleEngineerCardClick(engineer.id)}
+              >
+                <EngineerCard engineer={engineer} />
+              </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Service Call Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-3xl">
           {selectedServiceCall && (

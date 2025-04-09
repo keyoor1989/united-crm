@@ -6,6 +6,7 @@ import Customers from "@/pages/Customers";
 import CustomerForm from "@/pages/CustomerForm";
 import Service from "@/pages/Service";
 import ServiceCallForm from "@/pages/ServiceCallForm";
+import EngineerDetail from "@/pages/EngineerDetail";
 import Inventory from "@/pages/Inventory";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/NotFound";
@@ -17,6 +18,7 @@ const AppRoutes = () => (
     <Route path="/customer-form" element={<CustomerForm />} />
     <Route path="/service" element={<Service />} />
     <Route path="/service-call-form" element={<ServiceCallForm />} />
+    <Route path="/engineer/:id" element={<EngineerDetail />} />
     <Route path="/inventory" element={<Inventory />} />
     <Route path="/chat" element={<Chat />} />
     <Route path="*" element={<NotFound />} />

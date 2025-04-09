@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,16 +11,19 @@ import {
   Printer,
   User,
   Wrench,
+  UserPlus,
 } from "lucide-react";
-import { ServiceCall } from "@/types/service";
+import { ServiceCall, Engineer } from "@/types/service";
 import { 
   formatDistanceToNow, 
   isPast,
   formatDistance
 } from "date-fns";
+import EngineerAssignmentSheet from "./EngineerAssignmentSheet";
 
 interface ServiceCallCardProps {
   serviceCall: ServiceCall;
+  engineers?: Engineer[];
   onShowDetails: () => void;
   onAssign: (serviceCallId: string, engineerId: string) => void;
   onReassign: (serviceCallId: string) => void;
@@ -29,10 +31,13 @@ interface ServiceCallCardProps {
 
 export const ServiceCallCard: React.FC<ServiceCallCardProps> = ({
   serviceCall,
+  engineers = [],
   onShowDetails,
   onAssign,
   onReassign,
 }) => {
+  const [showAssignSheet, setShowAssignSheet] = useState(false);
+  
   const {
     id,
     customerName,
@@ -44,6 +49,7 @@ export const ServiceCallCard: React.FC<ServiceCallCardProps> = ({
     createdAt,
     slaDeadline,
     engineerName,
+    engineerId,
   } = serviceCall;
 
   const getPriorityBadge = () => {
@@ -89,61 +95,83 @@ export const ServiceCallCard: React.FC<ServiceCallCardProps> = ({
   );
 
   return (
-    <Card className="overflow-hidden">
-      <div className="bg-muted p-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {getStatusIcon()}
-          <h3 className="font-semibold">{customerName}</h3>
+    <>
+      <Card className="overflow-hidden">
+        <div className="bg-muted p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {getStatusIcon()}
+            <h3 className="font-semibold">{customerName}</h3>
+          </div>
+          {getPriorityBadge()}
         </div>
-        {getPriorityBadge()}
-      </div>
-      <CardContent className="p-4">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Printer className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{machineModel}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{location}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">Reported {timeCreated}</span>
-          </div>
-
-          <div className={`flex items-center gap-2 p-2 rounded-md ${
-            isPastDeadline ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
-          }`}>
-            <Clock className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              SLA: {timeToDeadline}
-            </span>
-          </div>
-
-          <div className="py-2 border-t border-b">
-            <div className="text-sm font-medium mb-1">Issue: {issueType}</div>
-          </div>
-
-          <div className="flex items-center justify-between">
+        <CardContent className="p-4">
+          <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-muted-foreground" />
+              <Printer className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{machineModel}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{location}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">Reported {timeCreated}</span>
+            </div>
+
+            <div className={`flex items-center gap-2 p-2 rounded-md ${
+              isPastDeadline ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
+            }`}>
+              <Clock className="h-4 w-4" />
               <span className="text-sm font-medium">
-                {engineerName || "Unassigned"}
+                SLA: {timeToDeadline}
               </span>
             </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-1"
-              onClick={onShowDetails}
-            >
-              Details
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+
+            <div className="py-2 border-t border-b">
+              <div className="text-sm font-medium mb-1">Issue: {issueType}</div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  {engineerName || "Unassigned"}
+                </span>
+              </div>
+              <div className="flex gap-1">
+                {!engineerId && status.toLowerCase() === "pending" && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => setShowAssignSheet(true)}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-1"
+                  onClick={onShowDetails}
+                >
+                  Details
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      
+      <EngineerAssignmentSheet
+        open={showAssignSheet}
+        onOpenChange={setShowAssignSheet}
+        serviceCall={serviceCall}
+        engineers={engineers}
+        onAssign={onAssign}
+      />
+    </>
   );
 };
