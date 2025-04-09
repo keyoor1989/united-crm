@@ -19,9 +19,9 @@ const CustomerForm = () => {
         </div>
 
         <Tabs defaultValue="form" className="w-full">
-          <TabsList>
-            <TabsTrigger value="form">Customer Form</TabsTrigger>
-            <TabsTrigger value="pipeline">Lead Pipeline</TabsTrigger>
+          <TabsList className="bg-secondary">
+            <TabsTrigger value="form" className="data-[state=active]:bg-background">Customer Form</TabsTrigger>
+            <TabsTrigger value="pipeline" className="data-[state=active]:bg-background">Lead Pipeline</TabsTrigger>
           </TabsList>
           <TabsContent value="form" className="mt-4">
             <CustomerFormComponent />
