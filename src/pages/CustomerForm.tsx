@@ -3,6 +3,7 @@ import React from "react";
 import Layout from "@/components/layout/Layout";
 import CustomerFormComponent from "@/components/customers/CustomerFormComponent";
 import LeadPipeline from "@/components/customers/LeadPipeline";
+import CustomerMachines from "@/components/customers/CustomerMachines";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const CustomerForm = () => {
@@ -21,10 +22,14 @@ const CustomerForm = () => {
         <Tabs defaultValue="form" className="w-full">
           <TabsList className="bg-secondary">
             <TabsTrigger value="form" className="data-[state=active]:bg-background">Customer Form</TabsTrigger>
+            <TabsTrigger value="machines" className="data-[state=active]:bg-background">Machines & Follow-ups</TabsTrigger>
             <TabsTrigger value="pipeline" className="data-[state=active]:bg-background">Lead Pipeline</TabsTrigger>
           </TabsList>
           <TabsContent value="form" className="mt-4">
             <CustomerFormComponent />
+          </TabsContent>
+          <TabsContent value="machines" className="mt-4">
+            <CustomerMachines />
           </TabsContent>
           <TabsContent value="pipeline" className="mt-4">
             <LeadPipeline />

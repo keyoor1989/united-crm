@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Printer, CalendarDays, Settings } from "lucide-react";
+import { Plus, Printer, CalendarDays, Settings, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -9,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -17,6 +19,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type Machine = {
   id: number;
@@ -25,6 +35,10 @@ type Machine = {
   installationDate: string;
   status: "active" | "maintenance" | "replacement-due";
   lastService: string;
+  followUp?: {
+    date: Date;
+    notes: string;
+  };
 };
 
 const mockMachines: Machine[] = [
@@ -43,11 +57,19 @@ const mockMachines: Machine[] = [
     installationDate: "2023-08-22",
     status: "maintenance",
     lastService: "2025-02-05",
+    followUp: {
+      date: new Date(2025, 3, 16), // April 16, 2025
+      notes: "Check if maintenance was completed, discuss upgrade options"
+    }
   },
 ];
 
 export default function CustomerMachines() {
-  const [machines] = useState<Machine[]>(mockMachines);
+  const [machines, setMachines] = useState<Machine[]>(mockMachines);
+  const [followUpMachine, setFollowUpMachine] = useState<Machine | null>(null);
+  const [followUpDate, setFollowUpDate] = useState<Date | undefined>(undefined);
+  const [followUpNotes, setFollowUpNotes] = useState("");
+  const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -60,6 +82,37 @@ export default function CustomerMachines() {
       default:
         return <Badge>Unknown</Badge>;
     }
+  };
+
+  const handleScheduleFollowUp = (machine: Machine) => {
+    setFollowUpMachine(machine);
+    setFollowUpDate(machine.followUp?.date);
+    setFollowUpNotes(machine.followUp?.notes || "");
+    setFollowUpDialogOpen(true);
+  };
+
+  const saveFollowUp = () => {
+    if (!followUpMachine || !followUpDate) {
+      toast.error("Please select a follow-up date");
+      return;
+    }
+
+    const updatedMachines = machines.map(machine => {
+      if (machine.id === followUpMachine.id) {
+        return {
+          ...machine,
+          followUp: {
+            date: followUpDate,
+            notes: followUpNotes
+          }
+        };
+      }
+      return machine;
+    });
+
+    setMachines(updatedMachines);
+    setFollowUpDialogOpen(false);
+    toast.success(`Follow-up scheduled for ${format(followUpDate, "PPP")}`);
   };
 
   return (
@@ -112,6 +165,9 @@ export default function CustomerMachines() {
                         <DropdownMenuItem>View Details</DropdownMenuItem>
                         <DropdownMenuItem>Service History</DropdownMenuItem>
                         <DropdownMenuItem>Log Service Call</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleScheduleFollowUp(machine)}>
+                          Schedule Follow-up
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Schedule Maintenance</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -127,6 +183,12 @@ export default function CustomerMachines() {
                     <Settings className="h-3 w-3 text-muted-foreground" />
                     <span>Last Service: {new Date(machine.lastService).toLocaleDateString()}</span>
                   </div>
+                  {machine.followUp && (
+                    <div className="flex items-center gap-1">
+                      <CalendarClock className="h-3 w-3 text-blue-500" />
+                      <span className="text-blue-600 font-medium">Follow-up: {format(machine.followUp.date, "PPP")}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -138,6 +200,67 @@ export default function CustomerMachines() {
           </div>
         )}
       </CardContent>
+
+      <Dialog open={followUpDialogOpen} onOpenChange={setFollowUpDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule Follow-up</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {followUpMachine && (
+              <div className="flex items-center gap-2 mb-4">
+                <Printer className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">{followUpMachine.model}</p>
+                  <p className="text-xs text-muted-foreground">SN: {followUpMachine.serialNumber}</p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="followup-date">Follow-up Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !followUpDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarClock className="mr-2 h-4 w-4" />
+                    {followUpDate ? format(followUpDate, "PPP") : <span>Select date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={followUpDate}
+                    onSelect={setFollowUpDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="followup-notes">Notes</Label>
+              <Textarea
+                id="followup-notes"
+                placeholder="Add details about this follow-up"
+                value={followUpNotes}
+                onChange={(e) => setFollowUpNotes(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setFollowUpDialogOpen(false)} variant="outline">Cancel</Button>
+            <Button onClick={saveFollowUp}>Save Follow-up</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
