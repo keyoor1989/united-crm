@@ -13,7 +13,8 @@ import {
   CheckSquare, 
   Settings,
   MessageSquare,
-  Building
+  Building,
+  LineChart
 } from "lucide-react";
 
 type SidebarItemProps = {
@@ -83,6 +84,12 @@ const Sidebar = () => {
           icon={<Wrench size={20} />}
           label="Service"
           isActive={isActive("/service")}
+        />
+        <SidebarItem
+          to="/engineer-performance"
+          icon={<LineChart size={20} />}
+          label="Engineer Performance"
+          isActive={isActive("/engineer-performance")}
         />
         <SidebarItem
           to="/inventory"
