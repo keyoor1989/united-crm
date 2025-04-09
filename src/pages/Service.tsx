@@ -9,6 +9,7 @@ import {
   Filter,
   Search,
   RefreshCw,
+  UserPlus,
 } from "lucide-react";
 import {
   Dialog,
@@ -269,7 +270,15 @@ const Service = () => {
         </Tabs>
         
         <div className="mt-4">
-          <h2 className="text-lg font-semibold mb-4">Engineer Locations</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Engineer Locations</h2>
+            <Link to="/engineer/new">
+              <Button variant="outline" size="sm" className="gap-1">
+                <UserPlus className="h-4 w-4" />
+                Add Engineer
+              </Button>
+            </Link>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {engineers.map((engineer) => (
               <div 

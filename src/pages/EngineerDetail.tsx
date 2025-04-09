@@ -15,10 +15,13 @@ import {
   Wrench,
   CheckCircle2, 
   AlertTriangle,
-  Calendar 
+  Calendar,
+  UserPlus
 } from "lucide-react";
 import { Engineer, ServiceCall } from "@/types/service";
 import { mockEngineers, mockServiceCalls } from "@/data/mockData";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import EngineerForm from "@/components/service/EngineerForm";
 
 const EngineerDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,11 +29,32 @@ const EngineerDetail = () => {
   const [engineer, setEngineer] = useState<Engineer | null>(null);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFormDialog, setShowFormDialog] = useState(false);
+  const isNewEngineer = id === "new";
 
   useEffect(() => {
     // In a real app, this would be an API call
     const fetchEngineer = () => {
       setLoading(true);
+      
+      if (isNewEngineer) {
+        // Create empty engineer for new engineer form
+        setEngineer({
+          id: "",
+          name: "",
+          phone: "",
+          email: "",
+          location: "",
+          status: "Available",
+          skillLevel: "Intermediate",
+          currentJob: null,
+          currentLocation: "",
+        });
+        setServiceCalls([]);
+        setLoading(false);
+        return;
+      }
+
       // Find engineer by ID
       const foundEngineer = mockEngineers.find(eng => eng.id === id);
       if (foundEngineer) {
@@ -46,7 +70,14 @@ const EngineerDetail = () => {
     };
 
     fetchEngineer();
-  }, [id]);
+  }, [id, isNewEngineer]);
+
+  const handleSaveEngineer = (updatedEngineer: Engineer) => {
+    // In a real app, this would be an API call to save the engineer
+    console.log("Saving engineer:", updatedEngineer);
+    // Navigate back to service page after saving
+    navigate("/service");
+  };
 
   if (loading) {
     return (
@@ -61,7 +92,7 @@ const EngineerDetail = () => {
     );
   }
 
-  if (!engineer) {
+  if (!engineer && !isNewEngineer) {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center h-screen">
@@ -74,6 +105,44 @@ const EngineerDetail = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Service
           </Button>
+        </div>
+      </Layout>
+    );
+  }
+
+  // If it's a new engineer, show the form directly
+  if (isNewEngineer) {
+    return (
+      <Layout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate("/service")}
+                className="mb-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Service
+              </Button>
+              <h1 className="text-3xl font-bold tracking-tight">Add New Engineer</h1>
+              <p className="text-muted-foreground">
+                Create a new engineer profile in the system
+              </p>
+            </div>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Engineer Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EngineerForm 
+                engineer={engineer} 
+                onSave={handleSaveEngineer}
+              />
+            </CardContent>
+          </Card>
         </div>
       </Layout>
     );
@@ -97,6 +166,9 @@ const EngineerDetail = () => {
               {engineer.skillLevel} Engineer • {engineer.location}
             </p>
           </div>
+          <Button onClick={() => setShowFormDialog(true)}>
+            Edit Engineer
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -193,6 +265,23 @@ const EngineerDetail = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={showFormDialog} onOpenChange={setShowFormDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Engineer: {engineer.name}</DialogTitle>
+          </DialogHeader>
+          {engineer && (
+            <EngineerForm 
+              engineer={engineer} 
+              onSave={(updatedEngineer) => {
+                handleSaveEngineer(updatedEngineer);
+                setShowFormDialog(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };

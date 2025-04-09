@@ -121,7 +121,7 @@ export const mockMachines: Machine[] = [
 ];
 
 // Mock Engineers
-export const mockEngineers: Engineer[] = [
+export let mockEngineers: Engineer[] = [
   {
     id: "eng1",
     name: "Rajesh Kumar",
@@ -167,6 +167,22 @@ export const mockEngineers: Engineer[] = [
     currentLocation: "Jabalpur Office",
   },
 ];
+
+// Add new engineer function for adding engineers in the UI
+export const addEngineer = (engineer: Engineer) => {
+  // In a real app, this would be an API call
+  mockEngineers = [...mockEngineers, engineer];
+  return engineer;
+};
+
+// Update existing engineer
+export const updateEngineer = (updatedEngineer: Engineer) => {
+  // In a real app, this would be an API call
+  mockEngineers = mockEngineers.map(eng => 
+    eng.id === updatedEngineer.id ? updatedEngineer : eng
+  );
+  return updatedEngineer;
+};
 
 // Mock Service Calls
 export const mockServiceCalls: ServiceCall[] = [
