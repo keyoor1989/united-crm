@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,12 +25,23 @@ import {
   Truck,
   Percent,
   RotateCcw,
+  Plus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Vendor, VendorPerformance as VendorPerformanceType } from "@/types/inventory";
 
-// Mock vendor performance data
 const mockVendorPerformance = [
   {
     id: "vp001",
@@ -100,7 +110,54 @@ const mockVendorPerformance = [
   },
 ];
 
-// Radar chart data for vendor comparison
+const mockVendors: Vendor[] = [
+  {
+    id: "vendor1",
+    name: "Ajanta Traders",
+    gstNo: "24AAKCS9636Q1ZX",
+    phone: "9876543210",
+    email: "info@ajanta.com",
+    address: "142, Industrial Area, Indore, MP",
+    createdAt: "2024-01-15"
+  },
+  {
+    id: "vendor2",
+    name: "Ravi Distributors",
+    gstNo: "27AAVCS8142M1Z5",
+    phone: "9988776655",
+    email: "sales@ravidist.com",
+    address: "78, Tech Park, Bhopal, MP",
+    createdAt: "2024-02-20"
+  },
+  {
+    id: "vendor3",
+    name: "Mehta Enterprises",
+    gstNo: "06AABCU9603R1ZP",
+    phone: "9865432109",
+    email: "contact@mehta.co.in",
+    address: "23, Old Market, Jabalpur, MP",
+    createdAt: "2023-11-05"
+  },
+  {
+    id: "vendor4",
+    name: "Global Supplies",
+    gstNo: "29AAKCG1412Q1Z5",
+    phone: "9889900001",
+    email: "info@globalsupplies.com",
+    address: "56, MG Road, Indore, MP",
+    createdAt: "2024-03-12"
+  },
+  {
+    id: "vendor5",
+    name: "Tech Parts Ltd",
+    gstNo: "23AADFT2613R1ZM",
+    phone: "9870123456",
+    email: "support@techparts.in",
+    address: "110, Industrial Estate, Pithampur, MP",
+    createdAt: "2023-12-10"
+  },
+];
+
 const getRadarChartData = (selectedVendors) => {
   const metrics = [
     { name: 'Delivery Time', key: 'avgDeliveryTime', invert: true, max: 5 },
@@ -119,19 +176,15 @@ const getRadarChartData = (selectedVendors) => {
         let value;
         
         if (metric.key === 'onTimeDeliveryRate') {
-          // Calculate on-time delivery rate as a percentage
           value = (vendor.onTimeDelivery / vendor.totalOrders) * 100;
         } else {
           value = vendor[metric.key];
         }
         
-        // Invert values where lower is better (e.g., delivery time, return rate)
         if (metric.invert) {
           if (metric.key === 'returnRate') {
-            // For return rate, transform to a 0-5 scale where 5 is best (0% returns)
             value = 5 - (value / 5);
           } else if (metric.key === 'avgDeliveryTime') {
-            // For delivery time, transform to a 0-5 scale where 5 is best (0 days)
             value = 5 - Math.min(value, 5);
           }
         }
@@ -144,7 +197,6 @@ const getRadarChartData = (selectedVendors) => {
   });
 };
 
-// Bar chart data for reliability scores
 const getReliabilityChartData = (vendors) => {
   return vendors.map(vendor => ({
     name: vendor.vendorName,
@@ -157,35 +209,89 @@ const VendorPerformance = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedVendors, setSelectedVendors] = useState(["vendor1", "vendor2", "vendor3"]);
   const [timePeriod, setTimePeriod] = useState("Q1 2025");
+  const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
+  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    gstNo: "",
+    phone: "",
+    email: "",
+    address: "",
+  });
 
-  // Filter vendors by search query
   const filteredVendors = mockVendorPerformance.filter(vendor => 
     searchQuery ? 
       vendor.vendorName.toLowerCase().includes(searchQuery.toLowerCase())
     : true
   );
   
-  // Toggle vendor selection for charts
   const toggleVendorSelection = (vendorId) => {
     if (selectedVendors.includes(vendorId)) {
-      // Remove vendor if already selected
-      if (selectedVendors.length > 1) { // Ensure at least one vendor is selected
+      if (selectedVendors.length > 1) {
         setSelectedVendors(selectedVendors.filter(id => id !== vendorId));
       }
     } else {
-      // Add vendor if not already selected (limit to 5 vendors for readability)
       if (selectedVendors.length < 5) {
         setSelectedVendors([...selectedVendors, vendorId]);
       }
     }
   };
   
-  // Get vendor rating badge variant
   const getVendorRatingBadge = (score) => {
     if (score >= 90) return "success";
     if (score >= 80) return "default";
     if (score >= 70) return "secondary";
     return "outline";
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSaveVendor = () => {
+    if (!formData.name || !formData.phone || !formData.email || !formData.address) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    
+    const newVendor: Vendor = {
+      id: `vendor${vendors.length + 1}`,
+      name: formData.name,
+      gstNo: formData.gstNo,
+      phone: formData.phone,
+      email: formData.email,
+      address: formData.address,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    
+    setVendors([...vendors, newVendor]);
+    
+    const newPerformanceEntry = {
+      id: `vp${mockVendorPerformance.length + 1}`,
+      vendorId: newVendor.id,
+      vendorName: newVendor.name,
+      totalOrders: 0,
+      onTimeDelivery: 0,
+      avgDeliveryTime: 0,
+      priceConsistency: 0,
+      productQuality: 0,
+      returnRate: 0,
+      reliabilityScore: 0,
+      period: timePeriod,
+    };
+    
+    toast.success("Vendor added successfully");
+    
+    setFormData({
+      name: "",
+      gstNo: "",
+      phone: "",
+      email: "",
+      address: "",
+    });
+    setIsAddVendorOpen(false);
   };
 
   return (
@@ -198,6 +304,13 @@ const VendorPerformance = () => {
               Monitor and evaluate your supplier performance
             </p>
           </div>
+          <Button 
+            onClick={() => setIsAddVendorOpen(true)}
+            className="gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            Add New Vendor
+          </Button>
         </div>
         
         <div className="flex items-center gap-4 mb-4">
@@ -530,6 +643,93 @@ const VendorPerformance = () => {
             </Card>
           </TabsContent>
         </Tabs>
+        
+        <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add New Vendor</DialogTitle>
+              <DialogDescription>
+                Enter the vendor details to add them to your directory.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-1 gap-2">
+                <Label htmlFor="name" className="text-right">
+                  Vendor Name*
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Enter vendor name"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Label htmlFor="gstNo" className="text-right">
+                  GST Number
+                </Label>
+                <Input
+                  id="gstNo"
+                  name="gstNo"
+                  value={formData.gstNo}
+                  onChange={handleInputChange}
+                  placeholder="Enter GST number (optional)"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Label htmlFor="phone" className="text-right">
+                  Phone Number*
+                </Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  placeholder="Enter phone number"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Label htmlFor="email" className="text-right">
+                  Email Address*
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Enter email address"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Label htmlFor="address" className="text-right">
+                  Address*
+                </Label>
+                <Input
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  placeholder="Enter complete address"
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddVendorOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveVendor}>
+                Add Vendor
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
