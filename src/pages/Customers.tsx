@@ -65,56 +65,62 @@ const Customers = () => {
   };
 
   return (
-    <Layout>
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
-            <p className="text-muted-foreground">
-              Manage your customer relationships and follow-ups
-            </p>
-          </div>
-          <Link to="/customer-form">
-            <Button className="gap-1 bg-brand-500 hover:bg-brand-600">
-              <Plus className="h-4 w-4" />
-              Add Customer
-            </Button>
-          </Link>
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
+          <p className="text-muted-foreground">
+            Manage your customer relationships and follow-ups
+          </p>
         </div>
-
-        <CustomerFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          locationFilter={locationFilter}
-          onLocationFilterChange={setLocationFilter}
-          onResetFilters={onResetFilters}
-          showFilters={showFilters}
-          onToggleFilters={toggleFilters}
-          uniqueStatuses={uniqueStatuses}
-          uniqueLocations={uniqueLocations}
-        />
-
-        <div className="rounded-md border shadow-sm bg-white overflow-x-auto">
-          <CustomerTable
-            customers={customers}
-            onCall={handleCall}
-            onEmail={handleEmail}
-            onWhatsApp={handleWhatsApp}
-          />
-          
-          {filteredCustomers.length > 5 && (
-            <CustomerPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
-          )}
-        </div>
+        <Link to="/customer-form">
+          <Button className="gap-1 bg-brand-500 hover:bg-brand-600">
+            <Plus className="h-4 w-4" />
+            Add Customer
+          </Button>
+        </Link>
       </div>
+
+      <CustomerFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        locationFilter={locationFilter}
+        onLocationFilterChange={setLocationFilter}
+        onResetFilters={onResetFilters}
+        showFilters={showFilters}
+        onToggleFilters={toggleFilters}
+        uniqueStatuses={uniqueStatuses}
+        uniqueLocations={uniqueLocations}
+      />
+
+      <div className="rounded-md border shadow-sm bg-white overflow-x-auto">
+        <CustomerTable
+          customers={customers}
+          onCall={handleCall}
+          onEmail={handleEmail}
+          onWhatsApp={handleWhatsApp}
+        />
+        
+        {filteredCustomers.length > 5 && (
+          <CustomerPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const CustomersPage = () => {
+  return (
+    <Layout>
+      <Customers />
     </Layout>
   );
 };
 
-export default Customers;
+export default CustomersPage;
