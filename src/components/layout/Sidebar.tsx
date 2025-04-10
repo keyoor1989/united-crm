@@ -23,7 +23,7 @@ const Sidebar = () => {
     (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : "",
     // Open the inventory section by default if we're on an inventory-related page
     (location.pathname.startsWith("/inventory")) ? "inventory" : ""
-  ]);
+  ].filter(Boolean));
 
   const toggleSection = (section: string) => {
     setOpenSections(prev => 
