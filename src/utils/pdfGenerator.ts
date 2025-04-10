@@ -1,15 +1,15 @@
 
-import pdfMake from "pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
-import { TDocumentDefinitions } from "pdfmake/interfaces";
+import * as pdfMake from "pdfmake/build/pdfmake";
+import * as pdfFonts from "pdfmake/build/vfs_fonts";
+import { TDocumentDefinitions, StyleDictionary } from "pdfmake/interfaces";
 import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Set up the fonts
-pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
 // Common PDF styling
-const styles = {
+const styles: StyleDictionary = {
   header: {
     fontSize: 22,
     bold: true,
@@ -101,7 +101,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
             layout: 'noBorders'
           }
         ],
-        margin: [0, 20, 0, 0]
+        margin: [0, 20, 0, 0] as [number, number, number, number]
       },
       { text: 'Terms & Conditions', style: 'subheader' },
       { text: quotation.terms || 'Standard terms and conditions apply.' },
@@ -114,7 +114,8 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     }
   };
 
-  pdfMake.createPdf(docDefinition).download(`Quotation_${quotation.quotationNumber}.pdf`);
+  const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+  pdfDocGenerator.download(`Quotation_${quotation.quotationNumber}.pdf`);
 };
 
 // Generate PDF for purchase order
@@ -182,7 +183,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
             layout: 'noBorders'
           }
         ],
-        margin: [0, 20, 0, 0]
+        margin: [0, 20, 0, 0] as [number, number, number, number]
       },
       { text: 'Terms & Conditions', style: 'subheader' },
       { text: order.terms || 'Standard terms and conditions apply.' },
@@ -195,5 +196,6 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     }
   };
 
-  pdfMake.createPdf(docDefinition).download(`PO_${order.poNumber}.pdf`);
+  const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+  pdfDocGenerator.download(`PO_${order.poNumber}.pdf`);
 };
