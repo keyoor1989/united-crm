@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -884,3 +885,377 @@ const InventorySales = () => {
                                 sale.paymentStatus === "Completed" ? "success" :
                                 sale.paymentStatus === "Partial" ? "warning" :
                                 "destructive"
+                              }
+                            >
+                              {sale.paymentStatus}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{sale.status}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => navigate(`/sales/${sale.id}`)}>
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <PackageCheck className="mr-2 h-4 w-4" />
+                                  Mark as Delivered
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Printer className="mr-2 h-4 w-4" />
+                                  Print Invoice
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>
+                                  <Ban className="mr-2 h-4 w-4" />
+                                  Cancel Sale
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="cancelled">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Invoice No</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Payment Status</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredSales
+                      .filter((sale) => sale.status === "Cancelled")
+                      .map((sale) => (
+                        <TableRow key={sale.id}>
+                          <TableCell className="font-medium">{sale.invoiceNo}</TableCell>
+                          <TableCell>{sale.customerName}</TableCell>
+                          <TableCell>{sale.date}</TableCell>
+                          <TableCell>₹{sale.total.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                                sale.paymentStatus === "Completed" ? "success" :
+                                sale.paymentStatus === "Partial" ? "warning" :
+                                "destructive"
+                              }
+                            >
+                              {sale.paymentStatus}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{sale.status}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => navigate(`/sales/${sale.id}`)}>
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <PackageCheck className="mr-2 h-4 w-4" />
+                                  Mark as Delivered
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Printer className="mr-2 h-4 w-4" />
+                                  Print Invoice
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>
+                                  <Ban className="mr-2 h-4 w-4" />
+                                  Cancel Sale
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      {/* New Sale Modal */}
+      <Dialog open={isNewSaleModalOpen} onOpenChange={setIsNewSaleModalOpen}>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Sale</DialogTitle>
+            <DialogDescription>
+              Add items and customer details to create a new sale invoice
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="customerName">Customer Name</Label>
+                <Input 
+                  id="customerName" 
+                  value={saleForm.customerName}
+                  onChange={(e) => setSaleForm({...saleForm, customerName: e.target.value})}
+                  placeholder="Enter customer name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="customerType">Customer Type</Label>
+                <Select 
+                  value={saleForm.customerType} 
+                  onValueChange={(value) => setSaleForm({...saleForm, customerType: value as CustomerType})}
+                >
+                  <SelectTrigger id="customerType">
+                    <SelectValue placeholder="Select customer type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Regular">Regular</SelectItem>
+                    <SelectItem value="Dealer">Dealer</SelectItem>
+                    <SelectItem value="Government">Government</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Select Items</h3>
+              
+              <ItemSelector 
+                brands={mockBrands}
+                models={mockModels}
+                items={items}
+                onItemSelect={handleItemSelected}
+              />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantity</Label>
+                  <Input 
+                    id="quantity" 
+                    type="number" 
+                    min="1"
+                    value={itemQuantity}
+                    onChange={(e) => setItemQuantity(Number(e.target.value))}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="discount">Discount (%)</Label>
+                  <Input 
+                    id="discount" 
+                    type="number" 
+                    min="0"
+                    max="100"
+                    value={itemDiscount}
+                    onChange={(e) => setItemDiscount(Number(e.target.value))}
+                  />
+                </div>
+                
+                <div className="flex items-end">
+                  <Button onClick={handleAddItemToSale} className="w-full">
+                    Add Item
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {selectedItems.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Selected Items</h3>
+                
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Discount</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedItems.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>₹{item.price.toLocaleString()}</TableCell>
+                          <TableCell>{item.discount}%</TableCell>
+                          <TableCell>₹{(item.total ?? 0).toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleRemoveItem(item.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="taxType">Tax Type</Label>
+                <Select 
+                  value={saleForm.taxType} 
+                  onValueChange={(value) => setSaleForm({...saleForm, taxType: value as TaxType})}
+                >
+                  <SelectTrigger id="taxType">
+                    <SelectValue placeholder="Select tax type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GST">GST (18%)</SelectItem>
+                    <SelectItem value="Non-GST">Non-GST</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="invoiceDiscount">Additional Discount (%)</Label>
+                <Input 
+                  id="invoiceDiscount" 
+                  type="number" 
+                  min="0"
+                  max="100"
+                  value={saleForm.discount}
+                  onChange={(e) => setSaleForm({...saleForm, discount: Number(e.target.value)})}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <Select 
+                  value={saleForm.paymentMethod} 
+                  onValueChange={(value) => setSaleForm({...saleForm, paymentMethod: value as PaymentMethod})}
+                >
+                  <SelectTrigger id="paymentMethod">
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                    <SelectItem value="Online Transfer">Online Transfer</SelectItem>
+                    <SelectItem value="Check">Check</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="amountPaid">Amount Paid</Label>
+                <Input 
+                  id="amountPaid" 
+                  type="number" 
+                  min="0"
+                  value={saleForm.amountPaid}
+                  onChange={(e) => setSaleForm({...saleForm, amountPaid: Number(e.target.value)})}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Input 
+                id="notes" 
+                value={saleForm.notes}
+                onChange={(e) => setSaleForm({...saleForm, notes: e.target.value})}
+                placeholder="Add any notes or comments"
+              />
+            </div>
+            
+            {selectedItems.length > 0 && (
+              <div className="rounded-md border p-4 bg-muted/50">
+                <div className="flex justify-between py-1">
+                  <span>Subtotal:</span>
+                  <span>₹{calculateSaleTotals().subtotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span>Discount:</span>
+                  <span>₹{calculateSaleTotals().discountAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span>Tax ({saleForm.taxType === "GST" ? "18%" : "0%"}):</span>
+                  <span>₹{calculateSaleTotals().taxAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between py-1 font-medium">
+                  <span>Total:</span>
+                  <span>₹{calculateSaleTotals().total.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between py-1 font-medium">
+                  <span>Amount Due:</span>
+                  <span className={calculateSaleTotals().amountDue > 0 ? "text-red-500" : "text-green-500"}>
+                    ₹{calculateSaleTotals().amountDue.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewSaleModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateSale}>Create Sale</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Deduct Stock Dialog */}
+      <AlertDialog open={isDeductStockDialogOpen} onOpenChange={setIsDeductStockDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deduct Stock</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to deduct stock from inventory for this sale?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsDeductStockDialogOpen(false)}>
+              No, Later
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeductStock}>
+              Yes, Deduct Stock
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default InventorySales;
