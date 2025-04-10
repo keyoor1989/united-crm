@@ -11,7 +11,7 @@ import {
   locationNavItems 
 } from "./sidebar/sidebarNavConfig";
 
-const Sidebar = () => {
+const Sidebar: React.FC = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
   const isSectionActive = (paths: string[]) => paths.some(path => 
