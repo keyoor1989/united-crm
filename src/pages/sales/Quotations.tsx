@@ -19,12 +19,13 @@ import { quotations } from "@/data/salesData";
 import { Quotation, QuotationStatus } from "@/types/sales";
 import { format } from "date-fns";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const Quotations = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<QuotationStatus | "All">("All");
+  const { toast } = useToast();
   
   // Filter quotations based on search term and status
   const filteredQuotations = quotations.filter(quotation => {
@@ -43,14 +44,14 @@ const Quotations = () => {
       generateQuotationPdf(quotation);
       toast({
         title: "PDF Generated",
-        description: `Quotation ${quotation.quotationNumber} PDF has been created.`,
+        description: `Quotation ${quotation.quotationNumber} PDF has been downloaded.`,
       });
     } catch (error) {
       console.error("PDF generation error:", error);
       toast({
-        title: "PDF Generation Failed",
-        description: "There was an error generating the PDF. Please try again.",
         variant: "destructive",
+        title: "Error",
+        description: "There was an error generating the PDF. Please try again.",
       });
     }
   };

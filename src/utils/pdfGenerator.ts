@@ -6,8 +6,6 @@ import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Register the virtual file system with pdfMake
-// The type definitions don't correctly represent the runtime structure
-// We need to use a type assertion to access the vfs property
 pdfMake.vfs = (pdfFonts as any).vfs;
 
 // Define fonts for the document
@@ -51,118 +49,123 @@ const logoImagePath = "/lovable-uploads/6ee98dbf-b695-4632-976f-50c50bb67d59.png
 
 // Generate PDF for quotation
 export const generateQuotationPdf = (quotation: Quotation): void => {
-  const docDefinition: TDocumentDefinitions = {
-    content: [
-      {
-        columns: [
-          {
-            image: logoImagePath,
-            width: 200,
-            margin: [0, 0, 0, 20]
-          },
-          {
-            text: 'QUOTATION',
-            style: 'header',
-            alignment: 'right',
-            margin: [0, 20, 0, 0]
-          }
-        ]
-      },
-      {
-        columns: [
-          [
-            { text: 'Quotation #:', style: 'metaLabel' },
-            { text: 'Date:', style: 'metaLabel' },
-            { text: 'Valid Until:', style: 'metaLabel' }
-          ],
-          [
-            { text: quotation.quotationNumber, style: 'metaValue' },
-            { text: format(new Date(quotation.createdAt), "MMM dd, yyyy"), style: 'metaValue' },
-            { text: format(new Date(quotation.validUntil), "MMM dd, yyyy"), style: 'metaValue' }
-          ],
-          [
-            { text: 'Status:', style: 'metaLabel' },
-            { text: 'Customer:', style: 'metaLabel' }
-          ],
-          [
-            { text: quotation.status, style: 'metaValue' },
-            { text: quotation.customerName, style: 'metaValue' }
-          ]
-        ]
-      },
-      { text: 'Items', style: 'subheader' },
-      {
-        table: {
-          headerRows: 1,
-          widths: ['*', 'auto', 'auto', 'auto', 'auto'],
-          body: [
-            [
-              { text: 'Item Description', style: 'tableHeader' },
-              { text: 'Quantity', style: 'tableHeader' },
-              { text: 'Unit Price (₹)', style: 'tableHeader' },
-              { text: 'GST (%)', style: 'tableHeader' },
-              { text: 'Amount (₹)', style: 'tableHeader' }
-            ],
-            ...quotation.items.map(item => [
-              item.name,
-              item.quantity.toString(),
-              item.unitPrice.toLocaleString(),
-              item.gstPercent.toString(),
-              item.total.toLocaleString()
-            ])
-          ]
-        }
-      },
-      {
-        columns: [
-          { width: '*', text: '' },
-          {
-            width: 'auto',
-            table: {
-              body: [
-                ['Subtotal:', `₹${quotation.subtotal.toLocaleString()}`],
-                ['GST:', `₹${quotation.totalGst.toLocaleString()}`],
-                ['Grand Total:', `₹${quotation.grandTotal.toLocaleString()}`]
-              ]
+  try {
+    const docDefinition: TDocumentDefinitions = {
+      content: [
+        {
+          columns: [
+            {
+              image: logoImagePath,
+              width: 200,
+              margin: [0, 0, 0, 20]
             },
-            layout: 'noBorders'
+            {
+              text: 'QUOTATION',
+              style: 'header',
+              alignment: 'right',
+              margin: [0, 20, 0, 0]
+            }
+          ]
+        },
+        {
+          columns: [
+            [
+              { text: 'Quotation #:', style: 'metaLabel' },
+              { text: 'Date:', style: 'metaLabel' },
+              { text: 'Valid Until:', style: 'metaLabel' }
+            ],
+            [
+              { text: quotation.quotationNumber, style: 'metaValue' },
+              { text: format(new Date(quotation.createdAt), "MMM dd, yyyy"), style: 'metaValue' },
+              { text: format(new Date(quotation.validUntil), "MMM dd, yyyy"), style: 'metaValue' }
+            ],
+            [
+              { text: 'Status:', style: 'metaLabel' },
+              { text: 'Customer:', style: 'metaLabel' }
+            ],
+            [
+              { text: quotation.status, style: 'metaValue' },
+              { text: quotation.customerName, style: 'metaValue' }
+            ]
+          ]
+        },
+        { text: 'Items', style: 'subheader' },
+        {
+          table: {
+            headerRows: 1,
+            widths: ['*', 'auto', 'auto', 'auto', 'auto'],
+            body: [
+              [
+                { text: 'Item Description', style: 'tableHeader' },
+                { text: 'Quantity', style: 'tableHeader' },
+                { text: 'Unit Price (₹)', style: 'tableHeader' },
+                { text: 'GST (%)', style: 'tableHeader' },
+                { text: 'Amount (₹)', style: 'tableHeader' }
+              ],
+              ...quotation.items.map(item => [
+                item.name,
+                item.quantity.toString(),
+                item.unitPrice.toLocaleString(),
+                item.gstPercent.toString(),
+                item.total.toLocaleString()
+              ])
+            ]
           }
-        ],
-        margin: [0, 20, 0, 0] as [number, number, number, number]
+        },
+        {
+          columns: [
+            { width: '*', text: '' },
+            {
+              width: 'auto',
+              table: {
+                body: [
+                  ['Subtotal:', `₹${quotation.subtotal.toLocaleString()}`],
+                  ['GST:', `₹${quotation.totalGst.toLocaleString()}`],
+                  ['Grand Total:', `₹${quotation.grandTotal.toLocaleString()}`]
+                ]
+              },
+              layout: 'noBorders'
+            }
+          ],
+          margin: [0, 20, 0, 0] as [number, number, number, number]
+        },
+        { text: 'Terms & Conditions', style: 'subheader' },
+        { text: quotation.terms || 'Standard terms and conditions apply.' },
+        { text: 'Notes', style: 'subheader' },
+        { text: quotation.notes || 'No additional notes.' }
+      ],
+      styles: styles,
+      defaultStyle: {
+        font: 'Roboto'
       },
-      { text: 'Terms & Conditions', style: 'subheader' },
-      { text: quotation.terms || 'Standard terms and conditions apply.' },
-      { text: 'Notes', style: 'subheader' },
-      { text: quotation.notes || 'No additional notes.' }
-    ],
-    styles: styles,
-    defaultStyle: {
-      font: 'Roboto'
-    },
-    footer: function(currentPage: number, pageCount: number) {
-      return {
-        columns: [
-          { 
-            text: 'United Copier - All Solutions Under A Roof for Printers',
-            alignment: 'left',
-            margin: [40, 0, 0, 0],
-            fontSize: 8,
-            color: '#666666'
-          },
-          { 
-            text: `Page ${currentPage} of ${pageCount}`,
-            alignment: 'right',
-            margin: [0, 0, 40, 0],
-            fontSize: 8,
-            color: '#666666'
-          }
-        ]
-      };
-    }
-  };
+      footer: function(currentPage: number, pageCount: number) {
+        return {
+          columns: [
+            { 
+              text: 'United Copier - All Solutions Under A Roof for Printers',
+              alignment: 'left',
+              margin: [40, 0, 0, 0],
+              fontSize: 8,
+              color: '#666666'
+            },
+            { 
+              text: `Page ${currentPage} of ${pageCount}`,
+              alignment: 'right',
+              margin: [0, 0, 40, 0],
+              fontSize: 8,
+              color: '#666666'
+            }
+          ]
+        };
+      }
+    };
 
-  const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-  pdfDocGenerator.download(`Quotation_${quotation.quotationNumber}.pdf`);
+    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+    pdfDocGenerator.download(`Quotation_${quotation.quotationNumber}.pdf`);
+  } catch (error) {
+    console.error("PDF generation error:", error);
+    throw error;
+  }
 };
 
 // Generate PDF for purchase order

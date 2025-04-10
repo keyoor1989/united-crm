@@ -16,7 +16,7 @@ import {
   Eye, FileDown, Send, CheckCircle, XCircle, Copy 
 } from "lucide-react";
 import { quotations } from "@/data/salesData";
-import { QuotationStatus } from "@/types/sales";
+import { QuotationStatus, Quotation } from "@/types/sales";
 import { format } from "date-fns";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +35,7 @@ const SentQuotations = () => {
     );
   
   // Handle PDF download
-  const handleDownloadPdf = (quotation: typeof quotations[0]) => {
+  const handleDownloadPdf = (quotation: Quotation) => {
     try {
       generateQuotationPdf(quotation);
       toast({
