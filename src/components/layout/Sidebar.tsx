@@ -5,7 +5,8 @@ import { Link } from "react-router-dom";
 import { 
   mainNavItems, 
   serviceSection, 
-  inventorySection, 
+  inventorySection,
+  quotationsSection,
   locationNavItems 
 } from "./sidebar/sidebarNavConfig";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -34,7 +35,12 @@ const AppSidebar = () => {
   
   const initialSections = [
     (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : "",
-    (location.pathname.startsWith("/inventory")) ? "inventory" : ""
+    (location.pathname.startsWith("/inventory")) ? "inventory" : "",
+    (location.pathname.startsWith("/quotation") || location.pathname.startsWith("/purchase-order") || 
+    location.pathname === "/quotations" || location.pathname === "/purchase-orders" || 
+    location.pathname === "/sent-quotations" || location.pathname === "/sent-orders" || 
+    location.pathname === "/order-history" || location.pathname === "/quotation-products" ||
+    location.pathname === "/contract-upload") ? "quotations" : ""
   ].filter(Boolean);
 
   const [openSections, setOpenSections] = React.useState<string[]>(initialSections);
@@ -49,6 +55,7 @@ const AppSidebar = () => {
 
   const isServiceSectionOpen = openSections.includes("service");
   const isInventorySectionOpen = openSections.includes("inventory");
+  const isQuotationsSectionOpen = openSections.includes("quotations");
 
   // Get the last nav item for the footer
   const lastNavItem = mainNavItems[mainNavItems.length - 1];
@@ -104,6 +111,47 @@ const AppSidebar = () => {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        
+        {/* Quotations Section */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => toggleSection("quotations")} 
+                  isActive={isSectionActive(quotationsSection.items.map(item => item.to))}
+                  tooltip={isCollapsed ? quotationsSection.label : undefined}
+                >
+                  <quotationsSection.icon size={20} />
+                  <span>{quotationsSection.label}</span>
+                  {isQuotationsSectionOpen ? 
+                    <ChevronDown size={16} className="ml-auto" /> : 
+                    <ChevronRight size={16} className="ml-auto" />
+                  }
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              {isQuotationsSectionOpen && (
+                <SidebarMenu>
+                  {quotationsSection.items.map((item) => (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive(item.to)}
+                        tooltip={isCollapsed ? item.label : undefined}
+                      >
+                        <Link to={item.to}>
+                          <item.icon size={16} />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

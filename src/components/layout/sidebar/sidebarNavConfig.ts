@@ -26,7 +26,14 @@ import {
   Award,
   History,
   AlertTriangle,
-  ShoppingBag
+  ShoppingBag,
+  FilePlus,
+  SendHorizontal,
+  Clipboard,
+  Upload,
+  ShoppingBasket,
+  FileEdit,
+  ArchiveRestore
 } from "lucide-react";
 
 export type NavItem = {
@@ -52,11 +59,6 @@ export const mainNavItems: NavItem[] = [
     to: "/customers",
     icon: Users,
     label: "Customers"
-  },
-  {
-    to: "/quotations",
-    icon: FileText,
-    label: "Quotations"
   },
   {
     to: "/finance",
@@ -192,6 +194,60 @@ export const inventorySection: NavSection = {
       to: "/inventory/alerts",
       icon: AlertTriangle,
       label: "Low Stock Alerts"
+    }
+  ]
+};
+
+// New Quotations section
+export const quotationsSection: NavSection = {
+  key: "quotations",
+  icon: FileText,
+  label: "Quotations",
+  items: [
+    {
+      to: "/quotations",
+      icon: FileText,
+      label: "All Quotations"
+    },
+    {
+      to: "/quotation-form",
+      icon: FilePlus,
+      label: "New Quotation"
+    },
+    {
+      to: "/sent-quotations",
+      icon: SendHorizontal,
+      label: "Sent Quotations"
+    },
+    {
+      to: "/quotation-products",
+      icon: Clipboard,
+      label: "Quotation Products"
+    },
+    {
+      to: "/contract-upload",
+      icon: Upload,
+      label: "Contract Upload"
+    },
+    {
+      to: "/purchase-orders",
+      icon: ShoppingBasket,
+      label: "Purchase Orders"
+    },
+    {
+      to: "/purchase-order-form",
+      icon: FileEdit,
+      label: "Create Purchase Order"
+    },
+    {
+      to: "/sent-orders",
+      icon: Send,
+      label: "Sent Orders"
+    },
+    {
+      to: "/order-history",
+      icon: ArchiveRestore,
+      label: "Order History"
     }
   ]
 };

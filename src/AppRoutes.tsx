@@ -36,6 +36,13 @@ import ProductCatalog from "@/pages/sales/ProductCatalog";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/NotFound";
 
+// Placeholder components for the new routes
+const SentQuotations = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Sent Quotations</h1><p>This page is under construction.</p></div>;
+const QuotationProducts = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Quotation Products</h1><p>This page is under construction.</p></div>;
+const ContractUpload = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Contract Upload</h1><p>This page is under construction.</p></div>;
+const SentOrders = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Sent Orders</h1><p>This page is under construction.</p></div>;
+const OrderHistory = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Order History</h1><p>This page is under construction.</p></div>;
+
 const AppRoutes = () => (
   <Routes>
     <Route element={<Layout />}>
@@ -65,12 +72,22 @@ const AppRoutes = () => (
       <Route path="/inventory/vendor-performance-metrics" element={<VendorPerformanceDemo />} />
       <Route path="/inventory/history" element={<InventoryHistory />} />
       <Route path="/inventory/alerts" element={<InventoryAlerts />} />
+      
+      {/* Quotation routes */}
       <Route path="/quotations" element={<Quotations />} />
       <Route path="/quotation-form" element={<QuotationForm />} />
       <Route path="/quotation-form/:id" element={<QuotationForm />} />
+      <Route path="/sent-quotations" element={<SentQuotations />} />
+      <Route path="/quotation-products" element={<QuotationProducts />} />
+      <Route path="/contract-upload" element={<ContractUpload />} />
+      
+      {/* Purchase order routes */}
       <Route path="/purchase-orders" element={<PurchaseOrders />} />
       <Route path="/purchase-order-form" element={<PurchaseOrderForm />} />
       <Route path="/purchase-order-form/:id" element={<PurchaseOrderForm />} />
+      <Route path="/sent-orders" element={<SentOrders />} />
+      <Route path="/order-history" element={<OrderHistory />} />
+      
       <Route path="/product-catalog" element={<ProductCatalog />} />
       <Route path="/chat" element={<Chat />} />
       <Route path="*" element={<NotFound />} />
