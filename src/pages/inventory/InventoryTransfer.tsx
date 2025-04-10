@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,14 +33,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-// Mock warehouses
 const mockWarehouses = [
   { id: "1", name: "Main Warehouse", code: "MW01", location: "Indore", isActive: true },
   { id: "2", name: "Bhopal Warehouse", code: "BW01", location: "Bhopal", isActive: true },
   { id: "3", name: "Jabalpur Storage", code: "JS01", location: "Jabalpur", isActive: true }
 ];
 
-// Mock data for transfers
 const mockTransfers = [
   {
     id: "ST001",
@@ -119,7 +116,6 @@ const mockTransfers = [
   },
 ];
 
-// Mock inventory items
 const mockItems = [
   { id: "1", name: "Black Toner", brand: "Kyocera", model: "2554ci" },
   { id: "2", name: "Drum Unit", brand: "Kyocera", model: "2554ci" },
@@ -135,7 +131,6 @@ const InventoryTransfer = () => {
   const [filterLocation, setFilterLocation] = useState("all");
   const [showNewTransferDialog, setShowNewTransferDialog] = useState(false);
   
-  // New transfer form state
   const [transferForm, setTransferForm] = useState({
     itemId: "",
     quantity: 1,
@@ -151,7 +146,6 @@ const InventoryTransfer = () => {
   });
   
   const filteredTransfers = mockTransfers.filter(transfer => {
-    // Search by ID or item
     const searchMatch = 
       transfer.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       transfer.itemId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -160,13 +154,10 @@ const InventoryTransfer = () => {
       (transfer.sourceType === "Warehouse" && transfer.sourceWarehouseName && transfer.sourceWarehouseName.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (transfer.destinationType === "Warehouse" && transfer.destinationWarehouseName && transfer.destinationWarehouseName.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    // Filter by status
     const statusMatch = filterStatus === "all" ? true : transfer.status === filterStatus;
     
-    // Filter by source type
     const sourceTypeMatch = filterSourceType === "all" ? true : transfer.sourceType === filterSourceType;
     
-    // Filter by location (branch or warehouse)
     const locationMatch = filterLocation === "all" ? true : (
       (transfer.sourceType === "Branch" && transfer.sourceBranch === filterLocation) ||
       (transfer.destinationType === "Branch" && transfer.destinationBranch === filterLocation) ||
@@ -177,7 +168,6 @@ const InventoryTransfer = () => {
     return searchMatch && statusMatch && sourceTypeMatch && locationMatch;
   });
 
-  // Get location options combining branches and warehouses
   const locationOptions = [
     { id: "Indore (HQ)", name: "Indore (HQ)", type: "Branch" },
     { id: "Bhopal Office", name: "Bhopal Office", type: "Branch" },
@@ -185,11 +175,9 @@ const InventoryTransfer = () => {
     ...mockWarehouses.map(wh => ({ id: wh.id, name: wh.name, type: "Warehouse" }))
   ];
   
-  // Handle submitting new transfer
   const handleSubmitTransfer = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate that source and destination are different
     if (
       (transferForm.sourceType === transferForm.destinationType) && 
       (
@@ -201,11 +189,9 @@ const InventoryTransfer = () => {
       return;
     }
     
-    // In a real app, you would save to database
     console.log("New transfer:", transferForm);
     toast.success("Transfer request created successfully!");
     
-    // Reset form and close dialog
     setTransferForm({
       itemId: "",
       quantity: 1,
@@ -222,7 +208,6 @@ const InventoryTransfer = () => {
     setShowNewTransferDialog(false);
   };
   
-  // Get source location name for display
   const getSourceLocationName = (transfer: any) => {
     if (transfer.sourceType === "Branch" && transfer.sourceBranch) {
       return transfer.sourceBranch;
@@ -232,7 +217,6 @@ const InventoryTransfer = () => {
     return "Unknown";
   };
   
-  // Get destination location name for display
   const getDestinationLocationName = (transfer: any) => {
     if (transfer.destinationType === "Branch" && transfer.destinationBranch) {
       return transfer.destinationBranch;
@@ -242,7 +226,6 @@ const InventoryTransfer = () => {
     return "Unknown";
   };
   
-  // Get location icon
   const getLocationIcon = (type: "Branch" | "Warehouse") => {
     return type === "Branch" ? <Box className="h-4 w-4" /> : <Warehouse className="h-4 w-4" />;
   };
@@ -474,7 +457,6 @@ const InventoryTransfer = () => {
         </TabsContent>
       </Tabs>
       
-      {/* New Transfer Dialog */}
       <Dialog open={showNewTransferDialog} onOpenChange={setShowNewTransferDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -528,9 +510,9 @@ const InventoryTransfer = () => {
                     <Label htmlFor="source-type">Source Type</Label>
                     <Select 
                       value={transferForm.sourceType} 
-                      onValueChange={(value: "Branch" | "Warehouse") => setTransferForm({ 
+                      onValueChange={(value) => setTransferForm({ 
                         ...transferForm, 
-                        sourceType: value,
+                        sourceType: value as "Branch" | "Warehouse",
                         sourceBranch: "",
                         sourceWarehouseId: ""
                       })}
@@ -596,9 +578,9 @@ const InventoryTransfer = () => {
                     <Label htmlFor="destination-type">Destination Type</Label>
                     <Select 
                       value={transferForm.destinationType} 
-                      onValueChange={(value: "Branch" | "Warehouse") => setTransferForm({ 
+                      onValueChange={(value) => setTransferForm({ 
                         ...transferForm, 
-                        destinationType: value,
+                        destinationType: value as "Branch" | "Warehouse",
                         destinationBranch: "",
                         destinationWarehouseId: ""
                       })}
