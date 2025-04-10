@@ -1,5 +1,5 @@
 
-import pdfMake from "pdfmake/build/pdfmake";
+import pdfMake from "pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { TDocumentDefinitions } from "pdfmake/interfaces";
 import { Quotation, PurchaseOrder } from "@/types/sales";
