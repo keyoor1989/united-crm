@@ -76,11 +76,18 @@ const Quotations = () => {
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Quotations</h1>
-          <p className="text-muted-foreground">
-            Manage and track sales quotations for your customers.
-          </p>
+        <div className="flex items-center gap-3">
+          <img 
+            src="/lovable-uploads/01eb2522-9319-4441-8cce-7f1a4ed92ed8.png" 
+            alt="United Copier" 
+            className="h-12 w-auto" 
+          />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Quotations</h1>
+            <p className="text-muted-foreground">
+              Manage and track sales quotations for your customers.
+            </p>
+          </div>
         </div>
         <Button 
           onClick={() => navigate("/quotation-form")}

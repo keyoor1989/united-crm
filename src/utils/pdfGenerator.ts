@@ -46,11 +46,28 @@ const styles = {
   }
 };
 
+// Logo image path (served from public folder)
+const logoImagePath = "/lovable-uploads/6ee98dbf-b695-4632-976f-50c50bb67d59.png";
+
 // Generate PDF for quotation
 export const generateQuotationPdf = (quotation: Quotation): void => {
   const docDefinition: TDocumentDefinitions = {
     content: [
-      { text: 'QUOTATION', style: 'header', alignment: 'center' },
+      {
+        columns: [
+          {
+            image: logoImagePath,
+            width: 200,
+            margin: [0, 0, 0, 20]
+          },
+          {
+            text: 'QUOTATION',
+            style: 'header',
+            alignment: 'right',
+            margin: [0, 20, 0, 0]
+          }
+        ]
+      },
       {
         columns: [
           [
@@ -121,6 +138,26 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     styles: styles,
     defaultStyle: {
       font: 'Roboto'
+    },
+    footer: function(currentPage: number, pageCount: number) {
+      return {
+        columns: [
+          { 
+            text: 'United Copier - All Solutions Under A Roof for Printers',
+            alignment: 'left',
+            margin: [40, 0, 0, 0],
+            fontSize: 8,
+            color: '#666666'
+          },
+          { 
+            text: `Page ${currentPage} of ${pageCount}`,
+            alignment: 'right',
+            margin: [0, 0, 40, 0],
+            fontSize: 8,
+            color: '#666666'
+          }
+        ]
+      };
     }
   };
 
@@ -132,7 +169,21 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
 export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
   const docDefinition: TDocumentDefinitions = {
     content: [
-      { text: 'PURCHASE ORDER', style: 'header', alignment: 'center' },
+      {
+        columns: [
+          {
+            image: logoImagePath,
+            width: 200,
+            margin: [0, 0, 0, 20]
+          },
+          {
+            text: 'PURCHASE ORDER',
+            style: 'header',
+            alignment: 'right',
+            margin: [0, 20, 0, 0]
+          }
+        ]
+      },
       {
         columns: [
           [
@@ -203,6 +254,26 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     styles: styles,
     defaultStyle: {
       font: 'Roboto'
+    },
+    footer: function(currentPage: number, pageCount: number) {
+      return {
+        columns: [
+          { 
+            text: 'United Copier - All Solutions Under A Roof for Printers',
+            alignment: 'left',
+            margin: [40, 0, 0, 0],
+            fontSize: 8,
+            color: '#666666'
+          },
+          { 
+            text: `Page ${currentPage} of ${pageCount}`,
+            alignment: 'right',
+            margin: [0, 0, 40, 0],
+            fontSize: 8,
+            color: '#666666'
+          }
+        ]
+      };
     }
   };
 
