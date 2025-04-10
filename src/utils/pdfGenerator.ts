@@ -1,4 +1,3 @@
-
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { TDocumentDefinitions } from "pdfmake/interfaces";
@@ -6,9 +5,8 @@ import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Register the virtual file system with pdfMake
-// The pdfFonts object structure is different than what TypeScript expects
-// Need to use a type assertion to make TypeScript happy
-pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
+// In the browser environment, pdfFonts is directly the vfs object
+pdfMake.vfs = pdfFonts;
 
 // Define fonts for the document
 pdfMake.fonts = {
