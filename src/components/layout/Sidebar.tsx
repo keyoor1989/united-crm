@@ -18,14 +18,12 @@ const Sidebar = () => {
     location.pathname === path || location.pathname.startsWith(path + "/")
   );
   
-  const [openSections, setOpenSections] = useState<string[]>(
-    [
-      // Open the service section by default if we're on a service-related page
-      (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : "",
-      // Open the inventory section by default if we're on an inventory-related page
-      (location.pathname.startsWith("/inventory")) ? "inventory" : ""
-    ].filter(Boolean)
-  );
+  const initialSections = [
+    (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : "",
+    (location.pathname.startsWith("/inventory")) ? "inventory" : ""
+  ].filter(Boolean);
+
+  const [openSections, setOpenSections] = useState<string[]>(initialSections);
 
   const toggleSection = (section: string) => {
     setOpenSections(prev => 
