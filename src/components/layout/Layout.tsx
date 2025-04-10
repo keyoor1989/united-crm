@@ -1,8 +1,12 @@
 
 import React, { ReactNode } from "react";
 import { Outlet } from "react-router-dom";
-import AppSidebar from "./Sidebar";
 import Header from "./Header";
+import { 
+  SidebarProvider, 
+  SidebarInset,
+} from "@/components/ui/sidebar";
+import AppSidebar from "./Sidebar";
 
 interface LayoutProps {
   children?: ReactNode;
@@ -10,15 +14,17 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="flex h-screen bg-background">
-      <AppSidebar />
-      <div className="flex-1 flex flex-col">
-        <Header />
-        <main className="flex-1 p-6 overflow-auto">
-          {children || <Outlet />}
-        </main>
+    <SidebarProvider defaultOpen={window.innerWidth >= 1024}>
+      <div className="flex min-h-screen w-full bg-background">
+        <AppSidebar />
+        <SidebarInset className="flex flex-col">
+          <Header />
+          <main className="flex-1 p-6 overflow-auto">
+            {children || <Outlet />}
+          </main>
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

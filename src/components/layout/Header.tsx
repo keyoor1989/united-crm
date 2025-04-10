@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Bell, ChevronDown } from "lucide-react";
+import { Bell, ChevronDown, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,11 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const Header = () => {
   return (
-    <header className="h-16 border-b px-6 flex items-center justify-end bg-background">
-      <div className="flex items-center gap-4">
+    <header className="h-16 border-b px-6 flex items-center justify-between bg-background">
+      <SidebarTrigger className="lg:hidden">
+        <Menu className="h-5 w-5" />
+      </SidebarTrigger>
+      
+      <div className="flex items-center gap-4 ml-auto">
         <Button
           variant="outline"
           size="sm"
