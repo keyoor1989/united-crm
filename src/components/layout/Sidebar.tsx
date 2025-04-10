@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
@@ -14,7 +14,9 @@ import {
   Settings,
   MessageSquare,
   Building,
-  LineChart
+  LineChart,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 type SidebarItemProps = {
@@ -33,9 +35,59 @@ const SidebarItem = ({ to, icon, label, isActive }: SidebarItemProps) => {
   );
 };
 
+type SidebarSectionProps = {
+  icon: React.ReactNode;
+  label: string;
+  isActive: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+};
+
+const SidebarSection = ({ icon, label, isActive, isOpen, onToggle, children }: SidebarSectionProps) => {
+  return (
+    <div className="flex flex-col">
+      <button 
+        onClick={onToggle} 
+        className={cn(
+          "sidebar-item", 
+          isActive && "active",
+          "cursor-pointer"
+        )}
+      >
+        {icon}
+        <span className="text-sm font-medium">{label}</span>
+        {isOpen ? <ChevronDown size={16} className="ml-auto" /> : <ChevronRight size={16} className="ml-auto" />}
+      </button>
+      
+      {isOpen && (
+        <div className="pl-8 flex flex-col gap-1 mt-1">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Sidebar = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
+  const isSectionActive = (paths: string[]) => paths.some(path => location.pathname === path);
+  
+  const [openSections, setOpenSections] = useState<string[]>([
+    // Open the service section by default if we're on a service-related page
+    (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : ""
+  ]);
+
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => 
+      prev.includes(section) 
+        ? prev.filter(s => s !== section) 
+        : [...prev, section]
+    );
+  };
+
+  const isServiceSectionOpen = openSections.includes("service");
 
   return (
     <div className="h-screen w-64 bg-sidebar fixed left-0 top-0 border-r border-sidebar-border flex flex-col">
@@ -79,18 +131,26 @@ const Sidebar = () => {
           label="Customers"
           isActive={isActive("/customers")}
         />
-        <SidebarItem
-          to="/service"
+        <SidebarSection
           icon={<Wrench size={20} />}
           label="Service"
-          isActive={isActive("/service")}
-        />
-        <SidebarItem
-          to="/engineer-performance"
-          icon={<LineChart size={20} />}
-          label="Engineer Performance"
-          isActive={isActive("/engineer-performance")}
-        />
+          isActive={isSectionActive(["/service", "/engineer-performance"])}
+          isOpen={isServiceSectionOpen}
+          onToggle={() => toggleSection("service")}
+        >
+          <SidebarItem
+            to="/service"
+            icon={<Wrench size={16} />}
+            label="Service Calls"
+            isActive={isActive("/service")}
+          />
+          <SidebarItem
+            to="/engineer-performance"
+            icon={<LineChart size={16} />}
+            label="Engineer Performance"
+            isActive={isActive("/engineer-performance")}
+          />
+        </SidebarSection>
         <SidebarItem
           to="/inventory"
           icon={<Package size={20} />}
