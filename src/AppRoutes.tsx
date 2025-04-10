@@ -36,12 +36,12 @@ import ProductCatalog from "@/pages/sales/ProductCatalog";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/NotFound";
 
-// Placeholder components for the new routes
-const SentQuotations = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Sent Quotations</h1><p>This page is under construction.</p></div>;
-const QuotationProducts = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Quotation Products</h1><p>This page is under construction.</p></div>;
-const ContractUpload = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Contract Upload</h1><p>This page is under construction.</p></div>;
-const SentOrders = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Sent Orders</h1><p>This page is under construction.</p></div>;
-const OrderHistory = () => <div className="container mx-auto py-6"><h1 className="text-2xl font-bold">Order History</h1><p>This page is under construction.</p></div>;
+// Import our newly created components
+import SentQuotations from "@/pages/sales/SentQuotations";
+import QuotationProducts from "@/pages/sales/QuotationProducts";
+import ContractUpload from "@/pages/sales/ContractUpload";
+import SentOrders from "@/pages/sales/SentOrders";
+import OrderHistory from "@/pages/sales/OrderHistory";
 
 const AppRoutes = () => (
   <Routes>
