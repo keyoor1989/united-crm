@@ -18,10 +18,13 @@ import {
 import { quotations } from "@/data/salesData";
 import { QuotationStatus } from "@/types/sales";
 import { format } from "date-fns";
+import { generateQuotationPdf } from "@/utils/pdfGenerator";
+import { useToast } from "@/hooks/use-toast";
 
 const SentQuotations = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
   
   // Filter only sent quotations
   const filteredQuotations = quotations
@@ -30,6 +33,24 @@ const SentQuotations = () => {
       quotation.quotationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       quotation.customerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
+  
+  // Handle PDF download
+  const handleDownloadPdf = (quotation: typeof quotations[0]) => {
+    try {
+      generateQuotationPdf(quotation);
+      toast({
+        title: "PDF Generated",
+        description: `Quotation ${quotation.quotationNumber} has been downloaded.`,
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+      });
+    }
+  };
   
   return (
     <div className="container mx-auto py-6">
@@ -114,7 +135,7 @@ const SentQuotations = () => {
                           <Send className="mr-2 h-4 w-4" />
                           Resend Email
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownloadPdf(quotation)}>
                           <FileDown className="mr-2 h-4 w-4" />
                           Download PDF
                         </DropdownMenuItem>

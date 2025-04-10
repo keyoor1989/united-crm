@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -26,8 +25,9 @@ import {
 import { purchaseOrders } from "@/data/salesData";
 import { PurchaseOrderStatus } from "@/types/sales";
 import { format } from "date-fns";
+import { generatePurchaseOrderPdf } from "@/utils/pdfGenerator";
+import { useToast } from "@/hooks/use-toast";
 
-// Extend the purchase orders with some status history for demo
 const ordersWithHistory = purchaseOrders.map(order => ({
   ...order,
   history: [
@@ -55,8 +55,8 @@ const OrderHistory = () => {
   const [timeFilter, setTimeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<PurchaseOrderStatus | "All">("All");
   const [viewDetailsOrder, setViewDetailsOrder] = useState<string | null>(null);
+  const { toast } = useToast();
   
-  // Filter orders based on search term, time period, and status
   const filteredOrders = ordersWithHistory.filter(order => {
     const matchesSearch = 
       order.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,13 +64,11 @@ const OrderHistory = () => {
     
     const matchesStatus = statusFilter === "All" || order.status === statusFilter;
     
-    // Time filtering logic would go here
     const matchesTime = true; // Placeholder for actual date filtering
     
     return matchesSearch && matchesStatus && matchesTime;
   });
   
-  // Get status badge color based on status
   const getStatusBadge = (status: PurchaseOrderStatus) => {
     switch (status) {
       case "Draft":
@@ -88,10 +86,26 @@ const OrderHistory = () => {
     }
   };
   
-  // Find the order details to display
   const selectedOrder = viewDetailsOrder 
     ? ordersWithHistory.find(order => order.id === viewDetailsOrder) 
     : null;
+  
+  const handleDownloadPdf = (order: typeof ordersWithHistory[0]) => {
+    try {
+      generatePurchaseOrderPdf(order);
+      toast({
+        title: "PDF Generated",
+        description: `Purchase Order ${order.poNumber} has been downloaded.`,
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+      });
+    }
+  };
   
   return (
     <div className="container mx-auto py-6">
@@ -110,7 +124,6 @@ const OrderHistory = () => {
         </Button>
       </div>
       
-      {/* Order summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="py-4">
@@ -167,7 +180,6 @@ const OrderHistory = () => {
         </Card>
       </div>
       
-      {/* Search and filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -217,7 +229,6 @@ const OrderHistory = () => {
         </div>
       </div>
       
-      {/* Orders table */}
       <div className="border rounded-md">
         <Table>
           <TableHeader>
@@ -270,7 +281,7 @@ const OrderHistory = () => {
                           <Eye className="mr-2 h-4 w-4" />
                           View Order Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownloadPdf(order)}>
                           <FileDown className="mr-2 h-4 w-4" />
                           Download PDF
                         </DropdownMenuItem>
@@ -290,7 +301,7 @@ const OrderHistory = () => {
                   <p>No order history found</p>
                   <Button 
                     variant="link" 
-                    onClick={() => navigate("/purchase-order-form")} 
+                    onClick={() => navigate("/purchase-order-form")}
                     className="mt-2"
                   >
                     Create a new purchase order
@@ -302,7 +313,6 @@ const OrderHistory = () => {
         </Table>
       </div>
       
-      {/* Order history details dialog */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 bg-background/80 flex items-center justify-center p-4">
           <div className="bg-background rounded-lg border shadow-lg w-full max-w-xl max-h-[90vh] overflow-y-auto">
@@ -338,12 +348,10 @@ const OrderHistory = () => {
                 <div className="space-y-6">
                   {selectedOrder.history.map((historyItem, index) => (
                     <div key={index} className="relative pl-6 pb-6 group">
-                      {/* Timeline connector */}
                       {index < selectedOrder.history.length - 1 && (
                         <div className="absolute left-2.5 top-2 w-px h-full bg-border group-last:hidden"></div>
                       )}
                       
-                      {/* Status circle */}
                       <div className="absolute left-0 top-0 w-5 h-5 rounded-full border-2 border-primary bg-background"></div>
                       
                       <div>
