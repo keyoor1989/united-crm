@@ -18,6 +18,8 @@ import {
 import { quotations } from "@/data/salesData";
 import { Quotation, QuotationStatus } from "@/types/sales";
 import { format } from "date-fns";
+import { generateQuotationPdf } from "@/utils/pdfGenerator";
+import { toast } from "@/components/ui/use-toast";
 
 const Quotations = () => {
   const navigate = useNavigate();
@@ -34,6 +36,24 @@ const Quotations = () => {
     
     return matchesSearch && matchesStatus;
   });
+  
+  // Handle PDF generation
+  const handleDownloadPdf = (quotation: Quotation) => {
+    try {
+      generateQuotationPdf(quotation);
+      toast({
+        title: "PDF Generated",
+        description: `Quotation ${quotation.quotationNumber} PDF has been created.`,
+      });
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error generating the PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   
   // Get status badge color based on status
   const getStatusBadge = (status: QuotationStatus) => {
@@ -165,7 +185,7 @@ const Quotations = () => {
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDownloadPdf(quotation)}>
                           <FileDown className="mr-2 h-4 w-4" />
                           Download PDF
                         </DropdownMenuItem>

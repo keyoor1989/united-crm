@@ -5,9 +5,18 @@ import { TDocumentDefinitions } from "pdfmake/interfaces";
 import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
-// Set up the fonts with proper type handling
-// pdfMake expects vfs to be assigned to its own vfs property
-pdfMake.vfs = pdfFonts.vfs;
+// Register the virtual file system with pdfMake
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+// Define fonts for the document
+pdfMake.fonts = {
+  Roboto: {
+    normal: 'Roboto-Regular.ttf',
+    bold: 'Roboto-Medium.ttf',
+    italics: 'Roboto-Italic.ttf',
+    bolditalics: 'Roboto-MediumItalic.ttf'
+  }
+};
 
 // Common PDF styling
 const styles = {
@@ -109,7 +118,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     ],
     styles: styles,
     defaultStyle: {
-      font: 'Helvetica'
+      font: 'Roboto'
     }
   };
 
@@ -191,7 +200,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     ],
     styles: styles,
     defaultStyle: {
-      font: 'Helvetica'
+      font: 'Roboto'
     }
   };
 
