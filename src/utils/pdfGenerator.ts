@@ -1,3 +1,4 @@
+
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { TDocumentDefinitions } from "pdfmake/interfaces";
@@ -5,8 +6,8 @@ import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Register the virtual file system with pdfMake
-// In the browser environment, pdfFonts is directly the vfs object
-pdfMake.vfs = pdfFonts;
+// We need to access the pdfMake property on pdfFonts which contains the vfs
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 // Define fonts for the document
 pdfMake.fonts = {
