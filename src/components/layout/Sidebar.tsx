@@ -24,7 +24,14 @@ import {
   Send,
   History,
   AlertTriangle,
-  Store
+  Store,
+  ArrowRightLeft,
+  RotateCcw,
+  User,
+  Cpu,
+  BarChart2,
+  FileCheck,
+  Award
 } from "lucide-react";
 
 type SidebarItemProps = {
@@ -205,6 +212,48 @@ const Sidebar = () => {
             icon={<Send size={16} />}
             label="Issue Entry"
             isActive={isActive("/inventory/issue")}
+          />
+          <SidebarItem
+            to="/inventory/transfer"
+            icon={<ArrowRightLeft size={16} />}
+            label="Branch Transfer"
+            isActive={isActive("/inventory/transfer")}
+          />
+          <SidebarItem
+            to="/inventory/returns"
+            icon={<RotateCcw size={16} />}
+            label="Returns & Replacements"
+            isActive={isActive("/inventory/returns")}
+          />
+          <SidebarItem
+            to="/inventory/engineer-inventory"
+            icon={<User size={16} />}
+            label="Engineer Inventory"
+            isActive={isActive("/inventory/engineer-inventory")}
+          />
+          <SidebarItem
+            to="/inventory/machine-parts"
+            icon={<Cpu size={16} />}
+            label="Machine Parts Usage"
+            isActive={isActive("/inventory/machine-parts")}
+          />
+          <SidebarItem
+            to="/inventory/profit-report"
+            icon={<BarChart2 size={16} />}
+            label="Profit Report"
+            isActive={isActive("/inventory/profit-report")}
+          />
+          <SidebarItem
+            to="/inventory/amc-tracker"
+            icon={<FileCheck size={16} />}
+            label="AMC Consumables"
+            isActive={isActive("/inventory/amc-tracker")}
+          />
+          <SidebarItem
+            to="/inventory/vendor-performance"
+            icon={<Award size={16} />}
+            label="Vendor Performance"
+            isActive={isActive("/inventory/vendor-performance")}
           />
           <SidebarItem
             to="/inventory/history"

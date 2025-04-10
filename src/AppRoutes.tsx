@@ -15,6 +15,14 @@ import InventoryPurchase from "@/pages/inventory/InventoryPurchase";
 import InventoryIssue from "@/pages/inventory/InventoryIssue";
 import InventoryHistory from "@/pages/inventory/InventoryHistory";
 import InventoryAlerts from "@/pages/inventory/InventoryAlerts";
+import InventoryVendors from "@/pages/inventory/InventoryVendors";
+import InventoryTransfer from "@/pages/inventory/InventoryTransfer";
+import InventoryReturns from "@/pages/inventory/InventoryReturns";
+import EngineerInventory from "@/pages/inventory/EngineerInventory";
+import MachineParts from "@/pages/inventory/MachineParts";
+import ProfitReport from "@/pages/inventory/ProfitReport";
+import AmcTracker from "@/pages/inventory/AmcTracker";
+import VendorPerformance from "@/pages/inventory/VendorPerformance";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/NotFound";
 
@@ -30,8 +38,16 @@ const AppRoutes = () => (
     <Route path="/inventory" element={<Inventory />} />
     <Route path="/inventory/brands" element={<InventoryBrands />} />
     <Route path="/inventory/items" element={<InventoryItems />} />
+    <Route path="/inventory/vendors" element={<InventoryVendors />} />
     <Route path="/inventory/purchase" element={<InventoryPurchase />} />
     <Route path="/inventory/issue" element={<InventoryIssue />} />
+    <Route path="/inventory/transfer" element={<InventoryTransfer />} />
+    <Route path="/inventory/returns" element={<InventoryReturns />} />
+    <Route path="/inventory/engineer-inventory" element={<EngineerInventory />} />
+    <Route path="/inventory/machine-parts" element={<MachineParts />} />
+    <Route path="/inventory/profit-report" element={<ProfitReport />} />
+    <Route path="/inventory/amc-tracker" element={<AmcTracker />} />
+    <Route path="/inventory/vendor-performance" element={<VendorPerformance />} />
     <Route path="/inventory/history" element={<InventoryHistory />} />
     <Route path="/inventory/alerts" element={<InventoryAlerts />} />
     <Route path="/chat" element={<Chat />} />
