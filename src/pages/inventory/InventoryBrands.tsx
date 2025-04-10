@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Edit, Trash, Tag, Printer } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
