@@ -1,15 +1,27 @@
 
-import React from "react";
 import { BrowserRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 import AppRoutes from "./AppRoutes";
-import { ToastProvider } from "./components/providers/ToastProvider";
+import { VendorProvider } from "@/contexts/VendorContext";
 
-const App = () => (
-  <BrowserRouter>
-    <ToastProvider>
-      <AppRoutes />
-    </ToastProvider>
-  </BrowserRouter>
-);
+// Create a client for React Query
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <BrowserRouter>
+          <VendorProvider>
+            <AppRoutes />
+            <Toaster />
+          </VendorProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

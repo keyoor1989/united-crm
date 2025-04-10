@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,62 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Search, Filter, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Vendor } from "@/types/inventory";
+import { useVendors } from "@/contexts/VendorContext";
 
 import VendorTable from "@/components/inventory/vendors/VendorTable";
 import PurchaseHistory from "@/components/inventory/vendors/PurchaseHistory";
 import VendorFormDialog from "@/components/inventory/vendors/VendorFormDialog";
 import DeleteVendorDialog from "@/components/inventory/vendors/DeleteVendorDialog";
 
-// Mock vendors data
-const mockVendors: Vendor[] = [
-  {
-    id: "vendor1",
-    name: "Ajanta Traders",
-    gstNo: "24AAKCS9636Q1ZX",
-    phone: "9876543210",
-    email: "info@ajanta.com",
-    address: "142, Industrial Area, Indore, MP",
-    createdAt: "2024-01-15"
-  },
-  {
-    id: "vendor2",
-    name: "Ravi Distributors",
-    gstNo: "27AAVCS8142M1Z5",
-    phone: "9988776655",
-    email: "sales@ravidist.com",
-    address: "78, Tech Park, Bhopal, MP",
-    createdAt: "2024-02-20"
-  },
-  {
-    id: "vendor3",
-    name: "Mehta Enterprises",
-    gstNo: "06AABCU9603R1ZP",
-    phone: "9865432109",
-    email: "contact@mehta.co.in",
-    address: "23, Old Market, Jabalpur, MP",
-    createdAt: "2023-11-05"
-  },
-  {
-    id: "vendor4",
-    name: "Global Supplies",
-    gstNo: "29AAKCG1412Q1Z5",
-    phone: "9889900001",
-    email: "info@globalsupplies.com",
-    address: "56, MG Road, Indore, MP",
-    createdAt: "2024-03-12"
-  },
-  {
-    id: "vendor5",
-    name: "Tech Parts Ltd",
-    gstNo: "23AADFT2613R1ZM",
-    phone: "9870123456",
-    email: "support@techparts.in",
-    address: "110, Industrial Estate, Pithampur, MP",
-    createdAt: "2023-12-10"
-  },
-];
-
-// Mock purchase history data
 const mockPurchaseHistory = [
   {
     id: "ph001",
@@ -117,7 +67,7 @@ const mockPurchaseHistory = [
 ];
 
 const InventoryVendors = () => {
-  const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
+  const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
   const [activeTab, setActiveTab] = useState("vendors");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
@@ -125,7 +75,6 @@ const InventoryVendors = () => {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [vendorToDelete, setVendorToDelete] = useState<string | null>(null);
   
-  // Form state for add/edit vendor
   const [formData, setFormData] = useState({
     id: "",
     name: "",
@@ -135,7 +84,6 @@ const InventoryVendors = () => {
     address: "",
   });
   
-  // Filter vendors by search query
   const filteredVendors = vendors.filter(vendor => 
     searchQuery ? 
       vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -144,13 +92,11 @@ const InventoryVendors = () => {
     : true
   );
   
-  // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  // Open add vendor modal
   const handleAddVendor = () => {
     setSelectedVendor(null);
     setFormData({
@@ -164,7 +110,6 @@ const InventoryVendors = () => {
     setIsAddVendorOpen(true);
   };
   
-  // Open edit vendor modal
   const handleEditVendor = (vendor: Vendor) => {
     setSelectedVendor(vendor);
     setFormData({
@@ -178,39 +123,31 @@ const InventoryVendors = () => {
     setIsAddVendorOpen(true);
   };
   
-  // Open delete confirmation dialog
   const handleDeleteClick = (vendorId: string) => {
     setVendorToDelete(vendorId);
     setIsDeleteConfirmOpen(true);
   };
   
-  // Save vendor (add or update)
   const handleSaveVendor = () => {
-    // Check required fields
     if (!formData.name || !formData.phone || !formData.email || !formData.address) {
       toast.error("Please fill all required fields");
       return;
     }
     
     if (selectedVendor) {
-      // Update existing vendor
-      const updatedVendors = vendors.map(vendor => 
-        vendor.id === selectedVendor.id ? 
-          { 
-            ...vendor, 
-            name: formData.name,
-            gstNo: formData.gstNo,
-            phone: formData.phone,
-            email: formData.email,
-            address: formData.address,
-          } : vendor
-      );
-      setVendors(updatedVendors);
+      const updatedVendor = { 
+        ...selectedVendor, 
+        name: formData.name,
+        gstNo: formData.gstNo,
+        phone: formData.phone,
+        email: formData.email,
+        address: formData.address,
+      };
+      updateVendor(updatedVendor);
       toast.success("Vendor updated successfully");
     } else {
-      // Add new vendor
       const newVendor: Vendor = {
-        id: `vendor${vendors.length + 1}`,
+        id: `vendor${Date.now()}`,
         name: formData.name,
         gstNo: formData.gstNo,
         phone: formData.phone,
@@ -218,25 +155,21 @@ const InventoryVendors = () => {
         address: formData.address,
         createdAt: new Date().toISOString().split('T')[0],
       };
-      setVendors([...vendors, newVendor]);
+      addVendor(newVendor);
       toast.success("Vendor added successfully");
     }
     
     setIsAddVendorOpen(false);
   };
   
-  // Delete vendor
   const handleDeleteVendor = () => {
     if (vendorToDelete) {
-      // Check if vendor has purchase history
       const hasHistory = mockPurchaseHistory.some(purchase => purchase.vendorId === vendorToDelete);
       
       if (hasHistory) {
         toast.error("Cannot delete vendor with purchase history");
       } else {
-        // Delete vendor
-        const updatedVendors = vendors.filter(vendor => vendor.id !== vendorToDelete);
-        setVendors(updatedVendors);
+        deleteVendor(vendorToDelete);
         toast.success("Vendor deleted successfully");
       }
       
@@ -245,13 +178,11 @@ const InventoryVendors = () => {
     }
   };
   
-  // View vendor details
   const handleViewVendorDetails = (vendor: Vendor) => {
     setSelectedVendor(vendor);
     setActiveTab("purchase-history");
   };
   
-  // Format date for display
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -327,7 +258,6 @@ const InventoryVendors = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Add/Edit Vendor Dialog */}
       <VendorFormDialog 
         open={isAddVendorOpen}
         onOpenChange={setIsAddVendorOpen}
@@ -337,7 +267,6 @@ const InventoryVendors = () => {
         handleSaveVendor={handleSaveVendor}
       />
       
-      {/* Delete Confirmation Dialog */}
       <DeleteVendorDialog 
         open={isDeleteConfirmOpen}
         onOpenChange={setIsDeleteConfirmOpen}

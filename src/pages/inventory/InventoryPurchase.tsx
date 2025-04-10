@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,7 +24,7 @@ import {
   Brand, 
   Model, 
   InventoryItem, 
-  PurchaseEntry, 
+  PurchaseEntry,
   Vendor 
 } from "@/types/inventory";
 import { 
@@ -38,6 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { useVendors } from "@/contexts/VendorContext";
 
 const mockBrands: Brand[] = [
   { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
@@ -76,36 +76,6 @@ const mockItems: InventoryItem[] = [
     barcode: "KYO2554-DR002", 
     createdAt: "2025-03-11" 
   },
-];
-
-const mockVendors: Vendor[] = [
-  {
-    id: "1",
-    name: "Ajanta Traders",
-    gstNo: "23AABCT1234Q1Z5",
-    phone: "9876543210",
-    email: "info@ajantatraders.com",
-    address: "123 Market Road, Indore, MP",
-    createdAt: "2025-01-15"
-  },
-  {
-    id: "2",
-    name: "Ravi Distributors",
-    gstNo: "23AADCR5678Q1Z6",
-    phone: "9876543211",
-    email: "contact@ravidistributors.com",
-    address: "456 Commercial Street, Bhopal, MP",
-    createdAt: "2025-02-10"
-  },
-  {
-    id: "3",
-    name: "Precision Equipments",
-    gstNo: "23AABCP9012Q1Z7",
-    phone: "9876543212",
-    email: "service@precisionequipments.com",
-    address: "789 Industrial Area, Jabalpur, MP",
-    createdAt: "2025-03-05"
-  }
 ];
 
 const mockPurchases: PurchaseEntry[] = [
@@ -179,7 +149,7 @@ const InventoryPurchase = () => {
   const [models] = useState<Model[]>(mockModels);
   const [items] = useState<InventoryItem[]>(mockItems);
   const [purchases] = useState<PurchaseEntry[]>(mockPurchases);
-  const [vendors] = useState<Vendor[]>(mockVendors);
+  const { vendors, addVendor } = useVendors();
   const [warehouses] = useState(mockWarehouses);
   const [addVendorDialog, setAddVendorDialog] = useState(false);
   
@@ -229,14 +199,31 @@ const InventoryPurchase = () => {
   const handleVendorFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("Adding vendor:", vendorForm);
+    if (!vendorForm.name || !vendorForm.phone || !vendorForm.email || !vendorForm.address) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    
+    const newVendor: Vendor = {
+      id: `vendor${Date.now()}`,
+      name: vendorForm.name,
+      gstNo: vendorForm.gstNo,
+      phone: vendorForm.phone,
+      email: vendorForm.email,
+      address: vendorForm.address,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    
+    addVendor(newVendor);
+    
+    console.log("Adding vendor:", newVendor);
     
     toast.success("New vendor added successfully!");
     
     setPurchaseForm({
       ...purchaseForm,
-      vendorId: "new",
-      vendorName: vendorForm.name
+      vendorId: newVendor.id,
+      vendorName: newVendor.name
     });
     
     setVendorForm({
