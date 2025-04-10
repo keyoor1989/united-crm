@@ -22,7 +22,8 @@ import {
   Building,
   UserCheck,
   Download,
-  Printer
+  Printer,
+  AlertTriangle
 } from "lucide-react";
 import { 
   Table, 
@@ -99,7 +100,8 @@ const sampleSales: Sale[] = [
     warehouseId: "W001",
     createdBy: "Admin",
     createdAt: "2025-04-02T10:30:00",
-    updatedAt: "2025-04-02T10:30:00"
+    updatedAt: "2025-04-02T10:30:00",
+    stockDeducted: true
   },
   {
     id: "2",
@@ -134,7 +136,8 @@ const sampleSales: Sale[] = [
     warehouseId: "W001",
     createdBy: "Admin",
     createdAt: "2025-04-03T14:15:00",
-    updatedAt: "2025-04-03T14:15:00"
+    updatedAt: "2025-04-03T14:15:00",
+    stockDeducted: false
   },
   {
     id: "3",
@@ -170,7 +173,30 @@ const sampleSales: Sale[] = [
     warehouseId: "W001",
     createdBy: "Admin",
     createdAt: "2025-04-05T09:45:00",
-    updatedAt: "2025-04-05T09:45:00"
+    updatedAt: "2025-04-05T09:45:00",
+    stockDeducted: false
+  }
+];
+
+// Sample inventory items for demonstration
+const inventoryItems = [
+  {
+    id: "IT001",
+    name: "Kyocera 2554ci Toner Black",
+    currentQuantity: 8,
+    warehouseId: "W001"
+  },
+  {
+    id: "IT002",
+    name: "Ricoh MP2014 Drum Unit",
+    currentQuantity: 5,
+    warehouseId: "W001"
+  },
+  {
+    id: "IT003",
+    name: "Xerox 7845 Toner Cyan",
+    currentQuantity: 15,
+    warehouseId: "W001"
   }
 ];
 
@@ -184,9 +210,21 @@ const InventorySales = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
+  const [sales, setSales] = useState<Sale[]>(sampleSales);
+  const [items, setItems] = useState(inventoryItems);
+  const [selectedItems, setSelectedItems] = useState<{
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    discount: number;
+    taxRate: number;
+  }[]>([]);
+  const [isDeductStockDialogOpen, setIsDeductStockDialogOpen] = useState(false);
+  const [saleToDeduct, setSaleToDeduct] = useState<Sale | null>(null);
   
   // Filter sales based on active tab, search query, and filters
-  const filteredSales = sampleSales.filter(sale => {
+  const filteredSales = sales.filter(sale => {
     // Filter by search query
     const matchesSearch = 
       searchQuery === "" || 
@@ -298,12 +336,176 @@ const InventorySales = () => {
     // In a real app, navigate to a detail page
     // navigate(`/inventory/sales/${saleId}`);
   };
+
+  // Function to handle adding an item to the selected items
+  const handleAddItem = () => {
+    setSelectedItems([
+      ...selectedItems,
+      {
+        id: "",
+        name: "",
+        quantity: 1,
+        price: 0,
+        discount: 0,
+        taxRate: 18,
+      },
+    ]);
+  };
+
+  // Function to handle removing an item from the selected items
+  const handleRemoveItem = (index: number) => {
+    const newItems = [...selectedItems];
+    newItems.splice(index, 1);
+    setSelectedItems(newItems);
+  };
+
+  // Function to handle updating an item in the selected items
+  const handleUpdateItem = (index: number, field: string, value: any) => {
+    const newItems = [...selectedItems];
+    (newItems[index] as any)[field] = value;
+    
+    // If item ID changed, update the name and price
+    if (field === "id") {
+      const selectedItem = items.find(item => item.id === value);
+      if (selectedItem) {
+        newItems[index].name = selectedItem.name;
+        // In a real app, you would fetch the price from the database
+        // For now, let's use a default price
+        newItems[index].price = 4500;
+      }
+    }
+    
+    // Recalculate total if necessary
+    if (["quantity", "price", "discount"].includes(field)) {
+      const item = newItems[index];
+      const subtotal = item.quantity * item.price;
+      const discountAmount = item.discount || 0;
+      item.taxRate = item.taxRate || 18; // Default tax rate
+      
+      // Update the item's total
+      newItems[index] = {
+        ...item,
+        total: subtotal - discountAmount
+      };
+    }
+    
+    setSelectedItems(newItems);
+  };
   
   // Function to handle creating a new sale
   const handleCreateNewSale = () => {
+    // In a real app, this would make an API call to create the sale
+    
+    // Create a new sale object
+    const newSale: Sale = {
+      id: `${sales.length + 1}`,
+      invoiceNo: `INV-2025-000${sales.length + 1}`,
+      customerId: "C001", // Would come from form
+      customerName: "Sample Customer", // Would come from form
+      customerType: "Regular", // Would come from form
+      date: new Date().toISOString().split('T')[0],
+      items: selectedItems.map((item, index) => ({
+        id: `SI${sales.length + 1}${index}`,
+        saleId: `${sales.length + 1}`,
+        itemId: item.id,
+        itemName: item.name,
+        quantity: item.quantity,
+        unitPrice: item.price,
+        taxRate: item.taxRate,
+        discount: item.discount,
+        total: item.quantity * item.price - item.discount
+      })),
+      subtotal: selectedItems.reduce((sum, item) => sum + item.quantity * item.price, 0),
+      taxAmount: selectedItems.reduce((sum, item) => {
+        const subtotal = item.quantity * item.price - item.discount;
+        return sum + (subtotal * item.taxRate / 100);
+      }, 0),
+      taxType: "GST",
+      discount: selectedItems.reduce((sum, item) => sum + item.discount, 0),
+      total: selectedItems.reduce((sum, item) => {
+        const subtotal = item.quantity * item.price - item.discount;
+        return sum + subtotal + (subtotal * item.taxRate / 100);
+      }, 0),
+      paymentStatus: "Pending", // Would come from form
+      amountPaid: 0, // Would come from form
+      amountDue: selectedItems.reduce((sum, item) => {
+        const subtotal = item.quantity * item.price - item.discount;
+        return sum + subtotal + (subtotal * item.taxRate / 100);
+      }, 0),
+      status: "Confirmed",
+      warehouseId: "W001", // Would come from form
+      createdBy: "Admin",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      stockDeducted: false // New sale, stock not deducted yet
+    };
+    
+    // Update sales state
+    setSales([...sales, newSale]);
+    
+    // Close modal and reset form
     setIsNewSaleModalOpen(false);
+    setSelectedItems([]);
+    
     toast.success("New sale created successfully!");
-    // In a real app, this would save the sale and refresh the list
+  };
+
+  // Function to deduct stock for a sale
+  const handleDeductStock = (sale: Sale) => {
+    if (sale.stockDeducted) {
+      toast.warning("Stock has already been deducted for this sale!");
+      return;
+    }
+    
+    setSaleToDeduct(sale);
+    setIsDeductStockDialogOpen(true);
+  };
+
+  // Function to confirm stock deduction
+  const confirmDeductStock = () => {
+    if (!saleToDeduct) return;
+    
+    // Update inventory items (deduct stock)
+    const updatedItems = [...items];
+    
+    // Check if we have enough stock for all items
+    const notEnoughStock = saleToDeduct.items.some(saleItem => {
+      const inventoryItem = updatedItems.find(item => item.id === saleItem.itemId);
+      return !inventoryItem || inventoryItem.currentQuantity < saleItem.quantity;
+    });
+    
+    if (notEnoughStock) {
+      toast.error("Not enough stock available for one or more items!");
+      setIsDeductStockDialogOpen(false);
+      return;
+    }
+    
+    // Deduct stock for each item in the sale
+    saleToDeduct.items.forEach(saleItem => {
+      const inventoryItemIndex = updatedItems.findIndex(item => item.id === saleItem.itemId);
+      if (inventoryItemIndex !== -1) {
+        updatedItems[inventoryItemIndex] = {
+          ...updatedItems[inventoryItemIndex],
+          currentQuantity: updatedItems[inventoryItemIndex].currentQuantity - saleItem.quantity
+        };
+      }
+    });
+    
+    // Update sale to mark stock as deducted
+    const updatedSales = sales.map(sale => 
+      sale.id === saleToDeduct.id 
+        ? { ...sale, stockDeducted: true, updatedAt: new Date().toISOString() }
+        : sale
+    );
+    
+    // Update state
+    setItems(updatedItems);
+    setSales(updatedSales);
+    setIsDeductStockDialogOpen(false);
+    
+    // In a real app, this would also create stock history records
+    
+    toast.success("Stock deducted successfully!");
   };
 
   return (
@@ -386,51 +588,116 @@ const InventorySales = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select item" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="i1">Kyocera 2554ci Toner Black</SelectItem>
-                            <SelectItem value="i2">Ricoh MP2014 Drum Unit</SelectItem>
-                            <SelectItem value="i3">Xerox 7845 Toner Cyan</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Input type="number" min="1" defaultValue="1" />
-                      </TableCell>
-                      <TableCell>
-                        <Input type="number" min="0" defaultValue="4500" />
-                      </TableCell>
-                      <TableCell>
-                        <Input type="number" min="0" defaultValue="0" />
-                      </TableCell>
-                      <TableCell className="text-right">₹4,500</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={3} />
-                      <TableCell className="font-medium">Subtotal</TableCell>
-                      <TableCell className="text-right">₹4,500</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={3} />
-                      <TableCell className="font-medium">Tax (18%)</TableCell>
-                      <TableCell className="text-right">₹810</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell colSpan={3} />
-                      <TableCell className="font-medium">Total</TableCell>
-                      <TableCell className="text-right font-bold">₹5,310</TableCell>
-                    </TableRow>
+                    {selectedItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-4">
+                          No items added yet. Click "Add Item" below to start.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      selectedItems.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <Select
+                              value={item.id || undefined}
+                              onValueChange={(value) => handleUpdateItem(index, "id", value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select item" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {items.map((inventoryItem) => (
+                                  <SelectItem key={inventoryItem.id} value={inventoryItem.id}>
+                                    {inventoryItem.name} (Stock: {inventoryItem.currentQuantity})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              value={item.quantity}
+                              onChange={(e) => handleUpdateItem(index, "quantity", parseInt(e.target.value) || 1)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              value={item.price}
+                              onChange={(e) => handleUpdateItem(index, "price", parseFloat(e.target.value) || 0)}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              value={item.discount}
+                              onChange={(e) => handleUpdateItem(index, "discount", parseFloat(e.target.value) || 0)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ₹{((item.quantity * item.price) - (item.discount || 0)).toLocaleString()}
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="ml-2 h-8 w-8"
+                              onClick={() => handleRemoveItem(index)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-red-500">
+                                <path d="M18 6L6 18M6 6l12 12" />
+                              </svg>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                    
+                    {selectedItems.length > 0 && (
+                      <>
+                        <TableRow>
+                          <TableCell colSpan={3} />
+                          <TableCell className="font-medium">Subtotal</TableCell>
+                          <TableCell className="text-right">
+                            ₹{selectedItems
+                              .reduce((sum, item) => sum + (item.quantity * item.price) - (item.discount || 0), 0)
+                              .toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell colSpan={3} />
+                          <TableCell className="font-medium">Tax (18%)</TableCell>
+                          <TableCell className="text-right">
+                            ₹{(selectedItems
+                              .reduce((sum, item) => {
+                                const subtotal = (item.quantity * item.price) - (item.discount || 0);
+                                return sum + (subtotal * 0.18);
+                              }, 0))
+                              .toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell colSpan={3} />
+                          <TableCell className="font-medium">Total</TableCell>
+                          <TableCell className="text-right font-bold">
+                            ₹{(selectedItems
+                              .reduce((sum, item) => {
+                                const subtotal = (item.quantity * item.price) - (item.discount || 0);
+                                return sum + subtotal + (subtotal * 0.18);
+                              }, 0))
+                              .toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      </>
+                    )}
                   </TableBody>
                 </Table>
                 
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={handleAddItem}>
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Another Item
+                  Add Item
                 </Button>
               </div>
               
@@ -610,13 +877,14 @@ const InventorySales = () => {
                       <TableHead>Total</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Payment</TableHead>
+                      <TableHead>Stock</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {currentItems.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                           No results found. Try adjusting your filters.
                         </TableCell>
                       </TableRow>
@@ -642,6 +910,11 @@ const InventorySales = () => {
                               {sale.paymentStatus}
                             </Badge>
                           </TableCell>
+                          <TableCell>
+                            <Badge variant={sale.stockDeducted ? "success" : "warning"} className="whitespace-nowrap">
+                              {sale.stockDeducted ? "Deducted" : "Pending"}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -662,6 +935,12 @@ const InventorySales = () => {
                                 <DropdownMenuItem onClick={() => handlePrintInvoice(sale.invoiceNo)}>
                                   Print Invoice
                                 </DropdownMenuItem>
+                                {!sale.stockDeducted && (
+                                  <DropdownMenuItem onClick={() => handleDeductStock(sale)}>
+                                    <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                                    Deduct Stock
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-red-600">
                                   Cancel Sale
@@ -764,6 +1043,66 @@ const InventorySales = () => {
           )}
         </CardContent>
       </Card>
+      
+      {/* Stock Deduction Confirmation Dialog */}
+      <Dialog open={isDeductStockDialogOpen} onOpenChange={setIsDeductStockDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deduct Stock</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to deduct stock for this sale? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {saleToDeduct && (
+            <div className="py-4">
+              <h3 className="font-medium mb-2">Items to deduct:</h3>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Current Stock</TableHead>
+                      <TableHead>After Deduction</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {saleToDeduct.items.map((item) => {
+                      const inventoryItem = items.find(i => i.id === item.itemId);
+                      const currentStock = inventoryItem ? inventoryItem.currentQuantity : 0;
+                      const afterDeduction = currentStock - item.quantity;
+                      
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.itemName}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>{currentStock}</TableCell>
+                          <TableCell>
+                            <span className={afterDeduction < 0 ? "text-red-500 font-bold" : ""}>
+                              {afterDeduction}
+                              {afterDeduction < 0 && " (Not enough stock!)"}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeductStockDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmDeductStock}>
+              Confirm Deduction
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 export type Brand = {
   id: string;
   name: string;
@@ -113,7 +114,7 @@ export type IssueEntry = {
 export type StockHistory = {
   id: string;
   itemId: string;
-  transactionType: 'Purchase' | 'Issue' | 'Return' | 'Transfer';
+  transactionType: 'Purchase' | 'Issue' | 'Return' | 'Transfer' | 'Sale';
   quantity: number;
   balanceAfter: number;
   referenceId: string; // ID of purchase or issue entry
@@ -283,6 +284,7 @@ export type Sale = {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  stockDeducted: boolean; // New field to track if stock has been deducted
 };
 
 export type SaleItem = {
