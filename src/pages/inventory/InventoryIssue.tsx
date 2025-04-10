@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,7 +23,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Package, Scan, Send, CheckCircle2, ShoppingBag, Building, User } from "lucide-react";
-import { IssueType } from "@/types/inventory";
+import { IssueType, Brand, Model, InventoryItem } from "@/types/inventory";
+import ItemSelector from "@/components/inventory/ItemSelector";
 
 // Sample data for issued items
 const recentIssues = [
@@ -59,12 +61,89 @@ const recentIssues = [
 ];
 
 // Sample inventory items for dropdown selection
-const inventoryItems = [
-  { id: "1", name: "Kyocera 2554ci Toner Black", quantity: 3 },
-  { id: "2", name: "Ricoh MP2014 Drum Unit", quantity: 2 },
-  { id: "3", name: "Xerox 7845 Toner Cyan", quantity: 1 },
-  { id: "4", name: "Canon 2525 Drum Unit", quantity: 4 },
-  { id: "5", name: "HP M428 Toner", quantity: 7 }
+const inventoryItems: InventoryItem[] = [
+  { 
+    id: "1", 
+    modelId: "1", 
+    brandId: "1", 
+    name: "Kyocera 2554ci Toner Black", 
+    type: "Toner", 
+    minQuantity: 2, 
+    currentQuantity: 3, 
+    lastPurchasePrice: 4500, 
+    lastVendor: "Toner World", 
+    barcode: "KYO-TN2554-BK-001", 
+    createdAt: "2025-03-10" 
+  },
+  { 
+    id: "2", 
+    modelId: "2", 
+    brandId: "2", 
+    name: "Ricoh MP2014 Drum Unit", 
+    type: "Drum", 
+    minQuantity: 1, 
+    currentQuantity: 2, 
+    lastPurchasePrice: 3200, 
+    lastVendor: "Copier Zone", 
+    barcode: "RICOH-DU2014-001", 
+    createdAt: "2025-03-11" 
+  },
+  { 
+    id: "3", 
+    modelId: "3", 
+    brandId: "3", 
+    name: "Xerox 7845 Toner Cyan", 
+    type: "Toner", 
+    minQuantity: 2, 
+    currentQuantity: 1, 
+    lastPurchasePrice: 5600, 
+    lastVendor: "Printer Parts", 
+    barcode: "XER-TN7845-C-001", 
+    createdAt: "2025-03-12" 
+  },
+  { 
+    id: "4", 
+    modelId: "4", 
+    brandId: "4", 
+    name: "Canon 2525 Drum Unit", 
+    type: "Drum", 
+    minQuantity: 1, 
+    currentQuantity: 4, 
+    lastPurchasePrice: 4200, 
+    lastVendor: "Canon Supplies", 
+    barcode: "CAN-DRM2525-001", 
+    createdAt: "2025-03-13" 
+  },
+  { 
+    id: "5", 
+    modelId: "5", 
+    brandId: "5", 
+    name: "HP M428 Toner", 
+    type: "Toner", 
+    minQuantity: 3, 
+    currentQuantity: 7, 
+    lastPurchasePrice: 2800, 
+    lastVendor: "HP Store", 
+    barcode: "HP-TNM428-002", 
+    createdAt: "2025-03-14" 
+  }
+];
+
+// Sample brands and models
+const mockBrands: Brand[] = [
+  { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
+  { id: "2", name: "Ricoh", createdAt: "2025-03-02" },
+  { id: "3", name: "Xerox", createdAt: "2025-03-03" },
+  { id: "4", name: "Canon", createdAt: "2025-03-04" },
+  { id: "5", name: "HP", createdAt: "2025-03-05" }
+];
+
+const mockModels: Model[] = [
+  { id: "1", brandId: "1", name: "2554ci", type: "Machine", createdAt: "2025-03-01" },
+  { id: "2", brandId: "2", name: "MP2014", type: "Machine", createdAt: "2025-03-02" },
+  { id: "3", brandId: "3", name: "7845", type: "Machine", createdAt: "2025-03-03" },
+  { id: "4", brandId: "4", name: "2525", type: "Machine", createdAt: "2025-03-04" },
+  { id: "5", brandId: "5", name: "M428", type: "Machine", createdAt: "2025-03-05" }
 ];
 
 // Sample engineers
@@ -90,26 +169,17 @@ const customers = [
 
 const InventoryIssue = () => {
   const [issueType, setIssueType] = useState<IssueType>("Engineer");
-  const [selectedItem, setSelectedItem] = useState("");
-  const [quantity, setQuantity] = useState("1");
-  const [barcodeInput, setBarcodeInput] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [receiverName, setReceiverName] = useState("");
   const [billType, setBillType] = useState("Non-GST");
   const [activeTab, setActiveTab] = useState("form");
+  
+  // State for selected item using our reusable component
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
-  // Handle barcode scan
-  const handleBarcodeScan = () => {
-    if (!barcodeInput) {
-      toast.warning("Please enter a barcode to scan");
-      return;
-    }
-
-    // Simulate finding item by barcode
-    toast.success(`Barcode ${barcodeInput} scanned successfully`);
-    
-    // In a real app, you would look up the item in your database
-    setSelectedItem("1"); // Set to first item as an example
-    setBarcodeInput("");
+  // Handle item selection from the ItemSelector component
+  const handleItemSelected = (item: InventoryItem) => {
+    setSelectedItem(item);
   };
 
   // Handle issue submission
@@ -126,14 +196,18 @@ const InventoryIssue = () => {
       return;
     }
 
+    if (quantity <= 0) {
+      toast.warning("Quantity must be greater than 0");
+      return;
+    }
+
     // In a real app, you would send this data to your API
-    toast.success(`Item issued successfully to ${receiverName}`);
+    toast.success(`${quantity} × ${selectedItem.name} issued successfully to ${receiverName}`);
     
     // Reset form
-    setSelectedItem("");
-    setQuantity("1");
+    setSelectedItem(null);
+    setQuantity(1);
     setReceiverName("");
-    setBarcodeInput("");
   };
 
   return (
@@ -242,62 +316,42 @@ const InventoryIssue = () => {
                 <div className="pt-4 border-t">
                   <h3 className="text-lg font-medium mb-4">Item Details</h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                    {/* Barcode Scanner */}
-                    <div className="space-y-2">
-                      <Label htmlFor="barcode">Scan Barcode</Label>
-                      <div className="flex gap-2">
+                  {/* Use the ItemSelector component for brand/model/item selection */}
+                  <ItemSelector 
+                    brands={mockBrands}
+                    models={mockModels}
+                    items={inventoryItems}
+                    onItemSelect={handleItemSelected}
+                  />
+                  
+                  {/* Quantity */}
+                  {selectedItem && (
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="quantity">Quantity</Label>
                         <Input
-                          id="barcode"
-                          placeholder="Enter or scan barcode"
-                          value={barcodeInput}
-                          onChange={(e) => setBarcodeInput(e.target.value)}
-                          className="flex-1"
+                          id="quantity"
+                          type="number"
+                          min="1"
+                          value={quantity}
+                          onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                          required
                         />
-                        <Button type="button" onClick={handleBarcodeScan} variant="outline">
-                          <Scan size={16} className="mr-2" />
-                          Scan
-                        </Button>
+                      </div>
+                      
+                      <div className="flex items-end">
+                        <div className="text-sm">
+                          <p className="font-medium">{selectedItem.name}</p>
+                          <p className="text-muted-foreground">Current Stock: {selectedItem.currentQuantity}</p>
+                          <p className={selectedItem.currentQuantity < selectedItem.minQuantity ? "text-destructive" : "text-green-600"}>
+                            Status: {selectedItem.currentQuantity < selectedItem.minQuantity ? "Low Stock" : "In Stock"}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    
-                    {/* Manual Item Selection */}
-                    <div className="space-y-2">
-                      <Label htmlFor="item">Item Selection</Label>
-                      <Select value={selectedItem} onValueChange={setSelectedItem}>
-                        <SelectTrigger id="item">
-                          <SelectValue placeholder="Select item" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {inventoryItems.map(item => (
-                            <SelectItem key={item.id} value={item.id}>
-                              <div className="flex justify-between w-full">
-                                <span>{item.name}</span>
-                                <Badge variant={item.quantity < 3 ? "destructive" : "outline"}>
-                                  {item.quantity} in stock
-                                </Badge>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {/* Quantity */}
-                    <div className="space-y-2">
-                      <Label htmlFor="quantity">Quantity</Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        min="1"
-                        value={quantity}
-                        onChange={(e) => setQuantity(e.target.value)}
-                        required
-                      />
-                    </div>
-                  </div>
+                  )}
                   
-                  <Button type="submit" className="w-full mt-6">
+                  <Button type="submit" className="w-full mt-6" disabled={!selectedItem}>
                     <Package className="mr-2 h-4 w-4" />
                     Issue Item
                   </Button>

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -36,6 +35,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import ItemSelector from "@/components/inventory/ItemSelector";
+import { Brand, Model, InventoryItem } from "@/types/inventory";
 
 // Mock data for engineers
 const mockEngineers = [
@@ -136,10 +145,98 @@ const mockUsageHistory = [
   },
 ];
 
+// Sample brands and models
+const mockBrands: Brand[] = [
+  { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
+  { id: "2", name: "Ricoh", createdAt: "2025-03-02" },
+  { id: "3", name: "Canon", createdAt: "2025-03-03" },
+  { id: "4", name: "HP", createdAt: "2025-03-04" },
+  { id: "5", name: "Xerox", createdAt: "2025-03-05" },
+];
+
+const mockModels: Model[] = [
+  { id: "1", brandId: "1", name: "TK-1175", type: "Spare Part", createdAt: "2025-03-01" },
+  { id: "2", brandId: "3", name: "NPG-59", type: "Spare Part", createdAt: "2025-03-02" },
+  { id: "3", brandId: "2", name: "SP 210", type: "Spare Part", createdAt: "2025-03-03" },
+  { id: "4", brandId: "4", name: "CF217A", type: "Spare Part", createdAt: "2025-03-04" },
+  { id: "5", brandId: "5", name: "3020", type: "Spare Part", createdAt: "2025-03-05" },
+];
+
+const mockInventoryItems: InventoryItem[] = [
+  { 
+    id: "item1", 
+    modelId: "1", 
+    brandId: "1", 
+    name: "Kyocera TK-1175 Toner", 
+    type: "Toner", 
+    minQuantity: 5, 
+    currentQuantity: 12, 
+    lastPurchasePrice: 4500, 
+    lastVendor: "Copier Zone", 
+    barcode: "KYO-TK1175-001", 
+    createdAt: "2025-03-10" 
+  },
+  { 
+    id: "item2", 
+    modelId: "2", 
+    brandId: "3", 
+    name: "Canon NPG-59 Drum", 
+    type: "Drum", 
+    minQuantity: 2, 
+    currentQuantity: 3, 
+    lastPurchasePrice: 8700, 
+    lastVendor: "Toner World", 
+    barcode: "CAN-NPG59-001", 
+    createdAt: "2025-03-11" 
+  },
+  { 
+    id: "item3", 
+    modelId: "3", 
+    brandId: "2", 
+    name: "Ricoh SP 210 Toner", 
+    type: "Toner", 
+    minQuantity: 3, 
+    currentQuantity: 8, 
+    lastPurchasePrice: 3200, 
+    lastVendor: "Ricoh Supplies", 
+    barcode: "RIC-SP210-001", 
+    createdAt: "2025-03-12" 
+  },
+  { 
+    id: "item4", 
+    modelId: "4", 
+    brandId: "4", 
+    name: "HP CF217A Toner", 
+    type: "Toner", 
+    minQuantity: 4, 
+    currentQuantity: 6, 
+    lastPurchasePrice: 2500, 
+    lastVendor: "HP Store", 
+    barcode: "HP-CF217A-001", 
+    createdAt: "2025-03-13" 
+  },
+  { 
+    id: "item5", 
+    modelId: "5", 
+    brandId: "5", 
+    name: "Xerox 3020 Drum Unit", 
+    type: "Drum", 
+    minQuantity: 1, 
+    currentQuantity: 2, 
+    lastPurchasePrice: 7500, 
+    lastVendor: "Xerox Supplies", 
+    barcode: "XER-3020-001", 
+    createdAt: "2025-03-14" 
+  },
+];
+
 const EngineerInventory = () => {
   const [activeTab, setActiveTab] = useState("engineers");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedEngineer, setSelectedEngineer] = useState<string | null>(null);
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [assignQuantity, setAssignQuantity] = useState(1);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   
   // Filter engineer inventory by engineer ID
   const getEngineerInventory = (engineerId: string) => {
@@ -159,12 +256,43 @@ const EngineerInventory = () => {
   
   // Handle assign new item to engineer
   const handleAssignItem = (engineerId: string) => {
-    toast.success(`Item assigned to ${mockEngineers.find(e => e.id === engineerId)?.name}`);
+    setSelectedEngineer(engineerId);
+    setIsAssignDialogOpen(true);
+  };
+  
+  // Handle assign item submit
+  const handleAssignItemSubmit = () => {
+    if (!selectedItem) {
+      toast.warning("Please select an item to assign");
+      return;
+    }
+    
+    if (assignQuantity <= 0) {
+      toast.warning("Quantity must be greater than 0");
+      return;
+    }
+    
+    if (assignQuantity > selectedItem.currentQuantity) {
+      toast.error("Cannot assign more than available stock");
+      return;
+    }
+    
+    const engineerName = mockEngineers.find(e => e.id === selectedEngineer)?.name;
+    
+    toast.success(`${assignQuantity} × ${selectedItem.name} assigned to ${engineerName}`);
+    setIsAssignDialogOpen(false);
+    setSelectedItem(null);
+    setAssignQuantity(1);
   };
   
   // Handle refresh engineer inventory
   const handleRefreshInventory = (engineerId: string) => {
     toast.success(`${mockEngineers.find(e => e.id === engineerId)?.name}'s inventory refreshed`);
+  };
+
+  // Handle item selection from the ItemSelector component
+  const handleItemSelected = (item: InventoryItem) => {
+    setSelectedItem(item);
   };
 
   return (
@@ -502,6 +630,56 @@ const EngineerInventory = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Assign Item Dialog */}
+      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Assign Item to Engineer</DialogTitle>
+            <DialogDescription>
+              Select an item and quantity to assign to {selectedEngineer ? mockEngineers.find(e => e.id === selectedEngineer)?.name : "engineer"}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <ItemSelector 
+              brands={mockBrands}
+              models={mockModels}
+              items={mockInventoryItems}
+              onItemSelect={handleItemSelected}
+              showBarcodeScan={false}
+            />
+            
+            {selectedItem && (
+              <div className="space-y-2 mt-4">
+                <Label htmlFor="assign-quantity">Quantity</Label>
+                <Input
+                  id="assign-quantity"
+                  type="number"
+                  min="1"
+                  max={selectedItem.currentQuantity}
+                  value={assignQuantity}
+                  onChange={(e) => setAssignQuantity(parseInt(e.target.value) || 1)}
+                />
+                
+                <div className="text-sm text-muted-foreground">
+                  Available stock: {selectedItem.currentQuantity}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignItemSubmit} disabled={!selectedItem}>
+              <Plus className="mr-2 h-4 w-4" />
+              Assign Item
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
