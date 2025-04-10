@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,7 +85,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import ItemSelector from "@/components/inventory/ItemSelector";
 
-// Sample data
 const sampleSales: Sale[] = [
   {
     id: "1",
@@ -285,7 +283,6 @@ const inventoryItems: InventoryItem[] = [
   },
 ];
 
-// Define the type for selected items with the total property
 type SelectedItem = {
   id: string;
   name: string;
@@ -293,7 +290,7 @@ type SelectedItem = {
   price: number;
   discount: number;
   taxRate: number;
-  total?: number; // This resolves the error
+  total?: number;
 };
 
 const InventorySales = () => {
@@ -301,9 +298,9 @@ const InventorySales = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [date, setDate] = useState<Date>(new Date());
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCustomerType, setSelectedCustomerType] = useState<CustomerType | "">("");
-  const [selectedStatus, setSelectedStatus] = useState<SaleStatus | "">("");
-  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<PaymentStatus | "">("");
+  const [selectedCustomerType, setSelectedCustomerType] = useState<CustomerType | "all">("all");
+  const [selectedStatus, setSelectedStatus] = useState<SaleStatus | "all">("all");
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<PaymentStatus | "all">("all");
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
   const [sales, setSales] = useState<Sale[]>(sampleSales);
   const [items, setItems] = useState(inventoryItems);
@@ -311,7 +308,6 @@ const InventorySales = () => {
   const [isDeductStockDialogOpen, setIsDeductStockDialogOpen] = useState(false);
   const [saleToDeduct, setSaleToDeduct] = useState<Sale | null>(null);
   
-  // Form state for new sale
   const [saleForm, setSaleForm] = useState({
     customerType: "Regular" as CustomerType,
     customerId: "",
@@ -321,21 +317,18 @@ const InventorySales = () => {
     notes: "",
     paymentMethod: "Cash" as PaymentMethod,
     amountPaid: 0,
-    warehouseId: "1", // Default warehouse
+    warehouseId: "1",
     warehouseName: "Main Warehouse"
   });
 
-  // New state for handling item selection
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [itemQuantity, setItemQuantity] = useState<number>(1);
   const [itemDiscount, setItemDiscount] = useState<number>(0);
   
-  // Handle item selection from the ItemSelector component
   const handleItemSelected = (item: InventoryItem) => {
     setSelectedItem(item);
   };
   
-  // Add selected item to the sale
   const handleAddItemToSale = () => {
     if (!selectedItem) {
       toast.warning("Please select an item first");
@@ -347,11 +340,9 @@ const InventorySales = () => {
       return;
     }
     
-    // Check if the item already exists in the selected items
     const existingItemIndex = selectedItems.findIndex(item => item.id === selectedItem.id);
     
     if (existingItemIndex >= 0) {
-      // Update existing item
       const updatedItems = [...selectedItems];
       updatedItems[existingItemIndex].quantity += itemQuantity;
       updatedItems[existingItemIndex].discount = itemDiscount;
@@ -360,7 +351,6 @@ const InventorySales = () => {
       updatedItems[existingItemIndex].total = subtotal - discountAmount + (subtotal - discountAmount) * (saleForm.taxType === "GST" ? 0.18 : 0);
       setSelectedItems(updatedItems);
     } else {
-      // Add new item
       const subtotal = selectedItem.lastPurchasePrice * itemQuantity;
       const discountAmount = (subtotal * itemDiscount) / 100;
       const newSelectedItem: SelectedItem = {
@@ -375,19 +365,16 @@ const InventorySales = () => {
       setSelectedItems([...selectedItems, newSelectedItem]);
     }
     
-    // Reset item form
     setSelectedItem(null);
     setItemQuantity(1);
     setItemDiscount(0);
     toast.success("Item added to sale");
   };
   
-  // Remove item from selected items
   const handleRemoveItem = (id: string) => {
     setSelectedItems(selectedItems.filter(item => item.id !== id));
   };
   
-  // Calculate sale totals
   const calculateSaleTotals = () => {
     const subtotal = selectedItems.reduce((total, item) => total + (item.price * item.quantity), 0);
     const discountAmount = selectedItems.reduce((total, item) => {
@@ -408,7 +395,6 @@ const InventorySales = () => {
     };
   };
   
-  // Create a new sale
   const handleCreateSale = () => {
     if (selectedItems.length === 0) {
       toast.warning("Please add at least one item to the sale");
@@ -461,7 +447,6 @@ const InventorySales = () => {
     setSales([newSale, ...sales]);
     setIsNewSaleModalOpen(false);
     
-    // Reset form
     setSelectedItems([]);
     setSaleForm({
       customerType: "Regular",
@@ -478,16 +463,13 @@ const InventorySales = () => {
     
     toast.success("Sale created successfully");
     
-    // Show deduct stock dialog
     setSaleToDeduct(newSale);
     setIsDeductStockDialogOpen(true);
   };
   
-  // Handle deducting stock
   const handleDeductStock = () => {
     if (!saleToDeduct) return;
     
-    // Check if stock can be deducted
     const canDeduct = saleToDeduct.items.every(saleItem => {
       const inventoryItem = items.find(item => item.id === saleItem.itemId);
       return inventoryItem && inventoryItem.currentQuantity >= saleItem.quantity;
@@ -499,7 +481,6 @@ const InventorySales = () => {
       return;
     }
     
-    // Deduct stock from inventory
     const updatedItems = items.map(item => {
       const saleItem = saleToDeduct.items.find(si => si.itemId === item.id);
       if (saleItem) {
@@ -511,7 +492,6 @@ const InventorySales = () => {
       return item;
     });
     
-    // Update sale status
     const updatedSales = sales.map(sale => {
       if (sale.id === saleToDeduct.id) {
         return {
@@ -539,12 +519,12 @@ const InventorySales = () => {
       sale.customerName.toLowerCase().includes(searchText);
   
     const matchesCustomerType =
-      !customerTypeFilter || sale.customerType === customerTypeFilter;
+      customerTypeFilter === "all" || sale.customerType === customerTypeFilter;
   
-    const matchesStatus = !statusFilter || sale.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || sale.status === statusFilter;
   
     const matchesPaymentStatus =
-      !paymentStatusFilter || sale.paymentStatus === paymentStatusFilter;
+      paymentStatusFilter === "all" || sale.paymentStatus === paymentStatusFilter;
   
     return matchesSearch && matchesCustomerType && matchesStatus && matchesPaymentStatus;
   };
@@ -585,24 +565,24 @@ const InventorySales = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        <Select value={selectedCustomerType} onValueChange={(value) => setSelectedCustomerType(value as CustomerType)}>
+        <Select value={selectedCustomerType} onValueChange={(value) => setSelectedCustomerType(value as CustomerType | "all")}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Filter by Customer Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Customer Types</SelectItem>
+            <SelectItem value="all">All Customer Types</SelectItem>
             <SelectItem value="Regular">Regular</SelectItem>
             <SelectItem value="Dealer">Dealer</SelectItem>
             <SelectItem value="Government">Government</SelectItem>
           </SelectContent>
         </Select>
         
-        <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as SaleStatus)}>
+        <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as SaleStatus | "all")}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="Draft">Draft</SelectItem>
             <SelectItem value="Confirmed">Confirmed</SelectItem>
             <SelectItem value="Delivered">Delivered</SelectItem>
@@ -610,12 +590,12 @@ const InventorySales = () => {
           </SelectContent>
         </Select>
         
-        <Select value={selectedPaymentStatus} onValueChange={(value) => setSelectedPaymentStatus(value as PaymentStatus)}>
+        <Select value={selectedPaymentStatus} onValueChange={(value) => setSelectedPaymentStatus(value as PaymentStatus | "all")}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Filter by Payment Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Payment Statuses</SelectItem>
+            <SelectItem value="all">All Payment Statuses</SelectItem>
             <SelectItem value="Pending">Pending</SelectItem>
             <SelectItem value="Partial">Partial</SelectItem>
             <SelectItem value="Completed">Completed</SelectItem>
@@ -1006,7 +986,6 @@ const InventorySales = () => {
         </TabsContent>
       </Tabs>
       
-      {/* New Sale Modal */}
       <Dialog open={isNewSaleModalOpen} onOpenChange={setIsNewSaleModalOpen}>
         <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -1235,7 +1214,6 @@ const InventorySales = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Deduct Stock Dialog */}
       <AlertDialog open={isDeductStockDialogOpen} onOpenChange={setIsDeductStockDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
