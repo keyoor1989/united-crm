@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell 
 } from "@/components/ui/table";
@@ -49,7 +50,7 @@ const ordersWithHistory = purchaseOrders.map(order => ({
 }));
 
 const OrderHistory = () => {
-  const navigate = () => {}; // Placeholder, would use React Router's useNavigate in a real app
+  const navigate = useNavigate(); // Use the real useNavigate hook from react-router-dom
   const [searchTerm, setSearchTerm] = useState("");
   const [timeFilter, setTimeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<PurchaseOrderStatus | "All">("All");
