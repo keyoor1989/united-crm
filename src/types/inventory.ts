@@ -1,4 +1,3 @@
-
 export type Brand = {
   id: string;
   name: string;
@@ -61,6 +60,20 @@ export type Vendor = {
   averageDeliveryTime?: number; // In days
   qualityRating?: number; // Out of 5
   reliabilityScore?: number; // Calculated score
+};
+
+export type VendorPerformanceMetric = {
+  id: string;
+  vendorId: string;
+  period: string; // e.g., "Q1 2023", "Jan 2023", etc.
+  totalOrders: number;
+  onTimeDelivery: number; // Number of on-time deliveries
+  avgDeliveryTime: number; // In days
+  priceConsistency: number; // Score out of 5
+  productQuality: number; // Score out of 5
+  returnRate: number; // Percentage
+  reliabilityScore: number; // Calculated overall score (0-100)
+  createdAt: string;
 };
 
 export type PurchaseEntry = {
