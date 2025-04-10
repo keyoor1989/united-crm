@@ -5,6 +5,7 @@ import Header from "./Header";
 import { 
   SidebarProvider, 
   SidebarInset,
+  TooltipProvider
 } from "@/components/ui/sidebar";
 import AppSidebar from "./Sidebar";
 
@@ -14,17 +15,19 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <SidebarProvider defaultOpen={window.innerWidth >= 1024}>
-      <div className="flex min-h-screen w-full bg-background">
-        <AppSidebar />
-        <SidebarInset className="flex flex-col">
-          <Header />
-          <main className="flex-1 p-6 overflow-auto">
-            {children || <Outlet />}
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    <TooltipProvider>
+      <SidebarProvider defaultOpen={window.innerWidth >= 1024}>
+        <div className="flex min-h-screen w-full bg-background">
+          <AppSidebar />
+          <SidebarInset className="flex flex-col">
+            <Header />
+            <main className="flex-1 p-6 overflow-auto">
+              {children || <Outlet />}
+            </main>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 };
 
