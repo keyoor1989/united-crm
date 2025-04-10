@@ -143,9 +143,9 @@ const mockItems = [
 const InventoryTransfer = () => {
   const [activeTab, setActiveTab] = useState("transfers");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<TransferStatus | "">("");
-  const [filterSourceType, setFilterSourceType] = useState<"" | "Branch" | "Warehouse">("");
-  const [filterLocation, setFilterLocation] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<TransferStatus | "all">("all");
+  const [filterSourceType, setFilterSourceType] = useState<"all" | "Branch" | "Warehouse">("all");
+  const [filterLocation, setFilterLocation] = useState<string>("all");
   const [showNewTransferDialog, setShowNewTransferDialog] = useState(false);
   
   // New transfer form state
@@ -174,18 +174,18 @@ const InventoryTransfer = () => {
       (transfer.destinationType === "Warehouse" && transfer.destinationWarehouseName && transfer.destinationWarehouseName.toLowerCase().includes(searchQuery.toLowerCase()));
     
     // Filter by status
-    const statusMatch = filterStatus ? transfer.status === filterStatus : true;
+    const statusMatch = filterStatus === "all" ? true : transfer.status === filterStatus;
     
     // Filter by source type
-    const sourceTypeMatch = filterSourceType ? transfer.sourceType === filterSourceType : true;
+    const sourceTypeMatch = filterSourceType === "all" ? true : transfer.sourceType === filterSourceType;
     
     // Filter by location (branch or warehouse)
-    const locationMatch = filterLocation ? (
+    const locationMatch = filterLocation === "all" ? true : (
       (transfer.sourceType === "Branch" && transfer.sourceBranch === filterLocation) ||
       (transfer.destinationType === "Branch" && transfer.destinationBranch === filterLocation) ||
       (transfer.sourceType === "Warehouse" && transfer.sourceWarehouseId === filterLocation) ||
       (transfer.destinationType === "Warehouse" && transfer.destinationWarehouseId === filterLocation)
-    ) : true;
+    );
     
     return searchMatch && statusMatch && sourceTypeMatch && locationMatch;
   });
@@ -310,12 +310,12 @@ const InventoryTransfer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
                     <Label htmlFor="status-filter">Filter by Status</Label>
-                    <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as TransferStatus | "")}>
+                    <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as TransferStatus | "all")}>
                       <SelectTrigger id="status-filter">
                         <SelectValue placeholder="All Statuses" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Statuses</SelectItem>
+                        <SelectItem value="all">All Statuses</SelectItem>
                         <SelectItem value="Requested">Requested</SelectItem>
                         <SelectItem value="Approved">Approved</SelectItem>
                         <SelectItem value="Dispatched">Dispatched</SelectItem>
@@ -327,12 +327,12 @@ const InventoryTransfer = () => {
                   
                   <div>
                     <Label htmlFor="source-type-filter">Filter by Source Type</Label>
-                    <Select value={filterSourceType} onValueChange={(value) => setFilterSourceType(value as "" | "Branch" | "Warehouse")}>
+                    <Select value={filterSourceType} onValueChange={(value) => setFilterSourceType(value as "all" | "Branch" | "Warehouse")}>
                       <SelectTrigger id="source-type-filter">
                         <SelectValue placeholder="All Types" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Types</SelectItem>
+                        <SelectItem value="all">All Types</SelectItem>
                         <SelectItem value="Branch">Branch</SelectItem>
                         <SelectItem value="Warehouse">Warehouse</SelectItem>
                       </SelectContent>
@@ -346,7 +346,7 @@ const InventoryTransfer = () => {
                         <SelectValue placeholder="All Locations" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Locations</SelectItem>
+                        <SelectItem value="all">All Locations</SelectItem>
                         <SelectItem value="Indore (HQ)">Indore (HQ)</SelectItem>
                         <SelectItem value="Bhopal Office">Bhopal Office</SelectItem>
                         <SelectItem value="Jabalpur Office">Jabalpur Office</SelectItem>

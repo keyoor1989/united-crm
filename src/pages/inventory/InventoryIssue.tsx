@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -293,15 +292,13 @@ const InventoryIssue = () => {
                         min="1"
                         value={quantity}
                         onChange={(e) => setQuantity(e.target.value)}
+                        required
                       />
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline">Clear</Button>
-                  <Button type="submit" className="gap-2">
-                    <Send size={16} />
+                  
+                  <Button type="submit" className="w-full mt-6">
+                    <Package className="mr-2 h-4 w-4" />
                     Issue Item
                   </Button>
                 </div>

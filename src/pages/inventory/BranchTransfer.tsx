@@ -113,8 +113,8 @@ const mockTransfers: BranchTransfer[] = [
 const BranchTransfer = () => {
   const [activeTab, setActiveTab] = useState("transfers");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState<TransferStatus | "">("");
-  const [filterBranch, setFilterBranch] = useState<Branch | "">("");
+  const [filterStatus, setFilterStatus] = useState<TransferStatus | "all">("all");
+  const [filterBranch, setFilterBranch] = useState<Branch | "all">("all");
   const [showNewTransferDialog, setShowNewTransferDialog] = useState(false);
   
   // New transfer form state
@@ -137,11 +137,11 @@ const BranchTransfer = () => {
       transfer.destinationBranch.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Filter by status
-    const statusMatch = filterStatus ? transfer.status === filterStatus : true;
+    const statusMatch = filterStatus === "all" ? true : transfer.status === filterStatus;
     
     // Filter by branch (source or destination)
-    const branchMatch = filterBranch ? 
-      (transfer.sourceBranch === filterBranch || transfer.destinationBranch === filterBranch) : true;
+    const branchMatch = filterBranch === "all" ? true : 
+      (transfer.sourceBranch === filterBranch || transfer.destinationBranch === filterBranch);
     
     return searchMatch && statusMatch && branchMatch;
   });
@@ -237,12 +237,12 @@ const BranchTransfer = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <Label htmlFor="status-filter">Filter by Status</Label>
-                  <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as TransferStatus | "")}>
+                  <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as TransferStatus | "all")}>
                     <SelectTrigger id="status-filter">
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Statuses</SelectItem>
+                      <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="Requested">Requested</SelectItem>
                       <SelectItem value="Approved">Approved</SelectItem>
                       <SelectItem value="Dispatched">Dispatched</SelectItem>
@@ -254,12 +254,12 @@ const BranchTransfer = () => {
                 
                 <div>
                   <Label htmlFor="branch-filter">Filter by Branch</Label>
-                  <Select value={filterBranch} onValueChange={(value) => setFilterBranch(value as Branch | "")}>
+                  <Select value={filterBranch} onValueChange={(value) => setFilterBranch(value as Branch | "all")}>
                     <SelectTrigger id="branch-filter">
                       <SelectValue placeholder="All Branches" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Branches</SelectItem>
+                      <SelectItem value="all">All Branches</SelectItem>
                       <SelectItem value="Indore (HQ)">Indore (HQ)</SelectItem>
                       <SelectItem value="Bhopal Office">Bhopal Office</SelectItem>
                       <SelectItem value="Jabalpur Office">Jabalpur Office</SelectItem>
