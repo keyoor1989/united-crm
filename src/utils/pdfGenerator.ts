@@ -6,8 +6,9 @@ import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Register the virtual file system with pdfMake
-// We need to access the pdfMake property on pdfFonts which contains the vfs
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// The type definitions don't correctly represent the runtime structure
+// We need to use a type assertion to access the vfs property
+pdfMake.vfs = (pdfFonts as any).vfs;
 
 // Define fonts for the document
 pdfMake.fonts = {
