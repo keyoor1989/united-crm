@@ -6,7 +6,9 @@ import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Register the virtual file system with pdfMake
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// The pdfFonts object structure is different than what TypeScript expects
+// Need to use a type assertion to make TypeScript happy
+pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
 
 // Define fonts for the document
 pdfMake.fonts = {
