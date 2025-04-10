@@ -131,13 +131,15 @@ const InventoryTransfer = () => {
   const [filterLocation, setFilterLocation] = useState("all");
   const [showNewTransferDialog, setShowNewTransferDialog] = useState(false);
   
+  type LocationType = "Branch" | "Warehouse";
+  
   const [transferForm, setTransferForm] = useState({
     itemId: "",
     quantity: 1,
-    sourceType: "Warehouse" as "Branch" | "Warehouse",
+    sourceType: "Warehouse" as LocationType,
     sourceBranch: "",
     sourceWarehouseId: "",
-    destinationType: "Warehouse" as "Branch" | "Warehouse",
+    destinationType: "Warehouse" as LocationType,
     destinationBranch: "",
     destinationWarehouseId: "",
     transferMethod: "Courier",
@@ -226,7 +228,7 @@ const InventoryTransfer = () => {
     return "Unknown";
   };
   
-  const getLocationIcon = (type: "Branch" | "Warehouse") => {
+  const getLocationIcon = (type: LocationType) => {
     return type === "Branch" ? <Box className="h-4 w-4" /> : <Warehouse className="h-4 w-4" />;
   };
 
@@ -357,13 +359,13 @@ const InventoryTransfer = () => {
                         <TableCell>{transfer.quantity}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {getLocationIcon(transfer.sourceType)}
+                            {getLocationIcon(transfer.sourceType as LocationType)}
                             {getSourceLocationName(transfer)}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {getLocationIcon(transfer.destinationType)}
+                            {getLocationIcon(transfer.destinationType as LocationType)}
                             {getDestinationLocationName(transfer)}
                           </div>
                         </TableCell>
@@ -430,13 +432,13 @@ const InventoryTransfer = () => {
                         <TableCell>{transfer.quantity}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {getLocationIcon(transfer.sourceType)}
+                            {getLocationIcon(transfer.sourceType as LocationType)}
                             {getSourceLocationName(transfer)}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {getLocationIcon(transfer.destinationType)}
+                            {getLocationIcon(transfer.destinationType as LocationType)}
                             {getDestinationLocationName(transfer)}
                           </div>
                         </TableCell>
@@ -510,9 +512,9 @@ const InventoryTransfer = () => {
                     <Label htmlFor="source-type">Source Type</Label>
                     <Select 
                       value={transferForm.sourceType} 
-                      onValueChange={(value) => setTransferForm({ 
+                      onValueChange={(value: string) => setTransferForm({ 
                         ...transferForm, 
-                        sourceType: value as "Branch" | "Warehouse",
+                        sourceType: value as LocationType,
                         sourceBranch: "",
                         sourceWarehouseId: ""
                       })}
@@ -578,9 +580,9 @@ const InventoryTransfer = () => {
                     <Label htmlFor="destination-type">Destination Type</Label>
                     <Select 
                       value={transferForm.destinationType} 
-                      onValueChange={(value) => setTransferForm({ 
+                      onValueChange={(value: string) => setTransferForm({ 
                         ...transferForm, 
-                        destinationType: value as "Branch" | "Warehouse",
+                        destinationType: value as LocationType,
                         destinationBranch: "",
                         destinationWarehouseId: ""
                       })}
