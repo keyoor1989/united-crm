@@ -18,6 +18,7 @@ import InventoryHistory from "@/pages/inventory/InventoryHistory";
 import InventoryAlerts from "@/pages/inventory/InventoryAlerts";
 import InventoryVendors from "@/pages/inventory/InventoryVendors";
 import InventoryTransfer from "@/pages/inventory/InventoryTransfer";
+import BranchTransfer from "@/pages/inventory/BranchTransfer";
 import InventoryReturns from "@/pages/inventory/InventoryReturns";
 import InventoryWarehouses from "@/pages/inventory/InventoryWarehouses";
 import EngineerInventory from "@/pages/inventory/EngineerInventory";
@@ -46,6 +47,7 @@ const AppRoutes = () => (
       <Route path="/inventory/purchase" element={<InventoryPurchase />} />
       <Route path="/inventory/issue" element={<InventoryIssue />} />
       <Route path="/inventory/transfer" element={<InventoryTransfer />} />
+      <Route path="/inventory/branch-transfer" element={<BranchTransfer />} />
       <Route path="/inventory/returns" element={<InventoryReturns />} />
       <Route path="/inventory/warehouses" element={<InventoryWarehouses />} />
       <Route path="/inventory/engineer-inventory" element={<EngineerInventory />} />

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -216,8 +215,14 @@ const Sidebar = () => {
           <SidebarItem
             to="/inventory/transfer"
             icon={<ArrowRightLeft size={16} />}
-            label="Branch Transfer"
+            label="Warehouse Transfer"
             isActive={isActive("/inventory/transfer")}
+          />
+          <SidebarItem
+            to="/inventory/branch-transfer"
+            icon={<Building size={16} />}
+            label="Branch Transfer"
+            isActive={isActive("/inventory/branch-transfer")}
           />
           <SidebarItem
             to="/inventory/returns"
