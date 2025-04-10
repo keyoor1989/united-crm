@@ -6,19 +6,19 @@ import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Set up the fonts
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
 
 // Common PDF styling
 const styles = {
   header: {
     fontSize: 22,
     bold: true,
-    margin: [0, 0, 0, 10]
+    margin: [0, 0, 0, 10] as [number, number, number, number]
   },
   subheader: {
     fontSize: 16,
     bold: true,
-    margin: [0, 10, 0, 5]
+    margin: [0, 10, 0, 5] as [number, number, number, number]
   },
   tableHeader: {
     bold: true,
