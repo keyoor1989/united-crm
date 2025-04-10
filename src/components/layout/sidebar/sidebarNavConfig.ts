@@ -26,7 +26,8 @@ import {
   FileCheck,
   Award,
   History,
-  AlertTriangle
+  AlertTriangle,
+  ShoppingBag
 } from "lucide-react";
 
 export type NavItem = {
@@ -132,6 +133,11 @@ export const inventorySection: NavSection = {
       to: "/inventory/purchase",
       icon: ShoppingCart,
       label: "Purchase Entry"
+    },
+    {
+      to: "/inventory/sales",
+      icon: ShoppingBag,
+      label: "Sales Management"
     },
     {
       to: "/inventory/issue",

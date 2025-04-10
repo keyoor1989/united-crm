@@ -27,6 +27,7 @@ import ProfitReport from "@/pages/inventory/ProfitReport";
 import AmcTracker from "@/pages/inventory/AmcTracker";
 import VendorPerformance from "@/pages/inventory/VendorPerformance";
 import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
+import InventorySales from "@/pages/inventory/InventorySales";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/NotFound";
 
@@ -45,6 +46,7 @@ const AppRoutes = () => (
       <Route path="/inventory/items" element={<InventoryItems />} />
       <Route path="/inventory/vendors" element={<InventoryVendors />} />
       <Route path="/inventory/purchase" element={<InventoryPurchase />} />
+      <Route path="/inventory/sales" element={<InventorySales />} />
       <Route path="/inventory/issue" element={<InventoryIssue />} />
       <Route path="/inventory/transfer" element={<InventoryTransfer />} />
       <Route path="/inventory/branch-transfer" element={<BranchTransfer />} />

@@ -249,3 +249,50 @@ export type VendorPerformance = {
   period: string; // e.g., "Jan 2025", "Q1 2025", "2025"
   createdAt: string;
 };
+
+export type CustomerType = 'Regular' | 'Dealer' | 'Government';
+
+export type PaymentStatus = 'Pending' | 'Partial' | 'Completed';
+
+export type PaymentMethod = 'Cash' | 'Online Transfer' | 'Check' | 'Credit Card';
+
+export type TaxType = 'GST' | 'Non-GST';
+
+export type SaleStatus = 'Draft' | 'Confirmed' | 'Delivered' | 'Cancelled';
+
+export type Sale = {
+  id: string;
+  invoiceNo: string;
+  customerId: string;
+  customerName: string;
+  customerType: CustomerType;
+  date: string;
+  items: SaleItem[];
+  subtotal: number;
+  taxAmount: number;
+  taxType: TaxType;
+  discount: number;
+  total: number;
+  paymentStatus: PaymentStatus;
+  paymentMethod?: PaymentMethod;
+  amountPaid: number;
+  amountDue: number;
+  notes?: string;
+  status: SaleStatus;
+  warehouseId: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SaleItem = {
+  id: string;
+  saleId: string;
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  discount: number;
+  total: number;
+};
