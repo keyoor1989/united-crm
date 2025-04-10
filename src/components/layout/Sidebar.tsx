@@ -41,7 +41,6 @@ const Sidebar = () => {
       <SidebarLogo />
 
       <div className="flex-1 py-4 px-3 flex flex-col gap-1 overflow-y-auto">
-        {/* Main Navigation Items */}
         {mainNavItems.slice(0, 2).map((item) => (
           <SidebarItem
             key={item.to}
@@ -52,7 +51,6 @@ const Sidebar = () => {
           />
         ))}
         
-        {/* Service Section */}
         <SidebarSection
           icon={<serviceSection.icon size={20} />}
           label={serviceSection.label}
@@ -71,7 +69,6 @@ const Sidebar = () => {
           ))}
         </SidebarSection>
         
-        {/* Inventory Section */}
         <SidebarSection
           icon={<inventorySection.icon size={20} />}
           label={inventorySection.label}
@@ -90,7 +87,6 @@ const Sidebar = () => {
           ))}
         </SidebarSection>
         
-        {/* Remaining Main Navigation Items */}
         {mainNavItems.slice(2, -1).map((item) => (
           <SidebarItem
             key={item.to}
@@ -107,7 +103,6 @@ const Sidebar = () => {
           </p>
         </div>
         
-        {/* Location Navigation Items */}
         {locationNavItems.map((item) => (
           <SidebarItem
             key={item.to}
@@ -120,7 +115,6 @@ const Sidebar = () => {
       </div>
 
       <div className="mt-auto p-4 border-t border-sidebar-border">
-        {/* Settings Item (Last item from mainNavItems) */}
         <SidebarItem
           to={mainNavItems[mainNavItems.length - 1].to}
           icon={<mainNavItems[mainNavItems.length - 1].icon size={20} />}
