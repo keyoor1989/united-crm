@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -16,7 +15,14 @@ import {
   Building,
   LineChart,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Boxes,
+  Tag,
+  Printer,
+  ShoppingCart,
+  Send,
+  History,
+  AlertTriangle
 } from "lucide-react";
 
 type SidebarItemProps = {
@@ -72,11 +78,13 @@ const SidebarSection = ({ icon, label, isActive, isOpen, onToggle, children }: S
 const Sidebar = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
-  const isSectionActive = (paths: string[]) => paths.some(path => location.pathname === path);
+  const isSectionActive = (paths: string[]) => paths.some(path => location.pathname === path || location.pathname.startsWith(path + "/"));
   
   const [openSections, setOpenSections] = useState<string[]>([
     // Open the service section by default if we're on a service-related page
-    (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : ""
+    (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : "",
+    // Open the inventory section by default if we're on an inventory-related page
+    (location.pathname.startsWith("/inventory")) ? "inventory" : ""
   ]);
 
   const toggleSection = (section: string) => {
@@ -88,6 +96,7 @@ const Sidebar = () => {
   };
 
   const isServiceSectionOpen = openSections.includes("service");
+  const isInventorySectionOpen = openSections.includes("inventory");
 
   return (
     <div className="h-screen w-64 bg-sidebar fixed left-0 top-0 border-r border-sidebar-border flex flex-col">
@@ -151,12 +160,58 @@ const Sidebar = () => {
             isActive={isActive("/engineer-performance")}
           />
         </SidebarSection>
-        <SidebarItem
-          to="/inventory"
+        
+        <SidebarSection
           icon={<Package size={20} />}
           label="Inventory"
-          isActive={isActive("/inventory")}
-        />
+          isActive={isSectionActive(["/inventory"])}
+          isOpen={isInventorySectionOpen}
+          onToggle={() => toggleSection("inventory")}
+        >
+          <SidebarItem
+            to="/inventory"
+            icon={<Boxes size={16} />}
+            label="Dashboard"
+            isActive={isActive("/inventory")}
+          />
+          <SidebarItem
+            to="/inventory/brands"
+            icon={<Tag size={16} />}
+            label="Brands & Models"
+            isActive={isActive("/inventory/brands")}
+          />
+          <SidebarItem
+            to="/inventory/items"
+            icon={<Package size={16} />}
+            label="Item Master"
+            isActive={isActive("/inventory/items")}
+          />
+          <SidebarItem
+            to="/inventory/purchase"
+            icon={<ShoppingCart size={16} />}
+            label="Purchase Entry"
+            isActive={isActive("/inventory/purchase")}
+          />
+          <SidebarItem
+            to="/inventory/issue"
+            icon={<Send size={16} />}
+            label="Issue Entry"
+            isActive={isActive("/inventory/issue")}
+          />
+          <SidebarItem
+            to="/inventory/history"
+            icon={<History size={16} />}
+            label="Stock History"
+            isActive={isActive("/inventory/history")}
+          />
+          <SidebarItem
+            to="/inventory/alerts"
+            icon={<AlertTriangle size={16} />}
+            label="Low Stock Alerts"
+            isActive={isActive("/inventory/alerts")}
+          />
+        </SidebarSection>
+        
         <SidebarItem
           to="/quotations"
           icon={<FileText size={20} />}
