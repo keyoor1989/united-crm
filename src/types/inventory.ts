@@ -1,3 +1,4 @@
+
 export type Brand = {
   id: string;
   name: string;
@@ -69,8 +70,8 @@ export type PurchaseEntry = {
   purchaseRate: number;
   vendorId: string;
   vendorName: string;
-  warehouseId: string;  // New field
-  warehouseName: string;  // New field
+  warehouseId: string;  // Required field for destination warehouse
+  warehouseName: string;  // Required field for destination warehouse name
   purchaseDate: string;
   invoiceNo: string;
   barcode: string;
@@ -93,6 +94,7 @@ export type IssueEntry = {
   createdAt: string;
   serviceCallId?: string; // For linking to service calls
   machineId?: string; // For machine-wise part tracking
+  warehouseId?: string; // Source warehouse for the issued item
 };
 
 export type StockHistory = {
@@ -105,6 +107,7 @@ export type StockHistory = {
   date: string;
   remarks: string;
   createdAt: string;
+  warehouseId?: string; // Warehouse where the transaction happened
 };
 
 export type Branch = 'Indore (HQ)' | 'Bhopal Office' | 'Jabalpur Office';
@@ -153,6 +156,7 @@ export type ItemReturn = {
   underWarranty: boolean;
   status: ReturnStatus;
   vendorReturnId?: string; // If returned to vendor
+  warehouseId?: string; // Destination warehouse for returned item
   remarks?: string;
   createdAt: string;
 };
@@ -167,6 +171,7 @@ export type EngineerInventory = {
   remainingQuantity: number;
   lastUpdated: string;
   createdAt: string;
+  warehouseId?: string; // Source warehouse from which items were assigned
 };
 
 export type MachinePartUsage = {
@@ -182,6 +187,7 @@ export type MachinePartUsage = {
   installedBy: string;
   serviceCallId?: string;
   createdAt: string;
+  warehouseId?: string; // Source warehouse from which parts were used
 };
 
 export type PartProfitability = {
@@ -213,6 +219,7 @@ export type AMCConsumable = {
   copyCount?: number;
   billingAmount?: number;
   createdAt: string;
+  warehouseId?: string; // Source warehouse from which consumables were used
 };
 
 export type VendorPerformance = {

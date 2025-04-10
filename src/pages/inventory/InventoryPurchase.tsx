@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -115,6 +116,8 @@ const mockPurchases: PurchaseEntry[] = [
     purchaseRate: 5200,
     vendorId: "1",
     vendorName: "Ajanta Traders",
+    warehouseId: "1",
+    warehouseName: "Main Warehouse",
     purchaseDate: "2025-04-05",
     invoiceNo: "INV-1234",
     barcode: "PUR-BT001-001",
@@ -128,6 +131,8 @@ const mockPurchases: PurchaseEntry[] = [
     purchaseRate: 8500,
     vendorId: "2",
     vendorName: "Ravi Distributors",
+    warehouseId: "1",
+    warehouseName: "Main Warehouse",
     purchaseDate: "2025-04-02",
     invoiceNo: "INV-5678",
     barcode: "PUR-DR002-001",
@@ -214,6 +219,8 @@ const InventoryPurchase = () => {
       purchaseRate: 0,
       vendorId: "",
       vendorName: "",
+      warehouseId: "",
+      warehouseName: "",
       invoiceNo: "",
       printBarcode: true,
     });

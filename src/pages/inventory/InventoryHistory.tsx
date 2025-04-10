@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Table, 
@@ -39,7 +38,8 @@ import {
   Filter,
   FileDown,
   Eye,
-  FileText
+  FileText,
+  Warehouse
 } from "lucide-react";
 import {
   Dialog,
@@ -62,6 +62,8 @@ const stockHistoryData = [
     balanceAfter: 5,
     date: "2025-04-01",
     reference: "PO-2554-001",
+    warehouse: "Main Warehouse",
+    warehouseId: "1",
     remarks: "Initial stock purchase",
   },
   {
@@ -74,6 +76,8 @@ const stockHistoryData = [
     balanceAfter: 4,
     date: "2025-04-02",
     reference: "IS-2554-001",
+    warehouse: "Main Warehouse",
+    warehouseId: "1",
     remarks: "Issued to Rahul Verma (Engineer)",
   },
   {
@@ -86,6 +90,8 @@ const stockHistoryData = [
     balanceAfter: 3,
     date: "2025-04-03",
     reference: "IS-2554-002",
+    warehouse: "Main Warehouse",
+    warehouseId: "1",
     remarks: "Issued to ABC Technologies (Customer)",
   },
   {
@@ -98,6 +104,8 @@ const stockHistoryData = [
     balanceAfter: 3,
     date: "2025-04-03",
     reference: "PO-MP2014-001",
+    warehouse: "Main Warehouse",
+    warehouseId: "1",
     remarks: "New stock purchase",
   },
   {
@@ -110,6 +118,8 @@ const stockHistoryData = [
     balanceAfter: 2,
     date: "2025-04-04",
     reference: "IS-MP2014-001",
+    warehouse: "Main Warehouse",
+    warehouseId: "1",
     remarks: "Issued to Deepak Kumar (Engineer)",
   },
   {
@@ -122,6 +132,8 @@ const stockHistoryData = [
     balanceAfter: 4,
     date: "2025-04-04",
     reference: "PO-2525-001",
+    warehouse: "Bhopal Warehouse",
+    warehouseId: "2",
     remarks: "New stock purchase",
   },
   {
@@ -134,7 +146,9 @@ const stockHistoryData = [
     balanceAfter: 2,
     date: "2025-04-05",
     reference: "TR-2525-001",
-    remarks: "Transferred to Bhopal Office",
+    warehouse: "Bhopal Warehouse",
+    warehouseId: "2",
+    remarks: "Transferred to Main Warehouse",
   },
   {
     id: "8",
@@ -146,6 +160,8 @@ const stockHistoryData = [
     balanceAfter: 8,
     date: "2025-04-06",
     reference: "PO-M428-001",
+    warehouse: "Jabalpur Storage",
+    warehouseId: "3",
     remarks: "Bulk purchase",
   },
   {
@@ -158,6 +174,8 @@ const stockHistoryData = [
     balanceAfter: 7,
     date: "2025-04-07",
     reference: "IS-M428-001",
+    warehouse: "Jabalpur Storage",
+    warehouseId: "3",
     remarks: "Issued to XYZ Solutions (Customer)",
   },
   {
@@ -170,6 +188,8 @@ const stockHistoryData = [
     balanceAfter: 1,
     date: "2025-04-08",
     reference: "RT-7845-001",
+    warehouse: "Main Warehouse",
+    warehouseId: "1",
     remarks: "Returned by Tech Innovations (damaged goods replaced)",
   },
 ];
@@ -177,11 +197,13 @@ const stockHistoryData = [
 // Sample filter options
 const brands = ["All", "Kyocera", "Ricoh", "Canon", "HP", "Xerox"];
 const transactionTypes = ["All", "Purchase", "Issue", "Transfer", "Return"];
+const warehouses = ["All", "Main Warehouse", "Bhopal Warehouse", "Jabalpur Storage"];
 
 const InventoryHistory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [brandFilter, setBrandFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
+  const [warehouseFilter, setWarehouseFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
   const [viewItemDetails, setViewItemDetails] = useState<any>(null);
   
@@ -198,11 +220,14 @@ const InventoryHistory = () => {
     // Transaction type filter
     const matchesType = typeFilter === "All" || item.transactionType === typeFilter;
     
+    // Warehouse filter
+    const matchesWarehouse = warehouseFilter === "All" || item.warehouse === warehouseFilter;
+    
     // Date filter
     const matchesDate = !dateFilter || 
       format(new Date(item.date), "yyyy-MM-dd") === format(dateFilter, "yyyy-MM-dd");
     
-    return matchesSearch && matchesBrand && matchesType && matchesDate;
+    return matchesSearch && matchesBrand && matchesType && matchesWarehouse && matchesDate;
   });
   
   // Function to get badge variant based on transaction type
@@ -242,13 +267,14 @@ const InventoryHistory = () => {
     setSearchQuery("");
     setBrandFilter("All");
     setTypeFilter("All");
+    setWarehouseFilter("All");
     setDateFilter(undefined);
   };
 
   // Export to CSV function
   const exportToCSV = () => {
     // Create CSV content
-    const headers = ["Item Name", "Brand", "Model", "Transaction Type", "Quantity", "Balance", "Date", "Reference", "Remarks"];
+    const headers = ["Item Name", "Brand", "Model", "Transaction Type", "Quantity", "Balance", "Date", "Reference", "Warehouse", "Remarks"];
     const rows = filteredHistory.map(item => [
       item.itemName,
       item.brand,
@@ -258,6 +284,7 @@ const InventoryHistory = () => {
       item.balanceAfter,
       item.date,
       item.reference,
+      item.warehouse,
       item.remarks
     ]);
     
@@ -309,7 +336,7 @@ const InventoryHistory = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* Search input */}
             <div className="space-y-2">
               <label htmlFor="search" className="text-sm font-medium">
@@ -365,6 +392,25 @@ const InventoryHistory = () => {
               </Select>
             </div>
             
+            {/* Warehouse filter */}
+            <div className="space-y-2">
+              <label htmlFor="warehouse-filter" className="text-sm font-medium">
+                Warehouse
+              </label>
+              <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+                <SelectTrigger id="warehouse-filter">
+                  <SelectValue placeholder="Filter by warehouse" />
+                </SelectTrigger>
+                <SelectContent>
+                  {warehouses.map((warehouse) => (
+                    <SelectItem key={warehouse} value={warehouse}>
+                      {warehouse}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             {/* Date filter */}
             <div className="space-y-2">
               <label htmlFor="date-filter" className="text-sm font-medium">
@@ -414,6 +460,7 @@ const InventoryHistory = () => {
                   <TableHead className="text-right">Quantity</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Warehouse</TableHead>
                   <TableHead>Reference</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
@@ -421,7 +468,7 @@ const InventoryHistory = () => {
               <TableBody>
                 {filteredHistory.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
+                    <TableCell colSpan={9} className="h-24 text-center">
                       No stock history found with the current filters.
                     </TableCell>
                   </TableRow>
@@ -445,6 +492,12 @@ const InventoryHistory = () => {
                       </TableCell>
                       <TableCell className="text-right">{item.balanceAfter}</TableCell>
                       <TableCell>{item.date}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Warehouse className="h-3.5 w-3.5 text-muted-foreground" />
+                          {item.warehouse}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-mono text-xs">{item.reference}</TableCell>
                       <TableCell className="text-center">
                         <Button 
@@ -517,6 +570,14 @@ const InventoryHistory = () => {
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground">Balance After</h4>
                   <p className="font-medium">{viewItemDetails.balanceAfter}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-muted-foreground">Warehouse</h4>
+                <div className="flex items-center gap-1 mt-1">
+                  <Warehouse className="h-4 w-4 text-muted-foreground" />
+                  <span>{viewItemDetails.warehouse}</span>
                 </div>
               </div>
               
