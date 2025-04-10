@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Routes, Route } from "react-router-dom";
+import Layout from "@/components/layout/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Customers from "@/pages/Customers";
 import CustomerForm from "@/pages/CustomerForm";
@@ -29,31 +30,33 @@ import NotFound from "@/pages/NotFound";
 
 const AppRoutes = () => (
   <Routes>
-    <Route path="/" element={<Dashboard />} />
-    <Route path="/customers" element={<Customers />} />
-    <Route path="/customer-form" element={<CustomerForm />} />
-    <Route path="/service" element={<Service />} />
-    <Route path="/service-call-form" element={<ServiceCallForm />} />
-    <Route path="/engineer/:id" element={<EngineerDetail />} />
-    <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
-    <Route path="/inventory" element={<Inventory />} />
-    <Route path="/inventory/brands" element={<InventoryBrands />} />
-    <Route path="/inventory/items" element={<InventoryItems />} />
-    <Route path="/inventory/vendors" element={<InventoryVendors />} />
-    <Route path="/inventory/purchase" element={<InventoryPurchase />} />
-    <Route path="/inventory/issue" element={<InventoryIssue />} />
-    <Route path="/inventory/transfer" element={<InventoryTransfer />} />
-    <Route path="/inventory/returns" element={<InventoryReturns />} />
-    <Route path="/inventory/warehouses" element={<InventoryWarehouses />} />
-    <Route path="/inventory/engineer-inventory" element={<EngineerInventory />} />
-    <Route path="/inventory/machine-parts" element={<MachineParts />} />
-    <Route path="/inventory/profit-report" element={<ProfitReport />} />
-    <Route path="/inventory/amc-tracker" element={<AmcTracker />} />
-    <Route path="/inventory/vendor-performance" element={<VendorPerformance />} />
-    <Route path="/inventory/history" element={<InventoryHistory />} />
-    <Route path="/inventory/alerts" element={<InventoryAlerts />} />
-    <Route path="/chat" element={<Chat />} />
-    <Route path="*" element={<NotFound />} />
+    <Route element={<Layout />}>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/customers" element={<Customers />} />
+      <Route path="/customer-form" element={<CustomerForm />} />
+      <Route path="/service" element={<Service />} />
+      <Route path="/service-call-form" element={<ServiceCallForm />} />
+      <Route path="/engineer/:id" element={<EngineerDetail />} />
+      <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
+      <Route path="/inventory" element={<Inventory />} />
+      <Route path="/inventory/brands" element={<InventoryBrands />} />
+      <Route path="/inventory/items" element={<InventoryItems />} />
+      <Route path="/inventory/vendors" element={<InventoryVendors />} />
+      <Route path="/inventory/purchase" element={<InventoryPurchase />} />
+      <Route path="/inventory/issue" element={<InventoryIssue />} />
+      <Route path="/inventory/transfer" element={<InventoryTransfer />} />
+      <Route path="/inventory/returns" element={<InventoryReturns />} />
+      <Route path="/inventory/warehouses" element={<InventoryWarehouses />} />
+      <Route path="/inventory/engineer-inventory" element={<EngineerInventory />} />
+      <Route path="/inventory/machine-parts" element={<MachineParts />} />
+      <Route path="/inventory/profit-report" element={<ProfitReport />} />
+      <Route path="/inventory/amc-tracker" element={<AmcTracker />} />
+      <Route path="/inventory/vendor-performance" element={<VendorPerformance />} />
+      <Route path="/inventory/history" element={<InventoryHistory />} />
+      <Route path="/inventory/alerts" element={<InventoryAlerts />} />
+      <Route path="/chat" element={<Chat />} />
+      <Route path="*" element={<NotFound />} />
+    </Route>
   </Routes>
 );
 
