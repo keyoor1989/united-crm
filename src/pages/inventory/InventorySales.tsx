@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -200,6 +199,17 @@ const inventoryItems = [
   }
 ];
 
+// Define the type for selected items with the total property
+type SelectedItem = {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  discount: number;
+  taxRate: number;
+  total?: number; // Add total as optional property
+};
+
 const InventorySales = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
@@ -212,14 +222,7 @@ const InventorySales = () => {
   const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false);
   const [sales, setSales] = useState<Sale[]>(sampleSales);
   const [items, setItems] = useState(inventoryItems);
-  const [selectedItems, setSelectedItems] = useState<{
-    id: string;
-    name: string;
-    quantity: number;
-    price: number;
-    discount: number;
-    taxRate: number;
-  }[]>([]);
+  const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
   const [isDeductStockDialogOpen, setIsDeductStockDialogOpen] = useState(false);
   const [saleToDeduct, setSaleToDeduct] = useState<Sale | null>(null);
   
