@@ -519,7 +519,7 @@ const VendorPerformance = () => {
                           <Badge variant="secondary">Qualified Vendor</Badge>
                         </li>
                         <li className="flex justify-between">
-                          <span>Below Average (< 70%):</span>
+                          <span>Below Average (&lt; 70%):</span>
                           <Badge variant="outline">Review Required</Badge>
                         </li>
                       </ul>
