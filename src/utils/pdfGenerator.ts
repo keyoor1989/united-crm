@@ -5,8 +5,9 @@ import { TDocumentDefinitions } from "pdfmake/interfaces";
 import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
-// Set up the fonts - handle type issues with a proper type assertion
-pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+// Set up the fonts with proper type handling
+// pdfMake expects vfs to be assigned to its own vfs property
+pdfMake.vfs = pdfFonts.vfs;
 
 // Common PDF styling
 const styles = {
