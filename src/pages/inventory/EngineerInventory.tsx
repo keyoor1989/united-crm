@@ -1,687 +1,538 @@
 import React, { useState } from "react";
-import Layout from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  User,
-  Search,
-  Filter,
-  Plus,
-  Package,
-  AlertTriangle,
-  CheckCircle2,
-  Calendar,
-  ArrowUpDown,
-  BarChart2,
-  RefreshCw,
-  MoreHorizontal,
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // Added missing import
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { 
+  Users, 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash, 
+  FileText, 
+  Building,
+  Phone, 
+  Mail,
+  Receipt
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Vendor } from "@/types/inventory";
 import { toast } from "sonner";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import ItemSelector from "@/components/inventory/ItemSelector";
-import { Brand, Model, InventoryItem } from "@/types/inventory";
 
-// Mock data for engineers
-const mockEngineers = [
-  { id: "eng1", name: "Rahul Sharma", location: "Indore", activeServiceCalls: 3 },
-  { id: "eng2", name: "Amit Patel", location: "Bhopal", activeServiceCalls: 1 },
-  { id: "eng3", name: "Pradeep Kumar", location: "Jabalpur", activeServiceCalls: 0 },
-  { id: "eng4", name: "Sunil Verma", location: "Indore", activeServiceCalls: 2 },
-];
-
-// Mock data for engineer inventory
-const mockEngineerInventory = [
-  { 
-    id: "ei001", 
-    engineerId: "eng1", 
-    engineerName: "Rahul Sharma", 
-    itemId: "item1", 
-    itemName: "Kyocera TK-1175 Toner", 
-    assignedQuantity: 2, 
-    remainingQuantity: 1, 
-    lastUpdated: "2025-04-05" 
-  },
-  { 
-    id: "ei002", 
-    engineerId: "eng1", 
-    engineerName: "Rahul Sharma", 
-    itemId: "item2", 
-    itemName: "Canon NPG-59 Drum", 
-    assignedQuantity: 1, 
-    remainingQuantity: 0, 
-    lastUpdated: "2025-04-03" 
-  },
-  { 
-    id: "ei003", 
-    engineerId: "eng2", 
-    engineerName: "Amit Patel", 
-    itemId: "item3", 
-    itemName: "Ricoh SP 210 Toner", 
-    assignedQuantity: 3, 
-    remainingQuantity: 2, 
-    lastUpdated: "2025-04-07" 
-  },
-  { 
-    id: "ei004", 
-    engineerId: "eng3", 
-    engineerName: "Pradeep Kumar", 
-    itemId: "item4", 
-    itemName: "HP CF217A Toner", 
-    assignedQuantity: 2, 
-    remainingQuantity: 2, 
-    lastUpdated: "2025-04-01" 
-  },
-  { 
-    id: "ei005", 
-    engineerId: "eng4", 
-    engineerName: "Sunil Verma", 
-    itemId: "item5", 
-    itemName: "Xerox 3020 Drum Unit", 
-    assignedQuantity: 1, 
-    remainingQuantity: 0, 
-    lastUpdated: "2025-04-02" 
-  },
-];
-
-// Mock data for usage history
-const mockUsageHistory = [
+// Mock vendors data
+const mockVendors: Vendor[] = [
   {
-    id: "uh001",
-    engineerId: "eng1",
-    engineerName: "Rahul Sharma",
-    itemId: "item1",
-    itemName: "Kyocera TK-1175 Toner",
-    quantity: 1,
-    date: "2025-04-04",
-    serviceCallId: "SC001",
-    customerName: "ABC Technologies"
+    id: "1",
+    name: "Ajanta Traders",
+    gstNo: "23AABCT1234Q1Z5",
+    phone: "9876543210",
+    email: "info@ajantatraders.com",
+    address: "123 Market Road, Indore, MP",
+    createdAt: "2025-01-15"
   },
   {
-    id: "uh002",
-    engineerId: "eng1",
-    engineerName: "Rahul Sharma",
-    itemId: "item2",
-    itemName: "Canon NPG-59 Drum",
-    quantity: 1,
-    date: "2025-04-03",
-    serviceCallId: "SC002",
-    customerName: "XYZ Corp"
+    id: "2",
+    name: "Ravi Distributors",
+    gstNo: "23AADCR5678Q1Z6",
+    phone: "9876543211",
+    email: "contact@ravidistributors.com",
+    address: "456 Commercial Street, Bhopal, MP",
+    createdAt: "2025-02-10"
   },
   {
-    id: "uh003",
-    engineerId: "eng2",
-    engineerName: "Amit Patel",
-    itemId: "item3",
-    itemName: "Ricoh SP 210 Toner",
-    quantity: 1,
-    date: "2025-04-06",
-    serviceCallId: "SC003",
-    customerName: "Global Solutions"
-  },
+    id: "3",
+    name: "Precision Equipments",
+    gstNo: "23AABCP9012Q1Z7",
+    phone: "9876543212",
+    email: "service@precisionequipments.com",
+    address: "789 Industrial Area, Jabalpur, MP",
+    createdAt: "2025-03-05"
+  }
 ];
 
-// Sample brands and models
-const mockBrands: Brand[] = [
-  { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
-  { id: "2", name: "Ricoh", createdAt: "2025-03-02" },
-  { id: "3", name: "Canon", createdAt: "2025-03-03" },
-  { id: "4", name: "HP", createdAt: "2025-03-04" },
-  { id: "5", name: "Xerox", createdAt: "2025-03-05" },
-];
+type VendorFormData = {
+  id?: string;
+  name: string;
+  gstNo: string;
+  phone: string;
+  email: string;
+  address: string;
+};
 
-const mockModels: Model[] = [
-  { id: "1", brandId: "1", name: "TK-1175", type: "Spare Part", createdAt: "2025-03-01" },
-  { id: "2", brandId: "3", name: "NPG-59", type: "Spare Part", createdAt: "2025-03-02" },
-  { id: "3", brandId: "2", name: "SP 210", type: "Spare Part", createdAt: "2025-03-03" },
-  { id: "4", brandId: "4", name: "CF217A", type: "Spare Part", createdAt: "2025-03-04" },
-  { id: "5", brandId: "5", name: "3020", type: "Spare Part", createdAt: "2025-03-05" },
-];
-
-const mockInventoryItems: InventoryItem[] = [
-  { 
-    id: "item1", 
-    modelId: "1", 
-    brandId: "1", 
-    name: "Kyocera TK-1175 Toner", 
-    type: "Toner", 
-    minQuantity: 5, 
-    currentQuantity: 12, 
-    lastPurchasePrice: 4500, 
-    lastVendor: "Copier Zone", 
-    barcode: "KYO-TK1175-001", 
-    createdAt: "2025-03-10" 
-  },
-  { 
-    id: "item2", 
-    modelId: "2", 
-    brandId: "3", 
-    name: "Canon NPG-59 Drum", 
-    type: "Drum", 
-    minQuantity: 2, 
-    currentQuantity: 3, 
-    lastPurchasePrice: 8700, 
-    lastVendor: "Toner World", 
-    barcode: "CAN-NPG59-001", 
-    createdAt: "2025-03-11" 
-  },
-  { 
-    id: "item3", 
-    modelId: "3", 
-    brandId: "2", 
-    name: "Ricoh SP 210 Toner", 
-    type: "Toner", 
-    minQuantity: 3, 
-    currentQuantity: 8, 
-    lastPurchasePrice: 3200, 
-    lastVendor: "Ricoh Supplies", 
-    barcode: "RIC-SP210-001", 
-    createdAt: "2025-03-12" 
-  },
-  { 
-    id: "item4", 
-    modelId: "4", 
-    brandId: "4", 
-    name: "HP CF217A Toner", 
-    type: "Toner", 
-    minQuantity: 4, 
-    currentQuantity: 6, 
-    lastPurchasePrice: 2500, 
-    lastVendor: "HP Store", 
-    barcode: "HP-CF217A-001", 
-    createdAt: "2025-03-13" 
-  },
-  { 
-    id: "item5", 
-    modelId: "5", 
-    brandId: "5", 
-    name: "Xerox 3020 Drum Unit", 
-    type: "Drum", 
-    minQuantity: 1, 
-    currentQuantity: 2, 
-    lastPurchasePrice: 7500, 
-    lastVendor: "Xerox Supplies", 
-    barcode: "XER-3020-001", 
-    createdAt: "2025-03-14" 
-  },
-];
-
-const EngineerInventory = () => {
-  const [activeTab, setActiveTab] = useState("engineers");
+const Vendors = () => {
+  const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedEngineer, setSelectedEngineer] = useState<string | null>(null);
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
-  const [assignQuantity, setAssignQuantity] = useState(1);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [vendorDialog, setVendorDialog] = useState(false);
+  const [purchaseHistoryDialog, setPurchaseHistoryDialog] = useState(false);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [vendorForm, setVendorForm] = useState<VendorFormData>({
+    name: "",
+    gstNo: "",
+    phone: "",
+    email: "",
+    address: ""
+  });
   
-  // Filter engineer inventory by engineer ID
-  const getEngineerInventory = (engineerId: string) => {
-    return mockEngineerInventory.filter(item => 
-      item.engineerId === engineerId &&
-      (searchQuery ? item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) : true)
-    );
+  // Filter vendors based on search query
+  const filteredVendors = vendors.filter(vendor => 
+    vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    vendor.gstNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    vendor.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const selectedVendor = vendors.find(v => v.id === selectedVendorId);
+  
+  // Open vendor form dialog for creating a new vendor
+  const handleAddVendor = () => {
+    setVendorForm({
+      name: "",
+      gstNo: "",
+      phone: "",
+      email: "",
+      address: ""
+    });
+    setSelectedVendorId(null);
+    setVendorDialog(true);
   };
   
-  // Filter usage history by engineer ID
-  const getEngineerUsageHistory = (engineerId: string) => {
-    return mockUsageHistory.filter(item => 
-      item.engineerId === engineerId &&
-      (searchQuery ? item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) : true)
-    );
+  // Open vendor form dialog for editing a vendor
+  const handleEditVendor = (vendor: Vendor) => {
+    setVendorForm({
+      id: vendor.id,
+      name: vendor.name,
+      gstNo: vendor.gstNo,
+      phone: vendor.phone,
+      email: vendor.email,
+      address: vendor.address
+    });
+    setSelectedVendorId(vendor.id);
+    setVendorDialog(true);
   };
   
-  // Handle assign new item to engineer
-  const handleAssignItem = (engineerId: string) => {
-    setSelectedEngineer(engineerId);
-    setIsAssignDialogOpen(true);
+  // Open purchase history dialog for a vendor
+  const handleViewPurchaseHistory = (vendorId: string) => {
+    setSelectedVendorId(vendorId);
+    setPurchaseHistoryDialog(true);
   };
   
-  // Handle assign item submit
-  const handleAssignItemSubmit = () => {
-    if (!selectedItem) {
-      toast.warning("Please select an item to assign");
-      return;
+  // Handle deleting a vendor
+  const handleDeleteVendor = (vendorId: string) => {
+    // In a real app, you'd call an API to delete the vendor
+    setVendors(prevVendors => prevVendors.filter(v => v.id !== vendorId));
+    toast.success("Vendor deleted successfully");
+  };
+  
+  // Handle form input changes
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setVendorForm(prev => ({ ...prev, [name]: value }));
+  };
+  
+  // Handle form submission for adding/editing a vendor
+  const handleSubmitVendor = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (selectedVendorId) {
+      // Edit existing vendor
+      setVendors(prevVendors => 
+        prevVendors.map(v => 
+          v.id === selectedVendorId 
+            ? { 
+                ...vendorForm, 
+                id: selectedVendorId,
+                createdAt: v.createdAt
+              } as Vendor
+            : v
+        )
+      );
+      toast.success("Vendor updated successfully");
+    } else {
+      // Add new vendor
+      const newVendor: Vendor = {
+        ...vendorForm,
+        id: `${vendors.length + 1}`,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      setVendors(prev => [...prev, newVendor]);
+      toast.success("Vendor added successfully");
     }
     
-    if (assignQuantity <= 0) {
-      toast.warning("Quantity must be greater than 0");
-      return;
-    }
-    
-    if (assignQuantity > selectedItem.currentQuantity) {
-      toast.error("Cannot assign more than available stock");
-      return;
-    }
-    
-    const engineerName = mockEngineers.find(e => e.id === selectedEngineer)?.name;
-    
-    toast.success(`${assignQuantity} × ${selectedItem.name} assigned to ${engineerName}`);
-    setIsAssignDialogOpen(false);
-    setSelectedItem(null);
-    setAssignQuantity(1);
-  };
-  
-  // Handle refresh engineer inventory
-  const handleRefreshInventory = (engineerId: string) => {
-    toast.success(`${mockEngineers.find(e => e.id === engineerId)?.name}'s inventory refreshed`);
-  };
-
-  // Handle item selection from the ItemSelector component
-  const handleItemSelected = (item: InventoryItem) => {
-    setSelectedItem(item);
+    setVendorDialog(false);
   };
 
   return (
-    <Layout>
-      <div className="container p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Engineer Inventory Management</h1>
-            <p className="text-muted-foreground">
-              Track inventory assigned to field engineers
-            </p>
-          </div>
+    <div className="container p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Vendor Management</h1>
+          <p className="text-muted-foreground">Manage your suppliers and track purchase history</p>
         </div>
-        
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative grow">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search engineers or items..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="engineers">Engineers</TabsTrigger>
-            <TabsTrigger value="inventory">Current Inventory</TabsTrigger>
-            <TabsTrigger value="usage">Usage History</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="engineers" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Field Engineers</CardTitle>
-                <CardDescription>
-                  Select an engineer to view their inventory
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mockEngineers
-                    .filter(eng => 
-                      searchQuery ? 
-                        eng.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        eng.location.toLowerCase().includes(searchQuery.toLowerCase())
-                      : true
-                    )
-                    .map((engineer) => (
-                      <Card 
-                        key={engineer.id}
-                        className={`cursor-pointer hover:border-primary transition-colors ${
-                          selectedEngineer === engineer.id ? 'border-primary bg-primary/5' : ''
-                        }`}
-                        onClick={() => {
-                          setSelectedEngineer(engineer.id);
-                          setActiveTab("inventory");
-                        }}
-                      >
-                        <CardContent className="pt-6">
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                              <User className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                              <h3 className="font-medium">{engineer.name}</h3>
-                              <p className="text-sm text-muted-foreground">{engineer.location}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={engineer.activeServiceCalls > 0 ? "default" : "outline"}>
-                                  {engineer.activeServiceCalls} active calls
-                                </Badge>
-                                <Badge variant="secondary">
-                                  {getEngineerInventory(engineer.id).length} items
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-end mt-4">
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAssignItem(engineer.id);
-                              }}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Assign Item
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                    
-                  {mockEngineers.filter(eng => 
-                    searchQuery ? 
-                      eng.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      eng.location.toLowerCase().includes(searchQuery.toLowerCase())
-                    : true
-                  ).length === 0 && (
-                    <div className="col-span-full text-center py-8 text-muted-foreground">
-                      No engineers found
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="inventory" className="mt-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>
-                    {selectedEngineer ? 
-                      `${mockEngineers.find(e => e.id === selectedEngineer)?.name}'s Inventory` : 
-                      "Current Engineer Inventory"
-                    }
-                  </CardTitle>
-                  <CardDescription>
-                    {selectedEngineer ? 
-                      `Items currently assigned to ${mockEngineers.find(e => e.id === selectedEngineer)?.name}` : 
-                      "Select an engineer from the Engineers tab first"
-                    }
-                  </CardDescription>
-                </div>
-                
-                {selectedEngineer && (
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleAssignItem(selectedEngineer)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Assign New Item
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleRefreshInventory(selectedEngineer)}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-1" />
-                      Refresh
-                    </Button>
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent>
-                {!selectedEngineer ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <User className="h-12 w-12 text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">
-                      Please select an engineer from the Engineers tab
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => setActiveTab("engineers")}
-                    >
-                      Go to Engineers
-                    </Button>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead className="text-right">Assigned Qty</TableHead>
-                        <TableHead className="text-right">Remaining Qty</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {getEngineerInventory(selectedEngineer).map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.itemName}</TableCell>
-                          <TableCell className="text-right">{item.assignedQuantity}</TableCell>
-                          <TableCell className="text-right">{item.remainingQuantity}</TableCell>
-                          <TableCell>{new Date(item.lastUpdated).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            {item.remainingQuantity === 0 ? (
-                              <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                Out of Stock
-                              </Badge>
-                            ) : item.remainingQuantity < item.assignedQuantity / 2 ? (
-                              <Badge variant="warning" className="flex items-center gap-1 w-fit">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                Low Stock
-                              </Badge>
-                            ) : (
-                              <Badge variant="success" className="flex items-center gap-1 w-fit">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                In Stock
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm">
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      
-                      {getEngineerInventory(selectedEngineer).length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center">
-                            No inventory items found for this engineer
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="usage" className="mt-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>
-                    {selectedEngineer ? 
-                      `${mockEngineers.find(e => e.id === selectedEngineer)?.name}'s Usage History` : 
-                      "Engineer Usage History"
-                    }
-                  </CardTitle>
-                  <CardDescription>
-                    {selectedEngineer ? 
-                      `Parts used by ${mockEngineers.find(e => e.id === selectedEngineer)?.name} during service calls` : 
-                      "Select an engineer from the Engineers tab first"
-                    }
-                  </CardDescription>
-                </div>
-                
-                {selectedEngineer && (
-                  <div className="flex items-center gap-2">
-                    <Select defaultValue="all">
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue placeholder="Date Range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Time</SelectItem>
-                        <SelectItem value="week">Last Week</SelectItem>
-                        <SelectItem value="month">Last Month</SelectItem>
-                        <SelectItem value="quarter">Last Quarter</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent>
-                {!selectedEngineer ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <User className="h-12 w-12 text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">
-                      Please select an engineer from the Engineers tab
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => setActiveTab("engineers")}
-                    >
-                      Go to Engineers
-                    </Button>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Service Call</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {getEngineerUsageHistory(selectedEngineer).map((usage) => (
-                        <TableRow key={usage.id}>
-                          <TableCell className="font-medium">{usage.itemName}</TableCell>
-                          <TableCell>{usage.quantity}</TableCell>
-                          <TableCell>{usage.serviceCallId}</TableCell>
-                          <TableCell>{usage.customerName}</TableCell>
-                          <TableCell>{new Date(usage.date).toLocaleDateString()}</TableCell>
-                        </TableRow>
-                      ))}
-                      
-                      {getEngineerUsageHistory(selectedEngineer).length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="h-24 text-center">
-                            No usage history found for this engineer
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="reports" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Engineer Inventory Reports</CardTitle>
-                <CardDescription>
-                  Analytics and reports for engineer inventory usage
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-8">
-                  <BarChart2 className="h-12 w-12 text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">
-                    Engineer inventory reports coming soon
-                  </p>
-                  <p className="text-sm text-muted-foreground text-center max-w-md mt-2">
-                    This section will include reports on part consumption rates, engineer efficiency in part usage, and comparisons between engineers.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        <Button onClick={handleAddVendor}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add New Vendor
+        </Button>
       </div>
       
-      {/* Assign Item Dialog */}
-      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+      <Tabs defaultValue="vendors" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="vendors">Vendors</TabsTrigger>
+          <TabsTrigger value="reports">Purchase Reports</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="vendors">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Vendor Directory</CardTitle>
+                <CardDescription>Manage your supplier information</CardDescription>
+              </div>
+              <div className="relative w-[300px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search vendors..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Vendor Name</TableHead>
+                    <TableHead>GST No.</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredVendors.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No vendors found. Add your first vendor to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredVendors.map((vendor) => (
+                      <TableRow key={vendor.id}>
+                        <TableCell className="font-medium">{vendor.name}</TableCell>
+                        <TableCell>{vendor.gstNo || "-"}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="flex items-center text-sm">
+                              <Phone className="h-3 w-3 mr-1" /> {vendor.phone}
+                            </span>
+                            <span className="flex items-center text-sm text-muted-foreground">
+                              <Mail className="h-3 w-3 mr-1" /> {vendor.email}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">{vendor.address}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEditVendor(vendor)}>
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleViewPurchaseHistory(vendor.id)}>
+                              <Receipt className="h-4 w-4" />
+                              <span className="sr-only">History</span>
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDeleteVendor(vendor.id)}>
+                              <Trash className="h-4 w-4" />
+                              <span className="sr-only">Delete</span>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="reports">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vendor Purchase Reports</CardTitle>
+              <CardDescription>Compare purchase quantities and rates across vendors</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <VendorReportComponent />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Vendor Add/Edit Dialog */}
+      <Dialog open={vendorDialog} onOpenChange={setVendorDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Assign Item to Engineer</DialogTitle>
+            <DialogTitle>
+              {selectedVendorId ? "Edit Vendor" : "Add New Vendor"}
+            </DialogTitle>
             <DialogDescription>
-              Select an item and quantity to assign to {selectedEngineer ? mockEngineers.find(e => e.id === selectedEngineer)?.name : "engineer"}.
+              Fill in the vendor details below. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <ItemSelector 
-              brands={mockBrands}
-              models={mockModels}
-              items={mockInventoryItems}
-              onItemSelect={handleItemSelected}
-              showBarcodeScan={false}
-            />
+          <form onSubmit={handleSubmitVendor} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Vendor Name *</Label>
+              <Input
+                id="name"
+                name="name"
+                value={vendorForm.name}
+                onChange={handleFormChange}
+                placeholder="Enter vendor name"
+                required
+              />
+            </div>
             
-            {selectedItem && (
-              <div className="space-y-2 mt-4">
-                <Label htmlFor="assign-quantity">Quantity</Label>
+            <div className="space-y-2">
+              <Label htmlFor="gstNo">GST Number</Label>
+              <Input
+                id="gstNo"
+                name="gstNo"
+                value={vendorForm.gstNo}
+                onChange={handleFormChange}
+                placeholder="Enter GST number (optional)"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number *</Label>
                 <Input
-                  id="assign-quantity"
-                  type="number"
-                  min="1"
-                  max={selectedItem.currentQuantity}
-                  value={assignQuantity}
-                  onChange={(e) => setAssignQuantity(parseInt(e.target.value) || 1)}
+                  id="phone"
+                  name="phone"
+                  value={vendorForm.phone}
+                  onChange={handleFormChange}
+                  placeholder="Enter phone number"
+                  required
                 />
-                
-                <div className="text-sm text-muted-foreground">
-                  Available stock: {selectedItem.currentQuantity}
-                </div>
               </div>
-            )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  name="email"
+                  value={vendorForm.email}
+                  onChange={handleFormChange}
+                  placeholder="Enter email address"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="address">Address *</Label>
+              <Input
+                id="address"
+                name="address"
+                value={vendorForm.address}
+                onChange={handleFormChange}
+                placeholder="Enter complete address"
+                required
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setVendorDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                {selectedVendorId ? "Update Vendor" : "Add Vendor"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Vendor Purchase History Dialog */}
+      <Dialog open={purchaseHistoryDialog} onOpenChange={setPurchaseHistoryDialog}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>
+              Purchase History: {selectedVendor?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Complete purchase history for this vendor
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-[400px] overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Rate</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Invoice</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Mock purchase history - this would be fetched from an API in a real app */}
+                <TableRow>
+                  <TableCell>10-Mar-2025</TableCell>
+                  <TableCell>Ricoh 1015 Drum</TableCell>
+                  <TableCell>5</TableCell>
+                  <TableCell>₹3,200</TableCell>
+                  <TableCell>₹16,000</TableCell>
+                  <TableCell>INV-1234</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>05-Feb-2025</TableCell>
+                  <TableCell>Kyocera 2551 Toner</TableCell>
+                  <TableCell>10</TableCell>
+                  <TableCell>₹2,800</TableCell>
+                  <TableCell>₹28,000</TableCell>
+                  <TableCell>INV-1156</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAssignItemSubmit} disabled={!selectedItem}>
-              <Plus className="mr-2 h-4 w-4" />
-              Assign Item
+            <Button onClick={() => setPurchaseHistoryDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Layout>
+    </div>
   );
 };
 
-export default EngineerInventory;
+// Vendor Report Component
+const VendorReportComponent = () => {
+  const [brandFilter, setBrandFilter] = useState("all");
+  const [modelFilter, setModelFilter] = useState("all");
+  const [itemFilter, setItemFilter] = useState("all");
+  const [vendorFilter, setVendorFilter] = useState("all");
+  
+  // This would be fetched from an API in a real app
+  const reportData = [
+    {
+      vendor: "Ajanta Traders", 
+      quantityPurchased: 150, 
+      avgRate: 3200, 
+      lastPurchaseDate: "10-Mar-2025"
+    },
+    {
+      vendor: "Ravi Distributors", 
+      quantityPurchased: 100, 
+      avgRate: 3350, 
+      lastPurchaseDate: "01-Feb-2025"
+    },
+    {
+      vendor: "Precision Equipments", 
+      quantityPurchased: 80, 
+      avgRate: 3100, 
+      lastPurchaseDate: "15-Jan-2025"
+    }
+  ];
+  
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <Label htmlFor="brand-filter">Brand</Label>
+          <select
+            id="brand-filter"
+            value={brandFilter}
+            onChange={(e) => setBrandFilter(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="all">All Brands</option>
+            <option value="kyocera">Kyocera</option>
+            <option value="ricoh">Ricoh</option>
+          </select>
+        </div>
+        
+        <div>
+          <Label htmlFor="model-filter">Model</Label>
+          <select
+            id="model-filter"
+            value={modelFilter}
+            onChange={(e) => setModelFilter(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="all">All Models</option>
+            <option value="2554ci">2554ci</option>
+            <option value="1015">1015</option>
+          </select>
+        </div>
+        
+        <div>
+          <Label htmlFor="item-filter">Item</Label>
+          <select
+            id="item-filter"
+            value={itemFilter}
+            onChange={(e) => setItemFilter(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="all">All Items</option>
+            <option value="toner">Toner</option>
+            <option value="drum">Drum</option>
+          </select>
+        </div>
+        
+        <div>
+          <Label htmlFor="vendor-filter">Vendor</Label>
+          <select
+            id="vendor-filter"
+            value={vendorFilter}
+            onChange={(e) => setVendorFilter(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="all">All Vendors</option>
+            <option value="1">Ajanta Traders</option>
+            <option value="2">Ravi Distributors</option>
+            <option value="3">Precision Equipments</option>
+          </select>
+        </div>
+      </div>
+      
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Vendor Name</TableHead>
+            <TableHead>Quantity Purchased</TableHead>
+            <TableHead>Avg. Rate</TableHead>
+            <TableHead>Last Purchase Date</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {reportData.map((item, index) => (
+            <TableRow key={index}>
+              <TableCell className="font-medium">{item.vendor}</TableCell>
+              <TableCell>{item.quantityPurchased} pcs</TableCell>
+              <TableCell>₹{item.avgRate.toLocaleString()}</TableCell>
+              <TableCell>{item.lastPurchaseDate}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      
+      <div className="flex justify-end">
+        <Button variant="outline" className="mr-2">
+          <FileText className="mr-2 h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default Vendors;

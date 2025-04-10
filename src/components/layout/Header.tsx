@@ -1,8 +1,7 @@
 
 import React from "react";
-import { Bell, Search, ChevronDown } from "lucide-react";
+import { Bell, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,18 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Header = () => {
   return (
-    <header className="h-16 border-b px-6 flex items-center justify-between bg-background">
-      <div className="w-[240px] lg:w-[280px]">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search..."
-            className="w-full bg-background pl-8 focus-visible:ring-brand-500"
-          />
-        </div>
-      </div>
-
+    <header className="h-16 border-b px-6 flex items-center justify-end bg-background">
       <div className="flex items-center gap-4">
         <Button
           variant="outline"
