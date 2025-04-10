@@ -1,6 +1,5 @@
 
 import React from "react";
-import Layout from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -115,12 +114,5 @@ const Customers = () => {
   );
 };
 
-const CustomersPage = () => {
-  return (
-    <Layout>
-      <Customers />
-    </Layout>
-  );
-};
-
-export default CustomersPage;
+// CustomersPage is already using Layout component, so we don't need to wrap it with Layout in AppRoutes
+export default Customers;

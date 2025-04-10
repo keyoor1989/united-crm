@@ -3,7 +3,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Dashboard from "@/pages/Dashboard";
-import Customers from "@/pages/Customers";
+import CustomersPage from "@/pages/Customers";
 import CustomerForm from "@/pages/CustomerForm";
 import Service from "@/pages/Service";
 import ServiceCallForm from "@/pages/ServiceCallForm";
@@ -35,7 +35,7 @@ const AppRoutes = () => (
   <Routes>
     <Route element={<Layout />}>
       <Route path="/" element={<Dashboard />} />
-      <Route path="/customers" element={<Customers />} />
+      <Route path="/customers" element={<CustomersPage />} />
       <Route path="/customer-form" element={<CustomerForm />} />
       <Route path="/service" element={<Service />} />
       <Route path="/service-call-form" element={<ServiceCallForm />} />
