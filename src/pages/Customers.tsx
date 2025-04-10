@@ -114,5 +114,4 @@ const Customers = () => {
   );
 };
 
-// CustomersPage is already using Layout component, so we don't need to wrap it with Layout in AppRoutes
 export default Customers;
