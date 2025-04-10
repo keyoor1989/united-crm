@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,7 +38,6 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
-// Mock data
 const mockBrands: Brand[] = [
   { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
   { id: "2", name: "Ricoh", createdAt: "2025-03-02" },
@@ -138,6 +136,30 @@ const mockPurchases: PurchaseEntry[] = [
   },
 ];
 
+const mockWarehouses = [
+  {
+    id: "1",
+    name: "Main Warehouse",
+    code: "MW01",
+    location: "Indore",
+    isActive: true
+  },
+  {
+    id: "2",
+    name: "Bhopal Warehouse",
+    code: "BW01",
+    location: "Bhopal",
+    isActive: true
+  },
+  {
+    id: "3",
+    name: "Jabalpur Storage",
+    code: "JS01",
+    location: "Jabalpur",
+    isActive: false
+  }
+];
+
 type VendorFormData = {
   name: string;
   gstNo: string;
@@ -153,6 +175,7 @@ const InventoryPurchase = () => {
   const [items] = useState<InventoryItem[]>(mockItems);
   const [purchases] = useState<PurchaseEntry[]>(mockPurchases);
   const [vendors] = useState<Vendor[]>(mockVendors);
+  const [warehouses] = useState(mockWarehouses);
   const [addVendorDialog, setAddVendorDialog] = useState(false);
   
   const [purchaseForm, setPurchaseForm] = useState({
@@ -163,6 +186,8 @@ const InventoryPurchase = () => {
     purchaseRate: 0,
     vendorId: "",
     vendorName: "",
+    warehouseId: "",
+    warehouseName: "",
     invoiceNo: "",
     printBarcode: true,
   });
@@ -177,12 +202,10 @@ const InventoryPurchase = () => {
 
   const handlePurchaseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would save to the database
     console.log("Adding purchase:", purchaseForm, "Date:", date);
     
     toast.success("Purchase entry added successfully!");
     
-    // Reset form
     setPurchaseForm({
       brandId: "",
       modelId: "",
@@ -199,19 +222,16 @@ const InventoryPurchase = () => {
   const handleVendorFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real app, you would save to the database
     console.log("Adding vendor:", vendorForm);
     
     toast.success("New vendor added successfully!");
     
-    // Update the purchase form with the new vendor
     setPurchaseForm({
       ...purchaseForm,
-      vendorId: "new", // In a real app, this would be the new vendor's ID
+      vendorId: "new",
       vendorName: vendorForm.name
     });
     
-    // Reset form and close dialog
     setVendorForm({
       name: "",
       gstNo: "",
@@ -236,6 +256,8 @@ const InventoryPurchase = () => {
   );
 
   const selectedItem = items.find(item => item.id === purchaseForm.itemId);
+  
+  const activeWarehouses = warehouses.filter(warehouse => warehouse.isActive);
 
   return (
     <div className="container p-6">
@@ -370,6 +392,33 @@ const InventoryPurchase = () => {
               </div>
               
               <div className="space-y-2">
+                <Label htmlFor="purchase-warehouse">Destination Warehouse</Label>
+                <Select
+                  value={purchaseForm.warehouseId}
+                  onValueChange={(value) => {
+                    const warehouse = warehouses.find(w => w.id === value);
+                    setPurchaseForm({
+                      ...purchaseForm,
+                      warehouseId: value,
+                      warehouseName: warehouse ? warehouse.name : ""
+                    });
+                  }}
+                  required
+                >
+                  <SelectTrigger id="purchase-warehouse">
+                    <SelectValue placeholder="Select Warehouse" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeWarehouses.map((warehouse) => (
+                      <SelectItem key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name} ({warehouse.location})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="purchase-vendor">Vendor</Label>
                   <Button 
@@ -484,6 +533,7 @@ const InventoryPurchase = () => {
                   <TableHead>Item</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Rate</TableHead>
+                  <TableHead>Warehouse</TableHead>
                   <TableHead>Vendor</TableHead>
                   <TableHead>Invoice</TableHead>
                 </TableRow>
@@ -507,6 +557,7 @@ const InventoryPurchase = () => {
                       </TableCell>
                       <TableCell>{purchase.quantity}</TableCell>
                       <TableCell>₹{purchase.purchaseRate.toLocaleString()}</TableCell>
+                      <TableCell>{purchase.warehouseName || "Main Warehouse"}</TableCell>
                       <TableCell>{purchase.vendorName}</TableCell>
                       <TableCell>{purchase.invoiceNo}</TableCell>
                     </TableRow>
@@ -518,7 +569,6 @@ const InventoryPurchase = () => {
         </Card>
       </div>
       
-      {/* Add New Vendor Dialog */}
       <Dialog open={addVendorDialog} onOpenChange={setAddVendorDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>

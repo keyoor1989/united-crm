@@ -1,4 +1,3 @@
-
 export type Brand = {
   id: string;
   name: string;
@@ -29,6 +28,26 @@ export type InventoryItem = {
   createdAt: string;
 };
 
+export type Warehouse = {
+  id: string;
+  name: string;
+  code: string;
+  location: string;
+  address: string;
+  contactPerson: string;
+  contactPhone: string;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export type WarehouseStock = {
+  id: string;
+  warehouseId: string;
+  itemId: string;
+  quantity: number;
+  lastUpdated: string;
+};
+
 export type Vendor = {
   id: string;
   name: string;
@@ -50,6 +69,8 @@ export type PurchaseEntry = {
   purchaseRate: number;
   vendorId: string;
   vendorName: string;
+  warehouseId: string;  // New field
+  warehouseName: string;  // New field
   purchaseDate: string;
   invoiceNo: string;
   barcode: string;
@@ -86,8 +107,6 @@ export type StockHistory = {
   createdAt: string;
 };
 
-// New types for the additional modules
-
 export type Branch = 'Indore (HQ)' | 'Bhopal Office' | 'Jabalpur Office';
 
 export type TransferStatus = 'Requested' | 'Approved' | 'Dispatched' | 'Received' | 'Cancelled';
@@ -98,8 +117,14 @@ export type StockTransfer = {
   id: string;
   itemId: string;
   quantity: number;
-  sourceBranch: Branch;
-  destinationBranch: Branch;
+  sourceType: 'Branch' | 'Warehouse';  // New field
+  sourceBranch?: Branch;
+  sourceWarehouseId?: string;  // New field
+  sourceWarehouseName?: string;  // New field
+  destinationType: 'Branch' | 'Warehouse';  // New field
+  destinationBranch?: Branch;
+  destinationWarehouseId?: string;  // New field
+  destinationWarehouseName?: string;  // New field
   requestDate: string;
   approvedDate?: string;
   dispatchDate?: string;
