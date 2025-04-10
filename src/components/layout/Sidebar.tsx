@@ -7,18 +7,8 @@ import {
   inventorySection, 
   locationNavItems 
 } from "./sidebar/sidebarNavConfig";
-import {
-  Sidebar as ShadcnSidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarSection,
-} from "@/components/ui/sidebar";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import "./sidebar/sidebar.css";
 
 const AppSidebar = () => {
   const location = useLocation();
