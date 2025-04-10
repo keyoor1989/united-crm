@@ -1,17 +1,26 @@
 
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
-import SidebarItem from "./sidebar/SidebarItem";
-import SidebarSection from "./sidebar/SidebarSection";
-import SidebarLogo from "./sidebar/SidebarLogo";
 import { 
   mainNavItems, 
   serviceSection, 
   inventorySection, 
   locationNavItems 
 } from "./sidebar/sidebarNavConfig";
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarSection,
+} from "@/components/ui/sidebar";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
-const Sidebar = () => {
+const AppSidebar = () => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
   const isSectionActive = (paths: string[]) => paths.some(path => 
@@ -38,65 +47,121 @@ const Sidebar = () => {
 
   return (
     <div className="h-screen w-64 bg-sidebar fixed left-0 top-0 border-r border-sidebar-border flex flex-col">
-      <SidebarLogo />
+      {/* Logo Section */}
+      <div className="p-4 border-b border-sidebar-border flex items-center gap-2">
+        <div className="bg-brand-500 text-white p-1.5 rounded">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-6 w-6"
+          >
+            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+            <circle cx="9" cy="9" r="2" />
+            <path d="M15 9h.01" />
+            <path d="M15 15h.01" />
+            <path d="M9 15h.01" />
+          </svg>
+        </div>
+        <div className="flex flex-col">
+          <h1 className="font-bold text-lg text-sidebar-foreground">
+            Copier Command
+          </h1>
+          <span className="text-xs text-sidebar-foreground/70">Center</span>
+        </div>
+      </div>
 
+      {/* Navigation Items */}
       <div className="flex-1 py-4 px-3 flex flex-col gap-1 overflow-y-auto">
+        {/* First two main navigation items */}
         {mainNavItems.slice(0, 2).map((item) => (
-          <SidebarItem
+          <a
             key={item.to}
-            to={item.to}
-            icon={<item.icon size={20} />}
-            label={item.label}
-            isActive={isActive(item.to)}
-          />
+            href={item.to}
+            className={`sidebar-item ${isActive(item.to) ? 'active' : ''}`}
+          >
+            <item.icon size={20} />
+            <span className="text-sm font-medium">{item.label}</span>
+          </a>
         ))}
         
-        <SidebarSection
-          icon={<serviceSection.icon size={20} />}
-          label={serviceSection.label}
-          isActive={isSectionActive(serviceSection.items.map(item => item.to))}
-          isOpen={isServiceSectionOpen}
-          onToggle={() => toggleSection("service")}
-        >
-          {serviceSection.items.map((item) => (
-            <SidebarItem
-              key={item.to}
-              to={item.to}
-              icon={<item.icon size={16} />}
-              label={item.label}
-              isActive={isActive(item.to)}
-            />
-          ))}
-        </SidebarSection>
+        {/* Service Section */}
+        <div className="flex flex-col">
+          <button 
+            onClick={() => toggleSection("service")} 
+            className={`sidebar-item ${isSectionActive(serviceSection.items.map(item => item.to)) ? 'active' : ''} cursor-pointer`}
+          >
+            <serviceSection.icon size={20} />
+            <span className="text-sm font-medium">{serviceSection.label}</span>
+            {isServiceSectionOpen ? 
+              <ChevronDown size={16} className="ml-auto" /> : 
+              <ChevronRight size={16} className="ml-auto" />
+            }
+          </button>
+          
+          {isServiceSectionOpen && (
+            <div className="pl-8 flex flex-col gap-1 mt-1">
+              {serviceSection.items.map((item) => (
+                <a
+                  key={item.to}
+                  href={item.to}
+                  className={`sidebar-item ${isActive(item.to) ? 'active' : ''}`}
+                >
+                  <item.icon size={16} />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
         
-        <SidebarSection
-          icon={<inventorySection.icon size={20} />}
-          label={inventorySection.label}
-          isActive={isSectionActive(inventorySection.items.map(item => item.to))}
-          isOpen={isInventorySectionOpen}
-          onToggle={() => toggleSection("inventory")}
-        >
-          {inventorySection.items.map((item) => (
-            <SidebarItem
-              key={item.to}
-              to={item.to}
-              icon={<item.icon size={16} />}
-              label={item.label}
-              isActive={isActive(item.to)}
-            />
-          ))}
-        </SidebarSection>
+        {/* Inventory Section */}
+        <div className="flex flex-col">
+          <button 
+            onClick={() => toggleSection("inventory")} 
+            className={`sidebar-item ${isSectionActive(inventorySection.items.map(item => item.to)) ? 'active' : ''} cursor-pointer`}
+          >
+            <inventorySection.icon size={20} />
+            <span className="text-sm font-medium">{inventorySection.label}</span>
+            {isInventorySectionOpen ? 
+              <ChevronDown size={16} className="ml-auto" /> : 
+              <ChevronRight size={16} className="ml-auto" />
+            }
+          </button>
+          
+          {isInventorySectionOpen && (
+            <div className="pl-8 flex flex-col gap-1 mt-1">
+              {inventorySection.items.map((item) => (
+                <a
+                  key={item.to}
+                  href={item.to}
+                  className={`sidebar-item ${isActive(item.to) ? 'active' : ''}`}
+                >
+                  <item.icon size={16} />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
         
+        {/* Middle main navigation items */}
         {mainNavItems.slice(2, -1).map((item) => (
-          <SidebarItem
+          <a
             key={item.to}
-            to={item.to}
-            icon={<item.icon size={20} />}
-            label={item.label}
-            isActive={isActive(item.to)}
-          />
+            href={item.to}
+            className={`sidebar-item ${isActive(item.to) ? 'active' : ''}`}
+          >
+            <item.icon size={20} />
+            <span className="text-sm font-medium">{item.label}</span>
+          </a>
         ))}
 
+        {/* Locations section */}
         <div className="mt-4 mb-2 px-3">
           <p className="text-xs font-semibold uppercase text-sidebar-foreground/50">
             Locations
@@ -104,26 +169,29 @@ const Sidebar = () => {
         </div>
         
         {locationNavItems.map((item) => (
-          <SidebarItem
+          <a
             key={item.to}
-            to={item.to}
-            icon={<item.icon size={20} />}
-            label={item.label}
-            isActive={isActive(item.to)}
-          />
+            href={item.to}
+            className={`sidebar-item ${isActive(item.to) ? 'active' : ''}`}
+          >
+            <item.icon size={20} />
+            <span className="text-sm font-medium">{item.label}</span>
+          </a>
         ))}
       </div>
 
+      {/* Footer Item */}
       <div className="mt-auto p-4 border-t border-sidebar-border">
-        <SidebarItem
-          to={mainNavItems[mainNavItems.length - 1].to}
-          icon={<mainNavItems[mainNavItems.length - 1].icon size={20} />}
-          label={mainNavItems[mainNavItems.length - 1].label}
-          isActive={isActive(mainNavItems[mainNavItems.length - 1].to)}
-        />
+        <a
+          href={mainNavItems[mainNavItems.length - 1].to}
+          className={`sidebar-item ${isActive(mainNavItems[mainNavItems.length - 1].to) ? 'active' : ''}`}
+        >
+          <mainNavItems[mainNavItems.length - 1].icon size={20} />
+          <span className="text-sm font-medium">{mainNavItems[mainNavItems.length - 1].label}</span>
+        </a>
       </div>
     </div>
   );
 };
 
-export default Sidebar;
+export default AppSidebar;
