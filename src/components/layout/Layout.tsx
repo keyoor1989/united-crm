@@ -4,9 +4,9 @@ import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import { 
   SidebarProvider, 
-  SidebarInset,
-  TooltipProvider
+  SidebarInset
 } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import AppSidebar from "./Sidebar";
 
 interface LayoutProps {
