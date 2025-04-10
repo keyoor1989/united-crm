@@ -6,7 +6,7 @@ import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Set up the fonts - handle type issues with a proper type assertion
-pdfMake.vfs = pdfFonts.vfs;
+pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
 
 // Common PDF styling
 const styles = {
