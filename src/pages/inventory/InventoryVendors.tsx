@@ -1,6 +1,4 @@
-
 import React, { useState } from "react";
-import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -296,388 +294,386 @@ const InventoryVendors = () => {
   };
 
   return (
-    <Layout>
-      <div className="container p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Vendor Management</h1>
-            <p className="text-muted-foreground">
-              Manage your suppliers and purchase sources
-            </p>
-          </div>
-          <Button 
-            onClick={handleAddVendor} 
-            className="gap-1"
-          >
-            <Plus className="h-4 w-4" />
-            Add New Vendor
-          </Button>
+    <div className="container p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Vendor Management</h1>
+          <p className="text-muted-foreground">
+            Manage your suppliers and purchase sources
+          </p>
         </div>
-        
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative grow">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search vendors..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="vendors">Vendors</TabsTrigger>
-            <TabsTrigger value="purchase-history">Purchase History</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="vendors" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vendor Directory</CardTitle>
-                <CardDescription>
-                  List of all registered suppliers and distributors
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>GST Number</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead>Since</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVendors.map((vendor) => (
-                      <TableRow key={vendor.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <Store className="h-4 w-4 text-muted-foreground" />
-                            {vendor.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>{vendor.gstNo || "-"}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3 text-muted-foreground" />
-                            {vendor.phone}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                            {vendor.email}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-muted-foreground" />
-                            {vendor.address}
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatDate(vendor.createdAt)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleViewVendorDetails(vendor)}
-                            >
-                              <History className="h-4 w-4 mr-1" />
-                              History
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleEditVendor(vendor)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => handleDeleteClick(vendor.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    
-                    {filteredVendors.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                          No vendors found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="purchase-history" className="mt-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>
-                    {selectedVendor ? 
-                      `Purchase History: ${selectedVendor.name}` : 
-                      "Vendor Purchase History"
-                    }
-                  </CardTitle>
-                  <CardDescription>
-                    {selectedVendor ? 
-                      `Items purchased from ${selectedVendor.name}` : 
-                      "Select a vendor to view their purchase history"
-                    }
-                  </CardDescription>
-                </div>
-                
-                {selectedVendor && (
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => setActiveTab("vendors")}
-                    >
-                      Back to Vendors
-                    </Button>
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent>
-                {!selectedVendor ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <Store className="h-12 w-12 text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">
-                      Please select a vendor from the Vendors tab to view their purchase history
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => setActiveTab("vendors")}
-                    >
-                      Go to Vendors
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
-                      <div>
-                        <h3 className="text-sm font-semibold mb-2">Vendor Details</h3>
-                        <div className="space-y-1">
-                          <p className="text-sm flex items-center gap-2">
-                            <Store className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{selectedVendor.name}</span>
-                          </p>
-                          <p className="text-sm flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span>{selectedVendor.gstNo || "GST not available"}</span>
-                          </p>
-                          <p className="text-sm flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span>{selectedVendor.address}</span>
-                          </p>
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold mb-2">Contact Information</h3>
-                        <div className="space-y-1">
-                          <p className="text-sm flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span>{selectedVendor.phone}</span>
-                          </p>
-                          <p className="text-sm flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span>{selectedVendor.email}</span>
-                          </p>
-                          <p className="text-sm flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                            <span>Vendor since {formatDate(selectedVendor.createdAt)}</span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Purchase Transactions</h3>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => toast.success("Feature coming soon!")}
-                          className="gap-1"
-                        >
-                          <ShoppingCart className="h-4 w-4" />
-                          New Purchase
-                        </Button>
-                      </div>
-                      
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Item</TableHead>
-                            <TableHead>Invoice No.</TableHead>
-                            <TableHead>Purchase Date</TableHead>
-                            <TableHead>Quantity</TableHead>
-                            <TableHead className="text-right">Rate (₹)</TableHead>
-                            <TableHead className="text-right">Total (₹)</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {getVendorPurchaseHistory(selectedVendor.id).map((purchase) => (
-                            <TableRow key={purchase.id}>
-                              <TableCell className="font-medium">{purchase.itemName}</TableCell>
-                              <TableCell>{purchase.invoiceNo}</TableCell>
-                              <TableCell>{formatDate(purchase.purchaseDate)}</TableCell>
-                              <TableCell>{purchase.quantity}</TableCell>
-                              <TableCell className="text-right">{purchase.purchaseRate.toLocaleString()}</TableCell>
-                              <TableCell className="text-right">{(purchase.purchaseRate * purchase.quantity).toLocaleString()}</TableCell>
-                            </TableRow>
-                          ))}
-                          
-                          {getVendorPurchaseHistory(selectedVendor.id).length === 0 && (
-                            <TableRow>
-                              <TableCell colSpan={6} className="h-24 text-center">
-                                No purchase history found for this vendor
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-        
-        {/* Add/Edit Vendor Dialog */}
-        <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>{selectedVendor ? "Edit Vendor" : "Add New Vendor"}</DialogTitle>
-              <DialogDescription>
-                {selectedVendor ? 
-                  "Update vendor details below." : 
-                  "Enter the vendor details to add them to your directory."
-                }
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="name" className="text-right">
-                  Vendor Name*
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter vendor name"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="gstNo" className="text-right">
-                  GST Number
-                </Label>
-                <Input
-                  id="gstNo"
-                  name="gstNo"
-                  value={formData.gstNo}
-                  onChange={handleInputChange}
-                  placeholder="Enter GST number (optional)"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="phone" className="text-right">
-                  Phone Number*
-                </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="Enter phone number"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="email" className="text-right">
-                  Email Address*
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter email address"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="address" className="text-right">
-                  Address*
-                </Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder="Enter complete address"
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddVendorOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveVendor}>
-                {selectedVendor ? "Update Vendor" : "Add Vendor"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Delete Vendor</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this vendor? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteVendor}>
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          onClick={handleAddVendor} 
+          className="gap-1"
+        >
+          <Plus className="h-4 w-4" />
+          Add New Vendor
+        </Button>
       </div>
-    </Layout>
+      
+      <div className="flex items-center gap-4 mb-4">
+        <div className="relative grow">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search vendors..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Button variant="outline" size="icon">
+          <Filter className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="vendors">Vendors</TabsTrigger>
+          <TabsTrigger value="purchase-history">Purchase History</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="vendors" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vendor Directory</CardTitle>
+              <CardDescription>
+                List of all registered suppliers and distributors
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>GST Number</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead>Since</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredVendors.map((vendor) => (
+                    <TableRow key={vendor.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Store className="h-4 w-4 text-muted-foreground" />
+                          {vendor.name}
+                        </div>
+                      </TableCell>
+                      <TableCell>{vendor.gstNo || "-"}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          {vendor.phone}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          {vendor.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          {vendor.address}
+                        </div>
+                      </TableCell>
+                      <TableCell>{formatDate(vendor.createdAt)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleViewVendorDetails(vendor)}
+                          >
+                            <History className="h-4 w-4 mr-1" />
+                            History
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEditVendor(vendor)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleDeleteClick(vendor.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  
+                  {filteredVendors.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        No vendors found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="purchase-history" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>
+                  {selectedVendor ? 
+                    `Purchase History: ${selectedVendor.name}` : 
+                    "Vendor Purchase History"
+                  }
+                </CardTitle>
+                <CardDescription>
+                  {selectedVendor ? 
+                    `Items purchased from ${selectedVendor.name}` : 
+                    "Select a vendor to view their purchase history"
+                  }
+                </CardDescription>
+              </div>
+              
+              {selectedVendor && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setActiveTab("vendors")}
+                  >
+                    Back to Vendors
+                  </Button>
+                </div>
+              )}
+            </CardHeader>
+            <CardContent>
+              {!selectedVendor ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Store className="h-12 w-12 text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">
+                    Please select a vendor from the Vendors tab to view their purchase history
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => setActiveTab("vendors")}
+                  >
+                    Go to Vendors
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">Vendor Details</h3>
+                      <div className="space-y-1">
+                        <p className="text-sm flex items-center gap-2">
+                          <Store className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{selectedVendor.name}</span>
+                        </p>
+                        <p className="text-sm flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span>{selectedVendor.gstNo || "GST not available"}</span>
+                        </p>
+                        <p className="text-sm flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span>{selectedVendor.address}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">Contact Information</h3>
+                      <div className="space-y-1">
+                        <p className="text-sm flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span>{selectedVendor.phone}</span>
+                        </p>
+                        <p className="text-sm flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span>{selectedVendor.email}</span>
+                        </p>
+                        <p className="text-sm flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                          <span>Vendor since {formatDate(selectedVendor.createdAt)}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Purchase Transactions</h3>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => toast.success("Feature coming soon!")}
+                        className="gap-1"
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        New Purchase
+                      </Button>
+                    </div>
+                    
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Invoice No.</TableHead>
+                          <TableHead>Purchase Date</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead className="text-right">Rate (₹)</TableHead>
+                          <TableHead className="text-right">Total (₹)</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {getVendorPurchaseHistory(selectedVendor.id).map((purchase) => (
+                          <TableRow key={purchase.id}>
+                            <TableCell className="font-medium">{purchase.itemName}</TableCell>
+                            <TableCell>{purchase.invoiceNo}</TableCell>
+                            <TableCell>{formatDate(purchase.purchaseDate)}</TableCell>
+                            <TableCell>{purchase.quantity}</TableCell>
+                            <TableCell className="text-right">{purchase.purchaseRate.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">{(purchase.purchaseRate * purchase.quantity).toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                        
+                        {getVendorPurchaseHistory(selectedVendor.id).length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={6} className="h-24 text-center">
+                              No purchase history found for this vendor
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+      
+      {/* Add/Edit Vendor Dialog */}
+      <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{selectedVendor ? "Edit Vendor" : "Add New Vendor"}</DialogTitle>
+            <DialogDescription>
+              {selectedVendor ? 
+                "Update vendor details below." : 
+                "Enter the vendor details to add them to your directory."
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="name" className="text-right">
+                Vendor Name*
+              </Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Enter vendor name"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="gstNo" className="text-right">
+                GST Number
+              </Label>
+              <Input
+                id="gstNo"
+                name="gstNo"
+                value={formData.gstNo}
+                onChange={handleInputChange}
+                placeholder="Enter GST number (optional)"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="phone" className="text-right">
+                Phone Number*
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="Enter phone number"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="email" className="text-right">
+                Email Address*
+              </Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="Enter email address"
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <Label htmlFor="address" className="text-right">
+                Address*
+              </Label>
+              <Input
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="Enter complete address"
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddVendorOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveVendor}>
+              {selectedVendor ? "Update Vendor" : "Add Vendor"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Vendor</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this vendor? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteVendor}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
