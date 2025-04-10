@@ -35,6 +35,9 @@ const AppSidebar = () => {
   const isServiceSectionOpen = openSections.includes("service");
   const isInventorySectionOpen = openSections.includes("inventory");
 
+  // Get the last nav item for the footer
+  const lastNavItem = mainNavItems[mainNavItems.length - 1];
+
   return (
     <div className="h-screen w-64 bg-sidebar fixed left-0 top-0 border-r border-sidebar-border flex flex-col">
       {/* Logo Section */}
@@ -173,11 +176,11 @@ const AppSidebar = () => {
       {/* Footer Item */}
       <div className="mt-auto p-4 border-t border-sidebar-border">
         <a
-          href={mainNavItems[mainNavItems.length - 1].to}
-          className={`sidebar-item ${isActive(mainNavItems[mainNavItems.length - 1].to) ? 'active' : ''}`}
+          href={lastNavItem.to}
+          className={`sidebar-item ${isActive(lastNavItem.to) ? 'active' : ''}`}
         >
-          <mainNavItems[mainNavItems.length - 1].icon size={20} />
-          <span className="text-sm font-medium">{mainNavItems[mainNavItems.length - 1].label}</span>
+          <lastNavItem.icon size={20} />
+          <span className="text-sm font-medium">{lastNavItem.label}</span>
         </a>
       </div>
     </div>
