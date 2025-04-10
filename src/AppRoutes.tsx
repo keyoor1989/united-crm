@@ -28,6 +28,11 @@ import AmcTracker from "@/pages/inventory/AmcTracker";
 import VendorPerformance from "@/pages/inventory/VendorPerformance";
 import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
 import InventorySales from "@/pages/inventory/InventorySales";
+import Quotations from "@/pages/sales/Quotations";
+import QuotationForm from "@/pages/sales/QuotationForm";
+import PurchaseOrders from "@/pages/sales/PurchaseOrders";
+import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
+import ProductCatalog from "@/pages/sales/ProductCatalog";
 import Chat from "@/pages/Chat";
 import NotFound from "@/pages/NotFound";
 
@@ -60,6 +65,13 @@ const AppRoutes = () => (
       <Route path="/inventory/vendor-performance-metrics" element={<VendorPerformanceDemo />} />
       <Route path="/inventory/history" element={<InventoryHistory />} />
       <Route path="/inventory/alerts" element={<InventoryAlerts />} />
+      <Route path="/quotations" element={<Quotations />} />
+      <Route path="/quotation-form" element={<QuotationForm />} />
+      <Route path="/quotation-form/:id" element={<QuotationForm />} />
+      <Route path="/purchase-orders" element={<PurchaseOrders />} />
+      <Route path="/purchase-order-form" element={<PurchaseOrderForm />} />
+      <Route path="/purchase-order-form/:id" element={<PurchaseOrderForm />} />
+      <Route path="/product-catalog" element={<ProductCatalog />} />
       <Route path="/chat" element={<Chat />} />
       <Route path="*" element={<NotFound />} />
     </Route>
