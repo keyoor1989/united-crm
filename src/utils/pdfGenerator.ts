@@ -1,15 +1,15 @@
 
-import * as pdfMake from "pdfmake/build/pdfmake";
-import * as pdfFonts from "pdfmake/build/vfs_fonts";
-import { TDocumentDefinitions, StyleDictionary } from "pdfmake/interfaces";
+import pdfMake from "pdfmake/build/pdfmake";
+import pdfFonts from "pdfmake/build/vfs_fonts";
+import { TDocumentDefinitions } from "pdfmake/interfaces";
 import { Quotation, PurchaseOrder } from "@/types/sales";
 import { format } from "date-fns";
 
 // Set up the fonts
-(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
+(pdfMake as any).vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
 
 // Common PDF styling
-const styles: StyleDictionary = {
+const styles = {
   header: {
     fontSize: 22,
     bold: true,
@@ -27,12 +27,10 @@ const styles: StyleDictionary = {
   },
   metaLabel: {
     fontSize: 12,
-    bold: true,
-    width: 100
+    bold: true
   },
   metaValue: {
-    fontSize: 12,
-    width: '*'
+    fontSize: 12
   }
 };
 
