@@ -11,9 +11,33 @@ import {
 } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Barcode, Calendar as CalendarIcon, Search, ShoppingCart } from "lucide-react";
+import { 
+  Barcode, 
+  Calendar as CalendarIcon, 
+  Search, 
+  ShoppingCart,
+  Plus,
+  Printer,
+  Check
+} from "lucide-react";
 import { format } from "date-fns";
-import { Brand, Model, InventoryItem, PurchaseEntry } from "@/types/inventory";
+import { 
+  Brand, 
+  Model, 
+  InventoryItem, 
+  PurchaseEntry, 
+  Vendor 
+} from "@/types/inventory";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
 // Mock data
 const mockBrands: Brand[] = [
@@ -55,15 +79,48 @@ const mockItems: InventoryItem[] = [
   },
 ];
 
+const mockVendors: Vendor[] = [
+  {
+    id: "1",
+    name: "Ajanta Traders",
+    gstNo: "23AABCT1234Q1Z5",
+    phone: "9876543210",
+    email: "info@ajantatraders.com",
+    address: "123 Market Road, Indore, MP",
+    createdAt: "2025-01-15"
+  },
+  {
+    id: "2",
+    name: "Ravi Distributors",
+    gstNo: "23AADCR5678Q1Z6",
+    phone: "9876543211",
+    email: "contact@ravidistributors.com",
+    address: "456 Commercial Street, Bhopal, MP",
+    createdAt: "2025-02-10"
+  },
+  {
+    id: "3",
+    name: "Precision Equipments",
+    gstNo: "23AABCP9012Q1Z7",
+    phone: "9876543212",
+    email: "service@precisionequipments.com",
+    address: "789 Industrial Area, Jabalpur, MP",
+    createdAt: "2025-03-05"
+  }
+];
+
 const mockPurchases: PurchaseEntry[] = [
   {
     id: "1",
     itemId: "1",
     quantity: 5,
     purchaseRate: 5200,
-    vendorName: "Copier Zone",
+    vendorId: "1",
+    vendorName: "Ajanta Traders",
     purchaseDate: "2025-04-05",
+    invoiceNo: "INV-1234",
     barcode: "PUR-BT001-001",
+    printBarcode: true,
     createdAt: "2025-04-05"
   },
   {
@@ -71,12 +128,23 @@ const mockPurchases: PurchaseEntry[] = [
     itemId: "2",
     quantity: 2,
     purchaseRate: 8500,
-    vendorName: "Toner World",
+    vendorId: "2",
+    vendorName: "Ravi Distributors",
     purchaseDate: "2025-04-02",
+    invoiceNo: "INV-5678",
     barcode: "PUR-DR002-001",
+    printBarcode: false,
     createdAt: "2025-04-02"
   },
 ];
+
+type VendorFormData = {
+  name: string;
+  gstNo: string;
+  phone: string;
+  email: string;
+  address: string;
+};
 
 const InventoryPurchase = () => {
   const [date, setDate] = useState<Date>(new Date());
@@ -84,6 +152,8 @@ const InventoryPurchase = () => {
   const [models] = useState<Model[]>(mockModels);
   const [items] = useState<InventoryItem[]>(mockItems);
   const [purchases] = useState<PurchaseEntry[]>(mockPurchases);
+  const [vendors] = useState<Vendor[]>(mockVendors);
+  const [addVendorDialog, setAddVendorDialog] = useState(false);
   
   const [purchaseForm, setPurchaseForm] = useState({
     brandId: "",
@@ -91,13 +161,26 @@ const InventoryPurchase = () => {
     itemId: "",
     quantity: 1,
     purchaseRate: 0,
+    vendorId: "",
     vendorName: "",
+    invoiceNo: "",
+    printBarcode: true,
+  });
+
+  const [vendorForm, setVendorForm] = useState<VendorFormData>({
+    name: "",
+    gstNo: "",
+    phone: "",
+    email: "",
+    address: ""
   });
 
   const handlePurchaseSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // In a real app, you would save to the database
     console.log("Adding purchase:", purchaseForm, "Date:", date);
+    
+    toast.success("Purchase entry added successfully!");
     
     // Reset form
     setPurchaseForm({
@@ -106,8 +189,42 @@ const InventoryPurchase = () => {
       itemId: "",
       quantity: 1,
       purchaseRate: 0,
+      vendorId: "",
       vendorName: "",
+      invoiceNo: "",
+      printBarcode: true,
     });
+  };
+
+  const handleVendorFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // In a real app, you would save to the database
+    console.log("Adding vendor:", vendorForm);
+    
+    toast.success("New vendor added successfully!");
+    
+    // Update the purchase form with the new vendor
+    setPurchaseForm({
+      ...purchaseForm,
+      vendorId: "new", // In a real app, this would be the new vendor's ID
+      vendorName: vendorForm.name
+    });
+    
+    // Reset form and close dialog
+    setVendorForm({
+      name: "",
+      gstNo: "",
+      phone: "",
+      email: "",
+      address: ""
+    });
+    setAddVendorDialog(false);
+  };
+
+  const handleVendorFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setVendorForm(prev => ({ ...prev, [name]: value }));
   };
 
   const modelsForSelectedBrand = models.filter(
@@ -253,14 +370,71 @@ const InventoryPurchase = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="purchase-vendor">Vendor</Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="purchase-vendor">Vendor</Label>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setAddVendorDialog(true)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" /> New
+                  </Button>
+                </div>
+                <Select 
+                  value={purchaseForm.vendorId} 
+                  onValueChange={(value) => {
+                    const vendor = vendors.find(v => v.id === value);
+                    setPurchaseForm({
+                      ...purchaseForm,
+                      vendorId: value,
+                      vendorName: vendor ? vendor.name : ""
+                    });
+                  }}
+                >
+                  <SelectTrigger id="purchase-vendor">
+                    <SelectValue placeholder="Select Vendor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vendors.map((vendor) => (
+                      <SelectItem key={vendor.id} value={vendor.id}>
+                        {vendor.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="invoice-no">Invoice Number</Label>
                 <Input
-                  id="purchase-vendor"
-                  value={purchaseForm.vendorName}
-                  onChange={(e) => setPurchaseForm({ ...purchaseForm, vendorName: e.target.value })}
-                  placeholder="e.g. Copier Zone"
+                  id="invoice-no"
+                  value={purchaseForm.invoiceNo}
+                  onChange={(e) => setPurchaseForm({ ...purchaseForm, invoiceNo: e.target.value })}
+                  placeholder="Enter invoice number"
                   required
                 />
+              </div>
+              
+              <div className="flex items-center space-x-2 py-2">
+                <Checkbox 
+                  id="print-barcode" 
+                  checked={purchaseForm.printBarcode}
+                  onCheckedChange={(checked) => 
+                    setPurchaseForm({ 
+                      ...purchaseForm, 
+                      printBarcode: checked as boolean 
+                    })
+                  }
+                />
+                <Label 
+                  htmlFor="print-barcode" 
+                  className="text-sm font-normal flex items-center"
+                >
+                  <Printer className="h-4 w-4 mr-1" />
+                  Print barcode label after saving
+                </Label>
               </div>
 
               {selectedItem && (
@@ -310,8 +484,8 @@ const InventoryPurchase = () => {
                   <TableHead>Item</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Rate</TableHead>
-                  <TableHead>Total</TableHead>
                   <TableHead>Vendor</TableHead>
+                  <TableHead>Invoice</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -333,8 +507,8 @@ const InventoryPurchase = () => {
                       </TableCell>
                       <TableCell>{purchase.quantity}</TableCell>
                       <TableCell>₹{purchase.purchaseRate.toLocaleString()}</TableCell>
-                      <TableCell>₹{(purchase.purchaseRate * purchase.quantity).toLocaleString()}</TableCell>
                       <TableCell>{purchase.vendorName}</TableCell>
+                      <TableCell>{purchase.invoiceNo}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -343,6 +517,91 @@ const InventoryPurchase = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Add New Vendor Dialog */}
+      <Dialog open={addVendorDialog} onOpenChange={setAddVendorDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Vendor</DialogTitle>
+            <DialogDescription>
+              Fill in the vendor details below. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleVendorFormSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="vendor-name">Vendor Name *</Label>
+              <Input
+                id="vendor-name"
+                name="name"
+                value={vendorForm.name}
+                onChange={handleVendorFormChange}
+                placeholder="Enter vendor name"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="vendor-gstNo">GST Number</Label>
+              <Input
+                id="vendor-gstNo"
+                name="gstNo"
+                value={vendorForm.gstNo}
+                onChange={handleVendorFormChange}
+                placeholder="Enter GST number (optional)"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="vendor-phone">Phone Number *</Label>
+                <Input
+                  id="vendor-phone"
+                  name="phone"
+                  value={vendorForm.phone}
+                  onChange={handleVendorFormChange}
+                  placeholder="Enter phone number"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="vendor-email">Email</Label>
+                <Input
+                  id="vendor-email"
+                  type="email"
+                  name="email"
+                  value={vendorForm.email}
+                  onChange={handleVendorFormChange}
+                  placeholder="Enter email address"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="vendor-address">Address *</Label>
+              <Input
+                id="vendor-address"
+                name="address"
+                value={vendorForm.address}
+                onChange={handleVendorFormChange}
+                placeholder="Enter complete address"
+                required
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAddVendorDialog(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                <Check className="mr-2 h-4 w-4" />
+                Add Vendor
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

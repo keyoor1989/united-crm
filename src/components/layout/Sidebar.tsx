@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,8 @@ import {
   ShoppingCart,
   Send,
   History,
-  AlertTriangle
+  AlertTriangle,
+  Store
 } from "lucide-react";
 
 type SidebarItemProps = {
@@ -185,6 +187,12 @@ const Sidebar = () => {
             icon={<Package size={16} />}
             label="Item Master"
             isActive={isActive("/inventory/items")}
+          />
+          <SidebarItem
+            to="/inventory/vendors"
+            icon={<Store size={16} />}
+            label="Vendors"
+            isActive={isActive("/inventory/vendors")}
           />
           <SidebarItem
             to="/inventory/purchase"

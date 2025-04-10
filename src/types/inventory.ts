@@ -29,14 +29,27 @@ export type InventoryItem = {
   createdAt: string;
 };
 
+export type Vendor = {
+  id: string;
+  name: string;
+  gstNo: string;
+  phone: string;
+  email: string;
+  address: string;
+  createdAt: string;
+};
+
 export type PurchaseEntry = {
   id: string;
   itemId: string;
   quantity: number;
   purchaseRate: number;
+  vendorId: string;
   vendorName: string;
   purchaseDate: string;
+  invoiceNo: string;
   barcode: string;
+  printBarcode: boolean;
   createdAt: string;
 };
 

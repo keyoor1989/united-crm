@@ -12,7 +12,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Filter,
-  Search
+  Search,
+  Download,
+  Printer
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
@@ -22,6 +24,14 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import InventoryOverview from "@/components/inventory/InventoryOverview";
 import LowStockItems from "@/components/inventory/LowStockItems";
 import InventoryTable from "@/components/inventory/InventoryTable";
@@ -61,12 +71,26 @@ const Inventory = () => {
           <p className="text-muted-foreground">Manage your inventory across all branches</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportData}>
-            Export Data
-          </Button>
-          <Button variant="outline" onClick={handlePrintReport}>
-            Print Report
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportData}>
+                <Download className="mr-2 h-4 w-4" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePrintReport}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print Report
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
