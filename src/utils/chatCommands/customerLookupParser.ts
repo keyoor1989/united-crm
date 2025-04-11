@@ -1,21 +1,22 @@
+
 import { CustomerType } from "@/types/customer";
 
 export const parsePhoneNumberCommand = (command: string): string | null => {
   // Clean up the command to extract just the phone number
   const cleanCommand = command.trim().toLowerCase();
   
-  // Match standard 10-digit Indian phone numbers, potentially with country code
-  const phoneRegex = /(\+?91\s?)?(\d{10}|\d{4}[ -]?\d{3}[ -]?\d{3}|\d{3}[ -]?\d{3}[ -]?\d{4})/;
-  const explicitLookupRegex = /(?:check|find|lookup|search)(?:\s+customer|\s+mobile|\s+number)?\s+(\d{10})/i;
-  
   // Check if this is an explicit lookup command
+  const explicitLookupRegex = /(?:check|find|lookup|search|show)(?:\s+customer|\s+mobile|\s+number)?[\s:]+((?:\+?91\s?)?\d{10})/i;
   const explicitMatch = command.match(explicitLookupRegex);
   if (explicitMatch && explicitMatch[1]) {
-    return explicitMatch[1].replace(/\D/g, '');
+    return explicitMatch[1].replace(/\D/g, '').slice(-10);
   }
   
-  // Otherwise, check if the command is just a phone number
-  const phoneMatch = command.match(phoneRegex);
+  // Match standard 10-digit Indian phone numbers, potentially with country code
+  const phoneRegex = /(\+?91\s?)?(\d{10}|\d{4}[ -]?\d{3}[ -]?\d{3}|\d{3}[ -]?\d{3}[ -]?\d{4})/;
+  
+  // Check if the command is just a phone number
+  const phoneMatch = cleanCommand.match(phoneRegex);
   if (phoneMatch) {
     // Extract the actual phone number part and remove any non-digit characters
     const phoneNumber = phoneMatch[0].replace(/\D/g, '');

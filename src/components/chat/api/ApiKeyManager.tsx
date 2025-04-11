@@ -20,7 +20,7 @@ const ApiKeyManager = () => {
     // Check if Claude is configured
     const checkClaudeConfig = async () => {
       try {
-        const { data, error } = await fetch('https://klieshkrqryigtqtshka.supabase.co/functions/v1/claude-assistant', {
+        const response = await fetch('https://klieshkrqryigtqtshka.supabase.co/functions/v1/claude-assistant', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -30,11 +30,17 @@ const ApiKeyManager = () => {
             prompt: "Hello",
             systemPrompt: "Respond with 'Claude is configured' if you can read this."
           })
-        }).then(res => res.json());
+        });
         
-        if (error || !data || data.error) {
-          console.error("Claude connection test failed:", error || data?.error);
+        if (!response.ok) {
+          console.error("Claude connection test failed:", await response.text());
           setIsClaudeConfigured(false);
+        } else {
+          const data = await response.json();
+          if (data.error || !data.content || !data.content.includes("Claude is configured")) {
+            console.error("Claude connection test failed:", data?.error || "Unexpected response");
+            setIsClaudeConfigured(false);
+          }
         }
       } catch (error) {
         console.error("Error checking Claude configuration:", error);
