@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -16,7 +15,7 @@ import InventoryPurchase from "@/pages/inventory/InventoryPurchase";
 import InventoryIssue from "@/pages/inventory/InventoryIssue";
 import InventoryHistory from "@/pages/inventory/InventoryHistory";
 import InventoryAlerts from "@/pages/inventory/InventoryAlerts";
-import InventoryVendors from "@/pages/inventory/InventoryVendors";
+import VendorPerformance from "@/pages/inventory/VendorPerformance";
 import InventoryTransfer from "@/pages/inventory/InventoryTransfer";
 import BranchTransfer from "@/pages/inventory/BranchTransfer";
 import InventoryReturns from "@/pages/inventory/InventoryReturns";
@@ -25,7 +24,6 @@ import EngineerInventory from "@/pages/inventory/EngineerInventory";
 import MachineParts from "@/pages/inventory/MachineParts";
 import ProfitReport from "@/pages/inventory/ProfitReport";
 import AmcTracker from "@/pages/inventory/AmcTracker";
-import VendorPerformance from "@/pages/inventory/VendorPerformance";
 import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
 import InventorySales from "@/pages/inventory/InventorySales";
 import Quotations from "@/pages/sales/Quotations";
@@ -56,7 +54,7 @@ const AppRoutes = () => (
       <Route path="/inventory" element={<Inventory />} />
       <Route path="/inventory/brands" element={<InventoryBrands />} />
       <Route path="/inventory/items" element={<InventoryItems />} />
-      <Route path="/inventory/vendors" element={<InventoryVendors />} />
+      <Route path="/inventory/vendors" element={<VendorPerformance />} />
       <Route path="/inventory/purchase" element={<InventoryPurchase />} />
       <Route path="/inventory/sales" element={<InventorySales />} />
       <Route path="/inventory/issue" element={<InventoryIssue />} />

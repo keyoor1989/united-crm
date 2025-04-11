@@ -128,7 +128,7 @@ export const inventorySection: NavSection = {
     {
       to: "/inventory/vendors",
       icon: Store,
-      label: "Vendors"
+      label: "Vendor Management"
     },
     {
       to: "/inventory/purchase",
@@ -181,9 +181,9 @@ export const inventorySection: NavSection = {
       label: "AMC Consumables"
     },
     {
-      to: "/inventory/vendor-performance",
+      to: "/inventory/vendor-performance-metrics",
       icon: Award,
-      label: "Vendor Performance"
+      label: "Vendor Metrics Demo"
     },
     {
       to: "/inventory/history",
@@ -198,7 +198,6 @@ export const inventorySection: NavSection = {
   ]
 };
 
-// New Quotations section
 export const quotationsSection: NavSection = {
   key: "quotations",
   icon: FileText,
