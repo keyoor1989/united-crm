@@ -33,7 +33,14 @@ import {
   Upload,
   ShoppingBasket,
   FileEdit,
-  ArchiveRestore
+  ArchiveRestore,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Receipt,
+  Bell,
+  PieChart,
+  BadgeDollarSign
 } from "lucide-react";
 
 export type NavItem = {
@@ -247,6 +254,44 @@ export const quotationsSection: NavSection = {
       to: "/order-history",
       icon: ArchiveRestore,
       label: "Order History"
+    }
+  ]
+};
+
+export const financeSection: NavSection = {
+  key: "finance",
+  icon: CreditCard,
+  label: "Finance",
+  items: [
+    {
+      to: "/finance",
+      icon: BadgeDollarSign,
+      label: "Finance Dashboard"
+    },
+    {
+      to: "/finance/cash-register",
+      icon: DollarSign,
+      label: "Daily Cash Register"
+    },
+    {
+      to: "/finance/revenue",
+      icon: TrendingUp,
+      label: "Department-wise Revenue"
+    },
+    {
+      to: "/finance/expenses",
+      icon: TrendingDown,
+      label: "Department-wise Expenses"
+    },
+    {
+      to: "/finance/payments",
+      icon: Receipt,
+      label: "Dealer/Customer Payments"
+    },
+    {
+      to: "/finance/receivables",
+      icon: Bell,
+      label: "Pending Receivables"
     }
   ]
 };

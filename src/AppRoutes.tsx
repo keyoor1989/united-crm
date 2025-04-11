@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -41,12 +42,29 @@ import ContractUpload from "@/pages/sales/ContractUpload";
 import SentOrders from "@/pages/sales/SentOrders";
 import OrderHistory from "@/pages/sales/OrderHistory";
 
+// Import Finance pages
+import FinanceDashboard from "@/pages/finance/FinanceDashboard";
+import CashRegister from "@/pages/finance/CashRegister";
+import DepartmentRevenue from "@/pages/finance/DepartmentRevenue";
+import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
+import CustomerPayments from "@/pages/finance/CustomerPayments";
+import PendingReceivables from "@/pages/finance/PendingReceivables";
+
 const AppRoutes = () => (
   <Routes>
     <Route element={<Layout />}>
       <Route path="/" element={<Dashboard />} />
       <Route path="/customers" element={<Customers />} />
       <Route path="/customer-form" element={<CustomerForm />} />
+      
+      {/* Finance Routes */}
+      <Route path="/finance" element={<FinanceDashboard />} />
+      <Route path="/finance/cash-register" element={<CashRegister />} />
+      <Route path="/finance/revenue" element={<DepartmentRevenue />} />
+      <Route path="/finance/expenses" element={<DepartmentExpenses />} />
+      <Route path="/finance/payments" element={<CustomerPayments />} />
+      <Route path="/finance/receivables" element={<PendingReceivables />} />
+      
       <Route path="/service" element={<Service />} />
       <Route path="/service-call-form" element={<ServiceCallForm />} />
       <Route path="/engineer/:id" element={<EngineerDetail />} />
