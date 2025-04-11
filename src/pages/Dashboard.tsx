@@ -1,5 +1,5 @@
+
 import React from "react";
-import { Link } from "react-router-dom";
 import StatCard from "@/components/dashboard/StatCard";
 import { 
   Users, 
@@ -7,8 +7,6 @@ import {
   CircleDollarSign, 
   ClipboardList, 
   BarChart3,
-  Bot,
-  MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,46 +27,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Add Chat Assistant Access */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <Card className="p-4 hover:bg-accent/50 transition-colors border-border">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 mb-1">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              <h3 className="font-medium">Bot Assistant</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-2">
-              Get help with daily tasks and simple business queries
-            </p>
-            <Button asChild size="sm" className="w-full sm:w-auto">
-              <Link to="/chat">
-                Open Bot Assistant
-                <ArrowUpRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </Card>
-        
-        <Card className="p-4 hover:bg-accent/50 transition-colors border-border">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 mb-1">
-              <Bot className="h-5 w-5 text-primary" />
-              <h3 className="font-medium">Smart Chat Assistant</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-2">
-              Use natural language commands to automate tasks and get business insights
-            </p>
-            <Button asChild size="sm" className="w-full sm:w-auto">
-              <Link to="/chat-assistant">
-                Open Smart Assistant
-                <ArrowUpRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      {/* Stats Grid - Keep existing dashboard content */}
+      {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Customers"
