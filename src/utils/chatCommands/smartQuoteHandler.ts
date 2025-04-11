@@ -7,6 +7,7 @@ import { CustomerType } from "@/types/customer";
 import { Quotation } from "@/types/sales";
 import { FileText } from "lucide-react";
 import React from "react";
+import { processQuotationRequest } from "../langchain/quoteProcessor";
 
 interface QuoteHandlerProps {
   message: string;
@@ -92,23 +93,103 @@ export const handleQuotationCommand = async ({
   // Generate the configuration description
   const configuration = "Duplex + ADF"; // Default configuration
   
-  // Generate Claude prompt for the quotation
-  const claudePrompt = generateQuotationPrompt(
-    parsedQuotation.customerName,
-    customerCity,
-    customerMobile,
-    productDb.name,
-    configuration,
-    productPrice,
-    gstPercentage,
-    "2-3 days" // Delivery time
-  );
+  // Try to get OpenAI API key from session storage (for LangChain)
+  const openAiApiKey = sessionStorage.getItem("openai_api_key") || "";
   
-  // Process the prompt with Claude
-  const claudeResponse = await processAIRequest(claudePrompt);
+  // Create a quotation object
+  const quotation: Quotation = {
+    id: Math.random().toString(36).substring(2, 9),
+    quotationNumber: `Q${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+    customerId: customerFromDb?.id || "",
+    customerName: parsedQuotation.customerName!,
+    items: [
+      {
+        id: Math.random().toString(36).substring(2, 9),
+        productId: productDb.id,
+        name: productDb.name,
+        description: `${productDb.name} with ${configuration}`,
+        category: productDb.category,
+        specs: productDb.specs,
+        quantity: product.quantity,
+        unitPrice: productPrice,
+        gstPercent: gstPercentage,
+        gstAmount: (productPrice * gstPercentage) / 100 * product.quantity,
+        total: (productPrice + (productPrice * gstPercentage) / 100) * product.quantity,
+        isCustomItem: false
+      }
+    ],
+    subtotal: productPrice * product.quantity,
+    totalGst: (productPrice * gstPercentage) / 100 * product.quantity,
+    grandTotal: (productPrice + (productPrice * gstPercentage) / 100) * product.quantity,
+    createdAt: new Date().toISOString().split('T')[0],
+    validUntil: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString().split('T')[0],
+    status: "Draft",
+    notes: "",
+    terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 2-3 days after confirmation."
+  };
   
-  if (!claudeResponse) {
-    // Error getting response from Claude
+  try {
+    // Try to use LangChain if API key is available
+    let quotationDescription = "";
+    
+    if (openAiApiKey) {
+      // Use LangChain for enhanced quotation generation
+      quotationDescription = await processQuotationRequest(openAiApiKey, quotation, customerFromDb || undefined);
+    } else {
+      // Fall back to Claude if no OpenAI key
+      const claudePrompt = generateQuotationPrompt(
+        parsedQuotation.customerName!,
+        customerCity,
+        customerMobile,
+        productDb.name,
+        configuration,
+        productPrice,
+        gstPercentage,
+        "2-3 days" // Delivery time
+      );
+      
+      const claudeResponse = await processAIRequest(claudePrompt);
+      quotationDescription = claudeResponse || "";
+    }
+    
+    if (!quotationDescription) {
+      throw new Error("Failed to generate quotation description");
+    }
+    
+    // Add the response to the chat
+    addMessageToChat({
+      id: `msg-${Date.now()}-bot`,
+      content: React.createElement(
+        React.Fragment,
+        null,
+        React.createElement("p", { className: "mb-2" }, "I've prepared a quotation based on your request:"),
+        React.createElement("div", { className: "border-l-4 border-primary/40 pl-4 py-1 whitespace-pre-line" }, quotationDescription),
+        React.createElement(
+          "div",
+          { className: "mt-4" },
+          React.createElement(
+            "button",
+            {
+              className: "bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors inline-flex items-center",
+              onClick: () => {
+                // Call onCompleteQuotation to handle the quotation
+                onCompleteQuotation(quotation);
+              }
+            },
+            React.createElement(FileText, { className: "mr-2 h-4 w-4" }),
+            "Confirm & Create PDF Quotation"
+          )
+        )
+      ),
+      sender: "bot",
+      timestamp: new Date(),
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error generating quotation:", error);
+    
+    // Error getting response
     addMessageToChat({
       id: `msg-${Date.now()}-bot`,
       content: "I'm sorry, I couldn't generate the quotation at this time. Please try again later.",
@@ -117,67 +198,4 @@ export const handleQuotationCommand = async ({
     });
     return false;
   }
-  
-  // Add the Claude response to the chat
-  addMessageToChat({
-    id: `msg-${Date.now()}-bot`,
-    content: React.createElement(
-      React.Fragment,
-      null,
-      React.createElement("p", { className: "mb-2" }, "I've prepared a quotation based on your request:"),
-      React.createElement("div", { className: "border-l-4 border-primary/40 pl-4 py-1 whitespace-pre-line" }, claudeResponse),
-      React.createElement(
-        "div",
-        { className: "mt-4" },
-        React.createElement(
-          "button",
-          {
-            className: "bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors inline-flex items-center",
-            onClick: () => {
-              // Create a quotation object and generate PDF
-              const quotation: Quotation = {
-                id: Math.random().toString(36).substring(2, 9),
-                quotationNumber: `Q${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
-                customerId: customerFromDb?.id || "",
-                customerName: parsedQuotation.customerName!,
-                items: [
-                  {
-                    id: Math.random().toString(36).substring(2, 9),
-                    productId: productDb.id,
-                    name: productDb.name,
-                    description: `${productDb.name} with ${configuration}`,
-                    category: productDb.category,
-                    specs: productDb.specs,
-                    quantity: product.quantity,
-                    unitPrice: productPrice,
-                    gstPercent: gstPercentage,
-                    gstAmount: (productPrice * gstPercentage) / 100 * product.quantity,
-                    total: (productPrice + (productPrice * gstPercentage) / 100) * product.quantity,
-                    isCustomItem: false
-                  }
-                ],
-                subtotal: productPrice * product.quantity,
-                totalGst: (productPrice * gstPercentage) / 100 * product.quantity,
-                grandTotal: (productPrice + (productPrice * gstPercentage) / 100) * product.quantity,
-                createdAt: new Date().toISOString().split('T')[0],
-                validUntil: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString().split('T')[0],
-                status: "Draft",
-                notes: "",
-                terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 2-3 days after confirmation."
-              };
-
-              // Call onCompleteQuotation to handle the quotation
-              onCompleteQuotation(quotation);
-            }
-          },
-          React.createElement(FileText, { className: "mr-2 h-4 w-4" }),
-          "Confirm & Create PDF Quotation"
-        )
-      )
-    ),
-    sender: "bot",
-    timestamp: new Date(),
-  });
-  
-  return true;
 };

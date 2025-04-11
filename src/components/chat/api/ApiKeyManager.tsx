@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Key, Bot, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import OpenAIKeyInput from "./OpenAIKeyInput";
 
 const ApiKeyManager = () => {
   const [openRouterApiKey, setOpenRouterApiKey] = useState("");
@@ -13,12 +13,10 @@ const ApiKeyManager = () => {
   const [isClaudeConfigured, setIsClaudeConfigured] = useState(true);
   const [isCheckingConfig, setIsCheckingConfig] = useState(true);
 
-  // Load saved API keys on component mount
   useEffect(() => {
     const savedOpenRouterKey = sessionStorage.getItem("openrouter_api_key");
     if (savedOpenRouterKey) setOpenRouterApiKey(savedOpenRouterKey);
     
-    // Check if Claude is configured
     const checkClaudeConfig = async () => {
       setIsCheckingConfig(true);
       try {
@@ -77,7 +75,16 @@ const ApiKeyManager = () => {
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="space-y-4">
+      <div className="space-y-2 mb-4">
+        <h2 className="text-xl font-semibold">AI API Keys</h2>
+        <p className="text-muted-foreground">
+          Configure your AI service API keys to enable advanced features.
+        </p>
+      </div>
+      
+      <OpenAIKeyInput />
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
