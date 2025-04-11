@@ -1,34 +1,16 @@
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Send, Bot, User, PaperclipIcon, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import EnhancedChatMessage from "./EnhancedChatMessage";
-import { parseCustomerCommand, createNewCustomer, ParsedCustomerCommand } from "@/utils/chatCommands/customerParser";
-import { parsePhoneNumberCommand, findCustomerByPhone } from "@/utils/chatCommands/customerLookupParser";
+import { Message } from "./types/chatTypes";
 import { useCustomers } from "@/hooks/useCustomers";
-import { CustomerType } from "@/types/customer";
-import CustomerLookupView from "./CustomerLookupView";
-import CustomerCreationView from "./CustomerCreationView";
-import { parseTaskCommand, formatTaskTime, createNewTask } from "@/utils/chatCommands/taskParser";
-import TaskCreationView from "./TaskCreationView";
-import { parseInventoryCommand } from "@/utils/chatCommands/inventoryParser";
-import InventoryResultView from "./InventoryResultView";
-import { parseQuotationCommand } from "@/utils/chatCommands/quotationParser";
-import QuotationGenerator from "./QuotationGenerator";
+import MessageList from "./message/MessageList";
+import ChatInput from "./input/ChatInput";
+import AISelector from "./models/AISelector";
+import ApiKeyInput from "./api/ApiKeyInput";
+import { useAI } from "./api/useAI";
+import { useCommandProcessor } from "./commands/useCommandProcessor";
 import "@/components/chat/chat.css";
-
-// Define message type
-interface Message {
-  id: string;
-  content: string | React.ReactNode;
-  sender: "user" | "bot";
-  timestamp: Date;
-  isAiResponse?: boolean;
-  aiModel?: "openrouter" | "claude";
-}
 
 const CommandCopilotInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
@@ -47,163 +29,26 @@ const CommandCopilotInterface = () => {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [showClaudeApiKeyInput, setShowClaudeApiKeyInput] = useState(false);
   const [preferredAiModel, setPreferredAiModel] = useState<"openrouter" | "claude">("claude");
-  const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const { customers } = useCustomers();
 
-  // Auto-scroll to the bottom when new messages appear
-  useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  const processStructuredCommand = async (message: string): Promise<{handled: boolean, response?: React.ReactNode}> => {
-    // Check for phone number lookup command
-    const phoneNumber = parsePhoneNumberCommand(message);
-    if (phoneNumber) {
-      const customer = findCustomerByPhone(phoneNumber, customers);
-      if (customer) {
-        return {
-          handled: true,
-          response: <CustomerLookupView customer={customer} />
-        };
-      } else {
-        return {
-          handled: true,
-          response: `❌ No customer found with the number ${phoneNumber}`
-        };
-      }
-    }
-
-    // Check for customer creation command
-    const parsedCustomer = parseCustomerCommand(message);
-    if (parsedCustomer.isValid) {
-      // Check for duplicate customer
-      const existingCustomer = customers.find(
-        (c) => c.phone === parsedCustomer.phone
-      );
-
-      if (existingCustomer) {
-        return {
-          handled: true,
-          response: `⚠️ Customer with phone ${parsedCustomer.phone} already exists as "${existingCustomer.name}"`
-        };
-      }
-
-      const newCustomer = createNewCustomer(parsedCustomer);
-      return {
-        handled: true,
-        response: <CustomerCreationView customer={newCustomer} />
-      };
-    }
-
-    // Check for task creation command
-    const taskResult = parseTaskCommand(message);
-    if (taskResult.isValid) {
-      // Create a new task from the parsed data
-      const newTask = createNewTask(taskResult);
-      return {
-        handled: true,
-        response: <TaskCreationView task={newTask} />
-      };
-    }
-
-    // Check for inventory command
-    const inventoryResult = parseInventoryCommand(message);
-    if (inventoryResult.matchedItems.length > 0 || 
-        (message.toLowerCase().includes("inventory") || 
-         message.toLowerCase().includes("stock"))) {
-      return {
-        handled: true,
-        response: <InventoryResultView queryResult={inventoryResult} />
-      };
-    }
-
-    // Check for quotation command
-    const quotationResult = parseQuotationCommand(message);
-    // Check if this is a quotation command based on the pattern
-    if (message.toLowerCase().includes("quotation") || 
-        message.toLowerCase().includes("quote") || 
-        quotationResult.models.length > 0) {
-      return {
-        handled: true,
-        response: <QuotationGenerator initialData={quotationResult} onComplete={() => {}} onCancel={() => {}} />
-      };
-    }
-
-    // No structured command matched
-    return { handled: false };
+  // Add message to chat
+  const addMessageToChat = (message: Message) => {
+    setMessages(prev => [...prev, message]);
   };
 
-  const processClaudeAi = async (userInput: string): Promise<string> => {
-    try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": claudeApiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
-          max_tokens: 1000,
-          messages: [
-            { role: "user", content: userInput }
-          ],
-          system: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.content && data.content.length > 0) {
-        return data.content[0].text;
-      } else {
-        throw new Error(data.error?.message || "Failed to get Claude AI response");
-      }
-    } catch (error) {
-      console.error("Claude API error:", error);
-      const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
-      throw new Error(`Claude AI error: ${errorMessage}`);
-    }
-  };
+  // Hook for AI processing
+  const { processAIRequest, isProcessing: aiProcessing } = useAI({
+    claudeApiKey,
+    openRouterApiKey: apiKey,
+    setShowClaudeApiKeyInput,
+    setShowApiKeyInput
+  });
 
-  const processOpenRouterAi = async (userInput: string): Promise<string> => {
-    try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "Command Copilot"
-        },
-        body: JSON.stringify({
-          model: "mistral/mistral-7b-instruct", // or "gpt-3.5-turbo" as fallback
-          messages: [
-            {
-              role: "system",
-              content: "You are Command Copilot, a business assistant for a copier and printer service company. Answer questions helpfully and concisely."
-            },
-            {
-              role: "user",
-              content: userInput
-            }
-          ]
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.choices && data.choices[0]) {
-        return data.choices[0].message.content;
-      } else {
-        throw new Error(data.error?.message || "Failed to get AI response");
-      }
-    } catch (error) {
-      console.error("OpenRouter API error:", error);
-      const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
-      throw new Error(`OpenRouter AI error: ${errorMessage}`);
-    }
-  };
+  // Hook for command processing
+  const { processCommand, isProcessing: commandProcessing } = useCommandProcessor({
+    customers,
+    addMessageToChat
+  });
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -216,162 +61,36 @@ const CommandCopilotInterface = () => {
       timestamp: new Date(),
     };
     
-    setMessages((prev) => [...prev, userMessage]);
+    addMessageToChat(userMessage);
     setInputValue("");
     
     // Simulate bot typing
     setIsTyping(true);
     
     try {
-      // First check if it's a structured command
-      const commandResult = await processStructuredCommand(userMessage.content);
+      // Try to process as a structured command first
+      const isCommandHandled = await processCommand(inputValue);
       
-      if (commandResult.handled) {
-        // It's a structured command, show the result
-        const botMessage: Message = {
-          id: `msg-${Date.now()}-bot`,
-          content: commandResult.response || "Command processed successfully",
-          sender: "bot",
-          timestamp: new Date(),
-        };
-        
-        setMessages((prev) => [...prev, botMessage]);
-      } else {
+      if (!isCommandHandled) {
         // It's not a structured command, try AI processing
         // Check if we have a phone number to enrich with context
-        const phoneNumberMatch = parsePhoneNumberCommand(userMessage.content);
-        let aiPrompt = userMessage.content;
+        const phoneNumberMatch = inputValue.match(/\b\d{10}\b/);
+        let aiPrompt = inputValue;
         
         // If it's a phone number, add customer context if available
         if (phoneNumberMatch) {
-          const customer = findCustomerByPhone(phoneNumberMatch, customers);
+          const phoneNumber = phoneNumberMatch[0];
+          const customer = customers.find(c => c.phone === phoneNumber);
           if (customer) {
-            aiPrompt = `The user is asking about customer: ${JSON.stringify(customer, null, 2)}.\n\nBased on this customer data, ${userMessage.content}`;
+            aiPrompt = `The user is asking about customer: ${JSON.stringify(customer, null, 2)}.\n\nBased on this customer data, ${inputValue}`;
           }
         }
         
-        // Determine which AI to use
-        if (preferredAiModel === "claude" && claudeApiKey) {
-          try {
-            const aiResponse = await processClaudeAi(aiPrompt);
-            const botMessage: Message = {
-              id: `msg-${Date.now()}-bot`,
-              content: aiResponse,
-              sender: "bot",
-              timestamp: new Date(),
-              isAiResponse: true,
-              aiModel: "claude"
-            };
-            setMessages((prev) => [...prev, botMessage]);
-          } catch (error) {
-            // Try OpenRouter as fallback if available
-            if (apiKey) {
-              try {
-                const fallbackResponse = await processOpenRouterAi(aiPrompt);
-                const botMessage: Message = {
-                  id: `msg-${Date.now()}-bot`,
-                  content: fallbackResponse,
-                  sender: "bot",
-                  timestamp: new Date(),
-                  isAiResponse: true,
-                  aiModel: "openrouter"
-                };
-                setMessages((prev) => [...prev, botMessage]);
-              } catch (fallbackError) {
-                const errorMessage = fallbackError instanceof Error ? String(fallbackError.message) : String(fallbackError || "Unknown error");
-                const botMessage: Message = {
-                  id: `msg-${Date.now()}-bot`,
-                  content: `I couldn't process that request through any AI service. Error: ${errorMessage}`,
-                  sender: "bot",
-                  timestamp: new Date(),
-                };
-                setMessages((prev) => [...prev, botMessage]);
-              }
-            } else {
-              // No fallback available, show Claude error
-              const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
-              const botMessage: Message = {
-                id: `msg-${Date.now()}-bot`,
-                content: `I couldn't process that request through Claude AI. Error: ${errorMessage}`,
-                sender: "bot",
-                timestamp: new Date(),
-              };
-              setMessages((prev) => [...prev, botMessage]);
-              setShowClaudeApiKeyInput(true);
-            }
-          }
-        } else if (preferredAiModel === "openrouter" && apiKey) {
-          // Use OpenRouter
-          try {
-            const aiResponse = await processOpenRouterAi(aiPrompt);
-            const botMessage: Message = {
-              id: `msg-${Date.now()}-bot`,
-              content: aiResponse,
-              sender: "bot",
-              timestamp: new Date(),
-              isAiResponse: true,
-              aiModel: "openrouter"
-            };
-            setMessages((prev) => [...prev, botMessage]);
-          } catch (error) {
-            // Try Claude as fallback if available
-            if (claudeApiKey) {
-              try {
-                const fallbackResponse = await processClaudeAi(aiPrompt);
-                const botMessage: Message = {
-                  id: `msg-${Date.now()}-bot`,
-                  content: fallbackResponse,
-                  sender: "bot",
-                  timestamp: new Date(),
-                  isAiResponse: true,
-                  aiModel: "claude"
-                };
-                setMessages((prev) => [...prev, botMessage]);
-              } catch (fallbackError) {
-                const errorMessage = fallbackError instanceof Error ? String(fallbackError.message) : String(fallbackError || "Unknown error");
-                const botMessage: Message = {
-                  id: `msg-${Date.now()}-bot`,
-                  content: `I couldn't process that request through any AI service. Error: ${errorMessage}`,
-                  sender: "bot",
-                  timestamp: new Date(),
-                };
-                setMessages((prev) => [...prev, botMessage]);
-              }
-            } else {
-              // No fallback available, show OpenRouter error
-              const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
-              const botMessage: Message = {
-                id: `msg-${Date.now()}-bot`,
-                content: `I couldn't process that request through the OpenRouter AI. Error: ${errorMessage}`,
-                sender: "bot",
-                timestamp: new Date(),
-              };
-              setMessages((prev) => [...prev, botMessage]);
-              setShowApiKeyInput(true);
-            }
-          }
-        } else {
-          // No API keys available, prompt for API key
-          if (!claudeApiKey) {
-            setShowClaudeApiKeyInput(true);
-            const botMessage: Message = {
-              id: `msg-${Date.now()}-bot`,
-              content: "Please enter your Claude API key to enable AI responses.",
-              sender: "bot",
-              timestamp: new Date(),
-            };
-            setMessages((prev) => [...prev, botMessage]);
-          } else if (!apiKey) {
-            setShowApiKeyInput(true);
-            const botMessage: Message = {
-              id: `msg-${Date.now()}-bot`,
-              content: "Please enter your OpenRouter API key as a fallback option.",
-              sender: "bot",
-              timestamp: new Date(),
-            };
-            setMessages((prev) => [...prev, botMessage]);
-          }
-        }
+        await processAIRequest(
+          aiPrompt, 
+          preferredAiModel, 
+          addMessageToChat
+        );
       }
     } catch (error) {
       console.error("Error processing message:", error);
@@ -383,21 +102,10 @@ const CommandCopilotInterface = () => {
         timestamp: new Date(),
       };
       
-      setMessages((prev) => [...prev, botMessage]);
+      addMessageToChat(botMessage);
     } finally {
       setIsTyping(false);
     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const handleAttachment = () => {
-    toast.info("File upload functionality coming soon!");
   };
 
   const handleSubmitApiKey = (type: "openrouter" | "claude") => {
@@ -414,7 +122,7 @@ const CommandCopilotInterface = () => {
           timestamp: new Date(),
         };
         
-        setMessages((prev) => [...prev, botMessage]);
+        addMessageToChat(botMessage);
       } else {
         toast.error("Please enter a valid API key");
       }
@@ -431,7 +139,7 @@ const CommandCopilotInterface = () => {
           timestamp: new Date(),
         };
         
-        setMessages((prev) => [...prev, botMessage]);
+        addMessageToChat(botMessage);
       } else {
         toast.error("Please enter a valid Claude API key");
       }
@@ -446,126 +154,39 @@ const CommandCopilotInterface = () => {
   return (
     <Card className="border-border">
       <CardContent className="p-0 flex flex-col h-[calc(100vh-240px)]">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div key={message.id}>
-              <EnhancedChatMessage 
-                message={message} 
-              />
-              {message.isAiResponse && message.sender === "bot" && (
-                <div className="flex items-center ml-10 mt-1 text-xs text-muted-foreground">
-                  {message.aiModel === "claude" ? (
-                    <>
-                      <Sparkles className="h-3 w-3 mr-1" /> Powered by Claude AI
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3 w-3 mr-1" /> Powered by AI
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-          
-          {isTyping && (
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex items-center space-x-1 bg-muted p-3 rounded-md max-w-[80%]">
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-              </div>
-            </div>
-          )}
-          
-          {showClaudeApiKeyInput && (
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-primary" />
-              </div>
-              <div className="bg-muted p-3 rounded-md max-w-[80%]">
-                <p className="mb-2">Please enter your Claude API key:</p>
-                <div className="flex gap-2">
-                  <Input 
-                    type="password" 
-                    value={claudeApiKey} 
-                    onChange={(e) => setClaudeApiKey(e.target.value)}
-                    placeholder="sk-ant-..."
-                    className="flex-1"
-                  />
-                  <Button onClick={() => handleSubmitApiKey("claude")}>Save</Button>
-                </div>
-                <p className="text-xs mt-2 text-muted-foreground">
-                  Your API key is stored only in this browser session.
-                </p>
-              </div>
-            </div>
-          )}
-          
-          {showApiKeyInput && (
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-primary" />
-              </div>
-              <div className="bg-muted p-3 rounded-md max-w-[80%]">
-                <p className="mb-2">Please enter your OpenRouter API key as a fallback option:</p>
-                <div className="flex gap-2">
-                  <Input 
-                    type="password" 
-                    value={apiKey} 
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="sk_or_..."
-                    className="flex-1"
-                  />
-                  <Button onClick={() => handleSubmitApiKey("openrouter")}>Save</Button>
-                </div>
-                <p className="text-xs mt-2 text-muted-foreground">
-                  Your API key is stored only in this browser session.
-                </p>
-              </div>
-            </div>
-          )}
-          
-          <div ref={endOfMessagesRef} />
-        </div>
+        <MessageList 
+          messages={messages} 
+          isTyping={isTyping} 
+        />
+        
+        {showClaudeApiKeyInput && (
+          <ApiKeyInput 
+            apiKey={claudeApiKey} 
+            setApiKey={setClaudeApiKey}
+            apiType="claude"
+            onSubmit={handleSubmitApiKey}
+          />
+        )}
+        
+        {showApiKeyInput && (
+          <ApiKeyInput 
+            apiKey={apiKey} 
+            setApiKey={setApiKey}
+            apiType="openrouter"
+            onSubmit={handleSubmitApiKey}
+          />
+        )}
         
         <div className="border-t p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs"
-                onClick={togglePreferredAi}
-              >
-                {preferredAiModel === "claude" ? "Using: Claude AI" : "Using: OpenRouter AI"}
-              </Button>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleAttachment}
-              className="shrink-0"
-            >
-              <PaperclipIcon className="h-4 w-4" />
-            </Button>
-            <Input
-              placeholder="Type a message or command..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1"
-            />
-            <Button onClick={handleSendMessage} className="shrink-0">
-              <Send className="h-4 w-4 mr-2" />
-              Send
-            </Button>
-          </div>
+          <AISelector 
+            preferredAiModel={preferredAiModel}
+            togglePreferredAi={togglePreferredAi}
+          />
+          <ChatInput 
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            handleSendMessage={handleSendMessage}
+          />
         </div>
       </CardContent>
     </Card>
