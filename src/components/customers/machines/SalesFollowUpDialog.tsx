@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { CalendarClock, Search, X, User, Phone, MapPin, Printer } from "lucide-react";
+import { CalendarClock, Search, X, Phone, MapPin, Printer } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -139,6 +139,14 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
     }
   };
 
+  const clearCustomerSelection = () => {
+    setNewSalesFollowUp({
+      ...newSalesFollowUp,
+      customerName: "",
+      customerId: undefined
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -153,17 +161,28 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
                 id="customer-name"
                 placeholder="Enter customer name"
                 value={newSalesFollowUp.customerName || ''}
-                onChange={(e) => setNewSalesFollowUp({...newSalesFollowUp, customerName: e.target.value})}
-                readOnly={showCustomerSearch}
+                readOnly
+                className="flex-1"
               />
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={toggleCustomerSearch}
-                title={showCustomerSearch ? "Close search" : "Search customers"}
-              >
-                {showCustomerSearch ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
-              </Button>
+              {newSalesFollowUp.customerName ? (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={clearCustomerSelection}
+                  title="Clear selection"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleCustomerSearch}
+                  title={showCustomerSearch ? "Close search" : "Search customers"}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             
             {showCustomerSearch && (
@@ -182,7 +201,7 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
                   />
                 </div>
                 
-                <div className="flex gap-1.5 text-xs text-muted-foreground mb-2">
+                <div className="flex gap-3 text-xs text-muted-foreground mb-2">
                   <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</span>
                   <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> City</span>
                   <span className="flex items-center gap-1"><Printer className="h-3 w-3" /> Machine</span>
@@ -200,18 +219,16 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
                         className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center gap-2"
                         onClick={() => selectCustomer(customer)}
                       >
-                        <User className="h-4 w-4 text-muted-foreground" />
                         <div className="flex-1">
                           <div className="font-medium">{customer.name}</div>
                           <div className="text-xs text-muted-foreground">
                             {customer.phone}
-                            {customer.email && ` • ${customer.email}`}
                             {customer.location && ` • ${customer.location}`}
                           </div>
                         </div>
                         {customer.machines.length > 0 && (
                           <Badge variant="outline" className="text-xs">
-                            {customer.machines.length} machines
+                            {customer.machines.length} {customer.machines.length === 1 ? 'machine' : 'machines'}
                           </Badge>
                         )}
                       </div>
