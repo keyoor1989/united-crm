@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from "react";
-import { Key, Bot, AlertTriangle } from "lucide-react";
+import { Key, Bot, AlertTriangle, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ApiKeyManager = () => {
   const [claudeApiKey, setClaudeApiKey] = useState("");
@@ -39,7 +39,7 @@ const ApiKeyManager = () => {
     toast.success("API keys cleared successfully");
   };
 
-  // Modified test function to properly handle CORS issues
+  // Testing function with improved messaging about CORS limitations
   const testClaudeConnection = async () => {
     if (!claudeApiKey) {
       toast.error("Please enter a Claude API key first");
@@ -50,7 +50,7 @@ const ApiKeyManager = () => {
     setIsTestingConnection(true);
 
     try {
-      // Use a lightweight request to test connectivity rather than a full message request
+      // Note: This will likely fail in a browser environment due to CORS
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "OPTIONS",
         headers: {
@@ -60,7 +60,7 @@ const ApiKeyManager = () => {
         }
       });
       
-      // If we get any response, it's a good sign
+      // If we somehow get a response, it's a good sign
       if (response.ok || response.status === 204) {
         toast.success("Claude API connection successful!");
       } else {
@@ -70,9 +70,12 @@ const ApiKeyManager = () => {
     } catch (error) {
       console.error("Claude API test error:", error);
       
-      // Provide more user-friendly error message for CORS errors
+      // Provide clearer error message for CORS errors
       if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
-        toast.error("Connection test failed due to CORS restrictions. This is common when testing from browsers.");
+        toast.error(
+          "Connection test failed due to CORS restrictions. This is expected behavior when testing from browsers. " +
+          "The API key may still be valid, but you need a backend server to make the actual API calls."
+        );
       } else {
         toast.error(`Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
@@ -115,13 +118,34 @@ const ApiKeyManager = () => {
                 Your API key is stored only in this browser session
               </p>
             </div>
-            <Alert className="bg-amber-50 border border-amber-200 text-amber-800">
+            
+            <Alert variant="destructive" className="bg-red-50 border border-red-200 text-red-800">
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                Testing API connections directly from browsers often fails due to CORS restrictions. 
-                For production apps, you should use a backend proxy to make API calls.
+              <AlertTitle>Important CORS Limitation</AlertTitle>
+              <AlertDescription className="mt-2">
+                <p className="mb-2">
+                  <strong>Browser security restrictions (CORS) prevent direct API calls to Claude from the browser.</strong> 
+                  Even with a valid API key, the connection test will likely fail with a "Failed to fetch" error.
+                </p>
+                <p>
+                  For production applications, you <strong>must</strong> implement a backend proxy server to handle Claude API calls.
+                  The key stored here is only for demonstration purposes.
+                </p>
               </AlertDescription>
             </Alert>
+            
+            <Alert className="bg-amber-50 border border-amber-200 text-amber-800">
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <p className="mb-2">For this demo, you can still:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Save your API key in the browser's session storage</li>
+                  <li>Test UI flows that would normally use Claude's API</li>
+                  <li>See mock responses for certain features</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+            
             <div className="mt-4 p-3 bg-muted rounded-md text-sm">
               <h4 className="font-medium mb-1">API Details:</h4>
               <ul className="list-disc pl-4 space-y-1">
@@ -130,13 +154,14 @@ const ApiKeyManager = () => {
                 <li>Headers: Anthropic-Version: 2023-06-01</li>
               </ul>
             </div>
+            
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
-              <h4 className="font-medium mb-1 text-yellow-800">Important Notes:</h4>
+              <h4 className="font-medium mb-1 text-yellow-800">Troubleshooting Tips:</h4>
               <ul className="list-disc pl-4 space-y-1 text-yellow-700">
-                <li>If you get "Failed to fetch" errors, it's likely a CORS issue. This is a browser security feature.</li>
+                <li>"Failed to fetch" errors are usually CORS-related, not API key issues</li>
                 <li>Your API key should start with "sk-"</li>
                 <li>Check browser console for detailed error messages</li>
-                <li>For production use, consider implementing a server-side proxy</li>
+                <li>For actual API usage, implement a server-side proxy</li>
               </ul>
             </div>
           </div>
