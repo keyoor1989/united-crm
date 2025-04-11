@@ -1,23 +1,34 @@
-
 import React, { useState } from "react";
-import { cashEntries, departments, categories, paymentMethods } from "@/data/financeData";
-import EntryTable from "@/components/finance/EntryTable";
-import EntryFormDialog from "@/components/finance/EntryFormDialog";
-import DateRangeFilter from "@/components/finance/DateRangeFilter";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Button } from "@/components/ui/button";
 import { format, isWithinInterval, parseISO } from "date-fns";
-import { CashEntry } from "@/types/finance";
+import { 
+  ArrowDown,
+  ArrowUp,
+  Calendar,
+  Download,
+  Filter
+} from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDown, ArrowUp, Calendar, Download, Filter } from "lucide-react";
-import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
+import DateRangeFilter from "@/components/finance/DateRangeFilter";
+import EntryFormDialog from "@/components/finance/EntryFormDialog";
+import EntryTable from "@/components/finance/EntryTable";
+import { cashEntries, departments, categories, paymentMethods } from "@/data/financeData";
+import { CashEntry } from "@/types/finance";
 import { DateRange } from "react-day-picker";
+import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
+import { Badge } from "@/components/ui/badge";
 
 const cashPurposes = [
   "Sales Payment", "Service Payment", "Utility Bills", "Office Supplies", 
@@ -55,7 +66,7 @@ const CashRegister = () => {
     }
     
     // Department filter
-    if (departmentFilter) {
+    if (departmentFilter && departmentFilter !== "all") {
       filtered = filtered.filter(entry => entry.department === departmentFilter);
     }
     
@@ -237,7 +248,7 @@ const CashRegister = () => {
                 <SelectValue placeholder="All Departments" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Departments</SelectItem>
+                <SelectItem value="all">All Departments</SelectItem>
                 {departments.map(dept => (
                   <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                 ))}

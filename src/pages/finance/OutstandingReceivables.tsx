@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { format, addDays, isAfter, isBefore } from "date-fns";
 import { 
@@ -57,7 +56,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
 import { cn } from "@/lib/utils";
 
-// Define form schema for validation
 const formSchema = z.object({
   customer: z.string().min(2, { message: "Customer name is required" }),
   invoiceNumber: z.string().min(1, { message: "Invoice number is required" }),
@@ -86,7 +84,6 @@ const OutstandingReceivables = () => {
   const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 30));
   const { toast } = useToast();
 
-  // Initialize form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -104,12 +101,10 @@ const OutstandingReceivables = () => {
     },
   });
 
-  // Calculate balance based on entered amounts
   const watchAmount = form.watch("amount");
   const watchAmountPaid = form.watch("amountPaid");
   const balance = (watchAmount || 0) - (watchAmountPaid || 0);
 
-  // Calculate dashboard metrics
   const totalOutstanding = receivables
     .filter(r => r.status !== "Cleared")
     .reduce((sum, item) => sum + item.balance, 0);
@@ -118,17 +113,14 @@ const OutstandingReceivables = () => {
     .filter(r => r.status === "Overdue")
     .reduce((sum, item) => sum + item.balance, 0);
     
-  // Get top 5 customers by outstanding amount
   const topCustomers = [...receivables]
     .filter(r => r.status !== "Cleared")
     .sort((a, b) => b.balance - a.balance)
     .slice(0, 5);
 
-  // Handle form submission
   const onSubmit = (data: FormValues) => {
     setIsSubmitting(true);
     
-    // Calculate balance and determine status
     const balance = data.amount - data.amountPaid;
     const today = new Date();
     let status: 'Overdue' | 'Due Soon' | 'Due' | 'Cleared' = 'Due';
@@ -141,7 +133,6 @@ const OutstandingReceivables = () => {
       status = 'Due Soon';
     }
     
-    // Create new receivable entry
     const newReceivable: Receivable = {
       id: uuidv4(),
       invoiceNumber: data.invoiceNumber,
@@ -161,7 +152,6 @@ const OutstandingReceivables = () => {
       branch: data.branch,
     };
     
-    // Add to list and close dialog
     setReceivables((prev) => [newReceivable, ...prev]);
     form.reset();
     setIsDialogOpen(false);
@@ -173,7 +163,6 @@ const OutstandingReceivables = () => {
     });
   };
 
-  // Mark an entry as paid
   const markAsPaid = (id: string) => {
     setReceivables((prev) =>
       prev.map((item) => {
@@ -195,7 +184,6 @@ const OutstandingReceivables = () => {
     });
   };
 
-  // Send a payment reminder (placeholder)
   const sendReminder = (id: string) => {
     const receivable = receivables.find(r => r.id === id);
     
@@ -205,7 +193,6 @@ const OutstandingReceivables = () => {
     });
   };
 
-  // Generate receipt (placeholder)
   const generateReceipt = (id: string) => {
     toast({
       title: "Receipt Generated",
@@ -213,21 +200,19 @@ const OutstandingReceivables = () => {
     });
   };
 
-  // Apply filters to the receivables list
   const filteredReceivables = receivables.filter((receivable) => {
     const receivableDate = new Date(receivable.dueDate);
     const filterDateMatch = 
       (isAfter(receivableDate, startDate) || format(receivableDate, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd")) && 
       (isBefore(receivableDate, endDate) || format(receivableDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd"));
     
-    const departmentMatch = !filterDepartment || receivable.department === filterDepartment;
-    const branchMatch = !filterBranch || receivable.branch === filterBranch;
-    const statusMatch = !filterStatus || receivable.status === filterStatus;
+    const departmentMatch = !filterDepartment || filterDepartment === "all" || receivable.department === filterDepartment;
+    const branchMatch = !filterBranch || filterBranch === "all" || receivable.branch === filterBranch;
+    const statusMatch = !filterStatus || filterStatus === "all" || receivable.status === filterStatus;
     
     return filterDateMatch && departmentMatch && branchMatch && statusMatch;
   });
 
-  // Export to CSV
   const handleExportCsv = () => {
     exportToCsv(filteredReceivables, "outstanding_receivables");
     toast({
@@ -236,7 +221,6 @@ const OutstandingReceivables = () => {
     });
   };
 
-  // Export to PDF
   const handleExportPdf = () => {
     exportToPdf(filteredReceivables, "Outstanding Receivables");
     toast({
@@ -252,7 +236,6 @@ const OutstandingReceivables = () => {
         <Button onClick={() => setIsDialogOpen(true)}>Add New Receivable</Button>
       </div>
 
-      {/* Dashboard Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardHeader className="pb-2">
@@ -289,7 +272,6 @@ const OutstandingReceivables = () => {
         </Card>
       </div>
 
-      {/* Filters */}
       <div className="bg-card rounded-lg p-4 mb-6 shadow-sm">
         <h2 className="text-lg font-semibold mb-4">Filters</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -310,7 +292,7 @@ const OutstandingReceivables = () => {
                 <SelectValue placeholder="All Departments" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Departments</SelectItem>
+                <SelectItem value="all">All Departments</SelectItem>
                 {departments.map((dept) => (
                   <SelectItem key={dept} value={dept}>
                     {dept}
@@ -327,7 +309,7 @@ const OutstandingReceivables = () => {
                 <SelectValue placeholder="All Branches" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Branches</SelectItem>
+                <SelectItem value="all">All Branches</SelectItem>
                 <SelectItem value="Indore">Indore</SelectItem>
                 <SelectItem value="Bhopal">Bhopal</SelectItem>
                 <SelectItem value="Jabalpur">Jabalpur</SelectItem>
@@ -342,7 +324,7 @@ const OutstandingReceivables = () => {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="Due">Due</SelectItem>
                 <SelectItem value="Due Soon">Due Soon</SelectItem>
                 <SelectItem value="Overdue">Overdue</SelectItem>
@@ -353,7 +335,6 @@ const OutstandingReceivables = () => {
         </div>
       </div>
 
-      {/* Export Options */}
       <div className="flex justify-end gap-2 mb-4">
         <Button variant="outline" onClick={handleExportCsv} className="flex items-center gap-2">
           <Download size={16} />
@@ -365,7 +346,6 @@ const OutstandingReceivables = () => {
         </Button>
       </div>
 
-      {/* Receivables Table */}
       <div className="bg-card rounded-lg shadow">
         <Table>
           <TableHeader>
@@ -455,7 +435,6 @@ const OutstandingReceivables = () => {
         </Table>
       </div>
 
-      {/* Add Receivable Dialog */}
       <EntryFormDialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
