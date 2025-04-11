@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import RestrictedSidebar from "./RestrictedSidebar";
+import "@/components/chat/chat.css";
 
 interface LayoutProps {
   children?: ReactNode;

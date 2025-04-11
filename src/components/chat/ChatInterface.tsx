@@ -4,13 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Bot, User, PaperclipIcon } from "lucide-react";
-import ChatMessage from "./ChatMessage";
+import EnhancedChatMessage from "./EnhancedChatMessage";
 import { toast } from "sonner";
 
 // Define message type
 interface Message {
   id: string;
-  content: string;
+  content: string | React.ReactNode;
   sender: "user" | "bot";
   timestamp: Date;
 }
@@ -95,13 +95,13 @@ const ChatInterface = () => {
       <CardContent className="p-0 flex flex-col h-[calc(100vh-240px)]">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
+            <EnhancedChatMessage key={message.id} message={message} />
           ))}
           
           {isTyping && (
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-brand-500" />
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-primary" />
               </div>
               <div className="flex items-center space-x-1 bg-muted p-3 rounded-md max-w-[80%]">
                 <div className="typing-dot"></div>

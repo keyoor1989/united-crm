@@ -33,6 +33,7 @@ import PurchaseOrders from "@/pages/sales/PurchaseOrders";
 import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
 import ProductCatalog from "@/pages/sales/ProductCatalog";
 import Chat from "@/pages/Chat";
+import ChatAssistant from "@/pages/ChatAssistant";
 import NotFound from "@/pages/NotFound";
 
 // Import our newly created components
@@ -147,6 +148,7 @@ const AppRoutes = () => (
         
         <Route path="/product-catalog" element={<ProductCatalog />} />
         <Route path="/chat" element={<Chat />} />
+        <Route path="/chat-assistant" element={<ChatAssistant />} />
         
         {/* User Management */}
         <Route path="/user-management" element={<UserManagement />} />
