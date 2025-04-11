@@ -1,12 +1,70 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Filter } from "lucide-react";
 import VendorPerformanceMetrics from "@/components/inventory/vendors/VendorPerformanceMetrics";
+import { Vendor, VendorPerformanceMetric } from "@/types/inventory";
 
 const VendorPerformance = () => {
+  // Mock vendor data for demonstration
+  const mockVendor: Vendor = {
+    id: "vendor1",
+    name: "Ajanta Traders",
+    gstNo: "24AAKCS9636Q1ZX",
+    phone: "9876543210",
+    email: "info@ajanta.com",
+    address: "142, Industrial Area, Indore, MP",
+    createdAt: "2024-01-15"
+  };
+
+  // Mock performance data
+  const mockPerformanceData: VendorPerformanceMetric[] = [
+    {
+      id: "perf001",
+      vendorId: "vendor1",
+      period: "Q1 2025",
+      totalOrders: 42,
+      onTimeDelivery: 38,
+      avgDeliveryTime: 2.3,
+      priceConsistency: 4.5,
+      productQuality: 4.7,
+      returnRate: 1.2,
+      reliabilityScore: 92,
+      createdAt: "2025-04-01"
+    },
+    {
+      id: "perf002",
+      vendorId: "vendor1",
+      period: "Q4 2024",
+      totalOrders: 38,
+      onTimeDelivery: 34,
+      avgDeliveryTime: 2.5,
+      priceConsistency: 4.3,
+      productQuality: 4.5,
+      returnRate: 1.5,
+      reliabilityScore: 89,
+      createdAt: "2025-01-01"
+    },
+    {
+      id: "perf003",
+      vendorId: "vendor1",
+      period: "Q3 2024",
+      totalOrders: 35,
+      onTimeDelivery: 30,
+      avgDeliveryTime: 2.8,
+      priceConsistency: 4.2,
+      productQuality: 4.4,
+      returnRate: 1.8,
+      reliabilityScore: 86,
+      createdAt: "2024-10-01"
+    }
+  ];
+
+  // Time periods for the performance data
+  const mockTimePeriods = ["Q1 2025", "Q4 2024", "Q3 2024"];
+
   return (
     <div className="container p-6">
       <div className="flex justify-between items-center mb-6">
@@ -55,7 +113,11 @@ const VendorPerformance = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <VendorPerformanceMetrics />
+              <VendorPerformanceMetrics 
+                vendor={mockVendor} 
+                performanceData={mockPerformanceData} 
+                timePeriods={mockTimePeriods} 
+              />
             </CardContent>
           </Card>
         </TabsContent>
