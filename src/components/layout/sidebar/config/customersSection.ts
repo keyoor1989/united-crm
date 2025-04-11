@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 export const customersSection = {
+  key: "customers",
   label: "Customers",
   icon: Users,
   to: "/customers",
