@@ -5,6 +5,11 @@ export const parsePhoneNumberCommand = (command: string): string | null => {
   // Clean up the command to extract just the phone number
   const cleanCommand = command.trim().toLowerCase();
   
+  // First check if the command is just a 10-digit number by itself
+  if (/^\d{10}$/.test(cleanCommand)) {
+    return cleanCommand;
+  }
+  
   // Check if this is an explicit lookup command
   const explicitLookupRegex = /(?:check|find|lookup|search|show)(?:\s+customer|\s+mobile|\s+number)?[\s:]+((?:\+?91\s?)?\d{10})/i;
   const explicitMatch = command.match(explicitLookupRegex);

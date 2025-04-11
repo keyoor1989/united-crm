@@ -34,7 +34,13 @@ serve(async (req) => {
     // Determine the type of content we're dealing with
     const isCustomerProfile = prompt.includes("Customer Profile:") || prompt.includes("Mobile:") || prompt.includes("Last Service:");
     const isQuotationRequest = prompt.includes("Quotation Request:") || prompt.includes("Quote for") || prompt.includes("price for");
-    const isMobileNumber = prompt.match(/^\s*\d{10}\s*$/) || prompt.toLowerCase().includes("lookup customer") || prompt.toLowerCase().includes("find customer");
+    
+    // Enhanced mobile number detection - check for pure 10-digit numbers or lookup commands
+    const isMobileNumber = prompt.match(/^\s*\d{10}\s*$/) || 
+                          prompt.toLowerCase().includes("lookup customer") || 
+                          prompt.toLowerCase().includes("find customer") ||
+                          prompt.match(/lookup.*\d{10}/) || 
+                          prompt.match(/find.*\d{10}/);
     
     // Default system prompt that makes it clear this is a role-play scenario
     let effectiveSystemPrompt = systemPrompt || `You are a helpful AI assistant for a copier business management system. 
@@ -45,14 +51,10 @@ Your role is to act as if you're integrated with this copier business ERP system
     
     if (isCustomerProfile) {
       effectiveSystemPrompt = `You are a helpful assistant for a copier business management system. 
-When presented with customer profile data, summarize it concisely in a professional business format. 
-Format your response as a business summary with sections for:
-- Customer details (name, contact, location)
-- Equipment (with any service history if provided)
-- Recent follow-ups and status
-
-This data was retrieved from the system's database based on a query. 
-Respond as if you're integrated with this business system, but remember you're only working with the information provided in this prompt.`;
+You are looking at customer profile data that has been retrieved from the copier business database.
+Present this information in a professional business format with sections for customer details, equipment, and recent interactions.
+Format the response as a helpful business summary that a sales or service person would find useful.
+Do not say you don't have access to customer information - you are working with the exact customer data provided in this prompt.`;
     } else if (isQuotationRequest) {
       effectiveSystemPrompt = `You are a sales assistant for a copier business. 
 When presented with quotation details, format them professionally as: 
@@ -62,7 +64,7 @@ Only use the quotation information provided to you.`;
       effectiveSystemPrompt = `You are a helpful assistant for a copier business management system.
 The system has found customer data for this query and provided it to you.
 Please format this customer information professionally as a business summary.
-If no data details are provided in the prompt, simply respond with:
+If no data details are provided in the prompt beyond just a phone number, simply respond with:
 "I've looked up this customer information in our system. The customer information is displayed above."`;
     }
 

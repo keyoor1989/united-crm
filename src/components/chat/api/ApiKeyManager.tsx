@@ -11,6 +11,7 @@ const ApiKeyManager = () => {
   const [openRouterApiKey, setOpenRouterApiKey] = useState("");
   const [showOpenRouterApiKey, setShowOpenRouterApiKey] = useState(false);
   const [isClaudeConfigured, setIsClaudeConfigured] = useState(true);
+  const [isCheckingConfig, setIsCheckingConfig] = useState(true);
 
   // Load saved API keys on component mount
   useEffect(() => {
@@ -19,7 +20,9 @@ const ApiKeyManager = () => {
     
     // Check if Claude is configured
     const checkClaudeConfig = async () => {
+      setIsCheckingConfig(true);
       try {
+        console.log("Checking Claude configuration...");
         const response = await fetch('https://klieshkrqryigtqtshka.supabase.co/functions/v1/claude-assistant', {
           method: 'POST',
           headers: {
@@ -37,14 +40,20 @@ const ApiKeyManager = () => {
           setIsClaudeConfigured(false);
         } else {
           const data = await response.json();
+          console.log("Claude configuration check response:", data);
           if (data.error || !data.content || !data.content.includes("Claude is configured")) {
             console.error("Claude connection test failed:", data?.error || "Unexpected response");
             setIsClaudeConfigured(false);
+          } else {
+            console.log("Claude is properly configured");
+            setIsClaudeConfigured(true);
           }
         }
       } catch (error) {
         console.error("Error checking Claude configuration:", error);
         setIsClaudeConfigured(false);
+      } finally {
+        setIsCheckingConfig(false);
       }
     };
     
@@ -81,7 +90,15 @@ const ApiKeyManager = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {isClaudeConfigured ? (
+            {isCheckingConfig ? (
+              <Alert className="bg-blue-50 border border-blue-200 text-blue-800">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Checking Claude API Connection...</AlertTitle>
+                <AlertDescription>
+                  Please wait while we verify your Claude API connection.
+                </AlertDescription>
+              </Alert>
+            ) : isClaudeConfigured ? (
               <Alert className="bg-green-50 border border-green-200 text-green-800">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertTitle>Claude API Connected</AlertTitle>
