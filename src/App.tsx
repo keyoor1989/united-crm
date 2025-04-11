@@ -22,7 +22,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <BrowserRouter>
+        <BrowserRouter basename="/">
           <VendorProvider>
             <AppRoutes />
             <Toaster />

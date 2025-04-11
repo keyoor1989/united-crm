@@ -81,6 +81,7 @@ const AppRoutes = () => (
             <Layout />
           </ProtectedRoute>
         }>
+        {/* Redirect root to dashboard for iframe preview */}
         <Route path="/" element={<Dashboard />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customer-form" element={<CustomerForm />} />
