@@ -1,734 +1,548 @@
 
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { format } from "date-fns";
-import { PieChart, Calendar, FileText, Download, Filter, ChevronDown } from "lucide-react";
-import { v4 as uuidv4 } from "uuid";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-
-import EntryFormDialog from "@/components/finance/EntryFormDialog";
+import React, { useState, useMemo } from "react";
+import { revenueEntries } from "@/data/financeData";
 import EntryTable from "@/components/finance/EntryTable";
+import EntryFormDialog from "@/components/finance/EntryFormDialog";
 import DateRangeFilter from "@/components/finance/DateRangeFilter";
-import { Expense } from "@/types/finance";
-import { expenseEntries, departments, paymentMethods, months } from "@/data/financeData";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, isWithinInterval, parseISO } from "date-fns";
+import { Revenue } from "@/types/finance";
+import { v4 as uuidv4 } from "uuid";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/button";
+import { Download, PieChart, BarChart2, Filter } from "lucide-react";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
+import { DateRange } from "react-day-picker";
 
-import { PieChart as RechartsChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
-// Define expense types
 const expenseTypes = [
-  "Machine Purchase",
-  "Spare Part Purchase",
-  "Engineer Salary",
-  "Rent & Utilities",
-  "Travel / Fuel",
-  "Courier / Logistics",
-  "Miscellaneous"
+  "Salaries",
+  "Rent",
+  "Utilities",
+  "Equipment Purchases",
+  "Marketing",
+  "Travel",
+  "Office Supplies",
+  "Software Subscriptions",
+  "Professional Services",
+  "Training"
 ];
 
-// Define GST percentages
-const gstPercentages = ["0", "5", "12", "18", "28"];
-
-// Define branches
+const gstRates = ["0", "5", "12", "18", "28"];
+const paymentModes = ["Cash", "UPI", "Bank Transfer", "Cheque"];
 const branches = ["Indore", "Bhopal", "Jabalpur"];
+const vendorsList = ["ABC Supplies", "XYZ Services", "Prime Technologies", "Global Solutions", "Metro Equipment"];
 
-// Form schema
-const formSchema = z.object({
-  expenseType: z.string().min(1, "Please select an expense type"),
-  amount: z.coerce.number().min(1, "Amount must be greater than 0"),
-  gstPercentage: z.string().optional(),
-  paidTo: z.string().min(1, "Please enter who the expense was paid to"),
-  department: z.string().min(1, "Please select a department"),
-  paymentMode: z.string().min(1, "Please select a payment mode"),
-  date: z.date(),
-  branch: z.string().min(1, "Please select a branch"),
-  notes: z.string().optional(),
-  bill: z.any().optional(),
-});
+interface ExpenseEntry extends Revenue {
+  expenseType: string;
+  gstPercentage?: number;
+  totalWithGst?: number;
+  branch: string;
+  paymentMode: string;
+  vendor?: string;
+}
 
-type FormValues = z.infer<typeof formSchema>;
-
-const DepartmentExpenses: React.FC = () => {
-  const [expenses, setExpenses] = useState<Expense[]>(expenseEntries);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [currentExpense, setCurrentExpense] = useState<Expense | null>(null);
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [filterDepartment, setFilterDepartment] = useState<string | undefined>(undefined);
-  const [filterBranch, setFilterBranch] = useState<string | undefined>(undefined);
-  const [filterPaymentMode, setFilterPaymentMode] = useState<string | undefined>(undefined);
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      expenseType: "",
-      amount: 0,
-      gstPercentage: "0",
-      paidTo: "",
-      department: "",
-      paymentMode: "",
-      date: new Date(),
-      branch: "",
-      notes: "",
-      bill: undefined,
-    },
+const DepartmentExpenses = () => {
+  // Convert existing entries to expense format for demo
+  const initialEntries: ExpenseEntry[] = revenueEntries.map(entry => ({
+    ...entry,
+    expenseType: expenseTypes[Math.floor(Math.random() * expenseTypes.length)],
+    gstPercentage: Math.floor(Math.random() * 5) * 7, // Random GST for demo
+    branch: branches[Math.floor(Math.random() * branches.length)],
+    paymentMode: paymentModes[Math.floor(Math.random() * paymentModes.length)],
+    vendor: vendorsList[Math.floor(Math.random() * vendorsList.length)],
+    totalWithGst: 0
+  })).map(entry => {
+    // Calculate total with GST
+    const gst = entry.gstPercentage ? (entry.amount * entry.gstPercentage / 100) : 0;
+    return {
+      ...entry,
+      totalWithGst: entry.amount + gst
+    };
   });
 
-  const onSubmit = (data: FormValues) => {
-    const gstAmount = data.gstPercentage 
-      ? (data.amount * Number(data.gstPercentage) / 100) 
+  const [entries, setEntries] = useState<ExpenseEntry[]>(initialEntries);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentEntry, setCurrentEntry] = useState<Partial<ExpenseEntry>>({
+    date: format(new Date(), "yyyy-MM-dd"),
+    paymentStatus: "Pending",
+    branch: "Indore",
+    paymentMode: "Cash"
+  });
+  
+  // Filter states
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  const [paymentModeFilter, setPaymentModeFilter] = useState<string>("");
+  const [branchFilter, setBranchFilter] = useState<string>("");
+  
+  // Apply filters
+  const filteredEntries = useMemo(() => {
+    let filtered = [...entries];
+    
+    // Date range filter
+    if (dateRange?.from && dateRange?.to) {
+      filtered = filtered.filter(entry => {
+        const entryDate = parseISO(entry.date);
+        return isWithinInterval(entryDate, { 
+          start: dateRange.from as Date,
+          end: dateRange.to as Date
+        });
+      });
+    }
+    
+    // Department filter
+    if (departmentFilter && departmentFilter !== "all") {
+      filtered = filtered.filter(entry => entry.expenseType === departmentFilter);
+    }
+    
+    // Payment mode filter
+    if (paymentModeFilter && paymentModeFilter !== "all") {
+      filtered = filtered.filter(entry => entry.paymentMode === paymentModeFilter);
+    }
+    
+    // Branch filter
+    if (branchFilter && branchFilter !== "all") {
+      filtered = filtered.filter(entry => entry.branch === branchFilter);
+    }
+    
+    return filtered;
+  }, [entries, dateRange, departmentFilter, paymentModeFilter, branchFilter]);
+  
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  // Calculate totals for summary cards
+  const totalExpenses = filteredEntries.reduce((sum, entry) => sum + entry.amount, 0);
+  
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    const departmentTotals = expenseTypes.map(type => ({
+      name: type,
+      value: filteredEntries.filter(entry => entry.expenseType === type)
+        .reduce((sum, entry) => sum + entry.amount, 0)
+    })).filter(dept => dept.value > 0);
+    
+    return departmentTotals;
+  }, [filteredEntries]);
+
+  const handleOpenDialog = () => {
+    setCurrentEntry({
+      date: format(new Date(), "yyyy-MM-dd"),
+      paymentStatus: "Pending",
+      branch: "Indore",
+      paymentMode: "Cash"
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+  };
+
+  const handleFormSubmit = () => {
+    if (
+      !currentEntry.date ||
+      !currentEntry.expenseType ||
+      !currentEntry.amount ||
+      !currentEntry.branch ||
+      !currentEntry.paymentMode
+    ) {
+      // In a real app, show validation message
+      console.error("Missing required fields");
+      return;
+    }
+
+    const gstAmount = currentEntry.gstPercentage 
+      ? (Number(currentEntry.amount) * Number(currentEntry.gstPercentage) / 100) 
       : 0;
     
-    const totalWithGst = data.amount + gstAmount;
-    
-    if (currentExpense) {
-      // Update existing expense
-      const updatedExpenses = expenses.map((expense) =>
-        expense.id === currentExpense.id
-          ? {
-              ...expense,
-              date: format(data.date, "yyyy-MM-dd"),
-              category: data.expenseType,
-              amount: data.amount,
-              gstPercentage: data.gstPercentage ? Number(data.gstPercentage) : undefined,
-              totalWithGst,
-              vendor: data.paidTo,
-              department: data.department,
-              paymentMethod: data.paymentMode,
-              branch: data.branch,
-              notes: data.notes,
-              billFile: data.bill,
-            }
-          : expense
-      );
-      setExpenses(updatedExpenses);
-    } else {
-      // Add new expense
-      const newExpense: Expense = {
-        id: uuidv4(),
-        date: format(data.date, "yyyy-MM-dd"),
-        department: data.department,
-        category: data.expenseType,
-        amount: data.amount,
-        description: data.notes || "",
-        vendor: data.paidTo,
-        billNumber: "",
-        paymentStatus: "Paid",
-        paymentMethod: data.paymentMode,
-        approvedBy: "Current User", // In a real app this would be the logged-in user
-        gstPercentage: data.gstPercentage ? Number(data.gstPercentage) : undefined,
-        totalWithGst,
-        branch: data.branch,
-        notes: data.notes,
-        billFile: data.bill,
-      };
-      setExpenses([newExpense, ...expenses]);
-    }
-    
-    // Close the form and reset it
-    closeForm();
-  };
+    const totalWithGst = Number(currentEntry.amount) + gstAmount;
 
-  const openForm = (expense?: Expense) => {
-    if (expense) {
-      setCurrentExpense(expense);
-      form.reset({
-        expenseType: expense.category,
-        amount: expense.amount,
-        gstPercentage: expense.gstPercentage ? expense.gstPercentage.toString() : "0",
-        paidTo: expense.vendor || "",
-        department: expense.department,
-        paymentMode: expense.paymentMethod || "",
-        date: new Date(expense.date),
-        branch: expense.branch || "",
-        notes: expense.notes || "",
-        bill: expense.billFile,
-      });
-    } else {
-      setCurrentExpense(null);
-      form.reset({
-        expenseType: "",
-        amount: 0,
-        gstPercentage: "0",
-        paidTo: "",
-        department: "",
-        paymentMode: "",
-        date: new Date(),
-        branch: "",
-        notes: "",
-        bill: undefined,
-      });
-    }
-    setIsFormOpen(true);
-  };
-
-  const closeForm = () => {
-    setIsFormOpen(false);
-    setCurrentExpense(null);
-  };
-
-  const handleDelete = (expense: Expense) => {
-    const updatedExpenses = expenses.filter((e) => e.id !== expense.id);
-    setExpenses(updatedExpenses);
-  };
-
-  // Filter expenses based on selected filters
-  const filteredExpenses = expenses.filter((expense) => {
-    const matchesDateRange =
-      (!startDate || new Date(expense.date) >= startDate) &&
-      (!endDate || new Date(expense.date) <= endDate);
-    
-    const matchesDepartment = !filterDepartment || expense.department === filterDepartment;
-    
-    const matchesBranch = !filterBranch || expense.branch === filterBranch;
-    
-    const matchesPaymentMode = !filterPaymentMode || expense.paymentMethod === filterPaymentMode;
-    
-    return matchesDateRange && matchesDepartment && matchesBranch && matchesPaymentMode;
-  });
-
-  // Calculate total expenses
-  const totalExpense = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-
-  // Prepare data for department-wise pie chart
-  const departmentData = departments.map((dept) => {
-    const deptTotal = filteredExpenses
-      .filter((expense) => expense.department === dept)
-      .reduce((sum, expense) => sum + expense.amount, 0);
-    
-    return {
-      name: dept,
-      value: deptTotal,
+    const newEntry: ExpenseEntry = {
+      id: uuidv4(),
+      date: currentEntry.date,
+      department: currentEntry.branch || "Indore", // Using branch as department for legacy compatibility
+      category: currentEntry.expenseType || "",
+      expenseType: currentEntry.expenseType || "",
+      amount: Number(currentEntry.amount),
+      gstPercentage: currentEntry.gstPercentage ? Number(currentEntry.gstPercentage) : undefined,
+      totalWithGst: totalWithGst,
+      description: currentEntry.description || "",
+      vendor: currentEntry.vendor,
+      invoiceNumber: currentEntry.invoiceNumber,
+      paymentStatus: currentEntry.paymentStatus as 'Paid' | 'Pending' | 'Partial',
+      paymentMethod: currentEntry.paymentMode,
+      paymentMode: currentEntry.paymentMode || "Cash",
+      branch: currentEntry.branch || "Indore",
+      revenueType: ""
     };
-  }).filter(item => item.value > 0);
 
-  // Prepare table columns
+    setEntries([newEntry, ...entries]);
+    setIsDialogOpen(false);
+  };
+
+  const handleInputChange = (field: string, value: string | number) => {
+    let newState = { ...currentEntry, [field]: value };
+    
+    // Auto-calculate total with GST when amount or GST% changes
+    if (field === 'amount' || field === 'gstPercentage') {
+      const amount = field === 'amount' ? Number(value) : Number(currentEntry.amount || 0);
+      const gstPercentage = field === 'gstPercentage' ? Number(value) : Number(currentEntry.gstPercentage || 0);
+      
+      const gstAmount = amount * gstPercentage / 100;
+      newState.totalWithGst = amount + gstAmount;
+    }
+    
+    setCurrentEntry(newState);
+  };
+
+  const handleResetFilters = () => {
+    setDateRange(undefined);
+    setDepartmentFilter("");
+    setPaymentModeFilter("");
+    setBranchFilter("");
+  };
+
+  const handleExportCsv = () => {
+    exportToCsv(filteredEntries, 'department_expenses');
+  };
+
+  const handleExportPdf = () => {
+    exportToPdf(filteredEntries, 'Department Expenses Report');
+  };
+
   const columns = [
     {
       key: "date",
-      header: "Date",
-      cell: (row: Expense) => format(new Date(row.date), "dd/MM/yyyy"),
+      header: "Date"
     },
     {
-      key: "category",
-      header: "Type",
+      key: "expenseType",
+      header: "Expense Type"
+    },
+    {
+      key: "vendor",
+      header: "Vendor"
     },
     {
       key: "amount",
       header: "Amount",
-      cell: (row: Expense) => 
-        new Intl.NumberFormat('en-IN', {
-          style: 'currency',
-          currency: 'INR',
-        }).format(row.amount),
-    },
-    {
-      key: "vendor",
-      header: "Paid To",
-    },
-    {
-      key: "department",
-      header: "Department",
-    },
-    {
-      key: "branch",
-      header: "Branch",
+      cell: (row: ExpenseEntry) => formatCurrency(row.amount)
     },
     {
       key: "gstPercentage",
-      header: "GST%",
-      cell: (row: Expense) => row.gstPercentage ? `${row.gstPercentage}%` : "N/A",
+      header: "GST %",
+      cell: (row: ExpenseEntry) => row.gstPercentage !== undefined ? `${row.gstPercentage}%` : "-"
     },
     {
       key: "totalWithGst",
-      header: "Total",
-      cell: (row: Expense) => 
-        new Intl.NumberFormat('en-IN', {
-          style: 'currency',
-          currency: 'INR',
-        }).format(row.totalWithGst || row.amount),
+      header: "Total with GST",
+      cell: (row: ExpenseEntry) => formatCurrency(row.totalWithGst || row.amount)
     },
     {
-      key: "paymentMethod",
-      header: "Mode",
+      key: "paymentMode",
+      header: "Payment Mode"
     },
     {
-      key: "notes",
-      header: "Notes",
-      cell: (row: Expense) => row.notes || "-",
+      key: "branch",
+      header: "Branch"
     },
+    {
+      key: "invoiceNumber",
+      header: "Invoice #",
+      cell: (row: ExpenseEntry) => row.invoiceNumber || "-"
+    },
+    {
+      key: "description",
+      header: "Notes"
+    }
   ];
-
-  const exportData = () => {
-    exportToCsv(filteredExpenses, 'Department_Expenses');
-  };
-
-  const exportPdf = () => {
-    exportToPdf(filteredExpenses, 'Department Expenses Report');
-  };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Department-wise Expenses</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Department-wise Expenses</h1>
         <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={exportData}>
-                <FileText className="h-4 w-4 mr-2" />
-                Export to CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportPdf}>
-                <FileText className="h-4 w-4 mr-2" />
-                Export to PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button onClick={() => openForm()}>Add Expense</Button>
+          <Button variant="outline" onClick={handleExportCsv}>
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button variant="outline" onClick={handleExportPdf}>
+            <Download className="mr-2 h-4 w-4" />
+            Export PDF
+          </Button>
         </div>
       </div>
 
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Total Expenses</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">
-              {new Intl.NumberFormat('en-IN', {
-                style: 'currency',
-                currency: 'INR',
-              }).format(totalExpense)}
-            </div>
+            <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
           </CardContent>
         </Card>
+        
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Department-wise Breakdown</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Expenses by Category</CardTitle>
+            <div className="flex space-x-2">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {}}>
+                <BarChart2 className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => {}}>
+                <PieChart className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
-              {departmentData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsChart>
-                    <Pie
-                      data={departmentData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      paddingAngle={2}
-                      dataKey="value"
-                      nameKey="name"
-                      label={({ name, percent }) => 
-                        `${name}: ${(percent * 100).toFixed(0)}%`
-                      }
-                    >
-                      {departmentData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => 
-                        new Intl.NumberFormat('en-IN', {
-                          style: 'currency',
-                          currency: 'INR',
-                        }).format(value)
-                      } 
-                    />
-                  </RechartsChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground">
-                  No expense data to display
-                </div>
-              )}
+            <div className="h-60">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" angle={-45} textAnchor="end" height={70} />
+                  <YAxis />
+                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                  <Bar dataKey="value" name="Expense" fill="#f87171" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <DateRangeFilter
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
+      {/* Filters */}
+      <div className="bg-muted/40 p-4 rounded-lg">
+        <div className="flex items-center mb-2">
+          <Filter className="mr-2 h-4 w-4" />
+          <h3 className="font-medium">Filters</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <Label htmlFor="date-filter" className="block mb-2">Date Range</Label>
+            <DateRangeFilter 
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange} 
             />
-
-            <div>
-              <FormLabel>Department</FormLabel>
-              <Select
-                value={filterDepartment || ""}
-                onValueChange={(value) => setFilterDepartment(value || undefined)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Departments" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Departments</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <FormLabel>Branch</FormLabel>
-              <Select
-                value={filterBranch || ""}
-                onValueChange={(value) => setFilterBranch(value || undefined)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Branches" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Branches</SelectItem>
-                  {branches.map((branch) => (
-                    <SelectItem key={branch} value={branch}>{branch}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <FormLabel>Payment Mode</FormLabel>
-              <Select
-                value={filterPaymentMode || ""}
-                onValueChange={(value) => setFilterPaymentMode(value || undefined)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Modes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Modes</SelectItem>
-                  {paymentMethods.map((mode) => (
-                    <SelectItem key={mode} value={mode}>{mode}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <Label htmlFor="department-filter" className="block mb-2">Expense Type</Label>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger id="department-filter">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {expenseTypes.map(type => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="payment-mode-filter" className="block mb-2">Payment Mode</Label>
+            <Select value={paymentModeFilter} onValueChange={setPaymentModeFilter}>
+              <SelectTrigger id="payment-mode-filter">
+                <SelectValue placeholder="All Modes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Modes</SelectItem>
+                {paymentModes.map(mode => (
+                  <SelectItem key={mode} value={mode}>{mode}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="branch-filter" className="block mb-2">Branch</Label>
+            <Select value={branchFilter} onValueChange={setBranchFilter}>
+              <SelectTrigger id="branch-filter">
+                <SelectValue placeholder="All Branches" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Branches</SelectItem>
+                {branches.map(branch => (
+                  <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-4">
+            <Button variant="ghost" onClick={handleResetFilters} className="mt-1">
+              Reset Filters
+            </Button>
+          </div>
+        </div>
+      </div>
 
-      <EntryTable
-        columns={columns}
-        data={filteredExpenses}
-        onAdd={() => openForm()}
-        onEdit={openForm}
-        onDelete={handleDelete}
-        addButtonText="Add Expense"
+      <EntryTable 
+        columns={columns} 
+        data={filteredEntries} 
+        onAdd={handleOpenDialog}
+        addButtonText="Add Expense Entry"
       />
 
       <EntryFormDialog
-        isOpen={isFormOpen}
-        onClose={closeForm}
-        title={currentExpense ? "Edit Expense" : "Add Expense"}
-        onSubmit={form.handleSubmit(onSubmit)}
-        isSubmitting={form.formState.isSubmitting}
+        isOpen={isDialogOpen}
+        onClose={handleCloseDialog}
+        title="Add Expense Entry"
+        onSubmit={handleFormSubmit}
       >
-        <Form {...form}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <FormField
-              control={form.control}
-              name="expenseType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Expense Type</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select expense type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {expenseTypes.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount (₹)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="gstPercentage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>GST %</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select GST percentage" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {gstPercentages.map((percentage) => (
-                        <SelectItem key={percentage} value={percentage}>
-                          {percentage}%
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="paidTo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Paid To</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Vendor or person name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="department"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Department</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="paymentMode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Mode</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select payment mode" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {paymentMethods.map((mode) => (
-                        <SelectItem key={mode} value={mode}>
-                          {mode}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <Calendar className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date > new Date()}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="branch"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Branch</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select branch" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {branches.map((branch) => (
-                        <SelectItem key={branch} value={branch}>
-                          {branch}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="bill"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Upload Bill (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="file" 
-                      accept=".pdf,.jpg,.jpeg,.png" 
-                      onChange={(e) => field.onChange(e.target.files?.[0])}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="date">Date *</Label>
+            <Input 
+              id="date" 
+              type="date" 
+              value={currentEntry.date} 
+              onChange={(e) => handleInputChange("date", e.target.value)} 
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Notes (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Add any additional notes here" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </Form>
+          <div className="space-y-2">
+            <Label htmlFor="expenseType">Expense Type *</Label>
+            <Select 
+              value={currentEntry.expenseType} 
+              onValueChange={(value) => handleInputChange("expenseType", value)}
+            >
+              <SelectTrigger id="expenseType">
+                <SelectValue placeholder="Select expense type" />
+              </SelectTrigger>
+              <SelectContent>
+                {expenseTypes.map((type) => (
+                  <SelectItem key={type} value={type}>{type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount (₹) *</Label>
+            <Input 
+              id="amount" 
+              type="number" 
+              placeholder="Enter amount" 
+              value={currentEntry.amount || ""} 
+              onChange={(e) => handleInputChange("amount", e.target.value)} 
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="gstPercentage">GST %</Label>
+            <Select 
+              value={currentEntry.gstPercentage?.toString()} 
+              onValueChange={(value) => handleInputChange("gstPercentage", value)}
+            >
+              <SelectTrigger id="gstPercentage">
+                <SelectValue placeholder="Select GST rate" />
+              </SelectTrigger>
+              <SelectContent>
+                {gstRates.map((rate) => (
+                  <SelectItem key={rate} value={rate}>{rate}%</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="totalWithGst">Total with GST</Label>
+            <Input 
+              id="totalWithGst" 
+              type="number" 
+              value={currentEntry.totalWithGst || ""} 
+              readOnly
+              disabled
+              className="bg-gray-50"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="vendor">Vendor</Label>
+            <Select 
+              value={currentEntry.vendor} 
+              onValueChange={(value) => handleInputChange("vendor", value)}
+            >
+              <SelectTrigger id="vendor">
+                <SelectValue placeholder="Select vendor" />
+              </SelectTrigger>
+              <SelectContent>
+                {vendorsList.map((vendor) => (
+                  <SelectItem key={vendor} value={vendor}>{vendor}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="invoiceNumber">Invoice Number</Label>
+            <Input 
+              id="invoiceNumber" 
+              placeholder="Invoice number" 
+              value={currentEntry.invoiceNumber || ""} 
+              onChange={(e) => handleInputChange("invoiceNumber", e.target.value)} 
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="paymentMode">Payment Mode *</Label>
+            <Select 
+              value={currentEntry.paymentMode} 
+              onValueChange={(value) => handleInputChange("paymentMode", value)}
+            >
+              <SelectTrigger id="paymentMode">
+                <SelectValue placeholder="Select payment mode" />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentModes.map((mode) => (
+                  <SelectItem key={mode} value={mode}>{mode}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="branch">Branch *</Label>
+            <Select 
+              value={currentEntry.branch} 
+              onValueChange={(value) => handleInputChange("branch", value)}
+            >
+              <SelectTrigger id="branch">
+                <SelectValue placeholder="Select branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {branches.map((branch) => (
+                  <SelectItem key={branch} value={branch}>{branch}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="description">Notes</Label>
+            <Textarea 
+              id="description" 
+              placeholder="Enter notes" 
+              value={currentEntry.description || ""} 
+              onChange={(e) => handleInputChange("description", e.target.value)} 
+              rows={3}
+            />
+          </div>
+        </div>
       </EntryFormDialog>
     </div>
   );

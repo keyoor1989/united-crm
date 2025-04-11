@@ -50,7 +50,7 @@ const useFormField = () => {
   }
 
   // Check if formContext exists before destructuring
-  const fieldState = formContext?.getFieldState?.(fieldContext.name, formContext.formState) || {}
+  const fieldState = formContext?.getFieldState?.(fieldContext.name, formContext.formState) || { error: undefined }
 
   const { id } = itemContext
 
