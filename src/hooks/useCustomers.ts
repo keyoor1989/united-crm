@@ -22,7 +22,7 @@ const fetchCustomers = async (): Promise<CustomerType[]> => {
       return [];
     }
     
-    console.log(`Loaded ${data.length} customers from database`);
+    console.log(`Loaded ${data.length} customers from database:`, data);
     
     // Transform the data to match our CustomerType structure
     const customers: CustomerType[] = data.map(customer => ({
@@ -32,7 +32,7 @@ const fetchCustomers = async (): Promise<CustomerType[]> => {
       email: customer.email || "",
       location: customer.area,
       lastContact: customer.last_contact ? new Date(customer.last_contact).toLocaleDateString() : "Never",
-      machines: customer.customer_machines ? customer.customer_machines.map((m: any) => m.machine_name) : [],
+      machines: customer.customer_machines ? customer.customer_machines.map((m: any) => m.machine_name).filter(Boolean) : [],
       status: mapLeadStatusToCustomerStatus(customer.lead_status)
     }));
     

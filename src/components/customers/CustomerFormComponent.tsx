@@ -83,26 +83,37 @@ export default function CustomerFormComponent() {
     try {
       console.log("Submitting form data:", data);
       
+      // Create the customer object
+      const customerData = {
+        name: data.name,
+        phone: data.phone,
+        email: data.email || null,
+        address: data.address,
+        area: data.area,
+        customer_type: data.customerType,
+        date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
+        lead_status: data.leadStatus,
+        last_contact: new Date().toISOString()
+      };
+      
+      console.log("Customer data to insert:", customerData);
+      
       // Save customer to Supabase
       const { data: newCustomer, error: customerError } = await supabase
         .from('customers')
-        .insert([{
-          name: data.name,
-          phone: data.phone,
-          email: data.email || null,
-          address: data.address,
-          area: data.area,
-          customer_type: data.customerType,
-          date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
-          lead_status: data.leadStatus,
-          last_contact: new Date().toISOString()
-        }])
+        .insert([customerData])
         .select('id')
         .single();
       
       if (customerError) {
         console.error("Error saving customer:", customerError);
-        toast.error("Failed to save customer. Please try again.");
+        toast.error("Failed to save customer: " + customerError.message);
+        return;
+      }
+      
+      if (!newCustomer) {
+        console.error("No customer ID returned after insert");
+        toast.error("Failed to save customer: No ID returned");
         return;
       }
       
@@ -110,13 +121,17 @@ export default function CustomerFormComponent() {
       
       // If machine interest is provided, save it to customer_machines table
       if (data.machineInterest && newCustomer.id) {
+        const machineData = {
+          customer_id: newCustomer.id,
+          machine_name: data.machineInterest,
+          machine_type: data.machineType || null
+        };
+        
+        console.log("Machine data to insert:", machineData);
+        
         const { error: machineError } = await supabase
           .from('customer_machines')
-          .insert([{
-            customer_id: newCustomer.id,
-            machine_name: data.machineInterest,
-            machine_type: data.machineType || null
-          }]);
+          .insert([machineData]);
         
         if (machineError) {
           console.error("Error saving machine interest:", machineError);
@@ -126,13 +141,17 @@ export default function CustomerFormComponent() {
       
       // If notes are provided, save them to customer_notes table
       if (data.notes && newCustomer.id) {
+        const noteData = {
+          customer_id: newCustomer.id,
+          content: data.notes,
+          created_by: "System"
+        };
+        
+        console.log("Note data to insert:", noteData);
+        
         const { error: notesError } = await supabase
           .from('customer_notes')
-          .insert([{
-            customer_id: newCustomer.id,
-            content: data.notes,
-            created_by: "System"
-          }]);
+          .insert([noteData]);
         
         if (notesError) {
           console.error("Error saving customer notes:", notesError);
