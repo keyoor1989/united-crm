@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,9 +30,7 @@ export default function CustomerMachines() {
   const [addMachineDialogOpen, setAddMachineDialogOpen] = useState(false);
   const [newMachineData, setNewMachineData] = useState<MachineFormData>({
     model: "",
-    serialNumber: "",
     machineType: "copier",
-    installationDate: new Date().toISOString().split('T')[0],
     status: "active"
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -80,9 +77,7 @@ export default function CustomerMachines() {
       
       setNewMachineData({
         model: "",
-        serialNumber: "",
         machineType: "copier",
-        installationDate: new Date().toISOString().split('T')[0],
         status: "active"
       });
       setAddMachineDialogOpen(false);

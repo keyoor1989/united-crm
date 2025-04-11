@@ -44,27 +44,31 @@ export const AddMachineDialog: React.FC<AddMachineDialogProps> = ({
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="machine-model">Machine Model</Label>
+            <Label htmlFor="machine-model">Machine Model*</Label>
             <Input
               id="machine-model"
               placeholder="Enter machine model"
               value={newMachineData.model}
               onChange={(e) => setNewMachineData({...newMachineData, model: e.target.value})}
+              required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="machine-serial">Serial Number</Label>
+            <Label htmlFor="machine-serial">Serial Number (Optional)</Label>
             <Input
               id="machine-serial"
-              placeholder="Enter serial number"
-              value={newMachineData.serialNumber}
+              placeholder="Enter serial number if available"
+              value={newMachineData.serialNumber || ""}
               onChange={(e) => setNewMachineData({...newMachineData, serialNumber: e.target.value})}
             />
+            <p className="text-xs text-muted-foreground">
+              Optional for customers who buy toners only
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="machine-type">Machine Type</Label>
+            <Label htmlFor="machine-type">Machine Type*</Label>
             <Select
               value={newMachineData.machineType}
               onValueChange={(value) => setNewMachineData({...newMachineData, machineType: value})}
@@ -82,17 +86,20 @@ export const AddMachineDialog: React.FC<AddMachineDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="installation-date">Installation Date</Label>
+            <Label htmlFor="installation-date">Installation Date (Optional)</Label>
             <Input
               id="installation-date"
               type="date"
-              value={newMachineData.installationDate}
+              value={newMachineData.installationDate || ""}
               onChange={(e) => setNewMachineData({...newMachineData, installationDate: e.target.value})}
             />
+            <p className="text-xs text-muted-foreground">
+              Optional for customers who don't have machines installed by us
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="machine-status">Status</Label>
+            <Label htmlFor="machine-status">Status*</Label>
             <Select
               value={newMachineData.status}
               onValueChange={(value: any) => setNewMachineData({...newMachineData, status: value})}
@@ -110,7 +117,7 @@ export const AddMachineDialog: React.FC<AddMachineDialogProps> = ({
         </div>
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)} variant="outline">Cancel</Button>
-          <Button onClick={onAddMachine} disabled={isLoading}>
+          <Button onClick={onAddMachine} disabled={isLoading || !newMachineData.model || !newMachineData.machineType}>
             {isLoading ? "Adding..." : "Add Machine"}
           </Button>
         </DialogFooter>

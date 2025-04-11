@@ -18,10 +18,10 @@ export const fetchCustomerMachines = async (customerId: string): Promise<Machine
       return data.map((machine) => ({
         id: machine.id,
         model: machine.machine_name,
-        serialNumber: `SN${Math.floor(Math.random() * 1000000)}`, // Generate a dummy serial number since it doesn't exist in DB
-        installationDate: new Date().toISOString().split('T')[0], // Default to current date
+        serialNumber: "N/A", // Default for customers who don't have machines sold by us
+        installationDate: "N/A", // Default for customers who don't have machines sold by us
         status: "active",
-        lastService: new Date().toISOString().split('T')[0] // Default to current date
+        lastService: "N/A" // Default value
       }));
     }
     

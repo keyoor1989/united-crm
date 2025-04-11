@@ -28,9 +28,9 @@ export type SalesFollowUp = {
 
 export interface MachineFormData {
   model: string;
-  serialNumber: string;
+  serialNumber?: string; // Made optional
   machineType: string;
-  installationDate: string;
+  installationDate?: string; // Made optional
   status: "active" | "maintenance" | "replacement-due";
 }
 
