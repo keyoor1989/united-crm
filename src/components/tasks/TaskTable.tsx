@@ -66,7 +66,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
     }
   };
 
-  const exportTasks = (format: 'csv' | 'pdf') => {
+  const exportTasks = (exportFormat: 'csv' | 'pdf') => {
     const formattedTasks = tasks.map(task => ({
       title: task.title,
       description: task.description,
@@ -80,13 +80,13 @@ const TaskTable: React.FC<TaskTableProps> = ({
       hasReminder: task.hasReminder ? 'Yes' : 'No',
     }));
 
-    if (format === 'csv') {
+    if (exportFormat === 'csv') {
       exportToCsv(formattedTasks, 'Tasks');
       toast({
         title: "Export successful",
         description: "Tasks have been exported to CSV",
       });
-    } else if (format === 'pdf') {
+    } else if (exportFormat === 'pdf') {
       exportToPdf(formattedTasks, 'Tasks Report');
       toast({
         title: "Export successful",
