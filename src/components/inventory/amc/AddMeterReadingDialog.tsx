@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -56,8 +55,8 @@ const getMonthOptions = () => {
   return options;
 };
 
-// Mock data for the demo
-const mockMachines = [
+// Mock data for the demo - Ensure contractType is correctly typed as AMCContractType
+const mockMachines: AMCMachine[] = [
   { 
     id: "machine001", 
     contractId: "amc001", 
@@ -66,7 +65,7 @@ const mockMachines = [
     model: "Kyocera ECOSYS M2040dn", 
     serialNumber: "VKG8401245", 
     location: "3rd Floor, Admin", 
-    contractType: "AMC", 
+    contractType: "AMC", // Ensure this is a valid AMCContractType
     startDate: "2024-01-01", 
     endDate: "2025-01-01", 
     currentRent: 5000, 
@@ -82,7 +81,7 @@ const mockMachines = [
     model: "Canon iR2625", 
     serialNumber: "CNX43215", 
     location: "Reception Area", 
-    contractType: "Rental", 
+    contractType: "Rental", // Ensure this is a valid AMCContractType
     startDate: "2024-02-15", 
     endDate: "2025-02-15", 
     currentRent: 7500, 
