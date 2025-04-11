@@ -86,7 +86,7 @@ export const handleQuotationCommand = async ({
   const gstPercentage = 18; // Default GST percentage
   
   // Customer city and mobile - use defaults if not available
-  const customerCity = customerFromDb?.area || "N/A";
+  const customerCity = customerFromDb?.location || "N/A";
   const customerMobile = customerFromDb?.phone || "N/A";
   
   // Generate the configuration description
