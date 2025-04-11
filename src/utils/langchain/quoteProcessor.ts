@@ -66,7 +66,7 @@ export const generateQuotationDescription = async (
       productName: productName,
       configuration: configuration,
       price: price.toLocaleString('en-IN'),
-      gstPercent: gstPercent,
+      gstPercent: gstPercent.toString(), // Convert number to string
       totalAmount: totalAmount.toLocaleString('en-IN'),
       deliveryTime: deliveryTime,
       warranty: warranty,
