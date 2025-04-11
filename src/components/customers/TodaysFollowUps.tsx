@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format, isToday, isThisWeek, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,15 +37,17 @@ const TodaysFollowUps = () => {
       }
       
       if (data) {
-        // Map to our SalesFollowUp type
+        // Map to our SalesFollowUp type with proper type validation
         const formattedFollowUps: SalesFollowUp[] = data.map(item => ({
           id: item.id,
           date: new Date(item.date),
           customerId: item.customer_id,
           customerName: item.customer_name,
           notes: item.notes || "",
-          status: item.status,
-          type: item.type,
+          // Ensure status matches the expected union type
+          status: item.status === "completed" ? "completed" : "pending",
+          // Ensure type matches the expected union type
+          type: validateFollowUpType(item.type),
           contactPhone: item.contact_phone || "",
           location: item.location || ""
         }));
@@ -59,6 +60,14 @@ const TodaysFollowUps = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Helper function to validate the follow-up type
+  const validateFollowUpType = (type: string): "quotation" | "demo" | "negotiation" | "closure" => {
+    const validTypes = ["quotation", "demo", "negotiation", "closure"];
+    return validTypes.includes(type) 
+      ? type as "quotation" | "demo" | "negotiation" | "closure" 
+      : "quotation"; // Default to quotation if an invalid type is provided
   };
   
   const handleMarkComplete = async (id: number) => {
