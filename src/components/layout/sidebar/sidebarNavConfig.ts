@@ -324,6 +324,11 @@ export const reportsSection: NavSection = {
       label: "Customer Follow-Up Report"
     },
     {
+      to: "/reports/branch-profit",
+      icon: Building,
+      label: "Branch P&L Report"
+    },
+    {
       to: "/finance",
       icon: BadgeDollarSign,
       label: "Financial Reports"

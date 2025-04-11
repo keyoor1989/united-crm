@@ -10,6 +10,7 @@ export interface CashEntry {
   enteredBy: string;
   type: 'Income' | 'Expense';
   reference?: string;
+  branch?: string;
 }
 
 export interface Revenue {
@@ -60,6 +61,7 @@ export interface Payment {
   description: string;
   invoiceNumbers?: string[];
   receivedBy: string;
+  branch?: string;
 }
 
 export interface Receivable {
@@ -104,4 +106,28 @@ export interface FinanceTrend {
   revenue: number;
   expenses: number;
   profit: number;
+}
+
+// New interface for Branch-wise Profit and Loss Report
+export interface BranchFinanceSummary {
+  branch: string;
+  revenue: {
+    machine: number;
+    spare: number;
+    service: number;
+    rental: number;
+    total: number;
+  };
+  expenses: {
+    machine: number;
+    spare: number;
+    service: number;
+    rental: number;
+    total: number;
+  };
+  netProfit: number;
+  profitMargin: number;
+  machinesSold: number;
+  serviceCalls: number;
+  rentalContracts: number;
 }

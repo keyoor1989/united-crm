@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -55,6 +54,7 @@ import Reports from "@/pages/Reports";
 import MachineRentalReport from "@/pages/reports/MachineRentalReport";
 import EngineerServiceReport from "@/pages/reports/EngineerServiceReport";
 import CustomerFollowUpReport from "@/pages/reports/CustomerFollowUpReport";
+import BranchProfitReport from "@/pages/reports/BranchProfitReport";
 
 const AppRoutes = () => (
   <Routes>
@@ -76,7 +76,9 @@ const AppRoutes = () => (
       <Route path="/reports/machine-rental" element={<MachineRentalReport />} />
       <Route path="/reports/engineer-service" element={<EngineerServiceReport />} />
       <Route path="/reports/customer-followup" element={<CustomerFollowUpReport />} />
+      <Route path="/reports/branch-profit" element={<BranchProfitReport />} />
       
+      {/* Service Routes */}
       <Route path="/service" element={<Service />} />
       <Route path="/service-call-form" element={<ServiceCallForm />} />
       <Route path="/engineer/:id" element={<EngineerDetail />} />

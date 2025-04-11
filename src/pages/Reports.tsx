@@ -14,7 +14,8 @@ import {
   FileSpreadsheet,
   Clock,
   Wrench,
-  MessageSquare
+  MessageSquare,
+  Building
 } from "lucide-react";
 
 const Reports = () => {
@@ -38,6 +39,12 @@ const Reports = () => {
       description: "Track CRM follow-up status, schedules, and lead activities",
       icon: <MessageSquare className="h-12 w-12 text-purple-600" />,
       path: "/reports/customer-followup"
+    },
+    {
+      title: "Branch-wise Profit & Loss Report",
+      description: "Revenue vs expenses per branch with profit and margin analysis",
+      icon: <Building className="h-12 w-12 text-amber-500" />,
+      path: "/reports/branch-profit"
     },
     {
       title: "Financial Reports",
