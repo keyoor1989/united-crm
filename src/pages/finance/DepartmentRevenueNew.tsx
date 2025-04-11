@@ -339,7 +339,7 @@ const DepartmentRevenueNew = () => {
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 {revenueTypes.map(type => (
                   <SelectItem key={type} value={type}>{type}</SelectItem>
                 ))}
@@ -353,7 +353,7 @@ const DepartmentRevenueNew = () => {
                 <SelectValue placeholder="All Modes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Modes</SelectItem>
+                <SelectItem value="all">All Modes</SelectItem>
                 {paymentModes.map(mode => (
                   <SelectItem key={mode} value={mode}>{mode}</SelectItem>
                 ))}
@@ -367,7 +367,7 @@ const DepartmentRevenueNew = () => {
                 <SelectValue placeholder="All Branches" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Branches</SelectItem>
+                <SelectItem value="all">All Branches</SelectItem>
                 {branches.map(branch => (
                   <SelectItem key={branch} value={branch}>{branch}</SelectItem>
                 ))}
