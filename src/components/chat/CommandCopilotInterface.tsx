@@ -12,7 +12,7 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { CustomerType } from "@/types/customer";
 import CustomerLookupView from "./CustomerLookupView";
 import CustomerCreationView from "./CustomerCreationView";
-import { parseTaskCommand, formatTaskTime } from "@/utils/chatCommands/taskParser";
+import { parseTaskCommand, formatTaskTime, createNewTask } from "@/utils/chatCommands/taskParser";
 import TaskCreationView from "./TaskCreationView";
 import { parseInventoryCommand } from "@/utils/chatCommands/inventoryParser";
 import InventoryResultView from "./InventoryResultView";
@@ -94,9 +94,11 @@ const CommandCopilotInterface = () => {
     // Check for task creation command
     const taskResult = parseTaskCommand(message);
     if (taskResult.isValid) {
+      // Create a new task from the parsed data
+      const newTask = createNewTask(taskResult);
       return {
         handled: true,
-        response: <TaskCreationView task={taskResult.task} />
+        response: <TaskCreationView task={newTask} />
       };
     }
 
@@ -107,16 +109,19 @@ const CommandCopilotInterface = () => {
          message.toLowerCase().includes("stock"))) {
       return {
         handled: true,
-        response: <InventoryResultView result={inventoryResult} />
+        response: <InventoryResultView queryResult={inventoryResult} />
       };
     }
 
     // Check for quotation command
     const quotationResult = parseQuotationCommand(message);
-    if (quotationResult.isValid) {
+    // Check if this is a quotation command based on the pattern
+    if (message.toLowerCase().includes("quotation") || 
+        message.toLowerCase().includes("quote") || 
+        quotationResult.models.length > 0) {
       return {
         handled: true,
-        response: <QuotationGenerator data={quotationResult} />
+        response: <QuotationGenerator initialData={quotationResult} onComplete={() => {}} onCancel={() => {}} />
       };
     }
 
