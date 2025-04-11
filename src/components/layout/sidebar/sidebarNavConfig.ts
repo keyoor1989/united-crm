@@ -259,44 +259,6 @@ export const quotationsSection: NavSection = {
   ]
 };
 
-export const financeSection: NavSection = {
-  key: "finance",
-  icon: CreditCard,
-  label: "Finance",
-  items: [
-    {
-      to: "/finance",
-      icon: PieChart,
-      label: "Finance Dashboard"
-    },
-    {
-      to: "/finance/cash-register",
-      icon: DollarSign,
-      label: "Daily Cash Register"
-    },
-    {
-      to: "/finance/revenue",
-      icon: TrendingUp,
-      label: "Department-wise Revenue"
-    },
-    {
-      to: "/finance/expenses",
-      icon: TrendingDown,
-      label: "Department-wise Expenses"
-    },
-    {
-      to: "/finance/payments",
-      icon: Receipt,
-      label: "Dealer/Customer Payments"
-    },
-    {
-      to: "/finance/receivables",
-      icon: Bell,
-      label: "Pending Receivables"
-    }
-  ]
-};
-
 export const reportsSection: NavSection = {
   key: "reports",
   icon: BarChart3,

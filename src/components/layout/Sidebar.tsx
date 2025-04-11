@@ -7,7 +7,7 @@ import {
   serviceSection, 
   inventorySection,
   quotationsSection,
-  financeSection,
+  reportsSection,
   locationNavItems 
 } from "./sidebar/sidebarNavConfig";
 import { ChevronDown, ChevronRight } from "lucide-react";
@@ -42,8 +42,7 @@ const AppSidebar = () => {
     location.pathname === "/quotations" || location.pathname === "/purchase-orders" || 
     location.pathname === "/sent-quotations" || location.pathname === "/sent-orders" || 
     location.pathname === "/order-history" || location.pathname === "/quotation-products" ||
-    location.pathname === "/contract-upload") ? "quotations" : "",
-    (location.pathname.startsWith("/finance")) ? "finance" : ""
+    location.pathname === "/contract-upload") ? "quotations" : ""
   ].filter(Boolean);
 
   const [openSections, setOpenSections] = React.useState<string[]>(initialSections);
@@ -59,7 +58,7 @@ const AppSidebar = () => {
   const isServiceSectionOpen = openSections.includes("service");
   const isInventorySectionOpen = openSections.includes("inventory");
   const isQuotationsSectionOpen = openSections.includes("quotations");
-  const isFinanceSectionOpen = openSections.includes("finance");
+  const isReportsSectionOpen = openSections.includes("reports");
 
   // Get the last nav item for the footer
   const lastNavItem = mainNavItems[mainNavItems.length - 1];
@@ -94,43 +93,22 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
         
-        {/* Finance Section */}
+        {/* Finance navigation item */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={() => toggleSection("finance")} 
-                  isActive={isSectionActive(financeSection.items.map(item => item.to))}
-                  tooltip={isCollapsed ? financeSection.label : undefined}
+                  asChild 
+                  isActive={isActive(mainNavItems[2].to) || location.pathname.startsWith("/finance/")}
+                  tooltip={isCollapsed ? mainNavItems[2].label : undefined}
                 >
-                  <financeSection.icon size={20} />
-                  <span>{financeSection.label}</span>
-                  {isFinanceSectionOpen ? 
-                    <ChevronDown size={16} className="ml-auto" /> : 
-                    <ChevronRight size={16} className="ml-auto" />
-                  }
+                  <Link to={mainNavItems[2].to}>
+                    <mainNavItems[2].icon size={20} />
+                    <span>{mainNavItems[2].label}</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
-              {isFinanceSectionOpen && (
-                <SidebarMenu>
-                  {financeSection.items.map((item) => (
-                    <SidebarMenuItem key={item.to}>
-                      <SidebarMenuButton 
-                        asChild 
-                        isActive={isActive(item.to)}
-                        tooltip={isCollapsed ? item.label : undefined}
-                      >
-                        <Link to={item.to}>
-                          <item.icon size={16} />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -258,28 +236,47 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
         
-        {/* Middle main navigation items */}
+        {/* Reports Section */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNavItems.slice(2, -1).map((item) => (
-                <SidebarMenuItem key={item.to}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={isActive(item.to)}
-                    tooltip={isCollapsed ? item.label : undefined}
-                  >
-                    <Link to={item.to}>
-                      <item.icon size={20} />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => toggleSection("reports")} 
+                  isActive={isSectionActive(reportsSection.items.map(item => item.to))}
+                  tooltip={isCollapsed ? reportsSection.label : undefined}
+                >
+                  <reportsSection.icon size={20} />
+                  <span>{reportsSection.label}</span>
+                  {isReportsSectionOpen ? 
+                    <ChevronDown size={16} className="ml-auto" /> : 
+                    <ChevronRight size={16} className="ml-auto" />
+                  }
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              {isReportsSectionOpen && (
+                <SidebarMenu>
+                  {reportsSection.items.map((item) => (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={isActive(item.to)}
+                        tooltip={isCollapsed ? item.label : undefined}
+                      >
+                        <Link to={item.to}>
+                          <item.icon size={16} />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
+        
         {/* Locations section */}
         <SidebarGroup>
           <SidebarGroupLabel>Locations</SidebarGroupLabel>
