@@ -1,13 +1,15 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, ShoppingCart, FileCheck, Calendar } from "lucide-react";
+import { useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 type HistoryItem = {
-  id: number;
+  id: number | string;
   type: "quotation" | "invoice" | "appointment";
   title: string;
   date: string;
@@ -15,42 +17,48 @@ type HistoryItem = {
   status: string;
 };
 
-const mockHistory: HistoryItem[] = [
-  {
-    id: 1,
-    type: "quotation",
-    title: "Quotation for Kyocera 2554ci",
-    date: "2025-03-02",
-    amount: 85000,
-    status: "sent",
-  },
-  {
-    id: 2,
-    type: "invoice",
-    title: "Invoice #INV-2023-456",
-    date: "2025-03-15",
-    amount: 92500,
-    status: "paid",
-  },
-  {
-    id: 3,
-    type: "appointment",
-    title: "Service Visit",
-    date: "2025-03-20",
-    status: "scheduled",
-  },
-  {
-    id: 4,
-    type: "quotation",
-    title: "Quotation for AMC Renewal",
-    date: "2025-03-25",
-    amount: 15000,
-    status: "pending",
-  }
-];
-
 export default function CustomerHistory() {
-  const [historyItems] = useState<HistoryItem[]>(mockHistory);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { id: customerId } = useParams();
+
+  useEffect(() => {
+    const fetchCustomerHistory = async () => {
+      if (!customerId) return;
+      
+      setIsLoading(true);
+      
+      try {
+        // In a real implementation, this would fetch from different tables
+        // For now, we'll just clear the mock data and show an empty state
+        
+        // Fetch history items would look something like this:
+        // const { data: quotations } = await supabase
+        //   .from('quotations')
+        //   .select('*')
+        //   .eq('customer_id', customerId);
+        
+        // const { data: invoices } = await supabase
+        //   .from('invoices')
+        //   .select('*')
+        //   .eq('customer_id', customerId);
+        
+        // Combine and format the data
+        // const formattedQuotations = quotations?.map(...) || [];
+        // const formattedInvoices = invoices?.map(...) || [];
+        // setHistoryItems([...formattedQuotations, ...formattedInvoices]);
+        
+        // For now, we'll set an empty array since we're removing mock data
+        setHistoryItems([]);
+      } catch (error) {
+        console.error("Error fetching customer history:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCustomerHistory();
+  }, [customerId]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -117,6 +125,14 @@ export default function CustomerHistory() {
   );
   
   function renderHistoryItems(items: HistoryItem[]) {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+        </div>
+      );
+    }
+    
     if (items.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-40 border rounded-md border-dashed">
