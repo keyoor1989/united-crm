@@ -59,9 +59,9 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
   
   // Initialize state with URL parameters or initialData as fallback
   const [customerId, setCustomerId] = useState(customerIdFromUrl || '');
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState(customerNameFromUrl || initialData.customerName || '');
+  const [customerEmail, setCustomerEmail] = useState(customerEmailFromUrl || '');
+  const [customerPhone, setCustomerPhone] = useState(customerPhoneFromUrl || '');
   const [gstPercent, setGstPercent] = useState("18");
   const [items, setItems] = useState(initialData.models.map(model => {
     const product = products.find(p => p.id === model.productId);
@@ -77,7 +77,7 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
 
   // Effect to initialize state once component is mounted
   useEffect(() => {
-    // Set customer details from URL parameters if available
+    // Set customer details from URL parameters or initialData
     if (customerNameFromUrl) {
       setCustomerName(customerNameFromUrl);
       console.log("Setting customer name from URL:", customerNameFromUrl);
@@ -100,12 +100,12 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
       searchCustomers(customerNameFromUrl);
       setShowCustomerSearch(true);
     }
-  }, [customerNameFromUrl, customerEmailFromUrl, customerPhoneFromUrl, initialData.customerName, customerIdFromUrl]);
+  }, []);
 
   // Debug: Log state after it should be set
   useEffect(() => {
-    console.log("Current state:", { customerName, customerEmail, customerPhone });
-  }, [customerName, customerEmail, customerPhone]);
+    console.log("Current state:", { customerId, customerName, customerEmail, customerPhone });
+  }, [customerId, customerName, customerEmail, customerPhone]);
 
   const handleUnitPriceChange = (index: number, price: string) => {
     const newItems = [...items];
@@ -187,11 +187,47 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
     toast.success(`Selected customer: ${customer.name}`);
   };
 
-  const generateQuotation = () => {
+  const saveCustomerIfNeeded = async () => {
+    // If we have a name but no ID, we should create a new customer record
+    if (customerName && !customerId) {
+      try {
+        const { data, error } = await supabase
+          .from('customers')
+          .insert([
+            { 
+              name: customerName,
+              phone: customerPhone || "",
+              email: customerEmail || null,
+              lead_status: "New",
+              area: "",
+              customer_type: "Business"
+            }
+          ])
+          .select();
+        
+        if (error) {
+          console.error("Error creating customer:", error);
+          toast.error("Failed to save customer information");
+        } else if (data && data.length > 0) {
+          setCustomerId(data[0].id);
+          toast.success("New customer saved to database");
+          return data[0].id;
+        }
+      } catch (error) {
+        console.error("Exception saving customer:", error);
+      }
+    }
+    return customerId;
+  };
+
+  const generateQuotation = async () => {
     if (!customerName.trim()) {
       toast.error("Please enter a customer name");
       return;
     }
+    
+    // Save customer to database if needed and get the customer ID
+    const finalCustomerId = await saveCustomerIfNeeded();
     
     // Calculate totals
     let subtotal = 0;
@@ -227,7 +263,7 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
     const quotation: Quotation = {
       id: Math.random().toString(36).substring(2, 9),
       quotationNumber: generateQuotationNumber(),
-      customerId: customerId || Math.random().toString(36).substring(2, 9),
+      customerId: finalCustomerId || Math.random().toString(36).substring(2, 9),
       customerName: customerName,
       items: quotationItems,
       subtotal: subtotal,
@@ -239,6 +275,37 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
       notes: "",
       terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
     };
+    
+    // Save quotation to Supabase if possible
+    try {
+      const { error } = await supabase
+        .from('quotations')
+        .insert([
+          {
+            quotation_number: quotation.quotationNumber,
+            customer_id: finalCustomerId,
+            customer_name: customerName,
+            items: quotationItems,
+            subtotal: subtotal,
+            total_gst: totalGst,
+            grand_total: subtotal + totalGst,
+            status: "Draft",
+            notes: "",
+            terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
+          }
+        ]);
+      
+      if (error) {
+        console.log("Error saving quotation to database:", error);
+        // We continue even if the database save fails
+        // This handles the case where the table might not exist yet
+      } else {
+        toast.success("Quotation saved to database");
+      }
+    } catch (error) {
+      console.error("Exception saving quotation:", error);
+      // Continue even if saving fails
+    }
     
     // Generate PDF for the quotation
     try {
