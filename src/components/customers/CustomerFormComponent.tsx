@@ -79,10 +79,9 @@ export default function CustomerFormComponent() {
 
   async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
+    console.log("Form submission started with data:", data);
     
     try {
-      console.log("Submitting form data:", data);
-      
       // Create the customer object
       const customerData = {
         name: data.name,
@@ -96,14 +95,13 @@ export default function CustomerFormComponent() {
         last_contact: new Date().toISOString()
       };
       
-      console.log("Customer data to insert:", customerData);
+      console.log("Attempting to insert customer with data:", customerData);
       
       // Save customer to Supabase
-      const { data: newCustomer, error: customerError } = await supabase
+      const { data: customerResult, error: customerError } = await supabase
         .from('customers')
         .insert([customerData])
-        .select('id')
-        .single();
+        .select('id');
       
       if (customerError) {
         console.error("Error saving customer:", customerError);
@@ -111,23 +109,24 @@ export default function CustomerFormComponent() {
         return;
       }
       
-      if (!newCustomer) {
+      if (!customerResult || customerResult.length === 0) {
         console.error("No customer ID returned after insert");
         toast.error("Failed to save customer: No ID returned");
         return;
       }
       
-      console.log("Customer saved successfully with ID:", newCustomer.id);
+      const newCustomerId = customerResult[0].id;
+      console.log("Customer saved successfully with ID:", newCustomerId);
       
-      // If machine interest is provided, save it to customer_machines table
-      if (data.machineInterest && newCustomer.id) {
+      // Handle machine interest if provided
+      if (data.machineInterest) {
         const machineData = {
-          customer_id: newCustomer.id,
+          customer_id: newCustomerId,
           machine_name: data.machineInterest,
           machine_type: data.machineType || null
         };
         
-        console.log("Machine data to insert:", machineData);
+        console.log("Inserting machine data:", machineData);
         
         const { error: machineError } = await supabase
           .from('customer_machines')
@@ -135,19 +134,22 @@ export default function CustomerFormComponent() {
         
         if (machineError) {
           console.error("Error saving machine interest:", machineError);
-          // Continue as this is not critical
+          // Non-critical error, continue execution
+          toast.error("Warning: Machine data not saved - " + machineError.message);
+        } else {
+          console.log("Machine data saved successfully");
         }
       }
       
-      // If notes are provided, save them to customer_notes table
-      if (data.notes && newCustomer.id) {
+      // Handle notes if provided
+      if (data.notes) {
         const noteData = {
-          customer_id: newCustomer.id,
+          customer_id: newCustomerId,
           content: data.notes,
           created_by: "System"
         };
         
-        console.log("Note data to insert:", noteData);
+        console.log("Inserting note data:", noteData);
         
         const { error: notesError } = await supabase
           .from('customer_notes')
@@ -155,7 +157,10 @@ export default function CustomerFormComponent() {
         
         if (notesError) {
           console.error("Error saving customer notes:", notesError);
-          // Continue as this is not critical
+          // Non-critical error, continue execution
+          toast.error("Warning: Notes not saved - " + notesError.message);
+        } else {
+          console.log("Notes saved successfully");
         }
       }
       
@@ -170,7 +175,7 @@ export default function CustomerFormComponent() {
       }, 1500);
       
     } catch (error) {
-      console.error("Error in form submission:", error);
+      console.error("Unexpected error in form submission:", error);
       toast.error("Failed to save customer. Please try again.");
     } finally {
       setIsSubmitting(false);

@@ -14,7 +14,7 @@ const fetchCustomers = async (): Promise<CustomerType[]> => {
     
     if (error) {
       console.error("Error fetching customers:", error);
-      return [];
+      throw error;
     }
     
     if (!data || data.length === 0) {
@@ -73,10 +73,15 @@ export const useCustomers = () => {
   useEffect(() => {
     const loadCustomers = async () => {
       setIsLoading(true);
-      const loadedCustomers = await fetchCustomers();
-      console.log(`Setting ${loadedCustomers.length} customers from Supabase`);
-      setCustomers(loadedCustomers);
-      setIsLoading(false);
+      try {
+        const loadedCustomers = await fetchCustomers();
+        console.log(`Setting ${loadedCustomers.length} customers from Supabase`);
+        setCustomers(loadedCustomers);
+      } catch (error) {
+        console.error("Error loading customers:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     loadCustomers();
