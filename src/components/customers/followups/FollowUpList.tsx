@@ -16,7 +16,7 @@ const FollowUpList: React.FC<FollowUpListProps> = ({
   onMarkComplete 
 }) => {
   if (followUps.length === 0) {
-    return <EmptyFollowUps activeTab={activeTab} />;
+    return <EmptyFollowUps activeTab={activeTab as any} />;
   }
 
   return (
