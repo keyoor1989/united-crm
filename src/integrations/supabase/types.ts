@@ -189,6 +189,50 @@ export type Database = {
           },
         ]
       }
+      sales_followups: {
+        Row: {
+          contact_phone: string | null
+          customer_id: string
+          customer_name: string
+          date: string
+          id: number
+          location: string | null
+          notes: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          contact_phone?: string | null
+          customer_id: string
+          customer_name: string
+          date: string
+          id?: number
+          location?: string | null
+          notes?: string | null
+          status: string
+          type: string
+        }
+        Update: {
+          contact_phone?: string | null
+          customer_id?: string
+          customer_name?: string
+          date?: string
+          id?: number
+          location?: string | null
+          notes?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_followups_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

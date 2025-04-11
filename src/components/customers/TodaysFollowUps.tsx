@@ -27,7 +27,7 @@ const TodaysFollowUps = () => {
       // Fetch all pending follow-ups from the database
       const { data, error } = await supabase
         .from('sales_followups')
-        .select('id, date, customer_id, customer_name, notes, status, type, contact_phone, location')
+        .select('*')
         .eq('status', 'pending')
         .order('date', { ascending: true });
       
@@ -44,11 +44,11 @@ const TodaysFollowUps = () => {
           date: new Date(item.date),
           customerId: item.customer_id,
           customerName: item.customer_name,
-          notes: item.notes,
+          notes: item.notes || "",
           status: item.status,
           type: item.type,
-          contactPhone: item.contact_phone,
-          location: item.location
+          contactPhone: item.contact_phone || "",
+          location: item.location || ""
         }));
         
         setFollowUps(formattedFollowUps);
