@@ -25,6 +25,10 @@ const QuotationView: React.FC<QuotationViewProps> = ({
     // Open quotation editor dialog
   };
   
+  const handleDownload = () => {
+    // Download functionality
+  };
+  
   return (
     <Card className="mb-4 border-primary/20">
       <CardContent className="p-4">
@@ -41,6 +45,15 @@ const QuotationView: React.FC<QuotationViewProps> = ({
               onClick={handleEditQuotation}
             >
               Edit Details
+            </Button>
+            <Button
+              variant="outline" 
+              size="sm"
+              className="h-8"
+              onClick={handleDownload}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download
             </Button>
             <Button
               size="sm"

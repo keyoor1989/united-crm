@@ -5,7 +5,8 @@ import { products } from "@/data/salesData";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerType } from "@/types/customer";
 import { Quotation } from "@/types/sales";
-import { findCustomerByPhone } from "./customerLookupParser";
+import { FileText } from "lucide-react";
+import React from "react";
 
 interface QuoteHandlerProps {
   message: string;
