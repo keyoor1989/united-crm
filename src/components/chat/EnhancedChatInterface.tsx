@@ -49,7 +49,7 @@ import CustomerLookupView from "./CustomerLookupView";
 import TaskCreationView from "./TaskCreationView";
 import { Quotation } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
-import { supabase } from "@/utils/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;

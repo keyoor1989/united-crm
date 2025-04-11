@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Message } from "../types/chatTypes";
 import { toast } from "sonner";
@@ -106,7 +107,7 @@ export const useAI = ({
             sender: "bot",
             timestamp: new Date(),
             isAiResponse: true,
-            aiModel: "claude-3"
+            aiModel: "claude-3-7"
           };
           addMessageToChat(botMessage);
           return true;
@@ -174,7 +175,7 @@ export const useAI = ({
                 sender: "bot",
                 timestamp: new Date(),
                 isAiResponse: true,
-                aiModel: "claude-3"
+                aiModel: "claude-3-7"
               };
               addMessageToChat(botMessage);
               return true;
