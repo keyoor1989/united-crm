@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -26,6 +27,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { CustomerType } from "@/types/customer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 
 interface CustomerTableProps {
   customers: CustomerType[];
@@ -42,6 +44,9 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   onWhatsApp,
   isLoading = false,
 }) => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
   const getStatusColor = (status: string) => {
     switch(status) {
       case "Active": return "bg-green-500";
@@ -51,6 +56,59 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
       case "Prospect": return "bg-purple-500";
       default: return "bg-gray-500";
     }
+  };
+
+  const handleViewDetails = (customerId: string) => {
+    navigate(`/customer-form/${customerId}`);
+  };
+
+  const handleMachineHistory = (customerId: string) => {
+    navigate(`/customer-form/${customerId}`);
+    toast({
+      title: "Machine History",
+      description: "Navigating to customer machine history",
+    });
+  };
+
+  const handleCreateQuotation = (customerId: string) => {
+    navigate(`/sales/quotation-form?customerId=${customerId}`);
+    toast({
+      title: "Create Quotation",
+      description: "Creating a new quotation for this customer",
+    });
+  };
+
+  const handleScheduleService = (customerId: string) => {
+    navigate(`/service/service-call-form?customerId=${customerId}`);
+    toast({
+      title: "Schedule Service",
+      description: "Scheduling a service call for this customer",
+    });
+  };
+
+  const handleDeleteCustomer = (customerId: string, customerName: string) => {
+    toast({
+      title: "Delete Customer",
+      description: `Are you sure you want to delete ${customerName}? This action cannot be undone.`,
+      variant: "destructive",
+      action: (
+        <Button 
+          variant="outline" 
+          className="bg-white" 
+          onClick={() => confirmDeleteCustomer(customerId)}
+        >
+          Confirm
+        </Button>
+      )
+    });
+  };
+
+  const confirmDeleteCustomer = (customerId: string) => {
+    // In a real implementation, this would call an API to delete the customer
+    toast({
+      title: "Customer Deleted",
+      description: "The customer has been successfully deleted.",
+    });
   };
 
   if (isLoading) {
@@ -164,13 +222,24 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Machine History</DropdownMenuItem>
-                    <DropdownMenuItem>Create Quotation</DropdownMenuItem>
-                    <DropdownMenuItem>Schedule Service</DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="bg-white">
+                    <DropdownMenuItem onClick={() => handleViewDetails(customer.id)}>
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleMachineHistory(customer.id)}>
+                      Machine History
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleCreateQuotation(customer.id)}>
+                      Create Quotation
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleScheduleService(customer.id)}>
+                      Schedule Service
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem 
+                      className="text-red-600"
+                      onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                    >
                       Delete Customer
                     </DropdownMenuItem>
                   </DropdownMenuContent>
