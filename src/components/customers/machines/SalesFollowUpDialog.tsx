@@ -64,6 +64,11 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
       customerId: customer.id
     });
     setShowCustomerSearch(false);
+    
+    // Show notification when customer is selected
+    toast.success(`Customer "${customer.name}" selected`, {
+      description: "Customer information has been added to the follow-up"
+    });
   };
 
   const searchCustomers = async (term: string) => {
@@ -155,6 +160,41 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
       ...newSalesFollowUp,
       customerName: "",
       customerId: undefined
+    });
+    toast.info("Customer selection cleared");
+  };
+
+  const handleSaveFollowUp = () => {
+    // Validate required fields
+    if (!newSalesFollowUp.customerName) {
+      toast.error("Please select a customer");
+      return;
+    }
+    
+    if (!newSalesFollowUp.date) {
+      toast.error("Please select a follow-up date");
+      return;
+    }
+    
+    if (!newSalesFollowUp.type) {
+      toast.error("Please select a follow-up type");
+      return;
+    }
+    
+    // Call the parent's onAddSalesFollowUp function
+    onAddSalesFollowUp();
+    
+    // Show success notification with action date
+    const formattedDate = newSalesFollowUp.date ? format(newSalesFollowUp.date, "dd MMM yyyy") : "Unknown date";
+    toast.success(`Follow-up scheduled for ${formattedDate}`, {
+      description: `A ${newSalesFollowUp.type} follow-up has been scheduled for ${newSalesFollowUp.customerName}`,
+      action: {
+        label: "View Calendar",
+        onClick: () => {
+          // You could navigate to a calendar view here if available
+          console.log("Navigate to calendar view");
+        }
+      }
     });
   };
 
@@ -316,9 +356,10 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
         </div>
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)} variant="outline">Cancel</Button>
-          <Button onClick={onAddSalesFollowUp}>Save Follow-up</Button>
+          <Button onClick={handleSaveFollowUp}>Save Follow-up</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
+
