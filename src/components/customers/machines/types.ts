@@ -19,11 +19,13 @@ export type Machine = {
 export type SalesFollowUp = {
   id: number;
   date: Date;
-  customerId: number;
+  customerId: number | string;
   customerName: string;
   notes: string;
   status: "pending" | "completed";
   type: "quotation" | "demo" | "negotiation" | "closure";
+  contactPhone?: string; // Added to store customer's phone for easy contact
+  location?: string; // Added to show customer's location
 };
 
 export interface MachineFormData {
@@ -41,4 +43,6 @@ export interface SalesFollowUpFormData {
   notes?: string;
   status: "pending" | "completed";
   type: "quotation" | "demo" | "negotiation" | "closure";
+  contactPhone?: string; // Added to store customer's phone for easy contact
+  location?: string; // Added to show customer's location
 }

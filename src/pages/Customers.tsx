@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import CustomerTable from "@/components/customers/CustomerTable";
 import CustomerFilters from "@/components/customers/CustomerFilters";
 import CustomerPagination from "@/components/customers/CustomerPagination";
+import TodaysFollowUps from "@/components/customers/TodaysFollowUps";
 import { useCustomers } from "@/hooks/useCustomers";
 
 const Customers = () => {
@@ -80,6 +81,9 @@ const Customers = () => {
           </Button>
         </Link>
       </div>
+      
+      {/* Follow-ups Dashboard */}
+      <TodaysFollowUps />
 
       <CustomerFilters
         searchTerm={searchTerm}
