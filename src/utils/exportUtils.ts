@@ -1,123 +1,76 @@
 
-import { format } from 'date-fns';
-import pdfMake from 'pdfmake/build/pdfmake';
-import pdfFonts from 'pdfmake/build/vfs_fonts';
-import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { format } from "date-fns";
+import pdfMake from "pdfmake/build/pdfmake";
+import pdfFonts from "pdfmake/build/vfs_fonts";
 
-// Initialize pdfMake with the correct vfs reference
-// The vfs can be in different locations depending on the version and build
-pdfMake.vfs = (pdfFonts as any).pdfFonts ? (pdfFonts as any).pdfFonts.vfs : (pdfFonts as any).vfs;
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-/**
- * Export data to CSV file
- */
-export const exportToCsv = (data: any[], filename: string) => {
+export const exportToCsv = (data: any[], fileName: string) => {
   if (!data || !data.length) {
     console.error('No data to export');
     return;
   }
 
-  // Get headers from the first data item
-  const headers = Object.keys(data[0]).filter(key => 
-    key !== 'id' && key !== 'enteredBy' && key !== 'category'
-  );
+  // Get headers from first object
+  const headers = Object.keys(data[0]);
   
-  // Create CSV rows
-  const csvRows = [];
+  // Convert data to CSV format
+  const csvContent = [
+    headers.join(','), // Header row
+    ...data.map(row => 
+      headers.map(field => {
+        let value = row[field]?.toString() || '';
+        // Escape commas and quotes for CSV
+        if (value.includes(',') || value.includes('"')) {
+          value = `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(',')
+    )
+  ].join('\n');
   
-  // Add headers
-  const headerRow = headers.map(header => {
-    // Capitalize first letter and replace camelCase with spaces
-    return header.charAt(0).toUpperCase() + 
-      header.slice(1).replace(/([A-Z])/g, ' $1');
-  });
-  csvRows.push(headerRow.join(','));
-  
-  // Add data rows
-  for (const row of data) {
-    const values = headers.map(header => {
-      const value = row[header];
-      const valueString = value === null || value === undefined ? '' : value.toString();
-      // Escape quotes and wrap in quotes if contains comma
-      return valueString.includes(',') ? `"${valueString.replace(/"/g, '""')}"` : valueString;
-    });
-    csvRows.push(values.join(','));
-  }
-  
-  // Create Blob and download
-  const csvString = csvRows.join('\n');
-  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
+  // Create a download link
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  
+  const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+  link.setAttribute('download', `${fileName}.csv`);
   link.style.visibility = 'hidden';
-  
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 };
 
-/**
- * Export data to PDF file
- */
 export const exportToPdf = (data: any[], title: string) => {
   if (!data || !data.length) {
     console.error('No data to export');
     return;
   }
 
-  // Get headers from the first data item (excluding id)
-  const headers = Object.keys(data[0]).filter(key => 
-    key !== 'id' && key !== 'enteredBy' && key !== 'category'
-  );
-  
-  // Format headers for display
-  const formattedHeaders = headers.map(header => ({
-    text: header.charAt(0).toUpperCase() + header.slice(1).replace(/([A-Z])/g, ' $1'),
+  // Define columns for the PDF table
+  const columns = Object.keys(data[0]).map(key => ({
+    text: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'),
     style: 'tableHeader'
   }));
-  
-  // Format data for PDF
-  const bodyData = data.map(row => {
-    return headers.map(header => {
-      let value = row[header];
-      
-      // Format specific fields
-      if (header === 'amount') {
-        value = new Intl.NumberFormat('en-IN', {
-          style: 'currency',
-          currency: 'INR'
-        }).format(value);
-      } else if (header === 'type') {
-        value = value === 'Income' ? 'Cash In' : 'Cash Out';
-      } else if (header === 'totalWithGst' && typeof value === 'number') {
-        value = new Intl.NumberFormat('en-IN', {
-          style: 'currency',
-          currency: 'INR'
-        }).format(value);
-      } else if (header === 'gstPercentage' && typeof value === 'number') {
-        value = `${value}%`;
-      }
-      
-      return { 
-        text: value?.toString() || '', 
-        style: header === 'type' ? (value === 'Cash In' ? 'income' : 'expense') : '' 
-      };
-    });
-  });
-  
-  // Create document definition
-  const docDefinition: TDocumentDefinitions = {
+
+  // Prepare rows for the PDF table
+  const rows = data.map(item => Object.values(item).map(value => ({ text: String(value) })));
+
+  // PDF document definition
+  const docDefinition = {
     content: [
       { text: title, style: 'header' },
-      { text: `Generated on ${format(new Date(), 'PPP')}`, style: 'subheader' },
+      { text: `Generated on: ${format(new Date(), 'PPP')}`, style: 'subheader' },
       {
         table: {
           headerRows: 1,
-          widths: Array(headers.length).fill('*'),
-          body: [formattedHeaders, ...bodyData]
+          widths: Array(columns.length).fill('*'),
+          body: [columns, ...rows]
+        },
+        layout: {
+          fillColor: function(rowIndex: number) {
+            return (rowIndex % 2 === 0) ? '#f9fafb' : null;
+          }
         }
       }
     ],
@@ -130,26 +83,20 @@ export const exportToPdf = (data: any[], title: string) => {
       subheader: {
         fontSize: 12,
         bold: false,
-        margin: [0, 0, 0, 20]
+        margin: [0, 0, 0, 10]
       },
       tableHeader: {
         bold: true,
         fontSize: 12,
         color: 'black',
-        fillColor: '#f2f2f2'
-      },
-      income: {
-        color: 'green'
-      },
-      expense: {
-        color: 'red'
+        fillColor: '#e5e7eb'
       }
     },
     defaultStyle: {
       fontSize: 10
     }
   };
-  
+
   // Generate and download PDF
-  pdfMake.createPdf(docDefinition).download(`${title.toLowerCase().replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  pdfMake.createPdf(docDefinition).download(`${title.replace(/\s+/g, '_')}.pdf`);
 };
