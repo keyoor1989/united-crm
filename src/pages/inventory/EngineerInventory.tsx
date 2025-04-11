@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // Added missing import
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
@@ -61,7 +61,7 @@ type VendorFormData = {
   address: string;
 };
 
-const Vendors = () => {
+const EngineerInventory = () => {
   const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
   const [searchQuery, setSearchQuery] = useState("");
   const [vendorDialog, setVendorDialog] = useState(false);
@@ -75,7 +75,6 @@ const Vendors = () => {
     address: ""
   });
   
-  // Filter vendors based on search query
   const filteredVendors = vendors.filter(vendor => 
     vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     vendor.gstNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -84,7 +83,6 @@ const Vendors = () => {
   
   const selectedVendor = vendors.find(v => v.id === selectedVendorId);
   
-  // Open vendor form dialog for creating a new vendor
   const handleAddVendor = () => {
     setVendorForm({
       name: "",
@@ -97,7 +95,6 @@ const Vendors = () => {
     setVendorDialog(true);
   };
   
-  // Open vendor form dialog for editing a vendor
   const handleEditVendor = (vendor: Vendor) => {
     setVendorForm({
       id: vendor.id,
@@ -111,31 +108,25 @@ const Vendors = () => {
     setVendorDialog(true);
   };
   
-  // Open purchase history dialog for a vendor
   const handleViewPurchaseHistory = (vendorId: string) => {
     setSelectedVendorId(vendorId);
     setPurchaseHistoryDialog(true);
   };
   
-  // Handle deleting a vendor
   const handleDeleteVendor = (vendorId: string) => {
-    // In a real app, you'd call an API to delete the vendor
     setVendors(prevVendors => prevVendors.filter(v => v.id !== vendorId));
     toast.success("Vendor deleted successfully");
   };
   
-  // Handle form input changes
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setVendorForm(prev => ({ ...prev, [name]: value }));
   };
   
-  // Handle form submission for adding/editing a vendor
   const handleSubmitVendor = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (selectedVendorId) {
-      // Edit existing vendor
       setVendors(prevVendors => 
         prevVendors.map(v => 
           v.id === selectedVendorId 
@@ -149,7 +140,6 @@ const Vendors = () => {
       );
       toast.success("Vendor updated successfully");
     } else {
-      // Add new vendor
       const newVendor: Vendor = {
         ...vendorForm,
         id: `${vendors.length + 1}`,
@@ -166,33 +156,33 @@ const Vendors = () => {
     <div className="container p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Vendor Management</h1>
-          <p className="text-muted-foreground">Manage your suppliers and track purchase history</p>
+          <h1 className="text-2xl font-bold">Engineer Inventory Management</h1>
+          <p className="text-muted-foreground">Manage inventory assigned to service engineers</p>
         </div>
         <Button onClick={handleAddVendor}>
           <Plus className="mr-2 h-4 w-4" />
-          Add New Vendor
+          Add New Item
         </Button>
       </div>
       
       <Tabs defaultValue="vendors" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="vendors">Vendors</TabsTrigger>
-          <TabsTrigger value="reports">Purchase Reports</TabsTrigger>
+          <TabsTrigger value="vendors">Engineer Inventory</TabsTrigger>
+          <TabsTrigger value="reports">Usage Reports</TabsTrigger>
         </TabsList>
         
         <TabsContent value="vendors">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Vendor Directory</CardTitle>
-                <CardDescription>Manage your supplier information</CardDescription>
+                <CardTitle>Assigned Items</CardTitle>
+                <CardDescription>Track items assigned to each engineer</CardDescription>
               </div>
               <div className="relative w-[300px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search vendors..."
+                  placeholder="Search items..."
                   className="pl-8"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -203,10 +193,10 @@ const Vendors = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vendor Name</TableHead>
-                    <TableHead>GST No.</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Address</TableHead>
+                    <TableHead>Engineer Name</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Assignment Date</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -214,25 +204,16 @@ const Vendors = () => {
                   {filteredVendors.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No vendors found. Add your first vendor to get started.
+                        No inventory items found. Assign items to engineers to get started.
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredVendors.map((vendor) => (
                       <TableRow key={vendor.id}>
                         <TableCell className="font-medium">{vendor.name}</TableCell>
-                        <TableCell>{vendor.gstNo || "-"}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="flex items-center text-sm">
-                              <Phone className="h-3 w-3 mr-1" /> {vendor.phone}
-                            </span>
-                            <span className="flex items-center text-sm text-muted-foreground">
-                              <Mail className="h-3 w-3 mr-1" /> {vendor.email}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{vendor.address}</TableCell>
+                        <TableCell>{vendor.gstNo || "Kyocera TK-1175 Toner"}</TableCell>
+                        <TableCell>2</TableCell>
+                        <TableCell>{vendor.createdAt}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => handleEditVendor(vendor)}>
@@ -261,8 +242,8 @@ const Vendors = () => {
         <TabsContent value="reports">
           <Card>
             <CardHeader>
-              <CardTitle>Vendor Purchase Reports</CardTitle>
-              <CardDescription>Compare purchase quantities and rates across vendors</CardDescription>
+              <CardTitle>Engineer Usage Reports</CardTitle>
+              <CardDescription>Track inventory usage and consumption by each engineer</CardDescription>
             </CardHeader>
             <CardContent>
               <VendorReportComponent />
@@ -271,77 +252,75 @@ const Vendors = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Vendor Add/Edit Dialog */}
       <Dialog open={vendorDialog} onOpenChange={setVendorDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
-              {selectedVendorId ? "Edit Vendor" : "Add New Vendor"}
+              {selectedVendorId ? "Edit Item Assignment" : "Assign New Item"}
             </DialogTitle>
             <DialogDescription>
-              Fill in the vendor details below. Click save when you're done.
+              Fill in the item assignment details below. Click save when you're done.
             </DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleSubmitVendor} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Vendor Name *</Label>
+              <Label htmlFor="name">Engineer Name *</Label>
               <Input
                 id="name"
                 name="name"
                 value={vendorForm.name}
                 onChange={handleFormChange}
-                placeholder="Enter vendor name"
+                placeholder="Select engineer"
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="gstNo">GST Number</Label>
+              <Label htmlFor="gstNo">Item</Label>
               <Input
                 id="gstNo"
                 name="gstNo"
                 value={vendorForm.gstNo}
                 onChange={handleFormChange}
-                placeholder="Enter GST number (optional)"
+                placeholder="Select inventory item"
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="phone">Quantity *</Label>
                 <Input
                   id="phone"
                   name="phone"
                   value={vendorForm.phone}
                   onChange={handleFormChange}
-                  placeholder="Enter phone number"
+                  placeholder="Enter quantity"
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Assignment Date</Label>
                 <Input
                   id="email"
-                  type="email"
+                  type="date"
                   name="email"
                   value={vendorForm.email}
                   onChange={handleFormChange}
-                  placeholder="Enter email address"
+                  placeholder="Select date"
                 />
               </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="address">Address *</Label>
+              <Label htmlFor="address">Notes</Label>
               <Input
                 id="address"
                 name="address"
                 value={vendorForm.address}
                 onChange={handleFormChange}
-                placeholder="Enter complete address"
-                required
+                placeholder="Enter notes (optional)"
               />
             </div>
             
@@ -350,22 +329,21 @@ const Vendors = () => {
                 Cancel
               </Button>
               <Button type="submit">
-                {selectedVendorId ? "Update Vendor" : "Add Vendor"}
+                {selectedVendorId ? "Update Assignment" : "Assign Item"}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
       
-      {/* Vendor Purchase History Dialog */}
       <Dialog open={purchaseHistoryDialog} onOpenChange={setPurchaseHistoryDialog}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
             <DialogTitle>
-              Purchase History: {selectedVendor?.name}
+              Usage History: {selectedVendor?.name}
             </DialogTitle>
             <DialogDescription>
-              Complete purchase history for this vendor
+              Item usage history for this engineer
             </DialogDescription>
           </DialogHeader>
           
@@ -376,28 +354,24 @@ const Vendors = () => {
                   <TableHead>Date</TableHead>
                   <TableHead>Item</TableHead>
                   <TableHead>Quantity</TableHead>
-                  <TableHead>Rate</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Invoice</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Call ID</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Mock purchase history - this would be fetched from an API in a real app */}
                 <TableRow>
                   <TableCell>10-Mar-2025</TableCell>
                   <TableCell>Ricoh 1015 Drum</TableCell>
-                  <TableCell>5</TableCell>
-                  <TableCell>₹3,200</TableCell>
-                  <TableCell>₹16,000</TableCell>
-                  <TableCell>INV-1234</TableCell>
+                  <TableCell>1</TableCell>
+                  <TableCell>ABC Technologies</TableCell>
+                  <TableCell>SVC-1234</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell>05-Feb-2025</TableCell>
-                  <TableCell>Kyocera 2551 Toner</TableCell>
-                  <TableCell>10</TableCell>
-                  <TableCell>₹2,800</TableCell>
-                  <TableCell>₹28,000</TableCell>
-                  <TableCell>INV-1156</TableCell>
+                  <TableCell>Kyocera TK-1175 Toner</TableCell>
+                  <TableCell>2</TableCell>
+                  <TableCell>XYZ Industries</TableCell>
+                  <TableCell>SVC-1156</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -414,30 +388,28 @@ const Vendors = () => {
   );
 };
 
-// Vendor Report Component
 const VendorReportComponent = () => {
   const [brandFilter, setBrandFilter] = useState("all");
   const [modelFilter, setModelFilter] = useState("all");
   const [itemFilter, setItemFilter] = useState("all");
   const [vendorFilter, setVendorFilter] = useState("all");
   
-  // This would be fetched from an API in a real app
   const reportData = [
     {
-      vendor: "Ajanta Traders", 
-      quantityPurchased: 150, 
+      vendor: "Rahul Verma", 
+      quantityPurchased: 12, 
       avgRate: 3200, 
       lastPurchaseDate: "10-Mar-2025"
     },
     {
-      vendor: "Ravi Distributors", 
-      quantityPurchased: 100, 
+      vendor: "Deepak Kumar", 
+      quantityPurchased: 8, 
       avgRate: 3350, 
       lastPurchaseDate: "01-Feb-2025"
     },
     {
-      vendor: "Precision Equipments", 
-      quantityPurchased: 80, 
+      vendor: "Sanjay Mishra", 
+      quantityPurchased: 15, 
       avgRate: 3100, 
       lastPurchaseDate: "15-Jan-2025"
     }
@@ -447,59 +419,62 @@ const VendorReportComponent = () => {
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <Label htmlFor="brand-filter">Brand</Label>
+          <Label htmlFor="brand-filter">Engineer</Label>
           <select
             id="brand-filter"
             value={brandFilter}
             onChange={(e) => setBrandFilter(e.target.value)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="all">All Brands</option>
-            <option value="kyocera">Kyocera</option>
-            <option value="ricoh">Ricoh</option>
+            <option value="all">All Engineers</option>
+            <option value="rahul">Rahul Verma</option>
+            <option value="deepak">Deepak Kumar</option>
+            <option value="sanjay">Sanjay Mishra</option>
           </select>
         </div>
         
         <div>
-          <Label htmlFor="model-filter">Model</Label>
+          <Label htmlFor="model-filter">Item Type</Label>
           <select
             id="model-filter"
             value={modelFilter}
             onChange={(e) => setModelFilter(e.target.value)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="all">All Models</option>
-            <option value="2554ci">2554ci</option>
-            <option value="1015">1015</option>
+            <option value="all">All Types</option>
+            <option value="toner">Toner</option>
+            <option value="drum">Drum</option>
+            <option value="parts">Parts</option>
           </select>
         </div>
         
         <div>
-          <Label htmlFor="item-filter">Item</Label>
+          <Label htmlFor="item-filter">Date Range</Label>
           <select
             id="item-filter"
             value={itemFilter}
             onChange={(e) => setItemFilter(e.target.value)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="all">All Items</option>
-            <option value="toner">Toner</option>
-            <option value="drum">Drum</option>
+            <option value="all">All Time</option>
+            <option value="month">This Month</option>
+            <option value="quarter">This Quarter</option>
+            <option value="year">This Year</option>
           </select>
         </div>
         
         <div>
-          <Label htmlFor="vendor-filter">Vendor</Label>
+          <Label htmlFor="vendor-filter">Status</Label>
           <select
             id="vendor-filter"
             value={vendorFilter}
             onChange={(e) => setVendorFilter(e.target.value)}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="all">All Vendors</option>
-            <option value="1">Ajanta Traders</option>
-            <option value="2">Ravi Distributors</option>
-            <option value="3">Precision Equipments</option>
+            <option value="all">All Status</option>
+            <option value="assigned">Assigned</option>
+            <option value="used">Used</option>
+            <option value="returned">Returned</option>
           </select>
         </div>
       </div>
@@ -507,10 +482,10 @@ const VendorReportComponent = () => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Vendor Name</TableHead>
-            <TableHead>Quantity Purchased</TableHead>
-            <TableHead>Avg. Rate</TableHead>
-            <TableHead>Last Purchase Date</TableHead>
+            <TableHead>Engineer Name</TableHead>
+            <TableHead>Items Used</TableHead>
+            <TableHead>Items Value</TableHead>
+            <TableHead>Last Usage Date</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -535,4 +510,4 @@ const VendorReportComponent = () => {
   );
 };
 
-export default Vendors;
+export default EngineerInventory;
