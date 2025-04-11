@@ -42,7 +42,7 @@ const ApiKeyManager = () => {
             Claude AI Integration
           </CardTitle>
           <CardDescription>
-            Your Claude API key is now safely stored in Supabase Secrets
+            Your Claude API key is securely stored in Supabase Secrets
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -55,7 +55,7 @@ const ApiKeyManager = () => {
                   Your Claude API key is securely stored in Supabase Edge Function Secrets and ready to use with your Smart Assistant.
                 </p>
                 <p>
-                  This allows secure access to Claude AI capabilities without exposing your API key in the browser.
+                  When you input a 10-digit mobile number, the system will fetch customer data from your database and have Claude summarize it.
                 </p>
               </AlertDescription>
             </Alert>
@@ -66,6 +66,7 @@ const ApiKeyManager = () => {
                 <li>Model: claude-3-opus-20240229</li>
                 <li>Integration: Supabase Edge Function</li>
                 <li>Security: API key stored as secure secret</li>
+                <li>Features: Customer profile summarization</li>
               </ul>
             </div>
           </div>

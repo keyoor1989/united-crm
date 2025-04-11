@@ -92,13 +92,13 @@ export const useAI = ({
 
   const processAIRequest = async (
     userInput: string,
-    preferredAiModel: "openrouter" | "claude",
+    preferredAiModel: "openrouter" | "claude-3-7",
     addMessageToChat: (message: Message) => void
   ) => {
     setIsProcessing(true);
     
     try {
-      if (preferredAiModel === "claude") {
+      if (preferredAiModel === "claude-3-7") {
         try {
           const aiResponse = await processClaudeAi(userInput);
           const botMessage: Message = {

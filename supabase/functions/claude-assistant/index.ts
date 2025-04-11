@@ -31,6 +31,13 @@ serve(async (req) => {
 
     console.log("Calling Claude API with prompt:", prompt.substring(0, 50) + "...");
 
+    // Use a specific system prompt for customer data summarization if it appears to be a customer profile
+    const isCustomerProfile = prompt.includes("Customer Profile:") || prompt.includes("Mobile:") || prompt.includes("Last Service:");
+    
+    const effectiveSystemPrompt = isCustomerProfile ? 
+      "You are a helpful assistant for a copier business management system. When presented with customer profile data, summarize it concisely in a professional business format. Do not fabricate any information or claim to fetch or access any data. Only summarize the customer information provided to you." :
+      (systemPrompt || "You are a helpful AI assistant for a copier business management system.");
+
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -41,7 +48,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "claude-3-opus-20240229",
         max_tokens: 4000,
-        system: systemPrompt || "You are a helpful AI assistant for a copier business management system.",
+        system: effectiveSystemPrompt,
         messages: [
           {
             role: "user",

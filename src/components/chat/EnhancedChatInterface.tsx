@@ -182,37 +182,127 @@ const EnhancedChatInterface = () => {
     return /^[6-9]\d{9}$/.test(cleanedInput);
   };
 
-  const getCustomerByMobile = (mobileNumber: string): CustomerType | null => {
-    const cleanedNumber = mobileNumber.replace(/\D/g, '');
-    
-    return customers.find(customer => customer.phone.replace(/\D/g, '') === cleanedNumber) || null;
+  const getCustomerFromSupabase = async (mobileNumber: string): Promise<CustomerType | null> => {
+    try {
+      const cleanedNumber = mobileNumber.replace(/\D/g, '');
+      
+      console.log("Fetching customer from Supabase with phone:", cleanedNumber);
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .select(`
+          id, name, phone, email, area, 
+          lead_status, last_contact, 
+          customer_machines(machine_name, machine_type, machine_serial, last_service)
+        `)
+        .eq('phone', cleanedNumber)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching customer:", error);
+        throw error;
+      }
+      
+      if (!data) {
+        console.log("No customer found with this mobile number");
+        return null;
+      }
+      
+      console.log("Customer found:", data);
+      
+      const customer: CustomerType = {
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email || "",
+        location: data.area,
+        lastContact: data.last_contact ? new Date(data.last_contact).toLocaleDateString() : "Never",
+        machines: data.customer_machines ? data.customer_machines.map((m: any) => m.machine_name).filter(Boolean) : [],
+        status: mapLeadStatusToCustomerStatus(data.lead_status),
+        machineDetails: data.customer_machines || []
+      };
+      
+      return customer;
+    } catch (error) {
+      console.error("Error in getCustomerFromSupabase:", error);
+      return null;
+    }
+  };
+
+  const mapLeadStatusToCustomerStatus = (leadStatus: string): CustomerType["status"] => {
+    switch (leadStatus) {
+      case "Converted":
+        return "Active";
+      case "Lost":
+        return "Inactive";
+      case "New":
+      case "Quoted":
+        return "Prospect";
+      case "Follow-up":
+        return "Contract Renewal";
+      default:
+        return "Active";
+    }
   };
 
   const buildCustomerProfilePrompt = (customer: CustomerType): string => {
-    const machineDetails = customer.machines.length > 0 ? customer.machines[0] : "No machines";
+    const machineDetails = customer.machineDetails && customer.machineDetails.length > 0 
+      ? customer.machineDetails.map((machine: any) => 
+          `${machine.machine_name} (${machine.machine_type || "Unknown type"})` +
+          `${machine.machine_serial ? ", S/N: " + machine.machine_serial : ""}` +
+          `${machine.last_service ? ", Last Service: " + machine.last_service : ""}`
+        ).join("\n  - ")
+      : customer.machines.length > 0 
+        ? customer.machines.join(", ") 
+        : "No machines";
     
-    const amcStatus = customer.status === "Active" ? "Active" : "Inactive";
-    const amcRent = "₹" + (Math.floor(Math.random() * 15) + 5) * 1000 + "/month";
-    const lastServiceDate = new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toLocaleDateString();
-    const engineers = ["Mohan", "Ramesh", "Suresh", "Mahesh", "Dinesh"];
-    const lastEngineer = engineers[Math.floor(Math.random() * engineers.length)];
-    const followUpDate = new Date(Date.now() + Math.floor(Math.random() * 14) * 24 * 60 * 60 * 1000).toLocaleDateString();
-    const leadSources = ["IndiaMart", "Website", "Referral", "Cold Call", "Exhibition"];
-    const leadSource = leadSources[Math.floor(Math.random() * leadSources.length)];
+    const amcStatus = customer.status || "Unknown";
+    
+    const recentFollowups = await getCustomerFollowups(customer.id);
+    const followupText = recentFollowups.length > 0 
+      ? recentFollowups.map(f => 
+          `- ${new Date(f.date).toLocaleDateString()}: ${f.notes} (${f.status})`
+        ).join("\n") 
+      : "No recent followups";
     
     return `
 Customer Profile:
 - Name: ${customer.name}
 - Mobile: ${customer.phone}
+- Email: ${customer.email || "Not provided"}
 - City: ${customer.location}
-- Machine: ${machineDetails}
-- AMC: ${amcStatus}, Rent ${amcRent}
-- Last Service: ${lastServiceDate} by ${lastEngineer}
-- Follow-up: ${followUpDate}
-- Lead Source: ${leadSource}
+- Status: ${amcStatus}
+- Last Contact: ${customer.lastContact}
 
-Please summarize this in a short and helpful business format.
+Equipment:
+  - ${machineDetails}
+
+Recent Followups:
+${followupText}
+
+Please summarize this customer profile in a concise, professional format. Focus on key information like status, equipment, and follow-up history that would be immediately useful to a service representative. Keep the tone professional and business-like.
 `;
+  };
+
+  const getCustomerFollowups = async (customerId: string): Promise<any[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('sales_followups')
+        .select('*')
+        .eq('customer_id', customerId)
+        .order('date', { ascending: false })
+        .limit(3);
+        
+      if (error) {
+        console.error("Error fetching followups:", error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error("Error in getCustomerFollowups:", error);
+      return [];
+    }
   };
 
   const parseCommand = (command: string): CommandIntent => {
@@ -269,13 +359,24 @@ Please summarize this in a short and helpful business format.
     
     try {
       if (isMobileNumber(inputValue)) {
-        const customer = getCustomerByMobile(inputValue);
+        const customer = await getCustomerFromSupabase(inputValue);
         
         if (customer) {
-          const prompt = buildCustomerProfilePrompt(customer);
+          const loadingMessage: Message = {
+            id: `msg-${Date.now()}-bot-loading`,
+            content: "Retrieving customer profile...",
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, loadingMessage]);
+          
+          const prompt = await buildCustomerProfilePrompt(customer);
           
           try {
             const aiResponse = await processClaudeAI(prompt);
+            
+            setMessages((prev) => prev.filter(msg => msg.id !== loadingMessage.id));
             
             const botMessage: Message = {
               id: `msg-${Date.now()}-bot`,
@@ -288,6 +389,8 @@ Please summarize this in a short and helpful business format.
             
             setMessages((prev) => [...prev, botMessage]);
           } catch (error) {
+            setMessages((prev) => prev.filter(msg => msg.id !== loadingMessage.id));
+            
             const errorMessage = error instanceof Error ? error.message : String(error);
             
             const botMessage: Message = {
