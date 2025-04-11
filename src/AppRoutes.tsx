@@ -33,6 +33,7 @@ import PurchaseOrders from "@/pages/sales/PurchaseOrders";
 import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
 import ProductCatalog from "@/pages/sales/ProductCatalog";
 import CommandCopilot from "@/pages/CommandCopilot";
+import SmartAssistant from "@/pages/SmartAssistant";
 import NotFound from "@/pages/NotFound";
 
 // Import our newly created components
@@ -147,12 +148,13 @@ const AppRoutes = () => (
         
         <Route path="/product-catalog" element={<ProductCatalog />} />
         
-        {/* Command Copilot (replacing the old chat assistants) */}
+        {/* AI Assistants */}
         <Route path="/command-copilot" element={<CommandCopilot />} />
+        <Route path="/smart-assistant" element={<SmartAssistant />} />
         
-        {/* Redirect old chat pages to the new Command Copilot */}
-        <Route path="/chat" element={<Navigate to="/command-copilot" replace />} />
-        <Route path="/chat-assistant" element={<Navigate to="/command-copilot" replace />} />
+        {/* Redirect old chat pages to the new Smart Assistant */}
+        <Route path="/chat" element={<Navigate to="/smart-assistant" replace />} />
+        <Route path="/chat-assistant" element={<Navigate to="/smart-assistant" replace />} />
         
         {/* User Management */}
         <Route path="/user-management" element={<UserManagement />} />

@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Users, CreditCard, BarChart3, CheckSquare, Bot, Settings } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, BarChart3, CheckSquare, Bot, Settings, Sparkles } from "lucide-react";
 import { NavItem } from "../types/navTypes";
 
 export const mainNavItems: NavItem[] = [
@@ -32,6 +32,11 @@ export const mainNavItems: NavItem[] = [
     to: "/command-copilot",
     icon: Bot,
     label: "Command Copilot"
+  },
+  {
+    to: "/smart-assistant",
+    icon: Sparkles,
+    label: "Smart Assistant"
   },
   {
     to: "/settings",
