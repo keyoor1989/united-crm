@@ -12,7 +12,7 @@ import {
 } from "./sidebar/sidebarNavConfig";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { 
-  Sidebar as SidebarComponent, 
+  Sidebar as SidebarComp, 
   SidebarContent, 
   SidebarFooter, 
   SidebarGroup, 
@@ -65,7 +65,7 @@ const AppSidebar = () => {
   const isCollapsed = state === "collapsed";
 
   return (
-    <SidebarComponent>
+    <SidebarComp>
       <SidebarHeader className="border-b border-sidebar-border">
         <SidebarLogo />
       </SidebarHeader>
@@ -318,7 +318,7 @@ const AppSidebar = () => {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-    </SidebarComponent>
+    </SidebarComp>
   );
 };
 
