@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Users, CreditCard, BarChart3, CheckSquare, MessageSquare, Bot, Settings } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, BarChart3, CheckSquare, Bot, Settings } from "lucide-react";
 import { NavItem } from "../types/navTypes";
 
 export const mainNavItems: NavItem[] = [
@@ -29,14 +29,9 @@ export const mainNavItems: NavItem[] = [
     label: "Tasks"
   },
   {
-    to: "/chat",
-    icon: MessageSquare,
-    label: "Bot Assistant"
-  },
-  {
-    to: "/chat-assistant",
+    to: "/command-copilot",
     icon: Bot,
-    label: "Smart Chat Assistant"
+    label: "Command Copilot"
   },
   {
     to: "/settings",
