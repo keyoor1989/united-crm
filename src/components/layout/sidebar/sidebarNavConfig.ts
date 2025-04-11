@@ -1,4 +1,3 @@
-
 import { 
   LayoutDashboard, 
   Users, 
@@ -41,7 +40,8 @@ import {
   Receipt,
   Bell,
   PieChart,
-  BadgeDollarSign
+  BadgeDollarSign,
+  Printer
 } from "lucide-react";
 
 export type NavItem = {
@@ -293,6 +293,39 @@ export const financeSection: NavSection = {
       to: "/finance/receivables",
       icon: Bell,
       label: "Pending Receivables"
+    }
+  ]
+};
+
+export const reportsSection: NavSection = {
+  key: "reports",
+  icon: BarChart3,
+  label: "Reports",
+  items: [
+    {
+      to: "/reports",
+      icon: BarChart3,
+      label: "Reports Dashboard"
+    },
+    {
+      to: "/reports/machine-rental",
+      icon: Printer,
+      label: "Machine Rental Report"
+    },
+    {
+      to: "/finance",
+      icon: BadgeDollarSign,
+      label: "Financial Reports"
+    },
+    {
+      to: "/inventory/profit-report",
+      icon: TrendingUp,
+      label: "Inventory Profit Report"
+    },
+    {
+      to: "/engineer-performance",
+      icon: LineChart,
+      label: "Engineer Performance"
     }
   ]
 };

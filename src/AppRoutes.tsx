@@ -50,6 +50,10 @@ import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
 import CustomerPayments from "@/pages/finance/CustomerPayments";
 import OutstandingReceivables from "@/pages/finance/OutstandingReceivables";
 
+// Import Reports
+import Reports from "@/pages/Reports";
+import MachineRentalReport from "@/pages/reports/MachineRentalReport";
+
 const AppRoutes = () => (
   <Routes>
     <Route element={<Layout />}>
@@ -64,6 +68,10 @@ const AppRoutes = () => (
       <Route path="/finance/expenses" element={<DepartmentExpenses />} />
       <Route path="/finance/payments" element={<CustomerPayments />} />
       <Route path="/finance/receivables" element={<OutstandingReceivables />} />
+      
+      {/* Reports Routes */}
+      <Route path="/reports" element={<Reports />} />
+      <Route path="/reports/machine-rental" element={<MachineRentalReport />} />
       
       <Route path="/service" element={<Service />} />
       <Route path="/service-call-form" element={<ServiceCallForm />} />
