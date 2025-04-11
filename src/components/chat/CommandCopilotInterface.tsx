@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ interface Message {
   sender: "user" | "bot";
   timestamp: Date;
   isAiResponse?: boolean;
+  aiModel?: "openrouter" | "claude";
 }
 
 const CommandCopilotInterface = () => {
@@ -41,7 +43,10 @@ const CommandCopilotInterface = () => {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [apiKey, setApiKey] = useState<string>("");
+  const [claudeApiKey, setClaudeApiKey] = useState<string>("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [showClaudeApiKeyInput, setShowClaudeApiKeyInput] = useState(false);
+  const [preferredAiModel, setPreferredAiModel] = useState<"openrouter" | "claude">("claude");
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const { customers } = useCustomers();
 
@@ -128,6 +133,78 @@ const CommandCopilotInterface = () => {
     return { handled: false };
   };
 
+  const processClaudeAi = async (userInput: string): Promise<string> => {
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": claudeApiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "claude-3-sonnet-20240229",
+          max_tokens: 1000,
+          messages: [
+            { role: "user", content: userInput }
+          ],
+          system: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.content && data.content.length > 0) {
+        return data.content[0].text;
+      } else {
+        throw new Error(data.error?.message || "Failed to get Claude AI response");
+      }
+    } catch (error) {
+      console.error("Claude API error:", error);
+      const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
+      throw new Error(`Claude AI error: ${errorMessage}`);
+    }
+  };
+
+  const processOpenRouterAi = async (userInput: string): Promise<string> => {
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "Command Copilot"
+        },
+        body: JSON.stringify({
+          model: "mistral/mistral-7b-instruct", // or "gpt-3.5-turbo" as fallback
+          messages: [
+            {
+              role: "system",
+              content: "You are Command Copilot, a business assistant for a copier and printer service company. Answer questions helpfully and concisely."
+            },
+            {
+              role: "user",
+              content: userInput
+            }
+          ]
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.choices && data.choices[0]) {
+        return data.choices[0].message.content;
+      } else {
+        throw new Error(data.error?.message || "Failed to get AI response");
+      }
+    } catch (error) {
+      console.error("OpenRouter API error:", error);
+      const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
+      throw new Error(`OpenRouter AI error: ${errorMessage}`);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
     
@@ -160,67 +237,138 @@ const CommandCopilotInterface = () => {
         
         setMessages((prev) => [...prev, botMessage]);
       } else {
-        // It's not a structured command, use OpenRouter API
-        if (!apiKey) {
-          setShowApiKeyInput(true);
-          const botMessage: Message = {
-            id: `msg-${Date.now()}-bot`,
-            content: "Please enter your OpenRouter API key to enable AI responses.",
-            sender: "bot",
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, botMessage]);
-        } else {
-          // Attempt to use OpenRouter API
+        // It's not a structured command, try AI processing
+        // Check if we have a phone number to enrich with context
+        const phoneNumberMatch = parsePhoneNumberCommand(userMessage.content);
+        let aiPrompt = userMessage.content;
+        
+        // If it's a phone number, add customer context if available
+        if (phoneNumberMatch) {
+          const customer = findCustomerByPhone(phoneNumberMatch, customers);
+          if (customer) {
+            aiPrompt = `The user is asking about customer: ${JSON.stringify(customer, null, 2)}.\n\nBased on this customer data, ${userMessage.content}`;
+          }
+        }
+        
+        // Determine which AI to use
+        if (preferredAiModel === "claude" && claudeApiKey) {
           try {
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`,
-                "HTTP-Referer": window.location.origin,
-                "X-Title": "Command Copilot"
-              },
-              body: JSON.stringify({
-                model: "mistral/mistral-7b-instruct", // or "gpt-3.5-turbo" as fallback
-                messages: [
-                  {
-                    role: "system",
-                    content: "You are Command Copilot, a business assistant for a copier and printer service company. Answer questions helpfully and concisely."
-                  },
-                  {
-                    role: "user",
-                    content: userMessage.content
-                  }
-                ]
-              })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok && data.choices && data.choices[0]) {
-              const botMessage: Message = {
-                id: `msg-${Date.now()}-bot`,
-                content: data.choices[0].message.content,
-                sender: "bot",
-                timestamp: new Date(),
-                isAiResponse: true
-              };
-              
-              setMessages((prev) => [...prev, botMessage]);
-            } else {
-              throw new Error(data.error?.message || "Failed to get AI response");
-            }
-          } catch (error) {
-            console.error("OpenRouter API error:", error);
-            const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
+            const aiResponse = await processClaudeAi(aiPrompt);
             const botMessage: Message = {
               id: `msg-${Date.now()}-bot`,
-              content: `I couldn't process that request through AI. Error: ${errorMessage}`,
+              content: aiResponse,
+              sender: "bot",
+              timestamp: new Date(),
+              isAiResponse: true,
+              aiModel: "claude"
+            };
+            setMessages((prev) => [...prev, botMessage]);
+          } catch (error) {
+            // Try OpenRouter as fallback if available
+            if (apiKey) {
+              try {
+                const fallbackResponse = await processOpenRouterAi(aiPrompt);
+                const botMessage: Message = {
+                  id: `msg-${Date.now()}-bot`,
+                  content: fallbackResponse,
+                  sender: "bot",
+                  timestamp: new Date(),
+                  isAiResponse: true,
+                  aiModel: "openrouter"
+                };
+                setMessages((prev) => [...prev, botMessage]);
+              } catch (fallbackError) {
+                const errorMessage = fallbackError instanceof Error ? String(fallbackError.message) : String(fallbackError || "Unknown error");
+                const botMessage: Message = {
+                  id: `msg-${Date.now()}-bot`,
+                  content: `I couldn't process that request through any AI service. Error: ${errorMessage}`,
+                  sender: "bot",
+                  timestamp: new Date(),
+                };
+                setMessages((prev) => [...prev, botMessage]);
+              }
+            } else {
+              // No fallback available, show Claude error
+              const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
+              const botMessage: Message = {
+                id: `msg-${Date.now()}-bot`,
+                content: `I couldn't process that request through Claude AI. Error: ${errorMessage}`,
+                sender: "bot",
+                timestamp: new Date(),
+              };
+              setMessages((prev) => [...prev, botMessage]);
+              setShowClaudeApiKeyInput(true);
+            }
+          }
+        } else if (preferredAiModel === "openrouter" && apiKey) {
+          // Use OpenRouter
+          try {
+            const aiResponse = await processOpenRouterAi(aiPrompt);
+            const botMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: aiResponse,
+              sender: "bot",
+              timestamp: new Date(),
+              isAiResponse: true,
+              aiModel: "openrouter"
+            };
+            setMessages((prev) => [...prev, botMessage]);
+          } catch (error) {
+            // Try Claude as fallback if available
+            if (claudeApiKey) {
+              try {
+                const fallbackResponse = await processClaudeAi(aiPrompt);
+                const botMessage: Message = {
+                  id: `msg-${Date.now()}-bot`,
+                  content: fallbackResponse,
+                  sender: "bot",
+                  timestamp: new Date(),
+                  isAiResponse: true,
+                  aiModel: "claude"
+                };
+                setMessages((prev) => [...prev, botMessage]);
+              } catch (fallbackError) {
+                const errorMessage = fallbackError instanceof Error ? String(fallbackError.message) : String(fallbackError || "Unknown error");
+                const botMessage: Message = {
+                  id: `msg-${Date.now()}-bot`,
+                  content: `I couldn't process that request through any AI service. Error: ${errorMessage}`,
+                  sender: "bot",
+                  timestamp: new Date(),
+                };
+                setMessages((prev) => [...prev, botMessage]);
+              }
+            } else {
+              // No fallback available, show OpenRouter error
+              const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
+              const botMessage: Message = {
+                id: `msg-${Date.now()}-bot`,
+                content: `I couldn't process that request through the OpenRouter AI. Error: ${errorMessage}`,
+                sender: "bot",
+                timestamp: new Date(),
+              };
+              setMessages((prev) => [...prev, botMessage]);
+              setShowApiKeyInput(true);
+            }
+          }
+        } else {
+          // No API keys available, prompt for API key
+          if (!claudeApiKey) {
+            setShowClaudeApiKeyInput(true);
+            const botMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: "Please enter your Claude API key to enable AI responses.",
               sender: "bot",
               timestamp: new Date(),
             };
-            
+            setMessages((prev) => [...prev, botMessage]);
+          } else if (!apiKey) {
+            setShowApiKeyInput(true);
+            const botMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: "Please enter your OpenRouter API key as a fallback option.",
+              sender: "bot",
+              timestamp: new Date(),
+            };
             setMessages((prev) => [...prev, botMessage]);
           }
         }
@@ -252,23 +400,47 @@ const CommandCopilotInterface = () => {
     toast.info("File upload functionality coming soon!");
   };
 
-  const handleSubmitApiKey = () => {
-    if (apiKey.trim()) {
-      setShowApiKeyInput(false);
-      toast.success("API key saved for this session");
-      
-      // Add confirmation message
-      const botMessage: Message = {
-        id: `msg-${Date.now()}-bot`,
-        content: "API key saved. I can now respond to your natural language questions!",
-        sender: "bot",
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, botMessage]);
-    } else {
-      toast.error("Please enter a valid API key");
+  const handleSubmitApiKey = (type: "openrouter" | "claude") => {
+    if (type === "openrouter") {
+      if (apiKey.trim()) {
+        setShowApiKeyInput(false);
+        toast.success("OpenRouter API key saved for this session");
+        
+        // Add confirmation message
+        const botMessage: Message = {
+          id: `msg-${Date.now()}-bot`,
+          content: "OpenRouter API key saved. I can now respond to your natural language questions as a fallback option!",
+          sender: "bot",
+          timestamp: new Date(),
+        };
+        
+        setMessages((prev) => [...prev, botMessage]);
+      } else {
+        toast.error("Please enter a valid API key");
+      }
+    } else if (type === "claude") {
+      if (claudeApiKey.trim()) {
+        setShowClaudeApiKeyInput(false);
+        toast.success("Claude API key saved for this session");
+        
+        // Add confirmation message
+        const botMessage: Message = {
+          id: `msg-${Date.now()}-bot`,
+          content: "Claude API key saved. I can now respond to your questions with Claude AI!",
+          sender: "bot",
+          timestamp: new Date(),
+        };
+        
+        setMessages((prev) => [...prev, botMessage]);
+      } else {
+        toast.error("Please enter a valid Claude API key");
+      }
     }
+  };
+
+  const togglePreferredAi = () => {
+    setPreferredAiModel(prev => prev === "claude" ? "openrouter" : "claude");
+    toast.success(`Switched preferred AI to ${preferredAiModel === "claude" ? "OpenRouter" : "Claude"}`);
   };
 
   return (
@@ -282,7 +454,15 @@ const CommandCopilotInterface = () => {
               />
               {message.isAiResponse && message.sender === "bot" && (
                 <div className="flex items-center ml-10 mt-1 text-xs text-muted-foreground">
-                  <Sparkles className="h-3 w-3 mr-1" /> Powered by AI
+                  {message.aiModel === "claude" ? (
+                    <>
+                      <Sparkles className="h-3 w-3 mr-1" /> Powered by Claude AI
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3 w-3 mr-1" /> Powered by AI
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -301,13 +481,37 @@ const CommandCopilotInterface = () => {
             </div>
           )}
           
+          {showClaudeApiKeyInput && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-primary" />
+              </div>
+              <div className="bg-muted p-3 rounded-md max-w-[80%]">
+                <p className="mb-2">Please enter your Claude API key:</p>
+                <div className="flex gap-2">
+                  <Input 
+                    type="password" 
+                    value={claudeApiKey} 
+                    onChange={(e) => setClaudeApiKey(e.target.value)}
+                    placeholder="sk-ant-..."
+                    className="flex-1"
+                  />
+                  <Button onClick={() => handleSubmitApiKey("claude")}>Save</Button>
+                </div>
+                <p className="text-xs mt-2 text-muted-foreground">
+                  Your API key is stored only in this browser session.
+                </p>
+              </div>
+            </div>
+          )}
+          
           {showApiKeyInput && (
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <Bot className="h-4 w-4 text-primary" />
               </div>
               <div className="bg-muted p-3 rounded-md max-w-[80%]">
-                <p className="mb-2">Please enter your OpenRouter API key:</p>
+                <p className="mb-2">Please enter your OpenRouter API key as a fallback option:</p>
                 <div className="flex gap-2">
                   <Input 
                     type="password" 
@@ -316,7 +520,7 @@ const CommandCopilotInterface = () => {
                     placeholder="sk_or_..."
                     className="flex-1"
                   />
-                  <Button onClick={handleSubmitApiKey}>Save</Button>
+                  <Button onClick={() => handleSubmitApiKey("openrouter")}>Save</Button>
                 </div>
                 <p className="text-xs mt-2 text-muted-foreground">
                   Your API key is stored only in this browser session.
@@ -329,6 +533,18 @@ const CommandCopilotInterface = () => {
         </div>
         
         <div className="border-t p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={togglePreferredAi}
+              >
+                {preferredAiModel === "claude" ? "Using: Claude AI" : "Using: OpenRouter AI"}
+              </Button>
+            </div>
+          </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
