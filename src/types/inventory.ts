@@ -1,4 +1,3 @@
-
 export type Brand = {
   id: string;
   name: string;
@@ -297,4 +296,120 @@ export type SaleItem = {
   taxRate: number;
   discount: number;
   total: number;
+};
+
+export type AMCContractType = 'AMC' | 'Rental';
+export type BillingCycle = 'Monthly' | 'Quarterly' | 'Yearly';
+export type ContractStatus = 'Active' | 'Pending' | 'Expired' | 'Cancelled' | 'Renewal Due';
+export type BillStatus = 'Generated' | 'Pending' | 'Paid';
+
+export type AMCContract = {
+  id: string;
+  customerId: string;
+  customerName: string;
+  machineModel: string;
+  serialNumber: string;
+  contractType: AMCContractType;
+  startDate: string;
+  endDate: string;
+  monthlyRent: number;
+  gstPercent: number;
+  copyLimit: number;
+  extraCopyCharge: number;
+  billingCycle: BillingCycle;
+  status: ContractStatus;
+  createdAt?: string;
+};
+
+export type AMCMachine = {
+  id: string;
+  contractId: string;
+  customerId: string;
+  customerName: string;
+  model: string;
+  serialNumber: string;
+  location: string;
+  contractType: AMCContractType;
+  startDate: string;
+  endDate: string;
+  currentRent: number;
+  copyLimit: number;
+  lastMeterReading: number;
+  lastReadingDate: string;
+  createdAt?: string;
+};
+
+export type AMCConsumableUsage = {
+  id: string;
+  contractId: string;
+  machineId: string;
+  customerId: string;
+  customerName: string;
+  machineModel: string;
+  serialNumber: string;
+  engineerId: string;
+  engineerName: string;
+  date: string;
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  cost: number;
+  remarks: string;
+  createdAt?: string;
+};
+
+export type AMCBilling = {
+  id: string;
+  contractId: string;
+  machineId: string;
+  customerId: string;
+  customerName: string;
+  machineModel: string;
+  serialNumber: string;
+  month: string;
+  openingReading: number;
+  closingReading: number;
+  totalCopies: number;
+  freeCopies: number;
+  extraCopies: number;
+  extraCopyRate: number;
+  extraCopyCharge: number;
+  gstPercent: number;
+  gstAmount: number;
+  rent: number;
+  rentGst: number;
+  totalBill: number;
+  billDate: string;
+  billStatus: BillStatus;
+  invoiceNo: string;
+  createdAt?: string;
+};
+
+export type AMCProfitReport = {
+  id: string;
+  contractId: string;
+  machineId: string;
+  customerId: string;
+  customerName: string;
+  machineModel: string;
+  serialNumber: string;
+  month: string;
+  rentReceived: number;
+  extraCopyIncome: number;
+  totalIncome: number;
+  consumablesCost: number;
+  engineerVisitCost: number;
+  totalExpense: number;
+  profit: number;
+  profitMargin: number;
+  createdAt?: string;
+};
+
+export type ProfitableMachine = {
+  id: string;
+  customerName: string;
+  machineModel: string;
+  serialNumber: string;
+  profit: number;
+  profitMargin: number;
 };
