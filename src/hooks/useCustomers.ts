@@ -89,16 +89,22 @@ const customerData: CustomerType[] = [
 // Get customers from localStorage or use sample data if none exist
 const getStoredCustomers = (): CustomerType[] => {
   try {
+    console.log("Retrieving customers from localStorage");
     const storedCustomers = localStorage.getItem("customers");
     if (storedCustomers) {
+      console.log("Found stored customers", storedCustomers);
       const parsedCustomers = JSON.parse(storedCustomers);
-      return Array.isArray(parsedCustomers) ? parsedCustomers : customerData;
+      if (Array.isArray(parsedCustomers) && parsedCustomers.length > 0) {
+        console.log(`Loaded ${parsedCustomers.length} customers from localStorage`);
+        return parsedCustomers;
+      }
     }
   } catch (error) {
     console.error("Error reading customers from localStorage:", error);
   }
   
   // Initialize localStorage with sample data if empty
+  console.log("No customers found in localStorage, using sample data");
   localStorage.setItem("customers", JSON.stringify(customerData));
   return customerData;
 };
@@ -113,7 +119,9 @@ export const useCustomers = () => {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    setCustomers(getStoredCustomers());
+    const loadedCustomers = getStoredCustomers();
+    console.log(`Setting ${loadedCustomers.length} customers from storage`);
+    setCustomers(loadedCustomers);
   }, []);
 
   const filteredCustomers = customers.filter((customer) => {

@@ -69,13 +69,24 @@ const defaultValues: Partial<CustomerFormValues> = {
 
 // Retrieve existing customers from localStorage or return empty array
 const getCustomersFromStorage = (): CustomerType[] => {
-  const customersString = localStorage.getItem("customers");
-  return customersString ? JSON.parse(customersString) : [];
+  try {
+    const customersString = localStorage.getItem("customers");
+    return customersString ? JSON.parse(customersString) : [];
+  } catch (error) {
+    console.error("Error reading customers from localStorage:", error);
+    return [];
+  }
 };
 
 // Save customers to localStorage
 const saveCustomersToStorage = (customers: CustomerType[]) => {
-  localStorage.setItem("customers", JSON.stringify(customers));
+  try {
+    localStorage.setItem("customers", JSON.stringify(customers));
+    return true;
+  } catch (error) {
+    console.error("Error saving customers to localStorage:", error);
+    return false;
+  }
 };
 
 export default function CustomerFormComponent() {
@@ -92,7 +103,9 @@ export default function CustomerFormComponent() {
     setIsSubmitting(true);
     
     try {
-      const customers = getCustomersFromStorage();
+      console.log("Submitting form data:", data);
+      const existingCustomers = getCustomersFromStorage();
+      console.log("Existing customers:", existingCustomers);
       
       // Convert the form data to CustomerType
       const newCustomer: CustomerType = {
@@ -109,21 +122,28 @@ export default function CustomerFormComponent() {
                 data.leadStatus as CustomerStatus
       };
       
+      console.log("New customer to save:", newCustomer);
+      
       // Add the new customer to the array
-      customers.push(newCustomer);
+      const updatedCustomers = [...existingCustomers, newCustomer];
       
       // Save to localStorage
-      saveCustomersToStorage(customers);
+      const saveResult = saveCustomersToStorage(updatedCustomers);
       
-      toast.success("Customer saved successfully!");
-      
-      // Reset the form
-      form.reset();
-      
-      // Navigate back to customers list after a short delay
-      setTimeout(() => {
-        navigate("/customers");
-      }, 1500);
+      if (saveResult) {
+        console.log("Customer saved successfully!");
+        toast.success("Customer saved successfully!");
+        
+        // Reset the form
+        form.reset();
+        
+        // Navigate back to customers list after a short delay
+        setTimeout(() => {
+          navigate("/customers");
+        }, 1500);
+      } else {
+        toast.error("Failed to save customer. Please try again.");
+      }
     } catch (error) {
       console.error("Error saving customer:", error);
       toast.error("Failed to save customer. Please try again.");
