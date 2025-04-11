@@ -12,7 +12,8 @@ import {
   BarChart3,
   Users,
   FileSpreadsheet,
-  Clock
+  Clock,
+  Wrench
 } from "lucide-react";
 
 const Reports = () => {
@@ -24,6 +25,12 @@ const Reports = () => {
       description: "Performance analysis of machines under AMC/Rental contracts",
       icon: <Printer className="h-12 w-12 text-blue-500" />,
       path: "/reports/machine-rental"
+    },
+    {
+      title: "Engineer-wise Service Call Report",
+      description: "Track service call activity by engineer with detailed analysis",
+      icon: <Wrench className="h-12 w-12 text-green-600" />,
+      path: "/reports/engineer-service"
     },
     {
       title: "Financial Reports",

@@ -53,6 +53,7 @@ import OutstandingReceivables from "@/pages/finance/OutstandingReceivables";
 // Import Reports
 import Reports from "@/pages/Reports";
 import MachineRentalReport from "@/pages/reports/MachineRentalReport";
+import EngineerServiceReport from "@/pages/reports/EngineerServiceReport";
 
 const AppRoutes = () => (
   <Routes>
@@ -72,6 +73,7 @@ const AppRoutes = () => (
       {/* Reports Routes */}
       <Route path="/reports" element={<Reports />} />
       <Route path="/reports/machine-rental" element={<MachineRentalReport />} />
+      <Route path="/reports/engineer-service" element={<EngineerServiceReport />} />
       
       <Route path="/service" element={<Service />} />
       <Route path="/service-call-form" element={<ServiceCallForm />} />

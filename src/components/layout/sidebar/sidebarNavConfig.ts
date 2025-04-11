@@ -313,6 +313,11 @@ export const reportsSection: NavSection = {
       label: "Machine Rental Report"
     },
     {
+      to: "/reports/engineer-service",
+      icon: Wrench,
+      label: "Engineer Service Report"
+    },
+    {
       to: "/finance",
       icon: BadgeDollarSign,
       label: "Financial Reports"
