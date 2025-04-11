@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { format, addDays, isAfter, isBefore } from "date-fns";
 import { 
@@ -48,7 +49,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import DateRangeFilter from "@/components/finance/DateRangeFilter";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
-import { receivableEntries, departments } from "@/data/financeData";
+import { receivableEntries } from "@/data/finance/receivableEntries";
+import { departments } from "@/data/finance/types";
 import { Receivable } from "@/types/finance";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
