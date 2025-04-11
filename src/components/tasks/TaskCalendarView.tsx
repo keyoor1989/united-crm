@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import TaskFormDialog from "./TaskFormDialog";
+import { DayProps } from "react-day-picker";
 
 interface TaskCalendarViewProps {
   tasks: Task[];
@@ -85,11 +86,11 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ tasks, onTaskUpdate
           onSelect={handleDayClick}
           className="border rounded-md p-3"
           components={{
-            Day: ({ date, ...props }) => (
+            Day: ({ date, ...dayProps }: DayProps) => (
               <div
-                {...props}
+                {...dayProps}
                 className={cn(
-                  props.className,
+                  dayProps.className,
                   isToday(date) && "bg-accent text-accent-foreground",
                   "relative"
                 )}
