@@ -133,6 +133,62 @@ export type Database = {
         }
         Relationships: []
       }
+      quotations: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          customer_name: string
+          grand_total: number
+          id: string
+          items: Json
+          notes: string | null
+          quotation_number: string
+          status: string
+          subtotal: number
+          terms: string | null
+          total_gst: number
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          customer_name: string
+          grand_total: number
+          id?: string
+          items: Json
+          notes?: string | null
+          quotation_number: string
+          status: string
+          subtotal: number
+          terms?: string | null
+          total_gst: number
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          customer_name?: string
+          grand_total?: number
+          id?: string
+          items?: Json
+          notes?: string | null
+          quotation_number?: string
+          status?: string
+          subtotal?: number
+          terms?: string | null
+          total_gst?: number
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

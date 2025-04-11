@@ -209,43 +209,32 @@ export const useQuotationGenerator = ({ initialData, onComplete }: UseQuotationG
       terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
     };
     
-    // Try to create the quotations table if it doesn't exist
+    // Try to save the quotation to Supabase
     try {
-      // Check if tables exist in Supabase
-      const { data: tableData, error: tableError } = await supabase
+      // Use @ts-ignore to bypass the TypeScript error since we just created the table
+      // @ts-ignore
+      const { error } = await supabase
         .from('quotations')
-        .select('id')
-        .limit(1);
+        .insert([
+          {
+            quotation_number: quotation.quotationNumber,
+            customer_id: finalCustomerId,
+            customer_name: customerName,
+            items: quotationItems,
+            subtotal: subtotal,
+            total_gst: totalGst,
+            grand_total: subtotal + totalGst,
+            status: "Draft",
+            notes: "",
+            terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
+          }
+        ]);
       
-      // Table doesn't exist or other error
-      if (tableError) {
-        console.log("Quotations table may not exist:", tableError);
-        toast.error("Could not save quotation to database. Please contact admin to set up the quotations table.");
+      if (error) {
+        console.log("Error saving quotation to database:", error);
+        toast.error("Failed to save quotation to database");
       } else {
-        // Table exists, save the quotation
-        const { error } = await supabase
-          .from('quotations')
-          .insert([
-            {
-              quotation_number: quotation.quotationNumber,
-              customer_id: finalCustomerId,
-              customer_name: customerName,
-              items: quotationItems,
-              subtotal: subtotal,
-              total_gst: totalGst,
-              grand_total: subtotal + totalGst,
-              status: "Draft",
-              notes: "",
-              terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
-            }
-          ]);
-        
-        if (error) {
-          console.log("Error saving quotation to database:", error);
-          toast.error("Failed to save quotation to database");
-        } else {
-          toast.success("Quotation saved to database");
-        }
+        toast.success("Quotation saved to database");
       }
     } catch (error) {
       console.error("Exception saving quotation:", error);
