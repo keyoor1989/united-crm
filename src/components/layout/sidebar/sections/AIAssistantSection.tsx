@@ -11,7 +11,7 @@ type AIAssistantSectionProps = {
 
 const AIAssistantSection = ({ items, isActive, isCollapsed }: AIAssistantSectionProps) => {
   const aiAssistantItems = items.filter(item => 
-    item.to === "/command-copilot" || item.to === "/smart-assistant"
+    item.to === "/smart-assistant"
   );
   
   return (

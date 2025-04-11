@@ -32,7 +32,6 @@ import QuotationForm from "@/pages/sales/QuotationForm";
 import PurchaseOrders from "@/pages/sales/PurchaseOrders";
 import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
 import ProductCatalog from "@/pages/sales/ProductCatalog";
-import CommandCopilot from "@/pages/CommandCopilot";
 import SmartAssistant from "@/pages/SmartAssistant";
 import NotFound from "@/pages/NotFound";
 
@@ -148,13 +147,13 @@ const AppRoutes = () => (
         
         <Route path="/product-catalog" element={<ProductCatalog />} />
         
-        {/* AI Assistants */}
-        <Route path="/command-copilot" element={<CommandCopilot />} />
+        {/* AI Assistant */}
         <Route path="/smart-assistant" element={<SmartAssistant />} />
         
-        {/* Redirect old chat pages to the new Smart Assistant */}
+        {/* Redirect old chat pages to the Smart Assistant */}
         <Route path="/chat" element={<Navigate to="/smart-assistant" replace />} />
         <Route path="/chat-assistant" element={<Navigate to="/smart-assistant" replace />} />
+        <Route path="/command-copilot" element={<Navigate to="/smart-assistant" replace />} />
         
         {/* User Management */}
         <Route path="/user-management" element={<UserManagement />} />
