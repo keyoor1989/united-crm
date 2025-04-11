@@ -82,7 +82,7 @@ export default function CustomerFormComponent() {
     console.log("Form submission started with data:", data);
     
     try {
-      // Create the customer object
+      // Prepare the customer data
       const customerData = {
         name: data.name,
         phone: data.phone,
@@ -97,11 +97,12 @@ export default function CustomerFormComponent() {
       
       console.log("Attempting to insert customer with data:", customerData);
       
-      // Save customer to Supabase
-      const { data: customerResult, error: customerError } = await supabase
+      // First, ensure we insert the customer and get the ID back
+      const { data: insertedCustomer, error: customerError } = await supabase
         .from('customers')
-        .insert([customerData])
-        .select('id');
+        .insert(customerData)
+        .select('id')
+        .single();
       
       if (customerError) {
         console.error("Error saving customer:", customerError);
@@ -109,14 +110,17 @@ export default function CustomerFormComponent() {
         return;
       }
       
-      if (!customerResult || customerResult.length === 0) {
+      if (!insertedCustomer || !insertedCustomer.id) {
         console.error("No customer ID returned after insert");
         toast.error("Failed to save customer: No ID returned");
         return;
       }
       
-      const newCustomerId = customerResult[0].id;
+      const newCustomerId = insertedCustomer.id;
       console.log("Customer saved successfully with ID:", newCustomerId);
+      
+      // Create an array to hold our promises
+      const promises = [];
       
       // Handle machine interest if provided
       if (data.machineInterest) {
@@ -128,17 +132,19 @@ export default function CustomerFormComponent() {
         
         console.log("Inserting machine data:", machineData);
         
-        const { error: machineError } = await supabase
+        const machinePromise = supabase
           .from('customer_machines')
-          .insert([machineData]);
+          .insert(machineData)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Error saving machine interest:", error);
+              toast.error("Warning: Machine data not saved - " + error.message);
+            } else {
+              console.log("Machine data saved successfully");
+            }
+          });
         
-        if (machineError) {
-          console.error("Error saving machine interest:", machineError);
-          // Non-critical error, continue execution
-          toast.error("Warning: Machine data not saved - " + machineError.message);
-        } else {
-          console.log("Machine data saved successfully");
-        }
+        promises.push(machinePromise);
       }
       
       // Handle notes if provided
@@ -151,18 +157,23 @@ export default function CustomerFormComponent() {
         
         console.log("Inserting note data:", noteData);
         
-        const { error: notesError } = await supabase
+        const notePromise = supabase
           .from('customer_notes')
-          .insert([noteData]);
+          .insert(noteData)
+          .then(({ error }) => {
+            if (error) {
+              console.error("Error saving customer notes:", error);
+              toast.error("Warning: Notes not saved - " + error.message);
+            } else {
+              console.log("Notes saved successfully");
+            }
+          });
         
-        if (notesError) {
-          console.error("Error saving customer notes:", notesError);
-          // Non-critical error, continue execution
-          toast.error("Warning: Notes not saved - " + notesError.message);
-        } else {
-          console.log("Notes saved successfully");
-        }
+        promises.push(notePromise);
       }
+      
+      // Wait for all promises to complete
+      await Promise.all(promises);
       
       toast.success("Customer saved successfully!");
       
