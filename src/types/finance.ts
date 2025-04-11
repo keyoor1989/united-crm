@@ -71,12 +71,15 @@ export interface Receivable {
   amount: number;
   amountPaid: number;
   balance: number;
-  status: 'Overdue' | 'Due Soon' | 'Due';
+  status: 'Overdue' | 'Due Soon' | 'Due' | 'Cleared';
   lastFollowUp?: string;
   notes?: string;
   contactPerson?: string;
   contactNumber?: string;
   priority: 'High' | 'Medium' | 'Low';
+  paymentMode?: string;
+  department?: string;
+  branch?: string;
 }
 
 // For the Finance Dashboard

@@ -48,7 +48,7 @@ import CashRegister from "@/pages/finance/CashRegister";
 import DepartmentRevenueNew from "@/pages/finance/DepartmentRevenueNew";
 import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
 import CustomerPayments from "@/pages/finance/CustomerPayments";
-import PendingReceivables from "@/pages/finance/PendingReceivables";
+import OutstandingReceivables from "@/pages/finance/OutstandingReceivables";
 
 const AppRoutes = () => (
   <Routes>
@@ -63,7 +63,7 @@ const AppRoutes = () => (
       <Route path="/finance/revenue" element={<DepartmentRevenueNew />} />
       <Route path="/finance/expenses" element={<DepartmentExpenses />} />
       <Route path="/finance/payments" element={<CustomerPayments />} />
-      <Route path="/finance/receivables" element={<PendingReceivables />} />
+      <Route path="/finance/receivables" element={<OutstandingReceivables />} />
       
       <Route path="/service" element={<Service />} />
       <Route path="/service-call-form" element={<ServiceCallForm />} />
