@@ -1,6 +1,4 @@
-
 import React, { useState } from "react";
-import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -256,496 +254,494 @@ const InventoryReturns = () => {
   };
   
   return (
-    <Layout>
-      <div className="container p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Returns & Replacements</h1>
-            <p className="text-muted-foreground">
-              Manage returned items from engineers, customers, and branches
-            </p>
-          </div>
-          <Button 
-            onClick={() => setShowNewReturnForm(!showNewReturnForm)} 
-            className="gap-1"
-          >
-            {showNewReturnForm ? <XCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            {showNewReturnForm ? "Cancel" : "New Return"}
-          </Button>
+    <div className="container p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Returns & Replacements</h1>
+          <p className="text-muted-foreground">
+            Manage returned items from engineers, customers, and branches
+          </p>
         </div>
-        
-        {showNewReturnForm && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Record New Return</CardTitle>
-              <CardDescription>
-                Record returned items for inspection and processing
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="item">Select Item</Label>
-                    <Select 
-                      value={selectedItem} 
-                      onValueChange={setSelectedItem}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an item" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {mockItems.map(item => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="quantity">Quantity</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min={1}
-                      value={quantity}
-                      onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="returnType">Return Type</Label>
-                    <Select 
-                      value={returnType} 
-                      onValueChange={(value) => setReturnType(value as IssueType)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Who is returning the item?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Engineer">Engineer</SelectItem>
-                        <SelectItem value="Customer">Customer</SelectItem>
-                        <SelectItem value="Branch">Branch</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="returnedBy">Returned By</Label>
-                    <Select 
-                      value={returnedBy} 
-                      onValueChange={setReturnedBy}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select who is returning" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {returnType === "Engineer" && mockEngineers.map(eng => (
-                          <SelectItem key={eng.id} value={eng.name}>
-                            {eng.name}
-                          </SelectItem>
-                        ))}
-                        {returnType === "Customer" && mockCustomers.map(cust => (
-                          <SelectItem key={cust.id} value={cust.name}>
-                            {cust.name}
-                          </SelectItem>
-                        ))}
-                        {returnType === "Branch" && mockBranches.map(branch => (
-                          <SelectItem key={branch} value={branch}>
-                            {branch}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+        <Button 
+          onClick={() => setShowNewReturnForm(!showNewReturnForm)} 
+          className="gap-1"
+        >
+          {showNewReturnForm ? <XCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {showNewReturnForm ? "Cancel" : "New Return"}
+        </Button>
+      </div>
+      
+      {showNewReturnForm && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Record New Return</CardTitle>
+            <CardDescription>
+              Record returned items for inspection and processing
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="item">Select Item</Label>
+                  <Select 
+                    value={selectedItem} 
+                    onValueChange={setSelectedItem}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockItems.map(item => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="reason">Return Reason</Label>
-                    <Select 
-                      value={reason} 
-                      onValueChange={(value) => setReason(value as ReturnReason)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Why is the item being returned?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Damaged">Damaged</SelectItem>
-                        <SelectItem value="Defective">Defective</SelectItem>
-                        <SelectItem value="Excess">Excess/Not Needed</SelectItem>
-                        <SelectItem value="Wrong Item">Wrong Item</SelectItem>
-                        <SelectItem value="Not Used">Not Used</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2 mt-4">
-                    <Checkbox 
-                      id="underWarranty" 
-                      checked={underWarranty}
-                      onCheckedChange={(checked) => setUnderWarranty(checked === true)}
-                    />
-                    <Label 
-                      htmlFor="underWarranty"
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      Item is under warranty
-                    </Label>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="remarks">Remarks</Label>
-                    <Input
-                      id="remarks"
-                      placeholder="Any additional notes"
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="quantity">Quantity</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="returnType">Return Type</Label>
+                  <Select 
+                    value={returnType} 
+                    onValueChange={(value) => setReturnType(value as IssueType)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Who is returning the item?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Engineer">Engineer</SelectItem>
+                      <SelectItem value="Customer">Customer</SelectItem>
+                      <SelectItem value="Branch">Branch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="returnedBy">Returned By</Label>
+                  <Select 
+                    value={returnedBy} 
+                    onValueChange={setReturnedBy}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select who is returning" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {returnType === "Engineer" && mockEngineers.map(eng => (
+                        <SelectItem key={eng.id} value={eng.name}>
+                          {eng.name}
+                        </SelectItem>
+                      ))}
+                      {returnType === "Customer" && mockCustomers.map(cust => (
+                        <SelectItem key={cust.id} value={cust.name}>
+                          {cust.name}
+                        </SelectItem>
+                      ))}
+                      {returnType === "Branch" && mockBranches.map(branch => (
+                        <SelectItem key={branch} value={branch}>
+                          {branch}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
-              <div className="mt-6 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowNewReturnForm(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSubmitReturn}>
-                  Submit Return
-                </Button>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="reason">Return Reason</Label>
+                  <Select 
+                    value={reason} 
+                    onValueChange={(value) => setReason(value as ReturnReason)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Why is the item being returned?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Damaged">Damaged</SelectItem>
+                      <SelectItem value="Defective">Defective</SelectItem>
+                      <SelectItem value="Excess">Excess/Not Needed</SelectItem>
+                      <SelectItem value="Wrong Item">Wrong Item</SelectItem>
+                      <SelectItem value="Not Used">Not Used</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2 mt-4">
+                  <Checkbox 
+                    id="underWarranty" 
+                    checked={underWarranty}
+                    onCheckedChange={(checked) => setUnderWarranty(checked === true)}
+                  />
+                  <Label 
+                    htmlFor="underWarranty"
+                    className="text-sm font-medium cursor-pointer"
+                  >
+                    Item is under warranty
+                  </Label>
+                </div>
+                
+                <div>
+                  <Label htmlFor="remarks">Remarks</Label>
+                  <Input
+                    id="remarks"
+                    placeholder="Any additional notes"
+                    value={remarks}
+                    onChange={(e) => setRemarks(e.target.value)}
+                  />
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
-        
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative grow">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search returns..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
+            </div>
+            
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowNewReturnForm(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSubmitReturn}>
+                Submit Return
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      <div className="flex items-center gap-4 mb-4">
+        <div className="relative grow">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search returns..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
+        <Button variant="outline" size="icon">
+          <Filter className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="processed">Processed</TabsTrigger>
+          <TabsTrigger value="warranty">Warranty</TabsTrigger>
+          <TabsTrigger value="all">All Returns</TabsTrigger>
+        </TabsList>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="processed">Processed</TabsTrigger>
-            <TabsTrigger value="warranty">Warranty</TabsTrigger>
-            <TabsTrigger value="all">All Returns</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="pending" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending Returns</CardTitle>
-                <CardDescription>
-                  Returns awaiting inspection and processing
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Returned By</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filterReturns("pending").map((ret) => (
-                      <TableRow key={ret.id}>
-                        <TableCell className="font-medium">{ret.id}</TableCell>
-                        <TableCell>{ret.itemName}</TableCell>
-                        <TableCell>{ret.quantity}</TableCell>
-                        <TableCell>{ret.returnedBy}</TableCell>
-                        <TableCell>{ret.returnType}</TableCell>
-                        <TableCell>{ret.reason}</TableCell>
-                        <TableCell>{new Date(ret.returnDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={getStatusBadge(ret.status).variant}
-                            className="flex items-center gap-1 w-fit"
-                          >
-                            {getStatusBadge(ret.status).icon}
-                            {ret.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {ret.status === "Pending" && (
+        <TabsContent value="pending" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Returns</CardTitle>
+              <CardDescription>
+                Returns awaiting inspection and processing
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Qty</TableHead>
+                    <TableHead>Returned By</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filterReturns("pending").map((ret) => (
+                    <TableRow key={ret.id}>
+                      <TableCell className="font-medium">{ret.id}</TableCell>
+                      <TableCell>{ret.itemName}</TableCell>
+                      <TableCell>{ret.quantity}</TableCell>
+                      <TableCell>{ret.returnedBy}</TableCell>
+                      <TableCell>{ret.returnType}</TableCell>
+                      <TableCell>{ret.reason}</TableCell>
+                      <TableCell>{new Date(ret.returnDate).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={getStatusBadge(ret.status).variant}
+                          className="flex items-center gap-1 w-fit"
+                        >
+                          {getStatusBadge(ret.status).icon}
+                          {ret.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {ret.status === "Pending" && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleUpdateStatus(ret.id, "Inspected")}
+                            >
+                              Mark Inspected
+                            </Button>
+                          )}
+                          {ret.status === "Inspected" && (
+                            <>
                               <Button 
                                 size="sm" 
-                                onClick={() => handleUpdateStatus(ret.id, "Inspected")}
+                                variant="default"
+                                onClick={() => handleUpdateStatus(ret.id, "Restocked")}
                               >
-                                Mark Inspected
+                                Restock
                               </Button>
-                            )}
-                            {ret.status === "Inspected" && (
-                              <>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleUpdateStatus(ret.id, "Quarantined")}
+                              >
+                                Quarantine
+                              </Button>
+                              {ret.underWarranty && (
                                 <Button 
                                   size="sm" 
-                                  variant="default"
-                                  onClick={() => handleUpdateStatus(ret.id, "Restocked")}
+                                  variant="destructive"
+                                  onClick={() => handleUpdateStatus(ret.id, "Returned to Vendor")}
                                 >
-                                  Restock
+                                  Return to Vendor
                                 </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleUpdateStatus(ret.id, "Quarantined")}
-                                >
-                                  Quarantine
-                                </Button>
-                                {ret.underWarranty && (
-                                  <Button 
-                                    size="sm" 
-                                    variant="destructive"
-                                    onClick={() => handleUpdateStatus(ret.id, "Returned to Vendor")}
-                                  >
-                                    Return to Vendor
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    
-                    {filterReturns("pending").length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={9} className="h-24 text-center">
-                          No pending returns found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="processed" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Processed Returns</CardTitle>
-                <CardDescription>
-                  Returns that have been processed (restocked, quarantined, or returned to vendor)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Returned By</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Remarks</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filterReturns("processed").map((ret) => (
-                      <TableRow key={ret.id}>
-                        <TableCell className="font-medium">{ret.id}</TableCell>
-                        <TableCell>{ret.itemName}</TableCell>
-                        <TableCell>{ret.quantity}</TableCell>
-                        <TableCell>{ret.returnedBy}</TableCell>
-                        <TableCell>{ret.returnType}</TableCell>
-                        <TableCell>{ret.reason}</TableCell>
-                        <TableCell>{new Date(ret.returnDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={getStatusBadge(ret.status).variant}
-                            className="flex items-center gap-1 w-fit"
-                          >
-                            {getStatusBadge(ret.status).icon}
-                            {ret.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{ret.remarks}</TableCell>
-                      </TableRow>
-                    ))}
-                    
-                    {filterReturns("processed").length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={9} className="h-24 text-center">
-                          No processed returns found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="warranty" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Warranty Returns</CardTitle>
-                <CardDescription>
-                  Items returned under warranty
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Returned By</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>
-                        <div className="flex items-center">
-                          Warranty
-                        </div>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockReturns
-                      .filter(ret => ret.underWarranty)
-                      .filter(ret => 
-                        searchQuery ? 
-                          ret.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          ret.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          ret.returnedBy.toLowerCase().includes(searchQuery.toLowerCase())
-                        : true
-                      )
-                      .map((ret) => (
-                        <TableRow key={ret.id}>
-                          <TableCell className="font-medium">{ret.id}</TableCell>
-                          <TableCell>{ret.itemName}</TableCell>
-                          <TableCell>{ret.quantity}</TableCell>
-                          <TableCell>{ret.returnedBy}</TableCell>
-                          <TableCell>{ret.reason}</TableCell>
-                          <TableCell>{new Date(ret.returnDate).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={getStatusBadge(ret.status).variant}
-                              className="flex items-center gap-1 w-fit"
-                            >
-                              {getStatusBadge(ret.status).icon}
-                              {ret.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                              <ShieldCheck className="h-3 w-3 mr-1" />
-                              Under Warranty
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    }
-                    
-                    {mockReturns.filter(ret => ret.underWarranty).length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                          No warranty returns found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="all" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>All Returns</CardTitle>
-                <CardDescription>
-                  Complete history of item returns and their processing
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Qty</TableHead>
-                      <TableHead>Returned By</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Warranty</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filterReturns("all").map((ret) => (
-                      <TableRow key={ret.id}>
-                        <TableCell className="font-medium">{ret.id}</TableCell>
-                        <TableCell>{ret.itemName}</TableCell>
-                        <TableCell>{ret.quantity}</TableCell>
-                        <TableCell>{ret.returnedBy}</TableCell>
-                        <TableCell>{ret.returnType}</TableCell>
-                        <TableCell>{ret.reason}</TableCell>
-                        <TableCell>{new Date(ret.returnDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={getStatusBadge(ret.status).variant}
-                            className="flex items-center gap-1 w-fit"
-                          >
-                            {getStatusBadge(ret.status).icon}
-                            {ret.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {ret.underWarranty ? (
-                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                              <ShieldCheck className="h-3 w-3 mr-1" />
-                              Yes
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">No</span>
+                              )}
+                            </>
                           )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  
+                  {filterReturns("pending").length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="h-24 text-center">
+                        No pending returns found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="processed" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Processed Returns</CardTitle>
+              <CardDescription>
+                Returns that have been processed (restocked, quarantined, or returned to vendor)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Qty</TableHead>
+                    <TableHead>Returned By</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Remarks</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filterReturns("processed").map((ret) => (
+                    <TableRow key={ret.id}>
+                      <TableCell className="font-medium">{ret.id}</TableCell>
+                      <TableCell>{ret.itemName}</TableCell>
+                      <TableCell>{ret.quantity}</TableCell>
+                      <TableCell>{ret.returnedBy}</TableCell>
+                      <TableCell>{ret.returnType}</TableCell>
+                      <TableCell>{ret.reason}</TableCell>
+                      <TableCell>{new Date(ret.returnDate).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={getStatusBadge(ret.status).variant}
+                          className="flex items-center gap-1 w-fit"
+                        >
+                          {getStatusBadge(ret.status).icon}
+                          {ret.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{ret.remarks}</TableCell>
+                    </TableRow>
+                  ))}
+                  
+                  {filterReturns("processed").length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="h-24 text-center">
+                        No processed returns found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="warranty" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Warranty Returns</CardTitle>
+              <CardDescription>
+                Items returned under warranty
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Qty</TableHead>
+                    <TableHead>Returned By</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>
+                      <div className="flex items-center">
+                        Warranty
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockReturns
+                    .filter(ret => ret.underWarranty)
+                    .filter(ret => 
+                      searchQuery ? 
+                        ret.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        ret.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        ret.returnedBy.toLowerCase().includes(searchQuery.toLowerCase())
+                      : true
+                    )
+                    .map((ret) => (
+                      <TableRow key={ret.id}>
+                        <TableCell className="font-medium">{ret.id}</TableCell>
+                        <TableCell>{ret.itemName}</TableCell>
+                        <TableCell>{ret.quantity}</TableCell>
+                        <TableCell>{ret.returnedBy}</TableCell>
+                        <TableCell>{ret.reason}</TableCell>
+                        <TableCell>{new Date(ret.returnDate).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={getStatusBadge(ret.status).variant}
+                            className="flex items-center gap-1 w-fit"
+                          >
+                            {getStatusBadge(ret.status).icon}
+                            {ret.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                            Under Warranty
+                          </Badge>
                         </TableCell>
                       </TableRow>
-                    ))}
-                    
-                    {filterReturns("all").length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={9} className="h-24 text-center">
-                          No returns found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Layout>
+                    ))
+                  }
+                  
+                  {mockReturns.filter(ret => ret.underWarranty).length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        No warranty returns found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="all" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>All Returns</CardTitle>
+              <CardDescription>
+                Complete history of item returns and their processing
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Item</TableHead>
+                    <TableHead>Qty</TableHead>
+                    <TableHead>Returned By</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Warranty</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filterReturns("all").map((ret) => (
+                    <TableRow key={ret.id}>
+                      <TableCell className="font-medium">{ret.id}</TableCell>
+                      <TableCell>{ret.itemName}</TableCell>
+                      <TableCell>{ret.quantity}</TableCell>
+                      <TableCell>{ret.returnedBy}</TableCell>
+                      <TableCell>{ret.returnType}</TableCell>
+                      <TableCell>{ret.reason}</TableCell>
+                      <TableCell>{new Date(ret.returnDate).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={getStatusBadge(ret.status).variant}
+                          className="flex items-center gap-1 w-fit"
+                        >
+                          {getStatusBadge(ret.status).icon}
+                          {ret.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {ret.underWarranty ? (
+                          <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                            Yes
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">No</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  
+                  {filterReturns("all").length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="h-24 text-center">
+                        No returns found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 

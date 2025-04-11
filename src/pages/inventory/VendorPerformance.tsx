@@ -1,737 +1,131 @@
-import React, { useState } from "react";
-import Layout from "@/components/layout/Layout";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Award,
-  Search,
-  Filter,
-  Store,
-  TrendingUp,
-  TrendingDown,
-  BarChart2,
-  Clock,
-  ShieldCheck,
-  Truck,
-  Percent,
-  RotateCcw,
-  Plus,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Vendor, VendorPerformance as VendorPerformanceType } from "@/types/inventory";
-
-const mockVendorPerformance = [
-  {
-    id: "vp001",
-    vendorId: "vendor1",
-    vendorName: "Ajanta Traders",
-    totalOrders: 42,
-    onTimeDelivery: 38,
-    avgDeliveryTime: 2.3, // days
-    priceConsistency: 4.5, // score out of 5
-    productQuality: 4.7, // score out of 5
-    returnRate: 1.2, // percentage
-    reliabilityScore: 92, // calculated score
-    period: "Q1 2025",
-  },
-  {
-    id: "vp002",
-    vendorId: "vendor2",
-    vendorName: "Ravi Distributors",
-    totalOrders: 35,
-    onTimeDelivery: 30,
-    avgDeliveryTime: 3.5,
-    priceConsistency: 4.2,
-    productQuality: 4.3,
-    returnRate: 2.8,
-    reliabilityScore: 85,
-    period: "Q1 2025",
-  },
-  {
-    id: "vp003",
-    vendorId: "vendor3",
-    vendorName: "Mehta Enterprises",
-    totalOrders: 28,
-    onTimeDelivery: 26,
-    avgDeliveryTime: 2.1,
-    priceConsistency: 3.8,
-    productQuality: 4.5,
-    returnRate: 1.5,
-    reliabilityScore: 88,
-    period: "Q1 2025",
-  },
-  {
-    id: "vp004",
-    vendorId: "vendor4",
-    vendorName: "Global Supplies",
-    totalOrders: 15,
-    onTimeDelivery: 12,
-    avgDeliveryTime: 4.2,
-    priceConsistency: 4.0,
-    productQuality: 4.1,
-    returnRate: 3.0,
-    reliabilityScore: 80,
-    period: "Q1 2025",
-  },
-  {
-    id: "vp005",
-    vendorId: "vendor5",
-    vendorName: "Tech Parts Ltd",
-    totalOrders: 22,
-    onTimeDelivery: 20,
-    avgDeliveryTime: 1.8,
-    priceConsistency: 4.7,
-    productQuality: 4.8,
-    returnRate: 0.9,
-    reliabilityScore: 94,
-    period: "Q1 2025",
-  },
-];
-
-const mockVendors: Vendor[] = [
-  {
-    id: "vendor1",
-    name: "Ajanta Traders",
-    gstNo: "24AAKCS9636Q1ZX",
-    phone: "9876543210",
-    email: "info@ajanta.com",
-    address: "142, Industrial Area, Indore, MP",
-    createdAt: "2024-01-15"
-  },
-  {
-    id: "vendor2",
-    name: "Ravi Distributors",
-    gstNo: "27AAVCS8142M1Z5",
-    phone: "9988776655",
-    email: "sales@ravidist.com",
-    address: "78, Tech Park, Bhopal, MP",
-    createdAt: "2024-02-20"
-  },
-  {
-    id: "vendor3",
-    name: "Mehta Enterprises",
-    gstNo: "06AABCU9603R1ZP",
-    phone: "9865432109",
-    email: "contact@mehta.co.in",
-    address: "23, Old Market, Jabalpur, MP",
-    createdAt: "2023-11-05"
-  },
-  {
-    id: "vendor4",
-    name: "Global Supplies",
-    gstNo: "29AAKCG1412Q1Z5",
-    phone: "9889900001",
-    email: "info@globalsupplies.com",
-    address: "56, MG Road, Indore, MP",
-    createdAt: "2024-03-12"
-  },
-  {
-    id: "vendor5",
-    name: "Tech Parts Ltd",
-    gstNo: "23AADFT2613R1ZM",
-    phone: "9870123456",
-    email: "support@techparts.in",
-    address: "110, Industrial Estate, Pithampur, MP",
-    createdAt: "2023-12-10"
-  },
-];
-
-const getRadarChartData = (selectedVendors) => {
-  const metrics = [
-    { name: 'Delivery Time', key: 'avgDeliveryTime', invert: true, max: 5 },
-    { name: 'Price Consistency', key: 'priceConsistency', invert: false, max: 5 },
-    { name: 'Product Quality', key: 'productQuality', invert: false, max: 5 },
-    { name: 'Return Rate', key: 'returnRate', invert: true, max: 5 },
-    { name: 'On-Time Delivery', key: 'onTimeDeliveryRate', invert: false, max: 100 },
-  ];
-  
-  return metrics.map(metric => {
-    const dataPoint = { name: metric.name };
-    
-    selectedVendors.forEach(vendorId => {
-      const vendor = mockVendorPerformance.find(v => v.vendorId === vendorId);
-      if (vendor) {
-        let value;
-        
-        if (metric.key === 'onTimeDeliveryRate') {
-          value = (vendor.onTimeDelivery / vendor.totalOrders) * 100;
-        } else {
-          value = vendor[metric.key];
-        }
-        
-        if (metric.invert) {
-          if (metric.key === 'returnRate') {
-            value = 5 - (value / 5);
-          } else if (metric.key === 'avgDeliveryTime') {
-            value = 5 - Math.min(value, 5);
-          }
-        }
-        
-        dataPoint[vendor.vendorName] = value;
-      }
-    });
-    
-    return dataPoint;
-  });
-};
-
-const getReliabilityChartData = (vendors) => {
-  return vendors.map(vendor => ({
-    name: vendor.vendorName,
-    score: vendor.reliabilityScore,
-  }));
-};
+import { Input } from "@/components/ui/input";
+import { Search, Filter } from "lucide-react";
+import VendorPerformanceMetrics from "@/components/inventory/vendors/VendorPerformanceMetrics";
 
 const VendorPerformance = () => {
-  const [activeTab, setActiveTab] = useState("overview");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedVendors, setSelectedVendors] = useState(["vendor1", "vendor2", "vendor3"]);
-  const [timePeriod, setTimePeriod] = useState("Q1 2025");
-  const [vendors, setVendors] = useState<Vendor[]>(mockVendors);
-  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    gstNo: "",
-    phone: "",
-    email: "",
-    address: "",
-  });
-
-  const filteredVendors = mockVendorPerformance.filter(vendor => 
-    searchQuery ? 
-      vendor.vendorName.toLowerCase().includes(searchQuery.toLowerCase())
-    : true
-  );
-  
-  const toggleVendorSelection = (vendorId) => {
-    if (selectedVendors.includes(vendorId)) {
-      if (selectedVendors.length > 1) {
-        setSelectedVendors(selectedVendors.filter(id => id !== vendorId));
-      }
-    } else {
-      if (selectedVendors.length < 5) {
-        setSelectedVendors([...selectedVendors, vendorId]);
-      }
-    }
-  };
-  
-  const getVendorRatingBadge = (score) => {
-    if (score >= 90) return "success";
-    if (score >= 80) return "default";
-    if (score >= 70) return "secondary";
-    return "outline";
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleSaveVendor = () => {
-    if (!formData.name || !formData.phone || !formData.email || !formData.address) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-    
-    const newVendor: Vendor = {
-      id: `vendor${vendors.length + 1}`,
-      name: formData.name,
-      gstNo: formData.gstNo,
-      phone: formData.phone,
-      email: formData.email,
-      address: formData.address,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    
-    setVendors([...vendors, newVendor]);
-    
-    const newPerformanceEntry = {
-      id: `vp${mockVendorPerformance.length + 1}`,
-      vendorId: newVendor.id,
-      vendorName: newVendor.name,
-      totalOrders: 0,
-      onTimeDelivery: 0,
-      avgDeliveryTime: 0,
-      priceConsistency: 0,
-      productQuality: 0,
-      returnRate: 0,
-      reliabilityScore: 0,
-      period: timePeriod,
-    };
-    
-    toast.success("Vendor added successfully");
-    
-    setFormData({
-      name: "",
-      gstNo: "",
-      phone: "",
-      email: "",
-      address: "",
-    });
-    setIsAddVendorOpen(false);
-  };
-
   return (
-    <Layout>
-      <div className="container p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Vendor Performance Dashboard</h1>
-            <p className="text-muted-foreground">
-              Monitor and evaluate your supplier performance
-            </p>
-          </div>
-          <Button 
-            onClick={() => setIsAddVendorOpen(true)}
-            className="gap-1"
-          >
-            <Plus className="h-4 w-4" />
-            Add New Vendor
-          </Button>
+    <div className="container p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Vendor Performance</h1>
+          <p className="text-muted-foreground">
+            Monitor and analyze vendor performance metrics
+          </p>
         </div>
-        
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative grow">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search vendors..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Select value={timePeriod} onValueChange={setTimePeriod}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Q1 2025">Q1 2025</SelectItem>
-              <SelectItem value="Q4 2024">Q4 2024</SelectItem>
-              <SelectItem value="Q3 2024">Q3 2024</SelectItem>
-              <SelectItem value="2024">Year 2024</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Top Performer</p>
-                  <p className="text-xl font-bold">Tech Parts Ltd</p>
-                  <div className="flex items-center mt-1">
-                    <Badge variant="success" className="flex items-center gap-1">
-                      <ShieldCheck className="h-3 w-3 mr-1" />
-                      94% Reliability
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-2 bg-green-100 rounded-full">
-                  <Award className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Fastest Delivery</p>
-                  <p className="text-xl font-bold">Tech Parts Ltd</p>
-                  <div className="flex items-center mt-1">
-                    <Badge variant="default" className="flex items-center gap-1">
-                      <Truck className="h-3 w-3 mr-1" />
-                      1.8 days avg.
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Clock className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Lowest Return Rate</p>
-                  <p className="text-xl font-bold">Tech Parts Ltd</p>
-                  <div className="flex items-center mt-1">
-                    <Badge variant="success" className="flex items-center gap-1">
-                      <Percent className="h-3 w-3 mr-1" />
-                      0.9% returns
-                    </Badge>
-                  </div>
-                </div>
-                <div className="p-2 bg-purple-100 rounded-full">
-                  <RotateCcw className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="overview">Performance Overview</TabsTrigger>
-            <TabsTrigger value="comparison">Vendor Comparison</TabsTrigger>
-            <TabsTrigger value="reliability">Reliability Scores</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="overview" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vendor Performance Overview</CardTitle>
-                <CardDescription>
-                  Key metrics for all vendors during {timePeriod}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Vendor</TableHead>
-                      <TableHead>Total Orders</TableHead>
-                      <TableHead>On-Time Delivery</TableHead>
-                      <TableHead>Avg. Delivery Time</TableHead>
-                      <TableHead>Return Rate</TableHead>
-                      <TableHead>Product Quality</TableHead>
-                      <TableHead>Price Consistency</TableHead>
-                      <TableHead>Reliability Score</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredVendors.map((vendor) => (
-                      <TableRow key={vendor.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <Store className="h-4 w-4 text-muted-foreground" />
-                            {vendor.vendorName}
-                          </div>
-                        </TableCell>
-                        <TableCell>{vendor.totalOrders}</TableCell>
-                        <TableCell>
-                          {vendor.onTimeDelivery} ({Math.round((vendor.onTimeDelivery / vendor.totalOrders) * 100)}%)
-                        </TableCell>
-                        <TableCell>{vendor.avgDeliveryTime} days</TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            {vendor.returnRate}%
-                            {vendor.returnRate < 2 ? (
-                              <TrendingDown className="h-4 w-4 text-green-500 ml-1" />
-                            ) : (
-                              <TrendingUp className="h-4 w-4 text-red-500 ml-1" />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            {vendor.productQuality} / 5
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            {vendor.priceConsistency} / 5
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getVendorRatingBadge(vendor.reliabilityScore)}>
-                            {vendor.reliabilityScore}%
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    
-                    {filteredVendors.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                          No vendors found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <p><strong>Reliability Score:</strong> Calculated based on delivery time, product quality, return rate, and price consistency.</p>
-                  <p><strong>Price Consistency:</strong> Measures how stable a vendor's pricing is over time.</p>
-                  <p><strong>Product Quality:</strong> Based on inspection results and return rates.</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="comparison" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vendor Performance Comparison</CardTitle>
-                <CardDescription>
-                  Compare key metrics across vendors
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <p className="text-sm font-medium mb-2">Select vendors to compare:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {mockVendorPerformance.map((vendor) => (
-                      <Badge 
-                        key={vendor.vendorId}
-                        variant={selectedVendors.includes(vendor.vendorId) ? "default" : "outline"}
-                        className="cursor-pointer"
-                        onClick={() => toggleVendorSelection(vendor.vendorId)}
-                      >
-                        {vendor.vendorName}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="h-96 mt-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart outerRadius="80%" data={getRadarChartData(selectedVendors)}>
-                      <PolarGrid />
-                      <PolarAngleAxis dataKey="name" />
-                      <PolarRadiusAxis domain={[0, 5]} />
-                      
-                      {selectedVendors.map((vendorId, index) => {
-                        const vendor = mockVendorPerformance.find(v => v.vendorId === vendorId);
-                        const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE'];
-                        
-                        if (vendor) {
-                          return (
-                            <Radar 
-                              key={vendor.vendorId}
-                              name={vendor.vendorName}
-                              dataKey={vendor.vendorName}
-                              stroke={colors[index % colors.length]}
-                              fill={colors[index % colors.length]}
-                              fillOpacity={0.2}
-                            />
-                          );
-                        }
-                        return null;
-                      })}
-                      
-                      <Legend />
-                      <Tooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                <div className="mt-4 text-sm text-muted-foreground">
-                  <p className="font-medium">How to read this chart:</p>
-                  <ul className="list-disc pl-5 mt-1 space-y-1">
-                    <li>Each axis represents a performance metric</li>
-                    <li>Higher values (further from center) indicate better performance</li>
-                    <li>For metrics like delivery time and return rate, values are inverted so higher is better</li>
-                    <li>A perfect vendor would create a complete pentagon at the outer edge</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="reliability" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vendor Reliability Scores</CardTitle>
-                <CardDescription>
-                  Overall reliability ranking of vendors
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={getReliabilityChartData(filteredVendors)}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="score" name="Reliability Score (%)" fill="#8884d8" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-                
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-2">Reliability Score Calculation</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Our vendor reliability score is a weighted composite of multiple performance factors:
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="rounded-md border p-4 bg-card">
-                      <h4 className="font-medium mb-2">Weighted Factors</h4>
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex justify-between">
-                          <span>On-Time Delivery Rate:</span>
-                          <span className="font-medium">35%</span>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>Product Quality:</span>
-                          <span className="font-medium">30%</span>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>Return Rate (inverse):</span>
-                          <span className="font-medium">20%</span>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>Price Consistency:</span>
-                          <span className="font-medium">15%</span>
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    <div className="rounded-md border p-4 bg-card">
-                      <h4 className="font-medium mb-2">Reliability Tiers</h4>
-                      <ul className="space-y-2 text-sm">
-                        <li className="flex justify-between">
-                          <span>Exceptional (90-100%):</span>
-                          <Badge variant="success">Preferred Vendor</Badge>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>Strong (80-89%):</span>
-                          <Badge>Approved Vendor</Badge>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>Average (70-79%):</span>
-                          <Badge variant="secondary">Qualified Vendor</Badge>
-                        </li>
-                        <li className="flex justify-between">
-                          <span>Below Average (&lt; 70%):</span>
-                          <Badge variant="outline">Review Required</Badge>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-        
-        <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Vendor</DialogTitle>
-              <DialogDescription>
-                Enter the vendor details to add them to your directory.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="name" className="text-right">
-                  Vendor Name*
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter vendor name"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="gstNo" className="text-right">
-                  GST Number
-                </Label>
-                <Input
-                  id="gstNo"
-                  name="gstNo"
-                  value={formData.gstNo}
-                  onChange={handleInputChange}
-                  placeholder="Enter GST number (optional)"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="phone" className="text-right">
-                  Phone Number*
-                </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  placeholder="Enter phone number"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="email" className="text-right">
-                  Email Address*
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter email address"
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-2">
-                <Label htmlFor="address" className="text-right">
-                  Address*
-                </Label>
-                <Input
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder="Enter complete address"
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddVendorOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveVendor}>
-                Add Vendor
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button className="flex items-center gap-1 bg-black text-white hover:bg-black/90">
+          Generate Report
+        </Button>
       </div>
-    </Layout>
+
+      {/* Search and filter row */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
+        <div className="relative w-full">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search vendors..."
+            className="pl-8 w-full"
+          />
+        </div>
+        
+        <Button variant="outline" className="sm:ml-auto flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          Filters
+        </Button>
+      </div>
+
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="quality">Quality</TabsTrigger>
+          <TabsTrigger value="delivery">Delivery</TabsTrigger>
+          <TabsTrigger value="pricing">Pricing</TabsTrigger>
+          <TabsTrigger value="communication">Communication</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Overview</CardTitle>
+              <CardDescription>
+                Overall vendor performance metrics and analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <VendorPerformanceMetrics />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Other tabs content */}
+        <TabsContent value="quality" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Quality Metrics</CardTitle>
+              <CardDescription>
+                Product quality and defect rates by vendor
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] flex items-center justify-center border rounded-md">
+                <p className="text-muted-foreground">Quality metrics content would appear here</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="delivery" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Delivery Performance</CardTitle>
+              <CardDescription>
+                On-time delivery rates and fulfillment metrics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] flex items-center justify-center border rounded-md">
+                <p className="text-muted-foreground">Delivery metrics content would appear here</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="pricing" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pricing Analysis</CardTitle>
+              <CardDescription>
+                Cost trends and competitive pricing analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] flex items-center justify-center border rounded-md">
+                <p className="text-muted-foreground">Pricing analysis content would appear here</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="communication" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Communication</CardTitle>
+              <CardDescription>
+                Vendor responsiveness and communication effectiveness
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px] flex items-center justify-center border rounded-md">
+                <p className="text-muted-foreground">Communication metrics content would appear here</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
