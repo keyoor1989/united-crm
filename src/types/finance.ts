@@ -42,6 +42,11 @@ export interface Expense {
   paymentStatus: 'Paid' | 'Pending' | 'Partial';
   paymentMethod?: string;
   approvedBy?: string;
+  gstPercentage?: number;
+  totalWithGst?: number;
+  branch?: string;
+  notes?: string;
+  billFile?: any;
 }
 
 export interface Payment {

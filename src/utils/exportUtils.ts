@@ -6,7 +6,7 @@ import { TDocumentDefinitions } from 'pdfmake/interfaces';
 
 // Initialize pdfMake with the correct vfs reference
 // The vfs can be in different locations depending on the version and build
-pdfMake.vfs = (pdfFonts as any).vfs;
+pdfMake.vfs = (pdfFonts as any).pdfFonts ? (pdfFonts as any).pdfFonts.vfs : (pdfFonts as any).vfs;
 
 /**
  * Export data to CSV file
