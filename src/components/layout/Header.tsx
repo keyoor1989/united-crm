@@ -1,7 +1,11 @@
 
 import React from "react";
-import { Bell, ChevronDown, Menu } from "lucide-react";
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { MoonStar, Sun, LogOut, User, Settings, Users } from "lucide-react";
+import { useTheme } from "@/components/theme-provider";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,63 +14,96 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { roleNames } from "@/utils/rbac/rolePermissions";
 
 const Header = () => {
+  const { toggleSidebar } = useSidebar();
+  const { user, logout, hasRole } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map(part => part[0])
+      .join("")
+      .toUpperCase();
+  };
+
   return (
-    <header className="h-16 border-b px-6 flex items-center justify-between bg-background">
-      <SidebarTrigger className="lg:hidden">
-        <Menu className="h-5 w-5" />
-      </SidebarTrigger>
-      
-      <div className="flex items-center gap-4 ml-auto">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-sidebar-border bg-background px-4 sm:px-6">
+      <SidebarTrigger onClick={toggleSidebar} />
+
+      <div className="flex-1" />
+
+      <div className="flex items-center gap-2">
         <Button
-          variant="outline"
-          size="sm"
-          className="hidden md:flex gap-1 text-darkblue-500 border-darkblue-500"
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="rounded-full"
         >
-          <span className="hidden lg:inline-block">Create Quotation</span>
-          <span className="lg:hidden">+ Quote</span>
+          {theme === "dark" ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <MoonStar className="h-5 w-5" />
+          )}
+          <span className="sr-only">Toggle theme</span>
         </Button>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="hidden md:flex gap-1 text-brand-500 border-brand-500"
-        >
-          <span className="hidden lg:inline-block">New Service Call</span>
-          <span className="lg:hidden">+ Service</span>
-        </Button>
-
-        <div className="relative">
-          <Bell className="h-5 w-5 text-muted-foreground cursor-pointer hover:text-brand-500 transition-colors" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
-            3
-          </span>
-        </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="flex items-center gap-2 cursor-pointer">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg" alt="User" />
-                <AvatarFallback className="bg-brand-500 text-white">AD</AvatarFallback>
-              </Avatar>
-              <div className="hidden md:block text-sm font-medium">Admin</div>
-              <ChevronDown className="h-4 w-4" />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Company Settings</DropdownMenuItem>
-            <DropdownMenuItem>Preferences</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="relative h-8 w-8 rounded-full"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user.name}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user.email}
+                  </p>
+                  <div className="mt-1 flex items-center">
+                    <span className="text-xs text-muted-foreground">
+                      Role:
+                    </span>
+                    <span className="ml-1 text-xs font-medium">
+                      {roleNames[user.role]}
+                    </span>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/user-management")}>
+                <User className="mr-2 h-4 w-4" />
+                Profile
+              </DropdownMenuItem>
+              {hasRole("super_admin") && (
+                <DropdownMenuItem onClick={() => navigate("/user-management")}>
+                  <Users className="mr-2 h-4 w-4" />
+                  User Management
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => navigate("/settings")}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </header>
   );

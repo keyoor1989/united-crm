@@ -7,7 +7,7 @@ import {
   SidebarInset
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import AppSidebar from "./Sidebar";
+import RestrictedSidebar from "./RestrictedSidebar";
 
 interface LayoutProps {
   children?: ReactNode;
@@ -18,7 +18,7 @@ const Layout = ({ children }: LayoutProps) => {
     <TooltipProvider>
       <SidebarProvider defaultOpen={window.innerWidth >= 1024}>
         <div className="flex min-h-screen w-full bg-background">
-          <AppSidebar />
+          <RestrictedSidebar />
           <SidebarInset className="flex flex-col">
             <Header />
             <main className="flex-1 p-6 overflow-auto">

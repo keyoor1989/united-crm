@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Customers from "@/pages/Customers";
@@ -60,78 +60,105 @@ import BranchProfitReport from "@/pages/reports/BranchProfitReport";
 // Import Task Management
 import TaskDashboard from "@/pages/tasks/TaskDashboard";
 
+// Import Auth related components
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Login from "@/pages/Login";
+import AccessDenied from "@/pages/AccessDenied";
+import UserManagement from "@/pages/user-management/UserManagement";
+
 const AppRoutes = () => (
-  <Routes>
-    <Route element={<Layout />}>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/customers" element={<Customers />} />
-      <Route path="/customer-form" element={<CustomerForm />} />
+  <AuthProvider>
+    <Routes>
+      {/* Public routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/access-denied" element={<AccessDenied />} />
       
-      {/* Finance Routes */}
-      <Route path="/finance" element={<FinanceDashboard />} />
-      <Route path="/finance/cash-register" element={<CashRegister />} />
-      <Route path="/finance/revenue" element={<DepartmentRevenueNew />} />
-      <Route path="/finance/expenses" element={<DepartmentExpenses />} />
-      <Route path="/finance/payments" element={<CustomerPayments />} />
-      <Route path="/finance/receivables" element={<OutstandingReceivables />} />
+      {/* Protected routes */}
+      <Route 
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/customers" element={<Customers />} />
+        <Route path="/customer-form" element={<CustomerForm />} />
+        
+        {/* Finance Routes */}
+        <Route path="/finance" element={<FinanceDashboard />} />
+        <Route path="/finance/cash-register" element={<CashRegister />} />
+        <Route path="/finance/revenue" element={<DepartmentRevenueNew />} />
+        <Route path="/finance/expenses" element={<DepartmentExpenses />} />
+        <Route path="/finance/payments" element={<CustomerPayments />} />
+        <Route path="/finance/receivables" element={<OutstandingReceivables />} />
+        
+        {/* Reports Routes */}
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/reports/machine-rental" element={<MachineRentalReport />} />
+        <Route path="/reports/engineer-service" element={<EngineerServiceReport />} />
+        <Route path="/reports/customer-followup" element={<CustomerFollowUpReport />} />
+        <Route path="/reports/branch-profit" element={<BranchProfitReport />} />
+        
+        {/* Service Routes */}
+        <Route path="/service" element={<Service />} />
+        <Route path="/service-call-form" element={<ServiceCallForm />} />
+        <Route path="/engineer/:id" element={<EngineerDetail />} />
+        <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
+        
+        {/* Task Management Routes */}
+        <Route path="/tasks" element={<TaskDashboard />} />
+        
+        {/* Inventory Routes */}
+        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/inventory/brands" element={<InventoryBrands />} />
+        <Route path="/inventory/items" element={<InventoryItems />} />
+        <Route path="/inventory/vendors" element={<VendorPerformance />} />
+        <Route path="/inventory/purchase" element={<InventoryPurchase />} />
+        <Route path="/inventory/sales" element={<InventorySales />} />
+        <Route path="/inventory/issue" element={<InventoryIssue />} />
+        <Route path="/inventory/transfer" element={<InventoryTransfer />} />
+        <Route path="/inventory/branch-transfer" element={<BranchTransfer />} />
+        <Route path="/inventory/returns" element={<InventoryReturns />} />
+        <Route path="/inventory/warehouses" element={<InventoryWarehouses />} />
+        <Route path="/inventory/engineer-inventory" element={<EngineerInventory />} />
+        <Route path="/inventory/machine-parts" element={<MachineParts />} />
+        <Route path="/inventory/profit-report" element={<ProfitReport />} />
+        <Route path="/inventory/amc-tracker" element={<AmcTracker />} />
+        <Route path="/inventory/vendor-performance" element={<VendorPerformance />} />
+        <Route path="/inventory/vendor-performance-metrics" element={<VendorPerformanceDemo />} />
+        <Route path="/inventory/history" element={<InventoryHistory />} />
+        <Route path="/inventory/alerts" element={<InventoryAlerts />} />
+        
+        {/* Quotation routes */}
+        <Route path="/quotations" element={<Quotations />} />
+        <Route path="/quotation-form" element={<QuotationForm />} />
+        <Route path="/quotation-form/:id" element={<QuotationForm />} />
+        <Route path="/sent-quotations" element={<SentQuotations />} />
+        <Route path="/quotation-products" element={<QuotationProducts />} />
+        <Route path="/contract-upload" element={<ContractUpload />} />
+        
+        {/* Purchase order routes */}
+        <Route path="/purchase-orders" element={<PurchaseOrders />} />
+        <Route path="/purchase-order-form" element={<PurchaseOrderForm />} />
+        <Route path="/purchase-order-form/:id" element={<PurchaseOrderForm />} />
+        <Route path="/sent-orders" element={<SentOrders />} />
+        <Route path="/order-history" element={<OrderHistory />} />
+        
+        <Route path="/product-catalog" element={<ProductCatalog />} />
+        <Route path="/chat" element={<Chat />} />
+        
+        {/* User Management */}
+        <Route path="/user-management" element={<UserManagement />} />
+        
+        {/* Catch-all route */}
+        <Route path="*" element={<NotFound />} />
+      </Route>
       
-      {/* Reports Routes */}
-      <Route path="/reports" element={<Reports />} />
-      <Route path="/reports/machine-rental" element={<MachineRentalReport />} />
-      <Route path="/reports/engineer-service" element={<EngineerServiceReport />} />
-      <Route path="/reports/customer-followup" element={<CustomerFollowUpReport />} />
-      <Route path="/reports/branch-profit" element={<BranchProfitReport />} />
-      
-      {/* Service Routes */}
-      <Route path="/service" element={<Service />} />
-      <Route path="/service-call-form" element={<ServiceCallForm />} />
-      <Route path="/engineer/:id" element={<EngineerDetail />} />
-      <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
-      
-      {/* Task Management Routes */}
-      <Route path="/tasks" element={<TaskDashboard />} />
-      
-      {/* Inventory Routes */}
-      <Route path="/inventory" element={<Inventory />} />
-      <Route path="/inventory/brands" element={<InventoryBrands />} />
-      <Route path="/inventory/items" element={<InventoryItems />} />
-      <Route path="/inventory/vendors" element={<VendorPerformance />} />
-      <Route path="/inventory/purchase" element={<InventoryPurchase />} />
-      <Route path="/inventory/sales" element={<InventorySales />} />
-      <Route path="/inventory/issue" element={<InventoryIssue />} />
-      <Route path="/inventory/transfer" element={<InventoryTransfer />} />
-      <Route path="/inventory/branch-transfer" element={<BranchTransfer />} />
-      <Route path="/inventory/returns" element={<InventoryReturns />} />
-      <Route path="/inventory/warehouses" element={<InventoryWarehouses />} />
-      <Route path="/inventory/engineer-inventory" element={<EngineerInventory />} />
-      <Route path="/inventory/machine-parts" element={<MachineParts />} />
-      <Route path="/inventory/profit-report" element={<ProfitReport />} />
-      <Route path="/inventory/amc-tracker" element={<AmcTracker />} />
-      <Route path="/inventory/vendor-performance" element={<VendorPerformance />} />
-      <Route path="/inventory/vendor-performance-metrics" element={<VendorPerformanceDemo />} />
-      <Route path="/inventory/history" element={<InventoryHistory />} />
-      <Route path="/inventory/alerts" element={<InventoryAlerts />} />
-      
-      {/* Quotation routes */}
-      <Route path="/quotations" element={<Quotations />} />
-      <Route path="/quotation-form" element={<QuotationForm />} />
-      <Route path="/quotation-form/:id" element={<QuotationForm />} />
-      <Route path="/sent-quotations" element={<SentQuotations />} />
-      <Route path="/quotation-products" element={<QuotationProducts />} />
-      <Route path="/contract-upload" element={<ContractUpload />} />
-      
-      {/* Purchase order routes */}
-      <Route path="/purchase-orders" element={<PurchaseOrders />} />
-      <Route path="/purchase-order-form" element={<PurchaseOrderForm />} />
-      <Route path="/purchase-order-form/:id" element={<PurchaseOrderForm />} />
-      <Route path="/sent-orders" element={<SentOrders />} />
-      <Route path="/order-history" element={<OrderHistory />} />
-      
-      <Route path="/product-catalog" element={<ProductCatalog />} />
-      <Route path="/chat" element={<Chat />} />
-      <Route path="*" element={<NotFound />} />
-    </Route>
-  </Routes>
+      {/* Redirect root to login if not authenticated */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
+  </AuthProvider>
 );
 
 export default AppRoutes;
