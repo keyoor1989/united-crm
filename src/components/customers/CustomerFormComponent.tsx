@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Check, Loader2 } from "lucide-react";
 import CustomerNotes from "./CustomerNotes";
 import CustomerMachines from "./CustomerMachines";
 import CustomerHistory from "./CustomerHistory";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   CustomerFormProvider, 
@@ -24,14 +24,67 @@ import LeadInfoForm from "./form-sections/LeadInfoForm";
 import NotesForm from "./form-sections/NotesForm";
 
 export default function CustomerFormComponent() {
-  const [isNewCustomer, setIsNewCustomer] = useState<boolean>(true);
+  const { id: customerId } = useParams<{ id: string }>();
+  const [isNewCustomer, setIsNewCustomer] = useState<boolean>(!customerId);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [customerData, setCustomerData] = useState<any>(null);
   const navigate = useNavigate();
   
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+
+  // Fetch customer data if editing an existing customer
+  useEffect(() => {
+    if (customerId) {
+      setIsLoading(true);
+      fetchCustomerData(customerId);
+    }
+  }, [customerId]);
+
+  const fetchCustomerData = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching customer:", error);
+        toast.error("Failed to load customer information");
+        return;
+      }
+      
+      if (data) {
+        setCustomerData(data);
+        
+        // Update form with customer data
+        form.reset({
+          name: data.name,
+          phone: data.phone,
+          email: data.email || "",
+          address: data.address || "",
+          area: data.area,
+          customerType: data.customer_type,
+          dateOfBirth: data.date_of_birth || "",
+          machineInterest: "",
+          machineType: "",
+          source: data.source || "",
+          notes: "",
+          leadStatus: data.lead_status,
+          isNewCustomer: false
+        });
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching customer:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
@@ -48,40 +101,59 @@ export default function CustomerFormComponent() {
         customer_type: data.customerType,
         date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
         lead_status: data.leadStatus,
-        last_contact: new Date().toISOString()
+        last_contact: new Date().toISOString(),
+        source: data.source
       };
       
-      console.log("Attempting to insert customer with data:", customerData);
+      let customerId;
       
-      // First, ensure we insert the customer and get the ID back
-      const { data: insertedCustomer, error: customerError } = await supabase
-        .from('customers')
-        .insert(customerData)
-        .select('id')
-        .single();
-      
-      if (customerError) {
-        console.error("Error saving customer:", customerError);
-        toast.error("Failed to save customer: " + customerError.message);
-        return;
+      if (isNewCustomer) {
+        console.log("Attempting to insert customer with data:", customerData);
+        
+        // Insert new customer
+        const { data: insertedCustomer, error: customerError } = await supabase
+          .from('customers')
+          .insert(customerData)
+          .select('id')
+          .single();
+        
+        if (customerError) {
+          console.error("Error saving customer:", customerError);
+          toast.error("Failed to save customer: " + customerError.message);
+          return;
+        }
+        
+        if (!insertedCustomer || !insertedCustomer.id) {
+          console.error("No customer ID returned after insert");
+          toast.error("Failed to save customer: No ID returned");
+          return;
+        }
+        
+        customerId = insertedCustomer.id;
+        console.log("Customer saved successfully with ID:", customerId);
+      } else {
+        // Update existing customer
+        const { error: updateError } = await supabase
+          .from('customers')
+          .update(customerData)
+          .eq('id', customerId);
+          
+        if (updateError) {
+          console.error("Error updating customer:", updateError);
+          toast.error("Failed to update customer: " + updateError.message);
+          return;
+        }
+        
+        console.log("Customer updated successfully:", customerId);
       }
-      
-      if (!insertedCustomer || !insertedCustomer.id) {
-        console.error("No customer ID returned after insert");
-        toast.error("Failed to save customer: No ID returned");
-        return;
-      }
-      
-      const newCustomerId = insertedCustomer.id;
-      console.log("Customer saved successfully with ID:", newCustomerId);
       
       // Create an array to hold our promises
       const promises = [];
       
-      // Handle machine interest if provided
-      if (data.machineInterest) {
+      // Handle machine interest if provided for new customers
+      if (isNewCustomer && data.machineInterest) {
         const machineData = {
-          customer_id: newCustomerId,
+          customer_id: customerId,
           machine_name: data.machineInterest,
           machine_type: data.machineType || null
         };
@@ -106,7 +178,7 @@ export default function CustomerFormComponent() {
       // Handle notes if provided
       if (data.notes) {
         const noteData = {
-          customer_id: newCustomerId,
+          customer_id: customerId,
           content: data.notes,
           created_by: "System"
         };
@@ -131,10 +203,12 @@ export default function CustomerFormComponent() {
       // Wait for all promises to complete
       await Promise.all(promises);
       
-      toast.success("Customer saved successfully!");
+      toast.success(isNewCustomer ? "Customer saved successfully!" : "Customer updated successfully!");
       
-      // Reset the form
-      form.reset();
+      // Reset the form if it's a new customer
+      if (isNewCustomer) {
+        form.reset();
+      }
       
       // Navigate back to customers list after a short delay
       setTimeout(() => {
@@ -149,6 +223,15 @@ export default function CustomerFormComponent() {
     }
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading customer data...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -158,6 +241,7 @@ export default function CustomerFormComponent() {
               type="button" 
               variant={isNewCustomer ? "default" : "outline"}
               onClick={() => setIsNewCustomer(true)}
+              disabled={!!customerId}
             >
               New Customer
             </Button>
@@ -165,6 +249,7 @@ export default function CustomerFormComponent() {
               type="button" 
               variant={isNewCustomer ? "outline" : "default"}
               onClick={() => setIsNewCustomer(false)}
+              disabled={!!customerId}
             >
               Existing Customer
             </Button>
@@ -194,7 +279,7 @@ export default function CustomerFormComponent() {
                     </>
                   ) : (
                     <>
-                      Save Customer <Check className="h-4 w-4" />
+                      {isNewCustomer ? "Save Customer" : "Update Customer"} <Check className="h-4 w-4" />
                     </>
                   )}
                 </Button>
@@ -204,14 +289,14 @@ export default function CustomerFormComponent() {
         </CardContent>
       </Card>
 
-      {!isNewCustomer && (
+      {!isNewCustomer && customerId && (
         <div className="grid md:grid-cols-2 gap-6">
           <CustomerMachines />
           <CustomerHistory />
         </div>
       )}
 
-      <CustomerNotes />
+      {!isNewCustomer && customerId && <CustomerNotes />}
     </div>
   );
 }

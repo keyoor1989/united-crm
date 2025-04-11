@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Printer, CalendarDays, Settings, CalendarClock, DollarSign, PhoneCall } from "lucide-react";
@@ -35,6 +34,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useParams } from "react-router-dom";
 
 type FollowUp = {
   date: Date;
@@ -63,59 +64,33 @@ type SalesFollowUp = {
   type: "quotation" | "demo" | "negotiation" | "closure";
 };
 
-const mockMachines: Machine[] = [
-  {
-    id: 1,
-    model: "Kyocera 2554ci",
-    serialNumber: "KYC5587621",
-    installationDate: "2024-12-15",
-    status: "active",
-    lastService: "2025-03-10",
-  },
-  {
-    id: 2,
-    model: "Ricoh MP2014",
-    serialNumber: "RMP982321",
-    installationDate: "2023-08-22",
-    status: "maintenance",
-    lastService: "2025-02-05",
-    followUp: {
-      date: new Date(2025, 3, 16), // April 16, 2025
-      notes: "Check if maintenance was completed, discuss upgrade options",
-      type: "service",
-    }
-  },
-];
-
-const mockSalesFollowUps: SalesFollowUp[] = [
-  {
-    id: 1,
-    date: new Date(2025, 3, 15), // April 15, 2025
-    customerId: 101,
-    customerName: "ABC Corp",
-    notes: "Follow up on Kyocera 2554ci quotation",
-    status: "pending",
-    type: "quotation"
-  },
-  {
-    id: 2,
-    date: new Date(2025, 3, 18), // April 18, 2025
-    customerId: 102,
-    customerName: "XYZ Industries",
-    notes: "Schedule demo for Ricoh printer lineup",
-    status: "pending",
-    type: "demo"
-  }
-];
+interface MachineFormData {
+  model: string;
+  serialNumber: string;
+  machineType: string;
+  installationDate: string;
+  status: "active" | "maintenance" | "replacement-due";
+}
 
 export default function CustomerMachines() {
-  const [machines, setMachines] = useState<Machine[]>(mockMachines);
-  const [salesFollowUps, setSalesFollowUps] = useState<SalesFollowUp[]>(mockSalesFollowUps);
+  const { id: customerId } = useParams<{ id: string }>();
+  const [machines, setMachines] = useState<Machine[]>([]);
+  const [salesFollowUps, setSalesFollowUps] = useState<SalesFollowUp[]>([]);
   const [followUpMachine, setFollowUpMachine] = useState<Machine | null>(null);
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>(undefined);
   const [followUpNotes, setFollowUpNotes] = useState("");
   const [followUpDialogOpen, setFollowUpDialogOpen] = useState(false);
   const [salesFollowUpDialogOpen, setSalesFollowUpDialogOpen] = useState(false);
+  const [addMachineDialogOpen, setAddMachineDialogOpen] = useState(false);
+  const [newMachineData, setNewMachineData] = useState<MachineFormData>({
+    model: "",
+    serialNumber: "",
+    machineType: "copier",
+    installationDate: new Date().toISOString().split('T')[0],
+    status: "active"
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [newSalesFollowUp, setNewSalesFollowUp] = useState<{
     date?: Date;
     customerName?: string;
@@ -127,6 +102,102 @@ export default function CustomerMachines() {
     type: "quotation"
   });
   const [activeTab, setActiveTab] = useState("machines");
+
+  useEffect(() => {
+    if (customerId) {
+      fetchCustomerMachines(customerId);
+    }
+  }, [customerId]);
+
+  const fetchCustomerMachines = async (custId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_machines')
+        .select('*')
+        .eq('customer_id', custId);
+        
+      if (error) {
+        console.error("Error fetching machines:", error);
+        toast.error("Failed to load customer machines");
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        const transformedMachines: Machine[] = data.map((machine, index) => ({
+          id: index + 1,
+          model: machine.machine_name,
+          serialNumber: machine.machine_serial || `SN${Math.floor(Math.random() * 1000000)}`,
+          installationDate: machine.installation_date || new Date().toISOString().split('T')[0],
+          status: "active",
+          lastService: machine.last_service || new Date().toISOString().split('T')[0],
+        }));
+        
+        setMachines(transformedMachines);
+      } else {
+        setMachines([]);
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching machines:", err);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleAddMachine = async () => {
+    if (!newMachineData.model) {
+      toast.error("Please enter a machine model");
+      return;
+    }
+    
+    if (!customerId) {
+      toast.error("Customer ID is missing");
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const machineData = {
+        customer_id: customerId,
+        machine_name: newMachineData.model,
+        machine_type: newMachineData.machineType,
+        machine_serial: newMachineData.serialNumber,
+        installation_date: newMachineData.installationDate,
+        status: newMachineData.status
+      };
+      
+      const { data, error } = await supabase
+        .from('customer_machines')
+        .insert(machineData)
+        .select();
+        
+      if (error) {
+        console.error("Error adding machine:", error);
+        toast.error("Failed to add machine: " + error.message);
+        return;
+      }
+      
+      toast.success("Machine added successfully!");
+      
+      setNewMachineData({
+        model: "",
+        serialNumber: "",
+        machineType: "copier",
+        installationDate: new Date().toISOString().split('T')[0],
+        status: "active"
+      });
+      setAddMachineDialogOpen(false);
+      
+      if (customerId) {
+        fetchCustomerMachines(customerId);
+      }
+      
+    } catch (err) {
+      console.error("Unexpected error adding machine:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -234,24 +305,15 @@ export default function CustomerMachines() {
         <CardTitle className="text-md">Customer Management</CardTitle>
         <div className="flex gap-2">
           {activeTab === "machines" && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 gap-1">
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Add Machine</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Machine</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <p className="text-center text-muted-foreground">
-                    Machine form would go here
-                  </p>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 gap-1"
+              onClick={() => setAddMachineDialogOpen(true)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Machine</span>
+            </Button>
           )}
           {activeTab === "sales-followups" && (
             <Button 
@@ -401,6 +463,86 @@ export default function CustomerMachines() {
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      <Dialog open={addMachineDialogOpen} onOpenChange={setAddMachineDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Machine</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="machine-model">Machine Model</Label>
+              <Input
+                id="machine-model"
+                placeholder="Enter machine model"
+                value={newMachineData.model}
+                onChange={(e) => setNewMachineData({...newMachineData, model: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="machine-serial">Serial Number</Label>
+              <Input
+                id="machine-serial"
+                placeholder="Enter serial number"
+                value={newMachineData.serialNumber}
+                onChange={(e) => setNewMachineData({...newMachineData, serialNumber: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="machine-type">Machine Type</Label>
+              <Select
+                value={newMachineData.machineType}
+                onValueChange={(value) => setNewMachineData({...newMachineData, machineType: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select machine type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="copier">Copier</SelectItem>
+                  <SelectItem value="printer">Printer</SelectItem>
+                  <SelectItem value="scanner">Scanner</SelectItem>
+                  <SelectItem value="mfp">MFP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="installation-date">Installation Date</Label>
+              <Input
+                id="installation-date"
+                type="date"
+                value={newMachineData.installationDate}
+                onChange={(e) => setNewMachineData({...newMachineData, installationDate: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="machine-status">Status</Label>
+              <Select
+                value={newMachineData.status}
+                onValueChange={(value: any) => setNewMachineData({...newMachineData, status: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="maintenance">Maintenance Required</SelectItem>
+                  <SelectItem value="replacement-due">Replacement Due</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setAddMachineDialogOpen(false)} variant="outline">Cancel</Button>
+            <Button onClick={handleAddMachine} disabled={isLoading}>
+              {isLoading ? "Adding..." : "Add Machine"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={followUpDialogOpen} onOpenChange={setFollowUpDialogOpen}>
         <DialogContent>
