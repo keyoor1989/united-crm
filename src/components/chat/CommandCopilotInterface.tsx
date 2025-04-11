@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -214,9 +213,10 @@ const CommandCopilotInterface = () => {
             }
           } catch (error) {
             console.error("OpenRouter API error:", error);
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
             const botMessage: Message = {
               id: `msg-${Date.now()}-bot`,
-              content: `I couldn't process that request through AI. Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+              content: `I couldn't process that request through AI. Error: ${errorMessage}`,
               sender: "bot",
               timestamp: new Date(),
             };
@@ -227,9 +227,10 @@ const CommandCopilotInterface = () => {
       }
     } catch (error) {
       console.error("Error processing message:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       const botMessage: Message = {
         id: `msg-${Date.now()}-bot`,
-        content: "Sorry, I encountered an error processing your request.",
+        content: `Sorry, I encountered an error processing your request. ${errorMessage}`,
         sender: "bot",
         timestamp: new Date(),
       };
