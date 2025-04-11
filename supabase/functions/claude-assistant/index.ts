@@ -34,6 +34,7 @@ serve(async (req) => {
     // Determine the type of content we're dealing with
     const isCustomerProfile = prompt.includes("Customer Profile:") || prompt.includes("Mobile:") || prompt.includes("Last Service:");
     const isQuotationRequest = prompt.includes("Quotation Request:") || prompt.includes("Quote for") || prompt.includes("price for");
+    const isQuotationPrompt = prompt.includes("Please help summarize the following quotation details");
     
     // Enhanced mobile number detection - check for pure 10-digit numbers or lookup commands
     const isMobileNumber = prompt.match(/^\s*\d{10}\s*$/) || 
@@ -60,6 +61,13 @@ Do not say you don't have access to customer information - you are working with 
 When presented with quotation details, format them professionally as: 
 'Quotation prepared: [Item Name] for [Customer] @ ₹[price] + GST. Delivery in 7-10 days. Includes standard warranty.' 
 Only use the quotation information provided to you.`;
+    } else if (isQuotationPrompt) {
+      effectiveSystemPrompt = `You are a sales assistant for a copier business. 
+Format the quotation details in a clean, professional manner with appropriate spacing.
+Use a business-friendly tone and include all the key information provided.
+Include emojis where appropriate to make the quotation visually appealing.
+Structure the response as if it's a message that could be sent directly to a customer.
+Make sure the final price, delivery time, and warranty information are clearly highlighted.`;
     } else if (isMobileNumber) {
       effectiveSystemPrompt = `You are a helpful assistant for a copier business management system.
 The system has found customer data for this query and provided it to you.

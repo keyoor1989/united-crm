@@ -97,6 +97,46 @@ export const parseQuotationCommand = (message: string): ParsedQuotationRequest =
 };
 
 /**
+ * Generate a quotation prompt template for Claude
+ */
+export const generateQuotationPrompt = (
+  customerName: string, 
+  customerCity: string = "N/A",
+  customerMobile: string = "N/A",
+  productName: string,
+  configuration: string = "Standard",
+  rate: number,
+  gstPercent: number = 18,
+  deliveryTime: string = "7-10 days"
+): string => {
+  // Calculate GST amount and final price
+  const gstAmount = (rate * gstPercent) / 100;
+  const finalPrice = rate + gstAmount;
+  
+  // Format numbers with commas for Indian currency format
+  const formattedRate = rate.toLocaleString('en-IN');
+  const formattedFinalPrice = finalPrice.toLocaleString('en-IN');
+  
+  return `
+Please help summarize the following quotation details in a short professional format:
+
+Customer Name: ${customerName}
+City: ${customerCity}
+Mobile: ${customerMobile}
+
+Product: ${productName}
+Configuration: ${configuration}
+Rate: ₹${formattedRate}
+GST: ${gstPercent}%
+Final Price with GST: ₹${formattedFinalPrice}
+Delivery Time: ${deliveryTime}
+Warranty: 1 Year onsite
+
+Summarize this for sharing with the customer in a quote-style message. Keep it short, clean, and business-friendly.
+`;
+};
+
+/**
  * Try to find a matching product from the product catalog
  */
 const findMatchingProduct = (modelName: string) => {

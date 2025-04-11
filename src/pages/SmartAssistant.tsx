@@ -10,7 +10,8 @@ import {
   UserPlus,
   ClipboardList,
   Phone,
-  Settings
+  Settings,
+  Plus
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,6 +54,11 @@ const SmartAssistant = () => {
           detail: { command: "Lookup customer " }
         }));
         break;
+      case "quickquote":
+        window.dispatchEvent(new CustomEvent('smart-assistant-command', { 
+          detail: { command: "Generate quotation for Kyocera 2554ci for " }
+        }));
+        break;
       case "reports":
         window.dispatchEvent(new CustomEvent('smart-assistant-command', { 
           detail: { command: "Show report for " }
@@ -85,7 +91,7 @@ const SmartAssistant = () => {
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsContent value="chat">
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
               <Button 
                 variant="ghost" 
@@ -96,6 +102,39 @@ const SmartAssistant = () => {
                 <span>Create Quotation</span>
               </Button>
             </Card>
+            <Card className="p-3 hover:bg-accent cursor-pointer transition-colors border-primary/20 bg-primary/5">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2"
+                onClick={() => handleQuickAction("quickquote")}
+              >
+                <Plus className="h-4 w-4 text-primary" />
+                <span>Quick Quote</span>
+              </Button>
+            </Card>
+            <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2"
+                onClick={() => handleQuickAction("lookup")}
+              >
+                <Phone className="h-4 w-4 text-primary" />
+                <span>Lookup Customer</span>
+              </Button>
+            </Card>
+            <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2"
+                onClick={() => handleQuickAction("follow-up")}
+              >
+                <ClipboardList className="h-4 w-4 text-primary" />
+                <span>Add Follow-up</span>
+              </Button>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
               <Button 
                 variant="ghost" 
@@ -104,16 +143,6 @@ const SmartAssistant = () => {
               >
                 <Package className="h-4 w-4 text-primary" />
                 <span>Check Inventory</span>
-              </Button>
-            </Card>
-            <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-2"
-                onClick={() => handleQuickAction("customer")}
-              >
-                <UserPlus className="h-4 w-4 text-primary" />
-                <span>Add Customer</span>
               </Button>
             </Card>
             <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
@@ -130,20 +159,10 @@ const SmartAssistant = () => {
               <Button 
                 variant="ghost" 
                 className="w-full justify-start gap-2"
-                onClick={() => handleQuickAction("follow-up")}
+                onClick={() => handleQuickAction("customer")}
               >
-                <ClipboardList className="h-4 w-4 text-primary" />
-                <span>Add Follow-up</span>
-              </Button>
-            </Card>
-            <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-2"
-                onClick={() => handleQuickAction("lookup")}
-              >
-                <Phone className="h-4 w-4 text-primary" />
-                <span>Lookup Customer</span>
+                <UserPlus className="h-4 w-4 text-primary" />
+                <span>Add Customer</span>
               </Button>
             </Card>
             <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
