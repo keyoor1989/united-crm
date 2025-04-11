@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -822,4 +823,122 @@ Please summarize this in a short and helpful business format.
                   onClick={() => handleQuickAction("customer")}
                   className="shrink-0"
                 >
-                  <UserPlus className="h
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add Customer</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => handleQuickAction("task")}
+                  className="shrink-0"
+                >
+                  <ListChecks className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Create Task</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => handleQuickAction("follow-up")}
+                  className="shrink-0"
+                >
+                  <ClipboardList className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add Follow-up</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => handleQuickAction("report")}
+                  className="shrink-0"
+                >
+                  <BarChart4 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>View Reports</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <div className="relative flex-1">
+            {showSuggestions && filteredSuggestions.length > 0 && (
+              <div className="absolute bottom-full left-0 w-full bg-background border rounded-md shadow-md mb-1 z-10 max-h-[200px] overflow-y-auto">
+                {filteredSuggestions.map((suggestion, index) => (
+                  <div 
+                    key={index} 
+                    className="p-2 hover:bg-accent cursor-pointer text-sm"
+                    onClick={() => selectSuggestion(suggestion)}
+                  >
+                    {suggestion}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <Textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message or prompt..."
+              className="min-h-[60px] resize-none flex-1"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handleAttachment}
+                    className="shrink-0"
+                  >
+                    <PaperclipIcon className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Attach File</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={handleSendMessage}
+                    size="icon" 
+                    className="shrink-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Send Message</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default EnhancedChatInterface;
