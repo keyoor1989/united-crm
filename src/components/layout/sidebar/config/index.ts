@@ -6,3 +6,4 @@ export * from './quotationsSection';
 export * from './reportsSection';
 export * from './locationNavItems';
 export * from './taskSection';
+export * from './customersSection';

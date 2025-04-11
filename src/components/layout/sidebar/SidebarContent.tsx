@@ -10,7 +10,8 @@ import {
   quotationsSection,
   reportsSection,
   locationNavItems,
-  taskSection
+  taskSection,
+  customersSection
 } from "./config";
 import { useFilteredMainNavItems } from "@/utils/sidebar/permissionHelpers";
 import MainNavItems from "./sections/MainNavItems";
@@ -42,6 +43,7 @@ const SidebarContent = () => {
   
   // Initialize open sections based on current path
   const initialSections = [
+    (location.pathname === "/customers" || location.pathname.startsWith("/customer")) && hasPermission("crm") ? "customers" : "",
     (location.pathname === "/service" || location.pathname === "/engineer-performance") && hasPermission("service_calls") ? "service" : "",
     (location.pathname.startsWith("/inventory")) && hasPermission("inventory") ? "inventory" : "",
     (location.pathname.startsWith("/quotation") || location.pathname.startsWith("/purchase-order") || 
@@ -65,12 +67,24 @@ const SidebarContent = () => {
 
   return (
     <>
-      {/* First two main navigation items */}
+      {/* First main navigation item (Dashboard) */}
       <MainNavItems 
-        items={filteredMainNavItems.slice(0, 2)} 
+        items={filteredMainNavItems.slice(0, 1)} 
         isActive={isActive} 
         isCollapsed={isCollapsed} 
       />
+      
+      {/* Customers Section (if user has CRM permissions) */}
+      {hasPermission("crm") && (
+        <SectionGroup 
+          section={customersSection}
+          isOpen={openSections.includes("customers")}
+          toggleSection={() => toggleSection("customers")}
+          isSectionActive={isSectionActive}
+          isActive={isActive}
+          isCollapsed={isCollapsed}
+        />
+      )}
       
       {/* User Management (for Super Admin only) */}
       {user?.role === "super_admin" && (

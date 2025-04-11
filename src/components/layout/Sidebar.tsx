@@ -8,7 +8,8 @@ import {
   quotationsSection,
   reportsSection,
   locationNavItems,
-  taskSection
+  taskSection,
+  customersSection
 } from "./sidebar/config";
 import { 
   Sidebar as SidebarComp, 
@@ -34,6 +35,7 @@ const AppSidebar = () => {
   );
   
   const initialSections = [
+    (location.pathname === "/customers" || location.pathname.startsWith("/customer")) ? "customers" : "",
     (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : "",
     (location.pathname.startsWith("/inventory")) ? "inventory" : "",
     (location.pathname.startsWith("/quotation") || location.pathname.startsWith("/purchase-order") || 
@@ -66,11 +68,21 @@ const AppSidebar = () => {
       </SidebarHeader>
 
       <SidebarContent className="py-4 px-3">
-        {/* First two main navigation items */}
+        {/* Dashboard navigation item */}
         <MainNavItems 
-          items={mainNavItems.slice(0, 2)} 
+          items={mainNavItems.slice(0, 1)} 
           isActive={isActive} 
           isCollapsed={isCollapsed} 
+        />
+        
+        {/* Customers Section */}
+        <SectionGroup 
+          section={customersSection}
+          isOpen={openSections.includes("customers")}
+          toggleSection={() => toggleSection("customers")}
+          isSectionActive={isSectionActive}
+          isActive={isActive}
+          isCollapsed={isCollapsed}
         />
         
         {/* Finance navigation item */}
