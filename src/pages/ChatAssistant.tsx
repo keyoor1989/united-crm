@@ -8,7 +8,7 @@ import {
   Package, 
   ListChecks, 
   BarChart4,
-  HelpCircle,
+  UserPlus,
   Search
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -42,8 +42,8 @@ const ChatAssistant = () => {
           </Card>
           <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
             <Button variant="ghost" className="w-full justify-start gap-2">
-              <Search className="h-4 w-4 text-primary" />
-              <span>Search Parts</span>
+              <UserPlus className="h-4 w-4 text-primary" />
+              <span>Add Customer</span>
             </Button>
           </Card>
           <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">

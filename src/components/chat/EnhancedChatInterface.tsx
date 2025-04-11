@@ -14,7 +14,8 @@ import {
   BarChart4,
   HelpCircle,
   FileDown,
-  Loader2
+  Loader2,
+  UserPlus
 } from "lucide-react";
 import EnhancedChatMessage from "./EnhancedChatMessage";
 import { toast } from "sonner";
@@ -33,8 +34,12 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { parseQuotationCommand, ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
 import { parseInventoryCommand, ParsedInventoryQuery } from "@/utils/chatCommands/inventoryParser";
+import { parseCustomerCommand, checkDuplicateCustomer, createNewCustomer } from "@/utils/chatCommands/customerParser";
+import { useCustomers } from "@/hooks/useCustomers";
+import { CustomerType } from "@/types/customer";
 import QuotationGenerator from "./QuotationGenerator";
 import InventoryResultView from "./InventoryResultView";
+import CustomerCreationView from "./CustomerCreationView";
 import { Quotation } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
 
@@ -51,6 +56,7 @@ type CommandIntent =
   | "inventory" 
   | "invoice" 
   | "report" 
+  | "customer"
   | "help" 
   | "unknown";
 
@@ -62,6 +68,9 @@ const suggestions = [
   "Check stock for Kyocera 2554ci drum",
   "Kitna stock hai Sharp MX3070 developer ka?",
   "Generate AMC invoice for Gufic Bio for April 2025",
+  "Add new customer Ravi Sharma from Bhopal",
+  "Create lead: Mahesh Sharma, number 8103449999, interested in Ricoh 2014D",
+  "Naya customer Vinay Jain, Indore, 8888000011, spare part enquiry",
   "Show open service calls for this week",
   "Schedule a follow-up with ABC Corp next Monday",
   "How many machines are due for service this month?",
@@ -86,6 +95,9 @@ const EnhancedChatInterface = () => {
   const [quotationData, setQuotationData] = useState<ParsedQuotationRequest | null>(null);
   const [currentQuotation, setCurrentQuotation] = useState<Quotation | null>(null);
   const [inventoryData, setInventoryData] = useState<ParsedInventoryQuery | null>(null);
+  const [customerData, setCustomerData] = useState<CustomerType | null>(null);
+  const [isDuplicateCustomer, setIsDuplicateCustomer] = useState<boolean>(false);
+  const { customers } = useCustomers();
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -124,6 +136,10 @@ const EnhancedChatInterface = () => {
       return "report";
     } else if (commandLower.includes("help") || commandLower.includes("what can you do")) {
       return "help";
+    } else if (commandLower.includes("new customer") || commandLower.includes("add customer") || 
+               commandLower.includes("create lead") || commandLower.includes("naya customer") ||
+               commandLower.includes("add new customer")) {
+      return "customer";
     }
     
     return "unknown";
@@ -332,6 +348,55 @@ const EnhancedChatInterface = () => {
           </div>
         );
       
+      case "customer":
+        const parsedCustomer = parseCustomerCommand(command);
+        
+        if (!parsedCustomer.isValid) {
+          return (
+            <div className="space-y-3">
+              <p>I'd be happy to add a new customer. Please provide the following missing information:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                {parsedCustomer.missingFields.includes("name") && (
+                  <li>What is the customer's name?</li>
+                )}
+                {parsedCustomer.missingFields.includes("phone") && (
+                  <li>What is the customer's phone number?</li>
+                )}
+                {parsedCustomer.missingFields.includes("location") && (
+                  <li>Which city/location is the customer from?</li>
+                )}
+                {!parsedCustomer.product && (
+                  <li>Is the customer interested in any specific product? (optional)</li>
+                )}
+              </ul>
+              <p>For example: "Add new customer Ravi Sharma from Bhopal, 9876543210, interested in Kyocera 2554ci"</p>
+            </div>
+          );
+        }
+        
+        const duplicateCustomer = checkDuplicateCustomer(parsedCustomer.phone, customers);
+        
+        if (duplicateCustomer) {
+          setCustomerData(duplicateCustomer);
+          setIsDuplicateCustomer(true);
+          
+          return (
+            <CustomerCreationView 
+              customer={duplicateCustomer} 
+              isDuplicate={true} 
+              duplicateCustomer={duplicateCustomer} 
+            />
+          );
+        }
+        
+        const newCustomer = createNewCustomer(parsedCustomer);
+        setCustomerData(newCustomer);
+        setIsDuplicateCustomer(false);
+        
+        return (
+          <CustomerCreationView customer={newCustomer} />
+        );
+      
       case "help":
         return (
           <div className="space-y-3">
@@ -340,6 +405,7 @@ const EnhancedChatInterface = () => {
               <li>Create quotations (e.g., "Send quotation for Kyocera 2554ci to Mr. Rajesh")</li>
               <li>Schedule tasks (e.g., "Create a task for Ravi engineer for tomorrow at 10 AM")</li>
               <li>Check inventory (e.g., "Check inventory for Ricoh 2014 toner" or "Kitna stock hai Sharp MX3070 ka?")</li>
+              <li>Add customers (e.g., "Add new customer Ravi Sharma from Bhopal" or "Create lead: Mahesh Sharma, number 8103449999")</li>
               <li>Generate invoices (e.g., "Generate AMC invoice for Gufic Bio for April 2025")</li>
               <li>Show reports (e.g., "Show open service calls for this week")</li>
             </ul>
@@ -348,7 +414,7 @@ const EnhancedChatInterface = () => {
         );
       
       default:
-        return "I'm not sure how to help with that. Try asking about quotations, tasks, inventory, or reports.";
+        return "I'm not sure how to help with that. Try asking about quotations, tasks, inventory, customers, or reports.";
     }
   };
 
@@ -415,6 +481,9 @@ const EnhancedChatInterface = () => {
         break;
       case "inventory":
         command = "Check inventory for ";
+        break;
+      case "customer":
+        command = "Add new customer ";
         break;
       case "task":
         command = "Create a task for ";
@@ -498,6 +567,22 @@ const EnhancedChatInterface = () => {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Check Inventory</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => handleQuickAction("customer")}
+                  className="shrink-0"
+                >
+                  <UserPlus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add Customer</TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
