@@ -1,8 +1,9 @@
+
 import React, { useState } from "react";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent } from "@/components/ui/tabs";
 
 const AmcTracker = () => {
   const [activeTab, setActiveTab] = useState<string>("AMC Contracts");
@@ -22,60 +23,69 @@ const AmcTracker = () => {
         </Button>
       </div>
 
-      {/* Search */}
-      <div className="relative w-full mb-6">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search contracts, machines, or consumables..."
-          className="pl-8 w-full"
-        />
+      {/* Search and filter row */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
+        <div className="relative w-full">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search contracts, machines, or consumables..."
+            className="pl-8 w-full"
+          />
+        </div>
+        
+        <Button variant="outline" className="sm:ml-auto flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          Filters
+        </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b mb-6">
-        <Tabs defaultValue="contracts" className="w-full">
-          <TabsList className="w-full justify-start h-auto p-0">
-            <TabsTrigger 
-              value="contracts" 
-              className={`rounded-none px-4 py-2 data-[state=active]:border-b-2 data-[state=active]:border-black data-[state=active]:shadow-none ${
-                activeTab === "AMC Contracts" ? "border-b-2 border-black" : ""
-              }`}
-              onClick={() => setActiveTab("AMC Contracts")}
-            >
-              AMC Contracts
-            </TabsTrigger>
-            <TabsTrigger 
-              value="machines" 
-              className={`rounded-none px-4 py-2 data-[state=active]:border-b-2 data-[state=active]:border-black data-[state=active]:shadow-none ${
-                activeTab === "Machines" ? "border-b-2 border-black" : ""
-              }`}
-              onClick={() => setActiveTab("Machines")}
-            >
-              Machines
-            </TabsTrigger>
-            <TabsTrigger 
-              value="usage" 
-              className={`rounded-none px-4 py-2 data-[state=active]:border-b-2 data-[state=active]:border-black data-[state=active]:shadow-none ${
-                activeTab === "Consumable Usage" ? "border-b-2 border-black" : ""
-              }`}
-              onClick={() => setActiveTab("Consumable Usage")}
-            >
-              Consumable Usage
-            </TabsTrigger>
-            <TabsTrigger 
-              value="billing" 
-              className={`rounded-none px-4 py-2 data-[state=active]:border-b-2 data-[state=active]:border-black data-[state=active]:shadow-none ${
-                activeTab === "Billing" ? "border-b-2 border-black" : ""
-              }`}
-              onClick={() => setActiveTab("Billing")}
-            >
-              Billing
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Navigation tabs */}
+      <div className="mb-6 border-b">
+        <div className="flex space-x-4">
+          <button
+            className={`flex items-center gap-2 py-3 px-1 border-b-2 ${
+              activeTab === "AMC Contracts" 
+                ? "border-black text-black" 
+                : "border-transparent text-gray-500 hover:text-black"
+            }`}
+            onClick={() => setActiveTab("AMC Contracts")}
+          >
+            AMC Contracts
+          </button>
+          <button
+            className={`flex items-center gap-2 py-3 px-1 border-b-2 ${
+              activeTab === "Machines" 
+                ? "border-black text-black" 
+                : "border-transparent text-gray-500 hover:text-black"
+            }`}
+            onClick={() => setActiveTab("Machines")}
+          >
+            Machines
+          </button>
+          <button
+            className={`flex items-center gap-2 py-3 px-1 border-b-2 ${
+              activeTab === "Consumable Usage" 
+                ? "border-black text-black" 
+                : "border-transparent text-gray-500 hover:text-black"
+            }`}
+            onClick={() => setActiveTab("Consumable Usage")}
+          >
+            Consumable Usage
+          </button>
+          <button
+            className={`flex items-center gap-2 py-3 px-1 border-b-2 ${
+              activeTab === "Billing" 
+                ? "border-black text-black" 
+                : "border-transparent text-gray-500 hover:text-black"
+            }`}
+            onClick={() => setActiveTab("Billing")}
+          >
+            Billing
+          </button>
+        </div>
       </div>
 
-      {/* Content placeholder - would be replaced with actual content for each tab */}
+      {/* Content for each tab */}
       <div className="border rounded-md p-8 text-center text-muted-foreground">
         {activeTab === "AMC Contracts" && (
           <p>AMC Contracts content would appear here</p>
