@@ -1,3 +1,4 @@
+
 import { 
   LayoutDashboard, 
   Users, 
@@ -316,6 +317,11 @@ export const reportsSection: NavSection = {
       to: "/reports/engineer-service",
       icon: Wrench,
       label: "Engineer Service Report"
+    },
+    {
+      to: "/reports/customer-followup",
+      icon: MessageSquare,
+      label: "Customer Follow-Up Report"
     },
     {
       to: "/finance",

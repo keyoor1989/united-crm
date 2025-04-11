@@ -54,6 +54,7 @@ import OutstandingReceivables from "@/pages/finance/OutstandingReceivables";
 import Reports from "@/pages/Reports";
 import MachineRentalReport from "@/pages/reports/MachineRentalReport";
 import EngineerServiceReport from "@/pages/reports/EngineerServiceReport";
+import CustomerFollowUpReport from "@/pages/reports/CustomerFollowUpReport";
 
 const AppRoutes = () => (
   <Routes>
@@ -74,6 +75,7 @@ const AppRoutes = () => (
       <Route path="/reports" element={<Reports />} />
       <Route path="/reports/machine-rental" element={<MachineRentalReport />} />
       <Route path="/reports/engineer-service" element={<EngineerServiceReport />} />
+      <Route path="/reports/customer-followup" element={<CustomerFollowUpReport />} />
       
       <Route path="/service" element={<Service />} />
       <Route path="/service-call-form" element={<ServiceCallForm />} />

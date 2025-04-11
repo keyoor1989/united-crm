@@ -13,7 +13,8 @@ import {
   Users,
   FileSpreadsheet,
   Clock,
-  Wrench
+  Wrench,
+  MessageSquare
 } from "lucide-react";
 
 const Reports = () => {
@@ -31,6 +32,12 @@ const Reports = () => {
       description: "Track service call activity by engineer with detailed analysis",
       icon: <Wrench className="h-12 w-12 text-green-600" />,
       path: "/reports/engineer-service"
+    },
+    {
+      title: "Customer Follow-Up Report",
+      description: "Track CRM follow-up status, schedules, and lead activities",
+      icon: <MessageSquare className="h-12 w-12 text-purple-600" />,
+      path: "/reports/customer-followup"
     },
     {
       title: "Financial Reports",
