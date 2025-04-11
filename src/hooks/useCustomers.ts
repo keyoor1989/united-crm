@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { CustomerType } from "@/types/customer";
 
-// This is a sample customer data, in a real app this would come from an API
+// Sample customer data
 const customerData: CustomerType[] = [
   {
     id: 1,
@@ -86,6 +86,23 @@ const customerData: CustomerType[] = [
   },
 ];
 
+// Get customers from localStorage or use sample data if none exist
+const getStoredCustomers = (): CustomerType[] => {
+  try {
+    const storedCustomers = localStorage.getItem("customers");
+    if (storedCustomers) {
+      const parsedCustomers = JSON.parse(storedCustomers);
+      return Array.isArray(parsedCustomers) ? parsedCustomers : customerData;
+    }
+  } catch (error) {
+    console.error("Error reading customers from localStorage:", error);
+  }
+  
+  // Initialize localStorage with sample data if empty
+  localStorage.setItem("customers", JSON.stringify(customerData));
+  return customerData;
+};
+
 export const useCustomers = () => {
   const [customers, setCustomers] = useState<CustomerType[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -96,7 +113,7 @@ export const useCustomers = () => {
   const itemsPerPage = 5;
 
   useEffect(() => {
-    setCustomers(customerData);
+    setCustomers(getStoredCustomers());
   }, []);
 
   const filteredCustomers = customers.filter((customer) => {

@@ -26,10 +26,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { Phone, User, Map, Printer, MessageSquare, Mail, Calendar, Building } from "lucide-react";
+import { Phone, User, Map, Printer, MessageSquare, Mail, Calendar, Building, Check } from "lucide-react";
 import CustomerNotes from "./CustomerNotes";
 import CustomerMachines from "./CustomerMachines";
 import CustomerHistory from "./CustomerHistory";
+import { useNavigate } from "react-router-dom";
+import { CustomerType, CustomerStatus } from "@/types/customer";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -65,8 +67,21 @@ const defaultValues: Partial<CustomerFormValues> = {
   isNewCustomer: true,
 };
 
+// Retrieve existing customers from localStorage or return empty array
+const getCustomersFromStorage = (): CustomerType[] => {
+  const customersString = localStorage.getItem("customers");
+  return customersString ? JSON.parse(customersString) : [];
+};
+
+// Save customers to localStorage
+const saveCustomersToStorage = (customers: CustomerType[]) => {
+  localStorage.setItem("customers", JSON.stringify(customers));
+};
+
 export default function CustomerFormComponent() {
   const [isNewCustomer, setIsNewCustomer] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const navigate = useNavigate();
   
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
@@ -74,10 +89,47 @@ export default function CustomerFormComponent() {
   });
 
   function onSubmit(data: CustomerFormValues) {
-    console.log(data);
-    toast.success("Customer information saved successfully!");
-    // Here you would typically save the data to your backend
-    form.reset();
+    setIsSubmitting(true);
+    
+    try {
+      const customers = getCustomersFromStorage();
+      
+      // Convert the form data to CustomerType
+      const newCustomer: CustomerType = {
+        id: Date.now(), // Generate a simple unique ID
+        name: data.name,
+        lastContact: new Date().toLocaleDateString(),
+        phone: data.phone,
+        email: data.email || "",
+        location: data.area,
+        machines: data.machineInterest ? [data.machineInterest] : [],
+        status: data.leadStatus === "Converted" ? "Active" : 
+                data.leadStatus === "Lost" ? "Inactive" : 
+                data.leadStatus === "New" ? "Prospect" : 
+                data.leadStatus as CustomerStatus
+      };
+      
+      // Add the new customer to the array
+      customers.push(newCustomer);
+      
+      // Save to localStorage
+      saveCustomersToStorage(customers);
+      
+      toast.success("Customer saved successfully!");
+      
+      // Reset the form
+      form.reset();
+      
+      // Navigate back to customers list after a short delay
+      setTimeout(() => {
+        navigate("/customers");
+      }, 1500);
+    } catch (error) {
+      console.error("Error saving customer:", error);
+      toast.error("Failed to save customer. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -377,7 +429,14 @@ export default function CustomerFormComponent() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full">Save Customer</Button>
+              <Button 
+                type="submit" 
+                className="w-full gap-2" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Saving..." : "Save Customer"}
+                {!isSubmitting && <Check className="h-4 w-4" />}
+              </Button>
             </form>
           </Form>
         </CardContent>
