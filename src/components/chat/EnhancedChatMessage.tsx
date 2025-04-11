@@ -9,17 +9,26 @@ interface MessageProps {
     content: string | React.ReactNode;
     sender: "user" | "bot";
     timestamp: Date;
+    isAiResponse?: boolean;
+    aiModel?: string;
   };
 }
 
 const EnhancedChatMessage = ({ message }: MessageProps) => {
   const isBot = message.sender === "bot";
+  const isClaudeResponse = isBot && message.isAiResponse && message.aiModel === "claude";
   
   return (
     <div className={cn("flex items-start gap-3", isBot ? "" : "justify-end")}>
       {isBot && (
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Bot className="h-4 w-4 text-primary" />
+        <div className={cn(
+          "w-8 h-8 rounded-full flex items-center justify-center",
+          isClaudeResponse ? "bg-purple-100" : "bg-primary/10"
+        )}>
+          <Bot className={cn(
+            "h-4 w-4", 
+            isClaudeResponse ? "text-purple-500" : "text-primary"
+          )} />
         </div>
       )}
       
@@ -31,11 +40,18 @@ const EnhancedChatMessage = ({ message }: MessageProps) => {
             : "bg-primary text-primary-foreground"
         )}
       >
+        {isClaudeResponse && (
+          <div className="text-xs text-purple-500 mb-1">
+            Claude AI
+          </div>
+        )}
+        
         {typeof message.content === "string" ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
           message.content
         )}
+        
         <div
           className={cn(
             "text-[10px] mt-1",

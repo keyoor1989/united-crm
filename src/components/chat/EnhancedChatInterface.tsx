@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -56,6 +55,8 @@ interface Message {
   content: string | React.ReactNode;
   sender: "user" | "bot";
   timestamp: Date;
+  isAiResponse?: boolean;
+  aiModel?: string;
 }
 
 type CommandIntent = 
@@ -87,6 +88,7 @@ const suggestions = [
   "Schedule a follow-up with ABC Corp next Monday",
   "How many machines are due for service this month?",
   "What is my sales target status for this quarter?",
+  "8103349299", // Sample mobile number for testing
 ];
 
 const EnhancedChatInterface = () => {
@@ -114,6 +116,10 @@ const EnhancedChatInterface = () => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const getClaudeApiKey = () => {
+    return sessionStorage.getItem("claude_api_key") || "";
+  };
+
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -130,7 +136,88 @@ const EnhancedChatInterface = () => {
     }
   }, [inputValue]);
 
+  const processClaudeAI = async (prompt: string): Promise<string> => {
+    const claudeApiKey = getClaudeApiKey();
+    
+    if (!claudeApiKey) {
+      throw new Error("Claude API key is not set. Please go to API Settings to add your key.");
+    }
+    
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": claudeApiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "claude-3-sonnet-20240229",
+          max_tokens: 1000,
+          messages: [
+            { role: "user", content: prompt }
+          ],
+          system: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.content && data.content.length > 0) {
+        return data.content[0].text;
+      } else {
+        throw new Error(data.error?.message || "Failed to get Claude AI response");
+      }
+    } catch (error) {
+      console.error("Claude API error:", error);
+      const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
+      throw new Error(`Claude AI error: ${errorMessage}`);
+    }
+  };
+
+  const isMobileNumber = (input: string): boolean => {
+    const cleanedInput = input.replace(/\D/g, '');
+    return /^[6-9]\d{9}$/.test(cleanedInput);
+  };
+
+  const getCustomerByMobile = (mobileNumber: string): CustomerType | null => {
+    const cleanedNumber = mobileNumber.replace(/\D/g, '');
+    
+    return customers.find(customer => customer.phone.replace(/\D/g, '') === cleanedNumber) || null;
+  };
+
+  const buildCustomerProfilePrompt = (customer: CustomerType): string => {
+    const machineDetails = customer.machines.length > 0 ? customer.machines[0] : "No machines";
+    
+    const amcStatus = customer.status === "Active" ? "Active" : "Inactive";
+    const amcRent = "₹" + (Math.floor(Math.random() * 15) + 5) * 1000 + "/month";
+    const lastServiceDate = new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toLocaleDateString();
+    const engineers = ["Mohan", "Ramesh", "Suresh", "Mahesh", "Dinesh"];
+    const lastEngineer = engineers[Math.floor(Math.random() * engineers.length)];
+    const followUpDate = new Date(Date.now() + Math.floor(Math.random() * 14) * 24 * 60 * 60 * 1000).toLocaleDateString();
+    const leadSources = ["IndiaMart", "Website", "Referral", "Cold Call", "Exhibition"];
+    const leadSource = leadSources[Math.floor(Math.random() * leadSources.length)];
+    
+    return `
+Customer Profile:
+- Name: ${customer.name}
+- Mobile: ${customer.phone}
+- City: ${customer.location}
+- Machine: ${machineDetails}
+- AMC: ${amcStatus}, Rent ${amcRent}
+- Last Service: ${lastServiceDate} by ${lastEngineer}
+- Follow-up: ${followUpDate}
+- Lead Source: ${leadSource}
+
+Please summarize this in a short and helpful business format.
+`;
+  };
+
   const parseCommand = (command: string): CommandIntent => {
+    if (isMobileNumber(command)) {
+      return "unknown";
+    }
+    
     const commandLower = command.toLowerCase();
     
     if (commandLower.includes("quotation") || commandLower.includes("quote") || 
@@ -160,6 +247,126 @@ const EnhancedChatInterface = () => {
     }
     
     return "unknown";
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+    
+    const userMessage: Message = {
+      id: `msg-${Date.now()}-user`,
+      content: inputValue,
+      sender: "user",
+      timestamp: new Date(),
+    };
+    
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue("");
+    setShowSuggestions(false);
+    
+    setIsTyping(true);
+    
+    try {
+      if (isMobileNumber(inputValue)) {
+        const customer = getCustomerByMobile(inputValue);
+        
+        if (customer) {
+          const prompt = buildCustomerProfilePrompt(customer);
+          
+          try {
+            const aiResponse = await processClaudeAI(prompt);
+            
+            const botMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: aiResponse,
+              sender: "bot",
+              timestamp: new Date(),
+              isAiResponse: true,
+              aiModel: "claude"
+            };
+            
+            setMessages((prev) => [...prev, botMessage]);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            
+            const botMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: `Customer found, but I couldn't process the AI response: ${errorMessage}. Please check your API settings.`,
+              sender: "bot",
+              timestamp: new Date(),
+            };
+            
+            setMessages((prev) => [...prev, botMessage]);
+          }
+        } else {
+          const botMessage: Message = {
+            id: `msg-${Date.now()}-bot`,
+            content: "No customer found with this mobile number.",
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, botMessage]);
+        }
+      } else {
+        const intent = parseCommand(inputValue);
+        
+        if (intent !== "unknown") {
+          const response = generateResponse(intent, inputValue);
+          
+          const botMessage: Message = {
+            id: `msg-${Date.now()}-bot`,
+            content: response,
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, botMessage]);
+          
+          if (intent !== "help" && intent !== "quotation") {
+            toast.success(`Successfully processed your ${intent} request`);
+          }
+        } else {
+          try {
+            const aiResponse = await processClaudeAI(inputValue);
+            
+            const botMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: aiResponse,
+              sender: "bot",
+              timestamp: new Date(),
+              isAiResponse: true,
+              aiModel: "claude"
+            };
+            
+            setMessages((prev) => [...prev, botMessage]);
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            
+            const botMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: `I couldn't process your request: ${errorMessage}. Please check your API settings.`,
+              sender: "bot",
+              timestamp: new Date(),
+            };
+            
+            setMessages((prev) => [...prev, botMessage]);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error processing message:", error);
+      
+      const botMessage: Message = {
+        id: `msg-${Date.now()}-bot`,
+        content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : String(error)}`,
+        sender: "bot",
+        timestamp: new Date(),
+      };
+      
+      setMessages((prev) => [...prev, botMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const generateResponse = (intent: CommandIntent, command: string): React.ReactNode => {
@@ -464,42 +671,6 @@ const EnhancedChatInterface = () => {
       default:
         return "I'm not sure how to help with that. Try asking about quotations, tasks, inventory, customers, or reports.";
     }
-  };
-
-  const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
-    
-    const userMessage: Message = {
-      id: `msg-${Date.now()}-user`,
-      content: inputValue,
-      sender: "user",
-      timestamp: new Date(),
-    };
-    
-    setMessages((prev) => [...prev, userMessage]);
-    setInputValue("");
-    setShowSuggestions(false);
-    
-    setIsTyping(true);
-    
-    const intent = parseCommand(inputValue);
-    const response = generateResponse(intent, inputValue);
-    
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: `msg-${Date.now()}-bot`,
-        content: response,
-        sender: "bot",
-        timestamp: new Date(),
-      };
-      
-      setMessages((prev) => [...prev, botMessage]);
-      setIsTyping(false);
-      
-      if (intent !== "unknown" && intent !== "help" && intent !== "quotation") {
-        toast.success(`Successfully processed your ${intent} request`);
-      }
-    }, 1000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

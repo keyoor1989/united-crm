@@ -10,17 +10,9 @@ import {
   UserPlus,
   ClipboardList,
   Phone,
-  Key
+  Settings
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ApiKeyManager from "@/components/chat/api/ApiKeyManager";
 import "@/components/chat/chat-assistant.css";

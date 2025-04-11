@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Key, Bot, Router } from "lucide-react";
+import { Key, Bot } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,12 @@ import { toast } from "sonner";
 
 const ApiKeyManager = () => {
   const [claudeApiKey, setClaudeApiKey] = useState("");
-  const [openRouterApiKey, setOpenRouterApiKey] = useState("");
   const [showClaudeApiKey, setShowClaudeApiKey] = useState(false);
-  const [showOpenRouterApiKey, setShowOpenRouterApiKey] = useState(false);
 
   // Load saved API keys on component mount
   useEffect(() => {
     const savedClaudeKey = sessionStorage.getItem("claude_api_key");
-    const savedOpenRouterKey = sessionStorage.getItem("openrouter_api_key");
-    
     if (savedClaudeKey) setClaudeApiKey(savedClaudeKey);
-    if (savedOpenRouterKey) setOpenRouterApiKey(savedOpenRouterKey);
   }, []);
 
   const saveClaudeApiKey = () => {
@@ -31,26 +26,14 @@ const ApiKeyManager = () => {
     toast.success("Claude API key saved successfully");
   };
 
-  const saveOpenRouterApiKey = () => {
-    if (!openRouterApiKey) {
-      toast.error("Please enter a valid OpenRouter API key");
-      return;
-    }
-    
-    sessionStorage.setItem("openrouter_api_key", openRouterApiKey);
-    toast.success("OpenRouter API key saved successfully");
-  };
-
   const clearApiKeys = () => {
     sessionStorage.removeItem("claude_api_key");
-    sessionStorage.removeItem("openrouter_api_key");
     setClaudeApiKey("");
-    setOpenRouterApiKey("");
     toast.success("API keys cleared successfully");
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid gap-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -83,76 +66,25 @@ const ApiKeyManager = () => {
                 Your API key is stored only in this browser session
               </p>
             </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={saveClaudeApiKey} className="w-full">
-            Save Claude API Key
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Router className="h-5 w-5" />
-            OpenRouter API Key
-          </CardTitle>
-          <CardDescription>
-            Set your OpenRouter API key as a fallback option
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex flex-col space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  type={showOpenRouterApiKey ? "text" : "password"}
-                  value={openRouterApiKey}
-                  onChange={(e) => setOpenRouterApiKey(e.target.value)}
-                  placeholder="sk_or_..."
-                  className="flex-1"
-                />
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowOpenRouterApiKey(!showOpenRouterApiKey)}
-                >
-                  {showOpenRouterApiKey ? "Hide" : "Show"}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Your API key is stored only in this browser session
-              </p>
+            <div className="mt-4 p-3 bg-muted rounded-md text-sm">
+              <h4 className="font-medium mb-1">API Details:</h4>
+              <ul className="list-disc pl-4 space-y-1">
+                <li>Model: claude-3-sonnet-20240229</li>
+                <li>Endpoint: https://api.anthropic.com/v1/messages</li>
+                <li>Headers: Anthropic-Version: 2023-06-01</li>
+              </ul>
             </div>
           </div>
         </CardContent>
-        <CardFooter>
-          <Button onClick={saveOpenRouterApiKey} className="w-full">
-            Save OpenRouter API Key
+        <CardFooter className="flex flex-col gap-3 items-stretch">
+          <Button onClick={saveClaudeApiKey} className="w-full">
+            Save Claude API Key
+          </Button>
+          <Button variant="destructive" onClick={clearApiKeys} className="w-full">
+            Clear API Key
           </Button>
         </CardFooter>
       </Card>
-
-      <div className="md:col-span-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              Manage API Keys
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Clear all stored API keys from your browser session.
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button variant="destructive" onClick={clearApiKeys} className="w-full">
-              Clear All API Keys
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
     </div>
   );
 };
