@@ -23,6 +23,11 @@ export interface Revenue {
   invoiceNumber?: string;
   paymentStatus: 'Paid' | 'Pending' | 'Partial';
   paymentMethod?: string;
+  revenueType?: string;
+  gstPercentage?: number;
+  totalWithGst?: number;
+  branch?: string;
+  paymentMode?: string;
 }
 
 export interface Expense {

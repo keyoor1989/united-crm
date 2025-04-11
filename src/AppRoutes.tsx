@@ -45,7 +45,7 @@ import OrderHistory from "@/pages/sales/OrderHistory";
 // Import Finance pages
 import FinanceDashboard from "@/pages/finance/FinanceDashboard";
 import CashRegister from "@/pages/finance/CashRegister";
-import DepartmentRevenue from "@/pages/finance/DepartmentRevenue";
+import DepartmentRevenueNew from "@/pages/finance/DepartmentRevenueNew";
 import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
 import CustomerPayments from "@/pages/finance/CustomerPayments";
 import PendingReceivables from "@/pages/finance/PendingReceivables";
@@ -60,7 +60,7 @@ const AppRoutes = () => (
       {/* Finance Routes */}
       <Route path="/finance" element={<FinanceDashboard />} />
       <Route path="/finance/cash-register" element={<CashRegister />} />
-      <Route path="/finance/revenue" element={<DepartmentRevenue />} />
+      <Route path="/finance/revenue" element={<DepartmentRevenueNew />} />
       <Route path="/finance/expenses" element={<DepartmentExpenses />} />
       <Route path="/finance/payments" element={<CustomerPayments />} />
       <Route path="/finance/receivables" element={<PendingReceivables />} />

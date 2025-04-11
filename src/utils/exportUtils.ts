@@ -92,6 +92,13 @@ export const exportToPdf = (data: any[], title: string) => {
         }).format(value);
       } else if (header === 'type') {
         value = value === 'Income' ? 'Cash In' : 'Cash Out';
+      } else if (header === 'totalWithGst' && typeof value === 'number') {
+        value = new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR'
+        }).format(value);
+      } else if (header === 'gstPercentage' && typeof value === 'number') {
+        value = `${value}%`;
       }
       
       return { 
