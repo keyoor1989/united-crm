@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -22,16 +21,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { Phone, User, Map, Printer, MessageSquare, Mail, Calendar, Building, Check } from "lucide-react";
+import { Phone, User, Map, Printer, MessageSquare, Mail, Calendar, Building, Check, Loader2 } from "lucide-react";
 import CustomerNotes from "./CustomerNotes";
 import CustomerMachines from "./CustomerMachines";
 import CustomerHistory from "./CustomerHistory";
 import { useNavigate } from "react-router-dom";
 import { CustomerType, CustomerStatus } from "@/types/customer";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
@@ -67,28 +66,6 @@ const defaultValues: Partial<CustomerFormValues> = {
   isNewCustomer: true,
 };
 
-// Retrieve existing customers from localStorage or return empty array
-const getCustomersFromStorage = (): CustomerType[] => {
-  try {
-    const customersString = localStorage.getItem("customers");
-    return customersString ? JSON.parse(customersString) : [];
-  } catch (error) {
-    console.error("Error reading customers from localStorage:", error);
-    return [];
-  }
-};
-
-// Save customers to localStorage
-const saveCustomersToStorage = (customers: CustomerType[]) => {
-  try {
-    localStorage.setItem("customers", JSON.stringify(customers));
-    return true;
-  } catch (error) {
-    console.error("Error saving customers to localStorage:", error);
-    return false;
-  }
-};
-
 export default function CustomerFormComponent() {
   const [isNewCustomer, setIsNewCustomer] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -99,53 +76,81 @@ export default function CustomerFormComponent() {
     defaultValues,
   });
 
-  function onSubmit(data: CustomerFormValues) {
+  async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
     
     try {
       console.log("Submitting form data:", data);
-      const existingCustomers = getCustomersFromStorage();
-      console.log("Existing customers:", existingCustomers);
       
-      // Convert the form data to CustomerType
-      const newCustomer: CustomerType = {
-        id: Date.now(), // Generate a simple unique ID
-        name: data.name,
-        lastContact: new Date().toLocaleDateString(),
-        phone: data.phone,
-        email: data.email || "",
-        location: data.area,
-        machines: data.machineInterest ? [data.machineInterest] : [],
-        status: data.leadStatus === "Converted" ? "Active" : 
-                data.leadStatus === "Lost" ? "Inactive" : 
-                data.leadStatus === "New" ? "Prospect" : 
-                data.leadStatus as CustomerStatus
-      };
+      // Save customer to Supabase
+      const { data: newCustomer, error: customerError } = await supabase
+        .from('customers')
+        .insert({
+          name: data.name,
+          phone: data.phone,
+          email: data.email || null,
+          address: data.address,
+          area: data.area,
+          customer_type: data.customerType,
+          date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+          lead_status: data.leadStatus,
+          last_contact: new Date()
+        })
+        .select('id')
+        .single();
       
-      console.log("New customer to save:", newCustomer);
-      
-      // Add the new customer to the array
-      const updatedCustomers = [...existingCustomers, newCustomer];
-      
-      // Save to localStorage
-      const saveResult = saveCustomersToStorage(updatedCustomers);
-      
-      if (saveResult) {
-        console.log("Customer saved successfully!");
-        toast.success("Customer saved successfully!");
-        
-        // Reset the form
-        form.reset();
-        
-        // Navigate back to customers list after a short delay
-        setTimeout(() => {
-          navigate("/customers");
-        }, 1500);
-      } else {
+      if (customerError) {
+        console.error("Error saving customer:", customerError);
         toast.error("Failed to save customer. Please try again.");
+        return;
       }
+      
+      console.log("Customer saved successfully with ID:", newCustomer.id);
+      
+      // If machine interest is provided, save it to customer_machines table
+      if (data.machineInterest && newCustomer.id) {
+        const { error: machineError } = await supabase
+          .from('customer_machines')
+          .insert({
+            customer_id: newCustomer.id,
+            machine_name: data.machineInterest,
+            machine_type: data.machineType || null
+          });
+        
+        if (machineError) {
+          console.error("Error saving machine interest:", machineError);
+          // Continue as this is not critical
+        }
+      }
+      
+      // If notes are provided, save them to customer_notes table
+      if (data.notes && newCustomer.id) {
+        const { error: notesError } = await supabase
+          .from('customer_notes')
+          .insert({
+            customer_id: newCustomer.id,
+            content: data.notes,
+            created_by: "System"
+          });
+        
+        if (notesError) {
+          console.error("Error saving customer notes:", notesError);
+          // Continue as this is not critical
+        }
+      }
+      
+      toast.success("Customer saved successfully!");
+      
+      // Reset the form
+      form.reset();
+      
+      // Navigate back to customers list after a short delay
+      setTimeout(() => {
+        navigate("/customers");
+      }, 1500);
+      
     } catch (error) {
-      console.error("Error saving customer:", error);
+      console.error("Error in form submission:", error);
       toast.error("Failed to save customer. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -454,8 +459,15 @@ export default function CustomerFormComponent() {
                 className="w-full gap-2" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Save Customer"}
-                {!isSubmitting && <Check className="h-4 w-4" />}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    Save Customer <Check className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             </form>
           </Form>

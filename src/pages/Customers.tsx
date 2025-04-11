@@ -28,6 +28,7 @@ const Customers = () => {
     toggleFilters,
     uniqueLocations,
     uniqueStatuses,
+    isLoading,
   } = useCustomers();
 
   const handleCall = (phone: string) => {
@@ -100,6 +101,7 @@ const Customers = () => {
           onCall={handleCall}
           onEmail={handleEmail}
           onWhatsApp={handleWhatsApp}
+          isLoading={isLoading}
         />
         
         {filteredCustomers.length > 5 && (

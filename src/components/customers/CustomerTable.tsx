@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -26,12 +25,14 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomerType } from "@/types/customer";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CustomerTableProps {
   customers: CustomerType[];
   onCall: (phone: string) => void;
   onEmail: (email: string) => void;
   onWhatsApp: (phone: string) => void;
+  isLoading?: boolean;
 }
 
 const CustomerTable: React.FC<CustomerTableProps> = ({
@@ -39,6 +40,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   onCall,
   onEmail,
   onWhatsApp,
+  isLoading = false,
 }) => {
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -50,6 +52,35 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
       default: return "bg-gray-500";
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-4">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="flex space-x-4 items-center mb-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <div className="ml-auto space-x-2 flex">
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-8 w-8 rounded-full" />
+              <Skeleton className="h-8 w-8 rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (customers.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-muted-foreground">No customers found. Add your first customer!</p>
+      </div>
+    );
+  }
 
   return (
     <Table>
@@ -64,98 +95,90 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {customers.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={6} className="text-center py-8">
-              No customers found matching your filters.
+        {customers.map((customer, index) => (
+          <TableRow 
+            key={customer.id}
+            className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+          >
+            <TableCell className="font-medium border-l-4 border-brand-500">
+              <div className="text-base font-semibold text-gray-900">{customer.name}</div>
+              <div className="text-xs text-muted-foreground">Last contact: {customer.lastContact}</div>
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1 text-gray-700">
+                  <Phone className="h-3 w-3 flex-shrink-0 text-gray-500" />
+                  <span className="truncate">{customer.phone}</span>
+                </div>
+                <div className="flex items-center gap-1 text-gray-700">
+                  <Mail className="h-3 w-3 flex-shrink-0 text-gray-500" />
+                  <span className="truncate">{customer.email}</span>
+                </div>
+              </div>
+            </TableCell>
+            <TableCell className="text-gray-700">{customer.location}</TableCell>
+            <TableCell>
+              <div className="flex gap-1 flex-wrap">
+                {customer.machines.length > 1 ? (
+                  <>
+                    <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
+                    <Badge variant="outline" className="bg-slate-50">+{customer.machines.length - 1} more</Badge>
+                  </>
+                ) : (
+                  <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <Badge className={getStatusColor(customer.status)}>{customer.status}</Badge>
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex items-center justify-end gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  title="Call"
+                  onClick={() => onCall(customer.phone)}
+                >
+                  <Phone className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  title="Email"
+                  onClick={() => onEmail(customer.email)}
+                >
+                  <Mail className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  title="WhatsApp"
+                  onClick={() => onWhatsApp(customer.phone)}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                    <DropdownMenuItem>Machine History</DropdownMenuItem>
+                    <DropdownMenuItem>Create Quotation</DropdownMenuItem>
+                    <DropdownMenuItem>Schedule Service</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-red-600">
+                      Delete Customer
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </TableCell>
           </TableRow>
-        ) : (
-          customers.map((customer, index) => (
-            <TableRow 
-              key={customer.id}
-              className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-            >
-              <TableCell className="font-medium border-l-4 border-brand-500">
-                <div className="text-base font-semibold text-gray-900">{customer.name}</div>
-                <div className="text-xs text-muted-foreground">Last contact: {customer.lastContact}</div>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-1 text-gray-700">
-                    <Phone className="h-3 w-3 flex-shrink-0 text-gray-500" />
-                    <span className="truncate">{customer.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-gray-700">
-                    <Mail className="h-3 w-3 flex-shrink-0 text-gray-500" />
-                    <span className="truncate">{customer.email}</span>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell className="text-gray-700">{customer.location}</TableCell>
-              <TableCell>
-                <div className="flex gap-1 flex-wrap">
-                  {customer.machines.length > 1 ? (
-                    <>
-                      <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
-                      <Badge variant="outline" className="bg-slate-50">+{customer.machines.length - 1} more</Badge>
-                    </>
-                  ) : (
-                    <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge className={getStatusColor(customer.status)}>{customer.status}</Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    title="Call"
-                    onClick={() => onCall(customer.phone)}
-                  >
-                    <Phone className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    title="Email"
-                    onClick={() => onEmail(customer.email)}
-                  >
-                    <Mail className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    title="WhatsApp"
-                    onClick={() => onWhatsApp(customer.phone)}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>View Details</DropdownMenuItem>
-                      <DropdownMenuItem>Machine History</DropdownMenuItem>
-                      <DropdownMenuItem>Create Quotation</DropdownMenuItem>
-                      <DropdownMenuItem>Schedule Service</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
-                        Delete Customer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))
-        )}
+        ))}
       </TableBody>
     </Table>
   );

@@ -9,7 +9,115 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      customer_machines: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          machine_name: string
+          machine_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          machine_name: string
+          machine_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          machine_name?: string
+          machine_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_machines_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          customer_id: string
+          id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          customer_id: string
+          id?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          area: string
+          created_at: string | null
+          customer_type: string
+          date_of_birth: string | null
+          email: string | null
+          id: string
+          last_contact: string | null
+          lead_status: string
+          name: string
+          phone: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          area: string
+          created_at?: string | null
+          customer_type: string
+          date_of_birth?: string | null
+          email?: string | null
+          id?: string
+          last_contact?: string | null
+          lead_status: string
+          name: string
+          phone: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          area?: string
+          created_at?: string | null
+          customer_type?: string
+          date_of_birth?: string | null
+          email?: string | null
+          id?: string
+          last_contact?: string | null
+          lead_status?: string
+          name?: string
+          phone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

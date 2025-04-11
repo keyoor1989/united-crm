@@ -1,112 +1,74 @@
 
 import { useState, useEffect } from "react";
 import { CustomerType } from "@/types/customer";
+import { supabase } from "@/integrations/supabase/client";
 
-// Sample customer data
-const customerData: CustomerType[] = [
-  {
-    id: 1,
-    name: "Govt. Medical College",
-    lastContact: "5 days ago",
-    phone: "9876543210",
-    email: "admin@gmch.in",
-    location: "Indore",
-    machines: ["Kyocera 2554ci", "Canon IR2520", "Xerox B215"],
-    status: "Contract Renewal"
-  },
-  {
-    id: 2,
-    name: "Sunrise Hospital",
-    lastContact: "2 days ago",
-    phone: "8765432109",
-    email: "admin@sunrise.co.in",
-    location: "Bhopal",
-    machines: ["Xerox 7845", "Kyocera 2040"],
-    status: "Active"
-  },
-  {
-    id: 3,
-    name: "Rajesh Enterprises",
-    lastContact: "Today",
-    phone: "7654321098",
-    email: "info@rajeshent.com",
-    location: "Jabalpur",
-    machines: ["Ricoh MP2014"],
-    status: "Need Toner"
-  },
-  {
-    id: 4,
-    name: "Apex Technologies",
-    lastContact: "1 week ago",
-    phone: "9988776655",
-    email: "contact@apextech.com",
-    location: "Indore",
-    machines: ["HP LaserJet Pro M428", "Kyocera M2640"],
-    status: "Active"
-  },
-  {
-    id: 5,
-    name: "City Hospital",
-    lastContact: "3 days ago",
-    phone: "8877665544",
-    email: "info@cityhospital.org",
-    location: "Gwalior",
-    machines: ["Canon iR3225", "Kyocera P3045"],
-    status: "Inactive"
-  },
-  {
-    id: 6,
-    name: "Star College",
-    lastContact: "Yesterday",
-    phone: "7766554433",
-    email: "admin@starcollege.edu",
-    location: "Ujjain",
-    machines: ["Ricoh SP3600", "Xerox Phaser 3330"],
-    status: "Contract Renewal"
-  },
-  {
-    id: 7,
-    name: "Modern Office Supplies",
-    lastContact: "4 days ago",
-    phone: "6655443322",
-    email: "sales@modernoffice.com",
-    location: "Indore",
-    machines: ["HP M402n", "Canon LBP214dw", "Ricoh M320F"],
-    status: "Active"
-  },
-  {
-    id: 8,
-    name: "Lakshmi Industries",
-    lastContact: "1 month ago",
-    phone: "9977553311",
-    email: "info@lakshmind.co.in",
-    location: "Ratlam",
-    machines: ["Kyocera TASKalfa 3253ci"],
-    status: "Prospect"
-  },
-];
-
-// Get customers from localStorage or use sample data if none exist
-const getStoredCustomers = (): CustomerType[] => {
+// Get customers from Supabase database
+const fetchCustomers = async (): Promise<CustomerType[]> => {
   try {
-    console.log("Retrieving customers from localStorage");
-    const storedCustomers = localStorage.getItem("customers");
-    if (storedCustomers) {
-      console.log("Found stored customers", storedCustomers);
-      const parsedCustomers = JSON.parse(storedCustomers);
-      if (Array.isArray(parsedCustomers) && parsedCustomers.length > 0) {
-        console.log(`Loaded ${parsedCustomers.length} customers from localStorage`);
-        return parsedCustomers;
-      }
+    console.log("Fetching customers from Supabase");
+    const { data, error } = await supabase
+      .from('customers')
+      .select(`
+        id,
+        name,
+        phone,
+        email, 
+        area as location,
+        lead_status,
+        last_contact,
+        customer_machines (
+          machine_name
+        )
+      `)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching customers:", error);
+      return [];
     }
+    
+    if (!data || data.length === 0) {
+      console.log("No customers found in database");
+      return [];
+    }
+    
+    console.log(`Loaded ${data.length} customers from database`);
+    
+    // Transform the data to match our CustomerType structure
+    const customers: CustomerType[] = data.map(customer => ({
+      id: customer.id,
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email || "",
+      location: customer.location,
+      lastContact: new Date(customer.last_contact).toLocaleDateString() || "Never",
+      machines: customer.customer_machines ? customer.customer_machines.map((m: any) => m.machine_name) : [],
+      status: mapLeadStatusToCustomerStatus(customer.lead_status)
+    }));
+    
+    return customers;
   } catch (error) {
-    console.error("Error reading customers from localStorage:", error);
+    console.error("Error in fetchCustomers:", error);
+    return [];
   }
-  
-  // Initialize localStorage with sample data if empty
-  console.log("No customers found in localStorage, using sample data");
-  localStorage.setItem("customers", JSON.stringify(customerData));
-  return customerData;
+};
+
+// Helper function to map lead_status from database to CustomerStatus type
+const mapLeadStatusToCustomerStatus = (leadStatus: string): CustomerType["status"] => {
+  switch (leadStatus) {
+    case "Converted":
+      return "Active";
+    case "Lost":
+      return "Inactive";
+    case "New":
+    case "Quoted":
+      return "Prospect";
+    case "Follow-up":
+      return "Contract Renewal";
+    default:
+      return "Active";
+  }
 };
 
 export const useCustomers = () => {
@@ -116,12 +78,19 @@ export const useCustomers = () => {
   const [locationFilter, setLocationFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 5;
 
   useEffect(() => {
-    const loadedCustomers = getStoredCustomers();
-    console.log(`Setting ${loadedCustomers.length} customers from storage`);
-    setCustomers(loadedCustomers);
+    const loadCustomers = async () => {
+      setIsLoading(true);
+      const loadedCustomers = await fetchCustomers();
+      console.log(`Setting ${loadedCustomers.length} customers from Supabase`);
+      setCustomers(loadedCustomers);
+      setIsLoading(false);
+    };
+    
+    loadCustomers();
   }, []);
 
   const filteredCustomers = customers.filter((customer) => {
@@ -182,5 +151,6 @@ export const useCustomers = () => {
     toggleFilters,
     uniqueLocations,
     uniqueStatuses,
+    isLoading,
   };
 };
