@@ -41,7 +41,8 @@ export const getInitialOpenSections = (
     pathname === "/order-history" || pathname === "/quotation-products" ||
     pathname === "/contract-upload") && hasPermission("quotations") ? "quotations" : "",
     (pathname.startsWith("/tasks")) && (hasPermission("task_system") || hasPermission("assigned_tasks")) ? "tasks" : "",
-    (pathname.startsWith("/reports")) && hasPermission("reports") ? "reports" : ""
+    (pathname.startsWith("/reports")) && hasPermission("reports") ? "reports" : "",
+    (pathname.startsWith("/finance")) && (hasPermission("cash_register") || hasPermission("revenue_expense")) ? "finance" : ""
   ].filter(Boolean);
 };
 
