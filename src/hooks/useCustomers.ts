@@ -88,11 +88,16 @@ export const useCustomers = () => {
   }, []);
 
   const filteredCustomers = customers.filter((customer) => {
+    // Enhanced search to include phone, location, and machines
     const matchesSearch = 
       searchTerm === "" || 
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm);
+      customer.phone.includes(searchTerm) ||
+      customer.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.machines.some(machine => 
+        machine.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     
     const matchesStatus = 
       !statusFilter || 

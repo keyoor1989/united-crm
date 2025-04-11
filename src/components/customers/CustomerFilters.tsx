@@ -2,7 +2,7 @@
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, FilterX, Filter } from "lucide-react";
+import { Search, FilterX, Filter, Phone, MapPin, Printer } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -45,11 +45,16 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search customers..."
+            placeholder="Search by name, phone, city, machine..."
             className="pl-8 w-full"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
           />
+          <div className="absolute right-2.5 top-2.5 flex gap-1.5 text-muted-foreground">
+            <Phone className="h-4 w-4" />
+            <MapPin className="h-4 w-4" />
+            <Printer className="h-4 w-4" />
+          </div>
         </div>
 
         <div className="flex gap-2 self-end">

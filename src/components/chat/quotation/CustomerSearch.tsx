@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, X } from "lucide-react";
+import { Search, User, X, Phone, MapPin } from "lucide-react";
 import { CustomerType } from "@/types/customer";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,22 +33,52 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
     
     setIsSearching(true);
     try {
-      // Search in Supabase database
-      const { data, error } = await supabase
+      // Search in Supabase database - can search by name, phone, or location (area)
+      const { data: nameData, error: nameError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
         .ilike('name', `%${term}%`)
         .order('name')
         .limit(10);
       
-      if (error) {
-        console.error("Error searching customers:", error);
+      // Search by phone
+      const { data: phoneData, error: phoneError } = await supabase
+        .from('customers')
+        .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
+        .ilike('phone', `%${term}%`)
+        .order('name')
+        .limit(10);
+      
+      // Search by location/area
+      const { data: areaData, error: areaError } = await supabase
+        .from('customers')
+        .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
+        .ilike('area', `%${term}%`)
+        .order('name')
+        .limit(10);
+      
+      // Search by machine model via the related table
+      const { data: machineData, error: machineError } = await supabase
+        .from('customers')
+        .select('id, name, phone, email, area, lead_status, customer_machines!inner(machine_name)')
+        .filter('customer_machines.machine_name', 'ilike', `%${term}%`)
+        .order('name')
+        .limit(10);
+        
+      if (nameError || phoneError || areaError || machineError) {
+        console.error("Error searching customers:", nameError || phoneError || areaError || machineError);
         toast.error("Failed to search customers");
         return;
       }
       
+      // Combine results and remove duplicates
+      const combinedResults = [...(nameData || []), ...(phoneData || []), ...(areaData || []), ...(machineData || [])];
+      const uniqueCustomers = combinedResults.filter((customer, index, self) => 
+        index === self.findIndex(c => c.id === customer.id)
+      );
+      
       // Convert to CustomerType format
-      const customers: CustomerType[] = data.map(customer => ({
+      const customers: CustomerType[] = uniqueCustomers.map(customer => ({
         id: customer.id,
         name: customer.name,
         phone: customer.phone,
@@ -97,7 +127,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           <div className="flex items-center gap-2 mb-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search customers..." 
+              placeholder="Search by name, phone, city, machine..." 
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -113,6 +143,12 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
             >
               <X className="h-4 w-4" />
             </Button>
+          </div>
+          
+          <div className="flex gap-1.5 text-xs text-muted-foreground mb-2">
+            <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</span>
+            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> City</span>
+            <span className="flex items-center gap-1"><User className="h-3 w-3" /> Name</span>
           </div>
           
           {isSearching ? (
@@ -133,6 +169,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
                     <div className="text-xs text-muted-foreground">
                       {customer.phone}
                       {customer.email && ` • ${customer.email}`}
+                      {customer.location && ` • ${customer.location}`}
                     </div>
                   </div>
                   {customer.machines.length > 0 && (
