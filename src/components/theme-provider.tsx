@@ -4,6 +4,7 @@
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type ThemeProviderProps } from "next-themes/dist/types";
+import { useTheme as useNextTheme } from "next-themes";
 
 export function ThemeProvider({ 
   children, 
@@ -15,3 +16,6 @@ export function ThemeProvider({
     </NextThemesProvider>
   );
 }
+
+// Export the useTheme hook from next-themes
+export const useTheme = useNextTheme;
