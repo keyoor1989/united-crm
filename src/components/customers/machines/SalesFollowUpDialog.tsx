@@ -74,6 +74,8 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
     
     setIsSearching(true);
     try {
+      console.log("Searching for term:", term);
+      
       // Search in Supabase database - can search by name, phone, location (area), or machine
       const { data: nameData, error: nameError } = await supabase
         .from('customers')
@@ -82,11 +84,11 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
         .order('name')
         .limit(10);
       
-      // Search by phone
+      // Search by phone - using exact match and partial match
       const { data: phoneData, error: phoneError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
-        .ilike('phone', `%${term}%`)
+        .or(`phone.ilike.%${term}%,phone.eq.${term}`)
         .order('name')
         .limit(10);
       
@@ -114,6 +116,15 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
       
       // Combine results and remove duplicates
       const combinedResults = [...(nameData || []), ...(phoneData || []), ...(areaData || []), ...(machineData || [])];
+      
+      console.log("Search results:", {
+        nameData,
+        phoneData,
+        areaData,
+        machineData,
+        combinedResults
+      });
+      
       const uniqueCustomers = combinedResults.filter((customer, index, self) => 
         index === self.findIndex(c => c.id === customer.id)
       );
