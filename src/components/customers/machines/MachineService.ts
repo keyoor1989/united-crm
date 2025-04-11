@@ -18,10 +18,10 @@ export const fetchCustomerMachines = async (customerId: string): Promise<Machine
       return data.map((machine) => ({
         id: machine.id,
         model: machine.machine_name,
-        serialNumber: machine.machine_serial || "N/A", // Use default for missing data
-        installationDate: machine.installation_date || "N/A", // Use default for missing data
+        serialNumber: "N/A", // Default for customers who don't have machines sold by us
+        installationDate: "N/A", // Default for customers who don't have machines sold by us
         status: "active",
-        lastService: machine.last_service || "N/A" // Use default for missing data
+        lastService: "N/A" // Default value
       }));
     }
     
