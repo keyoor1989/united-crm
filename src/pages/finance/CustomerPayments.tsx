@@ -74,7 +74,7 @@ const CustomerPayments = () => {
     setIsDialogOpen(false);
   };
 
-  const handleInputChange = (field: string, value: string | number) => {
+  const handleInputChange = (field: string, value: string | number | string[]) => {
     setCurrentEntry({
       ...currentEntry,
       [field]: value
@@ -264,7 +264,10 @@ const CustomerPayments = () => {
               id="invoiceNumbers" 
               placeholder="e.g. INV-001, INV-002" 
               value={currentEntry.invoiceNumbers?.join(", ") || ""} 
-              onChange={(e) => handleInputChange("invoiceNumbers", e.target.value.split(",").map(s => s.trim()))} 
+              onChange={(e) => {
+                const invoiceArray = e.target.value.split(",").map(s => s.trim());
+                handleInputChange("invoiceNumbers", invoiceArray);
+              }} 
             />
           </div>
 
