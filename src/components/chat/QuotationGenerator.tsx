@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,9 +34,19 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
   const customerIdFromUrl = queryParams.get('customerId') || '';
   const customerNameFromUrl = queryParams.get('customerName') || '';
   const customerEmailFromUrl = queryParams.get('customerEmail') || '';
+  const customerPhoneFromUrl = queryParams.get('customerPhone') || '';
   
-  const [customerName, setCustomerName] = useState(customerNameFromUrl || initialData.customerName || "");
-  const [customerEmail, setCustomerEmail] = useState(customerEmailFromUrl || "");
+  // Debug: Log the parameters to see what's being passed
+  console.log("URL Parameters:", {
+    customerId: customerIdFromUrl,
+    customerName: customerNameFromUrl,
+    customerEmail: customerEmailFromUrl,
+    customerPhone: customerPhoneFromUrl
+  });
+  
+  // Initialize state with URL parameters or initialData as fallback
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [gstPercent, setGstPercent] = useState("18");
   const [items, setItems] = useState(initialData.models.map(model => {
     const product = products.find(p => p.id === model.productId);
@@ -51,17 +60,27 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
     };
   }));
 
-  // Effect to initialize with URL parameters
+  // Effect to initialize state once component is mounted
   useEffect(() => {
-    // This will run if the component is mounted directly from URL with params
-    // and ensures the fields are populated with URL data
+    // First try URL parameters, then fall back to initialData
     if (customerNameFromUrl) {
       setCustomerName(customerNameFromUrl);
+      console.log("Setting customer name from URL:", customerNameFromUrl);
+    } else if (initialData.customerName) {
+      setCustomerName(initialData.customerName);
+      console.log("Setting customer name from initialData:", initialData.customerName);
     }
+    
     if (customerEmailFromUrl) {
       setCustomerEmail(customerEmailFromUrl);
+      console.log("Setting customer email from URL:", customerEmailFromUrl);
     }
-  }, [customerNameFromUrl, customerEmailFromUrl]);
+  }, [customerNameFromUrl, customerEmailFromUrl, initialData.customerName]);
+
+  // Debug: Log state after it should be set
+  useEffect(() => {
+    console.log("Current state:", { customerName, customerEmail });
+  }, [customerName, customerEmail]);
 
   const handleUnitPriceChange = (index: number, price: string) => {
     const newItems = [...items];
@@ -125,7 +144,7 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
     const quotation: Quotation = {
       id: Math.random().toString(36).substring(2, 9),
       quotationNumber: generateQuotationNumber(),
-      customerId: Math.random().toString(36).substring(2, 9),
+      customerId: customerIdFromUrl || Math.random().toString(36).substring(2, 9),
       customerName: customerName,
       items: quotationItems,
       subtotal: subtotal,
