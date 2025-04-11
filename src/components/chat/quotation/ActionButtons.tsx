@@ -21,13 +21,15 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({
       </Button>
       
       <div className="space-x-2">
-        <Button 
-          variant="outline" 
-          onClick={onGeneratePdf || onGenerateQuotation}
-        >
-          <FileDown className="h-4 w-4 mr-2" />
-          Generate PDF
-        </Button>
+        {onGeneratePdf && (
+          <Button 
+            variant="outline" 
+            onClick={onGeneratePdf}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Generate PDF
+          </Button>
+        )}
         
         <Button onClick={onGenerateQuotation}>
           <Send className="h-4 w-4 mr-2" />

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import { CustomerType } from "@/types/customer";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface UseQuotationGeneratorParams {
   initialData: ParsedQuotationRequest;
@@ -211,24 +212,24 @@ export const useQuotationGenerator = ({ initialData, onComplete }: UseQuotationG
     
     // Try to save the quotation to Supabase
     try {
-      // Use @ts-ignore to bypass the TypeScript error since we just created the table
-      // @ts-ignore
+      // Convert quotationItems to a JSON-compatible format
+      const jsonItems = JSON.stringify(quotationItems);
+      
+      // Insert a single record instead of an array
       const { error } = await supabase
         .from('quotations')
-        .insert([
-          {
-            quotation_number: quotation.quotationNumber,
-            customer_id: finalCustomerId,
-            customer_name: customerName,
-            items: quotationItems,
-            subtotal: subtotal,
-            total_gst: totalGst,
-            grand_total: subtotal + totalGst,
-            status: "Draft",
-            notes: "",
-            terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
-          }
-        ]);
+        .insert({
+          quotation_number: quotation.quotationNumber,
+          customer_id: finalCustomerId,
+          customer_name: customerName,
+          items: jsonItems as unknown as Json,
+          subtotal: subtotal,
+          total_gst: totalGst,
+          grand_total: subtotal + totalGst,
+          status: "Draft",
+          notes: "",
+          terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
+        });
       
       if (error) {
         console.log("Error saving quotation to database:", error);
