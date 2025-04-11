@@ -1,9 +1,11 @@
 
 import { format } from "date-fns";
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
+import * as pdfMake from "pdfmake/build/pdfmake";
+import * as pdfFonts from "pdfmake/build/vfs_fonts";
+import { TDocumentDefinitions } from "pdfmake/interfaces";
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+// Initialize pdfMake with fonts
+(pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
 
 export const exportToCsv = (data: any[], fileName: string) => {
   if (!data || !data.length) {
@@ -57,7 +59,7 @@ export const exportToPdf = (data: any[], title: string) => {
   const rows = data.map(item => Object.values(item).map(value => ({ text: String(value) })));
 
   // PDF document definition
-  const docDefinition = {
+  const docDefinition: TDocumentDefinitions = {
     content: [
       { text: title, style: 'header' },
       { text: `Generated on: ${format(new Date(), 'PPP')}`, style: 'subheader' },
@@ -68,7 +70,7 @@ export const exportToPdf = (data: any[], title: string) => {
           body: [columns, ...rows]
         },
         layout: {
-          fillColor: function(rowIndex: number) {
+          fillColor: function(rowIndex) {
             return (rowIndex % 2 === 0) ? '#f9fafb' : null;
           }
         }
