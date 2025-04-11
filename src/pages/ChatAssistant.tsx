@@ -8,7 +8,8 @@ import {
   Package, 
   ListChecks, 
   BarChart4,
-  HelpCircle 
+  HelpCircle,
+  Search
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import "@/components/chat/chat-assistant.css";
@@ -26,7 +27,7 @@ const ChatAssistant = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
           <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
             <Button variant="ghost" className="w-full justify-start gap-2">
               <FileText className="h-4 w-4 text-primary" />
@@ -37,6 +38,12 @@ const ChatAssistant = () => {
             <Button variant="ghost" className="w-full justify-start gap-2">
               <Package className="h-4 w-4 text-primary" />
               <span>Check Inventory</span>
+            </Button>
+          </Card>
+          <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <Search className="h-4 w-4 text-primary" />
+              <span>Search Parts</span>
             </Button>
           </Card>
           <Card className="p-3 hover:bg-accent cursor-pointer transition-colors">

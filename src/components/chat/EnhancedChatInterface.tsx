@@ -32,7 +32,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { parseQuotationCommand, ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
+import { parseInventoryCommand, ParsedInventoryQuery } from "@/utils/chatCommands/inventoryParser";
 import QuotationGenerator from "./QuotationGenerator";
+import InventoryResultView from "./InventoryResultView";
 import { Quotation } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
 
@@ -57,6 +59,8 @@ const suggestions = [
   "Generate quotation for 3 machines: Kyocera 2554ci, Canon IR2525, HP LaserJet",
   "Create a task for Ravi engineer for tomorrow at 10 AM",
   "Check inventory for Ricoh 2014 toner",
+  "Check stock for Kyocera 2554ci drum",
+  "Kitna stock hai Sharp MX3070 developer ka?",
   "Generate AMC invoice for Gufic Bio for April 2025",
   "Show open service calls for this week",
   "Schedule a follow-up with ABC Corp next Monday",
@@ -81,6 +85,7 @@ const EnhancedChatInterface = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [quotationData, setQuotationData] = useState<ParsedQuotationRequest | null>(null);
   const [currentQuotation, setCurrentQuotation] = useState<Quotation | null>(null);
+  const [inventoryData, setInventoryData] = useState<ParsedInventoryQuery | null>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -108,7 +113,10 @@ const EnhancedChatInterface = () => {
       return "quotation";
     } else if (commandLower.includes("task") || commandLower.includes("schedule")) {
       return "task";
-    } else if (commandLower.includes("inventory") || commandLower.includes("stock") || commandLower.includes("toner")) {
+    } else if (commandLower.includes("inventory") || commandLower.includes("stock") || 
+              commandLower.includes("kitna stock") || commandLower.includes("check stock") ||
+              commandLower.includes("toner") || commandLower.includes("drum") || 
+              commandLower.includes("developer")) {
       return "inventory";
     } else if (commandLower.includes("invoice") || commandLower.includes("bill")) {
       return "invoice";
@@ -228,42 +236,26 @@ const EnhancedChatInterface = () => {
         );
       
       case "inventory":
-        const productMatch = command.match(/for\s+([A-Za-z0-9\s]+)(?:\s+toner)?/i);
-        const product = productMatch ? productMatch[1] : "unknown product";
+        const parsedInventory = parseInventoryCommand(command);
+        
+        if (parsedInventory.matchedItems.length === 0 && 
+            !parsedInventory.brand && !parsedInventory.model && !parsedInventory.itemType) {
+          return (
+            <div className="space-y-3">
+              <p>I'd be happy to check inventory for you. Please provide more details:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Which brand or model are you looking for?</li>
+                <li>What type of item? (toner, drum, developer, etc.)</li>
+              </ul>
+              <p>For example: "Check stock for Ricoh 2014 toner" or "Kitna stock hai Kyocera 2554ci ka?"</p>
+            </div>
+          );
+        }
+        
+        setInventoryData(parsedInventory);
         
         return (
-          <div className="space-y-3">
-            <p>Here's the current inventory status for {product}:</p>
-            <div className="bg-muted p-3 rounded-md text-sm">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left pb-2">Item</th>
-                    <th className="text-left pb-2">Location</th>
-                    <th className="text-right pb-2">Quantity</th>
-                    <th className="text-right pb-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="py-2">{product} Toner</td>
-                    <td>Indore HQ</td>
-                    <td className="text-right">12</td>
-                    <td className="text-right"><Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">In Stock</Badge></td>
-                  </tr>
-                  <tr>
-                    <td className="py-2">{product} Drum</td>
-                    <td>Indore HQ</td>
-                    <td className="text-right">5</td>
-                    <td className="text-right"><Badge variant="outline" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50">Low Stock</Badge></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm">View Full Inventory</Button>
-            </div>
-          </div>
+          <InventoryResultView queryResult={parsedInventory} />
         );
       
       case "invoice":
@@ -347,7 +339,7 @@ const EnhancedChatInterface = () => {
             <ul className="list-disc pl-5 space-y-1">
               <li>Create quotations (e.g., "Send quotation for Kyocera 2554ci to Mr. Rajesh")</li>
               <li>Schedule tasks (e.g., "Create a task for Ravi engineer for tomorrow at 10 AM")</li>
-              <li>Check inventory (e.g., "Check inventory for Ricoh 2014 toner")</li>
+              <li>Check inventory (e.g., "Check inventory for Ricoh 2014 toner" or "Kitna stock hai Sharp MX3070 ka?")</li>
               <li>Generate invoices (e.g., "Generate AMC invoice for Gufic Bio for April 2025")</li>
               <li>Show reports (e.g., "Show open service calls for this week")</li>
             </ul>
