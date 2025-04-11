@@ -20,27 +20,34 @@ export const useAI = ({
 
   const processClaudeAi = async (userInput: string): Promise<string> => {
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      // Use OpenRouter API to access Claude 3.7
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
-          "x-api-key": claudeApiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json"
+          "Authorization": `Bearer ${openRouterApiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "Command Copilot"
         },
         body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
-          max_tokens: 1000,
+          model: "anthropic/claude-3-7-sonnet-20250219",
           messages: [
-            { role: "user", content: userInput }
-          ],
-          system: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
+            {
+              role: "system",
+              content: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
+            },
+            { 
+              role: "user", 
+              content: userInput 
+            }
+          ]
         })
       });
       
       const data = await response.json();
       
-      if (response.ok && data.content && data.content.length > 0) {
-        return data.content[0].text;
+      if (response.ok && data.choices && data.choices[0]) {
+        return data.choices[0].message.content;
       } else {
         throw new Error(data.error?.message || "Failed to get Claude AI response");
       }
@@ -98,7 +105,7 @@ export const useAI = ({
     setIsProcessing(true);
     
     try {
-      if (preferredAiModel === "claude" && claudeApiKey) {
+      if (preferredAiModel === "claude" && openRouterApiKey) {
         try {
           const aiResponse = await processClaudeAi(userInput);
           const botMessage: Message = {
@@ -107,7 +114,7 @@ export const useAI = ({
             sender: "bot",
             timestamp: new Date(),
             isAiResponse: true,
-            aiModel: "claude"
+            aiModel: "claude-3-7"
           };
           addMessageToChat(botMessage);
           return true;
@@ -167,7 +174,7 @@ export const useAI = ({
           return true;
         } catch (error) {
           // Try Claude as fallback if available
-          if (claudeApiKey) {
+          if (openRouterApiKey) {
             try {
               const fallbackResponse = await processClaudeAi(userInput);
               const botMessage: Message = {
@@ -176,7 +183,7 @@ export const useAI = ({
                 sender: "bot",
                 timestamp: new Date(),
                 isAiResponse: true,
-                aiModel: "claude"
+                aiModel: "claude-3-7"
               };
               addMessageToChat(botMessage);
               return true;
@@ -207,11 +214,11 @@ export const useAI = ({
         }
       } else {
         // No API keys available, prompt for API key
-        if (!claudeApiKey) {
-          setShowClaudeApiKeyInput(true);
+        if (!claudeApiKey && !openRouterApiKey) {
+          setShowApiKeyInput(true);
           const botMessage: Message = {
             id: `msg-${Date.now()}-bot`,
-            content: "Please enter your Claude API key to enable AI responses.",
+            content: "Please enter your OpenRouter API key to enable AI responses with Claude 3.7.",
             sender: "bot",
             timestamp: new Date(),
           };
@@ -220,7 +227,7 @@ export const useAI = ({
           setShowApiKeyInput(true);
           const botMessage: Message = {
             id: `msg-${Date.now()}-bot`,
-            content: "Please enter your OpenRouter API key as a fallback option.",
+            content: "Please enter your OpenRouter API key to use Claude 3.7.",
             sender: "bot",
             timestamp: new Date(),
           };

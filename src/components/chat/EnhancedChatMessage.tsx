@@ -16,7 +16,8 @@ interface MessageProps {
 
 const EnhancedChatMessage = ({ message }: MessageProps) => {
   const isBot = message.sender === "bot";
-  const isClaudeResponse = isBot && message.isAiResponse && message.aiModel === "claude";
+  const isClaudeResponse = isBot && message.isAiResponse && 
+                          (message.aiModel === "claude" || message.aiModel === "claude-3-7");
   
   return (
     <div className={cn("flex items-start gap-3", isBot ? "" : "justify-end")}>
@@ -37,12 +38,14 @@ const EnhancedChatMessage = ({ message }: MessageProps) => {
           "p-3 rounded-md max-w-[80%]",
           isBot
             ? "bg-muted text-foreground"
-            : "bg-primary text-primary-foreground"
+            : "bg-primary text-primary-foreground",
+          isClaudeResponse && "border-l-4 border-purple-400" // Add a purple accent for Claude responses
         )}
       >
         {isClaudeResponse && (
-          <div className="text-xs text-purple-500 mb-1">
-            Claude AI
+          <div className="text-xs text-purple-500 font-medium mb-1 flex items-center">
+            <span>Claude 3.7</span>
+            <span className="ml-1">🤖</span>
           </div>
         )}
         

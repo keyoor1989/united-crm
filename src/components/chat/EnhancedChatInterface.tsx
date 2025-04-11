@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -120,6 +119,10 @@ const EnhancedChatInterface = () => {
   const getClaudeApiKey = () => {
     return sessionStorage.getItem("claude_api_key") || "";
   };
+  
+  const getOpenRouterApiKey = () => {
+    return sessionStorage.getItem("openrouter_api_key") || "";
+  };
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -138,52 +141,58 @@ const EnhancedChatInterface = () => {
   }, [inputValue]);
 
   const processClaudeAI = async (prompt: string): Promise<string> => {
-    const claudeApiKey = getClaudeApiKey();
+    const openRouterApiKey = getOpenRouterApiKey();
     
-    if (!claudeApiKey) {
-      throw new Error("Claude API key is not set. Please go to API Settings to add your key.");
+    if (!openRouterApiKey) {
+      throw new Error("OpenRouter API key is not set. Please go to API Settings to add your key.");
     }
     
     try {
-      console.log("Calling Claude API with key:", claudeApiKey ? "Key exists (hidden)" : "No key");
+      console.log("Calling Claude 3.7 via OpenRouter API");
       
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
-          "x-api-key": claudeApiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json"
+          "Authorization": `Bearer ${openRouterApiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "Command Copilot"
         },
         body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
-          max_tokens: 1000,
+          model: "anthropic/claude-3-7-sonnet-20250219",
           messages: [
-            { role: "user", content: prompt }
-          ],
-          system: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
+            {
+              role: "system",
+              content: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
+            },
+            { 
+              role: "user", 
+              content: prompt 
+            }
+          ]
         })
       });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("Claude API returned an error:", response.status, errorData);
+        console.error("OpenRouter API returned an error:", response.status, errorData);
         throw new Error(`API returned ${response.status}: ${errorData.error?.message || "Unknown error"}`);
       }
       
       const data = await response.json();
       
-      if (data.content && data.content.length > 0) {
-        return data.content[0].text;
+      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+        return data.choices[0].message.content;
       } else {
-        console.error("Unexpected Claude API response format:", data);
-        throw new Error("Received an unexpected response format from Claude AI");
+        console.error("Unexpected OpenRouter API response format:", data);
+        throw new Error("Received an unexpected response format from OpenRouter API");
       }
     } catch (error) {
       console.error("Claude API error details:", error);
       
       // Provide more specific error messages based on error type
       if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
-        throw new Error("Failed to connect to Claude API. This could be due to network issues, CORS restrictions, or an invalid API endpoint. Please check your network connection and API settings.");
+        throw new Error("Failed to connect to OpenRouter API. This could be due to network issues, CORS restrictions, or an invalid API endpoint. Please check your network connection and API settings.");
       }
       
       const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
@@ -297,7 +306,7 @@ Please summarize this in a short and helpful business format.
               sender: "bot",
               timestamp: new Date(),
               isAiResponse: true,
-              aiModel: "claude"
+              aiModel: "claude-3-7"
             };
             
             setMessages((prev) => [...prev, botMessage]);
@@ -344,9 +353,9 @@ Please summarize this in a short and helpful business format.
         } else {
           setIsProcessing(true);
           try {
-            console.log("Processing message with Claude AI...");
+            console.log("Processing message with Claude 3.7 AI...");
             const aiResponse = await processClaudeAI(inputValue);
-            console.log("Claude AI response received:", aiResponse ? "Response received" : "No response");
+            console.log("Claude 3.7 AI response received:", aiResponse ? "Response received" : "No response");
             
             const botMessage: Message = {
               id: `msg-${Date.now()}-bot`,
@@ -354,12 +363,12 @@ Please summarize this in a short and helpful business format.
               sender: "bot",
               timestamp: new Date(),
               isAiResponse: true,
-              aiModel: "claude"
+              aiModel: "claude-3-7"
             };
             
             setMessages((prev) => [...prev, botMessage]);
           } catch (error) {
-            console.error("Error processing Claude AI request:", error);
+            console.error("Error processing Claude 3.7 AI request:", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             
             const botMessage: Message = {
