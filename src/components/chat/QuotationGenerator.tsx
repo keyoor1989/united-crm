@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { FileDown, Send } from "lucide-react";
+import { FileDown, Send, Search, User, X } from "lucide-react";
 import { ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
 import { 
   products, 
@@ -15,6 +16,9 @@ import { Quotation, Product } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CustomerType } from "@/types/customer";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuotationGeneratorProps {
   initialData: ParsedQuotationRequest;
@@ -44,9 +48,17 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
     customerPhone: customerPhoneFromUrl
   });
   
+  // State for customer search
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<CustomerType[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+  
   // Initialize state with URL parameters or initialData as fallback
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerId, setCustomerId] = useState(customerIdFromUrl || '');
+  const [customerName, setCustomerName] = useState(customerNameFromUrl || initialData.customerName || '');
+  const [customerEmail, setCustomerEmail] = useState(customerEmailFromUrl || '');
+  const [customerPhone, setCustomerPhone] = useState(customerPhoneFromUrl || '');
   const [gstPercent, setGstPercent] = useState("18");
   const [items, setItems] = useState(initialData.models.map(model => {
     const product = products.find(p => p.id === model.productId);
@@ -75,12 +87,16 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
       setCustomerEmail(customerEmailFromUrl);
       console.log("Setting customer email from URL:", customerEmailFromUrl);
     }
-  }, [customerNameFromUrl, customerEmailFromUrl, initialData.customerName]);
+    
+    if (customerPhoneFromUrl) {
+      setCustomerPhone(customerPhoneFromUrl);
+    }
+  }, [customerNameFromUrl, customerEmailFromUrl, customerPhoneFromUrl, initialData.customerName]);
 
   // Debug: Log state after it should be set
   useEffect(() => {
-    console.log("Current state:", { customerName, customerEmail });
-  }, [customerName, customerEmail]);
+    console.log("Current state:", { customerName, customerEmail, customerPhone });
+  }, [customerName, customerEmail, customerPhone]);
 
   const handleUnitPriceChange = (index: number, price: string) => {
     const newItems = [...items];
@@ -102,6 +118,63 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
       newItems[index].productId = productId;
     }
     setItems(newItems);
+  };
+
+  // Search customers function
+  const searchCustomers = async (term: string) => {
+    if (term.length < 1) {
+      setSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      // Search in Supabase database
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
+        .ilike('name', `%${term}%`)
+        .order('name')
+        .limit(10);
+      
+      if (error) {
+        console.error("Error searching customers:", error);
+        toast.error("Failed to search customers");
+        return;
+      }
+      
+      // Convert to CustomerType format
+      const customers: CustomerType[] = data.map(customer => ({
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email || "",
+        location: customer.area,
+        lastContact: "N/A",
+        machines: customer.customer_machines ? customer.customer_machines.map((m: any) => m.machine_name).filter(Boolean) : [],
+        status: "Active"
+      }));
+      
+      setSearchResults(customers);
+    } catch (error) {
+      console.error("Error in search process:", error);
+      toast.error("An error occurred while searching");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle customer selection from search results
+  const selectCustomer = (customer: CustomerType) => {
+    setCustomerId(customer.id);
+    setCustomerName(customer.name);
+    setCustomerEmail(customer.email || '');
+    setCustomerPhone(customer.phone || '');
+    setSearchTerm('');
+    setSearchResults([]);
+    setShowCustomerSearch(false);
+    
+    toast.success(`Selected customer: ${customer.name}`);
   };
 
   const generateQuotation = () => {
@@ -144,7 +217,7 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
     const quotation: Quotation = {
       id: Math.random().toString(36).substring(2, 9),
       quotationNumber: generateQuotationNumber(),
-      customerId: customerIdFromUrl || Math.random().toString(36).substring(2, 9),
+      customerId: customerId || Math.random().toString(36).substring(2, 9),
       customerName: customerName,
       items: quotationItems,
       subtotal: subtotal,
@@ -175,13 +248,83 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
       <h3 className="font-medium">Generate Quotation</h3>
       
       <div className="space-y-2">
-        <Label htmlFor="customerName">Customer Name</Label>
-        <Input
-          id="customerName"
-          value={customerName}
-          onChange={(e) => setCustomerName(e.target.value)}
-          placeholder="Enter customer name"
-        />
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <Label htmlFor="customerName">Customer Name</Label>
+            <Input
+              id="customerName"
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Enter customer name"
+            />
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowCustomerSearch(!showCustomerSearch)}
+            title="Search customers"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {showCustomerSearch && (
+          <div className="p-3 border rounded-md bg-background">
+            <div className="flex items-center gap-2 mb-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search customers..." 
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  searchCustomers(e.target.value);
+                }}
+                className="flex-1"
+              />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowCustomerSearch(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {isSearching ? (
+              <div className="py-2 text-center text-sm text-muted-foreground">
+                Searching...
+              </div>
+            ) : searchResults.length > 0 ? (
+              <div className="max-h-60 overflow-y-auto">
+                {searchResults.map((customer) => (
+                  <div 
+                    key={customer.id}
+                    className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center gap-2"
+                    onClick={() => selectCustomer(customer)}
+                  >
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <div className="font-medium">{customer.name}</div>
+                      <div className="text-xs text-muted-foreground">{customer.phone}</div>
+                    </div>
+                    {customer.machines.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {customer.machines.length} machines
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : searchTerm.length > 0 ? (
+              <div className="py-2 text-center text-sm text-muted-foreground">
+                No customers found
+              </div>
+            ) : (
+              <div className="py-2 text-center text-sm text-muted-foreground">
+                Type to search customers
+              </div>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="space-y-2">
@@ -191,6 +334,16 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
           value={customerEmail}
           onChange={(e) => setCustomerEmail(e.target.value)}
           placeholder="Enter customer email"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="customerPhone">Customer Phone (Optional)</Label>
+        <Input
+          id="customerPhone"
+          value={customerPhone}
+          onChange={(e) => setCustomerPhone(e.target.value)}
+          placeholder="Enter customer phone"
         />
       </div>
       
