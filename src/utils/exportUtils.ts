@@ -5,7 +5,8 @@ import pdfFonts from "pdfmake/build/vfs_fonts";
 import { TDocumentDefinitions } from "pdfmake/interfaces";
 
 // Initialize pdfMake with fonts
-pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+// Handle different possible structures of pdfFonts
+pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
 
 export const exportToCsv = (data: any[], fileName: string) => {
   if (!data || !data.length) {

@@ -4,7 +4,8 @@ import pdfFonts from "pdfmake/build/vfs_fonts";
 import { Alignment } from "pdfmake/interfaces";
 
 // Register the virtual file system with pdfMake
-pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+// Handle different possible structures of pdfFonts
+pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
 
 // Define fonts for the document
 pdfMake.fonts = {
