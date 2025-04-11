@@ -175,7 +175,7 @@ const TaskTable: React.FC<TaskTableProps> = ({
         title: "Export successful",
         description: "Tasks have been exported to CSV",
       });
-    } else {
+    } else if (format === 'pdf') {
       exportToPdf(formattedTasks, 'Tasks Report');
       toast({
         title: "Export successful",
