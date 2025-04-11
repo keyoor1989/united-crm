@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 interface MessageProps {
   message: {
     id: string;
-    content: string;
+    content: string | React.ReactNode;
     sender: "user" | "bot";
     timestamp: Date;
   };
@@ -31,7 +31,11 @@ const ChatMessage = ({ message }: MessageProps) => {
             : "bg-brand-500 text-white"
         )}
       >
-        <p className="whitespace-pre-wrap">{message.content}</p>
+        {typeof message.content === "string" ? (
+          <p className="whitespace-pre-wrap">{message.content}</p>
+        ) : (
+          message.content
+        )}
         <div
           className={cn(
             "text-[10px] mt-1",
