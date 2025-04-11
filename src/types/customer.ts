@@ -2,7 +2,7 @@
 export type CustomerStatus = "Active" | "Contract Renewal" | "Need Toner" | "Inactive" | "Prospect";
 
 export interface CustomerType {
-  id: number;
+  id: string; // Changed from number to string to match UUID from Supabase
   name: string;
   lastContact: string;
   phone: string;

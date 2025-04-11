@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CustomerType } from "@/types/customer";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +26,7 @@ const fetchCustomers = async (): Promise<CustomerType[]> => {
     
     // Transform the data to match our CustomerType structure
     const customers: CustomerType[] = data.map(customer => ({
-      id: customer.id,
+      id: customer.id, // This is now correctly typed as string
       name: customer.name,
       phone: customer.phone,
       email: customer.email || "",
