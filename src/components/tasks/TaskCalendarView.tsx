@@ -85,17 +85,17 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ tasks, onTaskUpdate
           onSelect={handleDayClick}
           className="border rounded-md p-3"
           components={{
-            Day: ({ day, ...props }) => (
+            Day: ({ date, ...props }) => (
               <div
                 {...props}
                 className={cn(
                   props.className,
-                  isToday(day) && "bg-accent text-accent-foreground",
+                  isToday(date) && "bg-accent text-accent-foreground",
                   "relative"
                 )}
               >
-                {format(day, "d")}
-                {renderDay(day)}
+                {format(date, "d")}
+                {renderDay(date)}
               </div>
             ),
           }}
