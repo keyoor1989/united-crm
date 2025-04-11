@@ -36,6 +36,21 @@ export const addMachine = async (customerId: string, machineData: MachineFormDat
   try {
     console.log("Adding machine with data:", machineData, "for customer:", customerId);
     
+    if (!customerId) {
+      console.error("Missing customer ID");
+      throw new Error("Customer ID is required");
+    }
+    
+    if (!machineData.model) {
+      console.error("Missing machine model");
+      throw new Error("Machine model is required");
+    }
+    
+    if (!machineData.machineType) {
+      console.error("Missing machine type");
+      throw new Error("Machine type is required");
+    }
+    
     // Only include fields that exist in the customer_machines table
     const data = {
       customer_id: customerId,

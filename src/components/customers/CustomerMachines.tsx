@@ -45,16 +45,24 @@ export default function CustomerMachines() {
   useEffect(() => {
     if (customerId) {
       fetchCustomerMachines();
+    } else {
+      console.error("No customer ID found in URL");
     }
   }, [customerId]);
 
   const fetchCustomerMachines = async () => {
-    if (!customerId) return;
+    if (!customerId) {
+      console.error("Missing customer ID for fetching machines");
+      return;
+    }
     
     try {
+      console.log("Fetching machines for customer:", customerId);
       const machinesData = await MachineService.fetchCustomerMachines(customerId);
+      console.log("Fetched machines:", machinesData);
       setMachines(machinesData);
     } catch (error) {
+      console.error("Failed to load customer machines:", error);
       toast.error("Failed to load customer machines");
     }
   };
@@ -71,6 +79,7 @@ export default function CustomerMachines() {
     }
     
     if (!customerId) {
+      console.error("No customer ID found for adding machine");
       toast.error("Customer ID is missing");
       return;
     }
@@ -78,11 +87,13 @@ export default function CustomerMachines() {
     setIsLoading(true);
     
     try {
-      console.log("Adding machine for customer:", customerId);
+      console.log("Adding machine with data:", newMachineData);
+      console.log("For customer ID:", customerId);
+      
       await MachineService.addMachine(customerId, newMachineData);
       toast.success("Machine added successfully!");
       
-      // Reset only required fields after successful addition
+      // Reset form after successful addition
       setNewMachineData({
         model: "",
         machineType: "copier",
@@ -91,7 +102,7 @@ export default function CustomerMachines() {
       setAddMachineDialogOpen(false);
       
       // Refresh the machines list
-      fetchCustomerMachines();
+      await fetchCustomerMachines();
       
     } catch (error) {
       console.error("Error details:", error);
