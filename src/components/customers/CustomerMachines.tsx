@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,7 @@ type FollowUp = {
 };
 
 type Machine = {
-  id: number;
+  id: number | string;
   model: string;
   serialNumber: string;
   installationDate: string;
@@ -123,14 +124,14 @@ export default function CustomerMachines() {
       }
       
       if (data && data.length > 0) {
-        const transformedMachines: Machine[] = data.map((machine, index) => ({
-          id: index + 1,
+        const transformedMachines: Machine[] = data.map((machine) => ({
+          id: machine.id,
           model: machine.machine_name,
           // For properties that don't exist in the database, we use default values
-          serialNumber: "SN" + Math.floor(Math.random() * 1000000),
-          installationDate: new Date().toISOString().split('T')[0],
+          serialNumber: machine.machine_serial || `SN${Math.floor(Math.random() * 1000000)}`,
+          installationDate: machine.installation_date || new Date().toISOString().split('T')[0],
           status: "active",
-          lastService: new Date().toISOString().split('T')[0]
+          lastService: machine.last_service || new Date().toISOString().split('T')[0]
         }));
         
         setMachines(transformedMachines);
@@ -164,6 +165,8 @@ export default function CustomerMachines() {
         machine_type: newMachineData.machineType
       };
       
+      console.log("Attempting to add machine with data:", machineData);
+      
       const { data, error } = await supabase
         .from('customer_machines')
         .insert(machineData)
@@ -186,6 +189,7 @@ export default function CustomerMachines() {
       });
       setAddMachineDialogOpen(false);
       
+      // Refresh the machines list
       if (customerId) {
         fetchCustomerMachines(customerId);
       }
@@ -395,6 +399,15 @@ export default function CustomerMachines() {
               <div className="flex flex-col items-center justify-center h-40 border rounded-md border-dashed">
                 <Printer className="h-8 w-8 text-muted-foreground mb-2" />
                 <p className="text-muted-foreground text-sm">No machines added yet</p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 gap-1 mt-4"
+                  onClick={() => setAddMachineDialogOpen(true)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Add First Machine</span>
+                </Button>
               </div>
             )}
           </TabsContent>
