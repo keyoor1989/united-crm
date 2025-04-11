@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { Search, Plus, Filter, FileText, Printer, BarChart2, CalendarClock } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, Plus, Filter, FileText, Printer, BarChart2, CalendarClock, Edit, Trash, File, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,9 +14,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { 
+  AMCContract, 
+  AMCMachine, 
+  AMCConsumableUsage, 
+  AMCBilling, 
+  AMCProfitReport,
+  ProfitableMachine 
+} from "@/types/inventory";
+import AddContractDialog from "@/components/inventory/amc/AddContractDialog";
+import AddConsumableUsageDialog from "@/components/inventory/amc/AddConsumableUsageDialog";
+import AddMeterReadingDialog from "@/components/inventory/amc/AddMeterReadingDialog";
 
 // Mock data for AMC contracts
-const mockContracts = [
+const initialContracts: AMCContract[] = [
   {
     id: "amc001",
     customerId: "cust001",
@@ -68,7 +86,7 @@ const mockContracts = [
 ];
 
 // Mock data for machines on AMC/rental
-const mockMachines = [
+const initialMachines: AMCMachine[] = [
   {
     id: "machine001",
     contractId: "amc001",
@@ -120,7 +138,7 @@ const mockMachines = [
 ];
 
 // Mock data for consumable usage
-const mockConsumableUsage = [
+const initialConsumableUsage: AMCConsumableUsage[] = [
   {
     id: "usage001",
     contractId: "amc001",
@@ -158,7 +176,7 @@ const mockConsumableUsage = [
 ];
 
 // Mock data for monthly meter readings and billing
-const mockBillingData = [
+const initialBillingData: AMCBilling[] = [
   {
     id: "bill001",
     contractId: "amc001",
@@ -212,7 +230,7 @@ const mockBillingData = [
 ];
 
 // Mock data for AMC profit/expense report
-const mockProfitReports = [
+const initialProfitReports: AMCProfitReport[] = [
   {
     id: "report001",
     contractId: "amc001",
@@ -252,7 +270,7 @@ const mockProfitReports = [
 ];
 
 // Top profitable machines
-const topProfitableMachines = [
+const initialProfitableMachines: ProfitableMachine[] = [
   {
     id: "machine002",
     customerName: "Global Enterprises",
@@ -282,6 +300,288 @@ const topProfitableMachines = [
 const AmcTracker = () => {
   const [activeTab, setActiveTab] = useState<string>("contracts");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  
+  // State for our data
+  const [contracts, setContracts] = useState<AMCContract[]>(initialContracts);
+  const [machines, setMachines] = useState<AMCMachine[]>(initialMachines);
+  const [consumableUsage, setConsumableUsage] = useState<AMCConsumableUsage[]>(initialConsumableUsage);
+  const [billingData, setBillingData] = useState<AMCBilling[]>(initialBillingData);
+  const [profitReports, setProfitReports] = useState<AMCProfitReport[]>(initialProfitReports);
+  const [profitableMachines, setProfitableMachines] = useState<ProfitableMachine[]>(initialProfitableMachines);
+  
+  // Summary metrics
+  const [summaryMetrics, setSummaryMetrics] = useState({
+    totalRevenue: 87450,
+    totalExpenses: 42600,
+    netProfit: 44850,
+    profitMargin: 51.3
+  });
+  
+  // Function to add a new contract
+  const handleAddContract = (newContract: AMCContract) => {
+    setContracts(prevContracts => [...prevContracts, newContract]);
+    
+    // Also add the machine to the machines list
+    const newMachine: AMCMachine = {
+      id: `machine${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
+      contractId: newContract.id,
+      customerId: newContract.customerId,
+      customerName: newContract.customerName,
+      model: newContract.machineModel,
+      serialNumber: newContract.serialNumber,
+      location: "Main Office", // Default location
+      contractType: newContract.contractType,
+      startDate: newContract.startDate,
+      endDate: newContract.endDate,
+      currentRent: newContract.monthlyRent,
+      copyLimit: newContract.copyLimit,
+      lastMeterReading: 0,
+      lastReadingDate: new Date().toISOString().split('T')[0]
+    };
+    
+    setMachines(prevMachines => [...prevMachines, newMachine]);
+  };
+  
+  // Function to add consumable usage
+  const handleAddConsumableUsage = (newUsage: AMCConsumableUsage) => {
+    setConsumableUsage(prevUsage => [...prevUsage, newUsage]);
+    
+    // Auto-generate a profit report entry or update existing one
+    const existingReportIndex = profitReports.findIndex(
+      report => report.machineId === newUsage.machineId && report.month.includes(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }))
+    );
+    
+    if (existingReportIndex > -1) {
+      // Update existing report
+      const updatedReports = [...profitReports];
+      const report = updatedReports[existingReportIndex];
+      
+      // Update consumables cost and recalculate
+      const newConsumablesCost = report.consumablesCost + newUsage.cost;
+      const newTotalExpense = newConsumablesCost + report.engineerVisitCost;
+      const newProfit = report.totalIncome - newTotalExpense;
+      const newProfitMargin = (newProfit / report.totalIncome) * 100;
+      
+      updatedReports[existingReportIndex] = {
+        ...report,
+        consumablesCost: newConsumablesCost,
+        totalExpense: newTotalExpense,
+        profit: newProfit,
+        profitMargin: newProfitMargin
+      };
+      
+      setProfitReports(updatedReports);
+    } else {
+      // Create a new report
+      const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+      const contract = contracts.find(c => c.id === newUsage.contractId);
+      
+      if (contract) {
+        const newReport: AMCProfitReport = {
+          id: `report${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
+          contractId: newUsage.contractId,
+          machineId: newUsage.machineId,
+          customerId: newUsage.customerId,
+          customerName: newUsage.customerName,
+          machineModel: newUsage.machineModel,
+          serialNumber: newUsage.serialNumber,
+          month: currentMonth,
+          rentReceived: contract.monthlyRent,
+          extraCopyIncome: 0, // Will be updated when billing is done
+          totalIncome: contract.monthlyRent,
+          consumablesCost: newUsage.cost,
+          engineerVisitCost: 0,
+          totalExpense: newUsage.cost,
+          profit: contract.monthlyRent - newUsage.cost,
+          profitMargin: ((contract.monthlyRent - newUsage.cost) / contract.monthlyRent) * 100
+        };
+        
+        setProfitReports(prevReports => [...prevReports, newReport]);
+      }
+    }
+    
+    // Update summary metrics
+    setSummaryMetrics(prev => ({
+      ...prev,
+      totalExpenses: prev.totalExpenses + newUsage.cost,
+      netProfit: prev.totalRevenue - (prev.totalExpenses + newUsage.cost),
+      profitMargin: ((prev.totalRevenue - (prev.totalExpenses + newUsage.cost)) / prev.totalRevenue) * 100
+    }));
+  };
+  
+  // Function to add meter reading and generate billing
+  const handleAddMeterReading = (newBilling: AMCBilling) => {
+    setBillingData(prevBilling => [...prevBilling, newBilling]);
+    
+    // Update the machine's last meter reading
+    const updatedMachines = machines.map(machine => 
+      machine.id === newBilling.machineId 
+        ? { 
+            ...machine, 
+            lastMeterReading: newBilling.closingReading,
+            lastReadingDate: newBilling.billDate
+          } 
+        : machine
+    );
+    setMachines(updatedMachines);
+    
+    // Update profit reports if there are extra copies
+    if (newBilling.extraCopies > 0) {
+      const existingReportIndex = profitReports.findIndex(
+        report => report.machineId === newBilling.machineId && report.month === newBilling.month
+      );
+      
+      if (existingReportIndex > -1) {
+        // Update existing report
+        const updatedReports = [...profitReports];
+        const report = updatedReports[existingReportIndex];
+        
+        // Update income and recalculate
+        const newExtraCopyIncome = newBilling.extraCopyCharge;
+        const newTotalIncome = report.rentReceived + newExtraCopyIncome;
+        const newProfit = newTotalIncome - report.totalExpense;
+        const newProfitMargin = (newProfit / newTotalIncome) * 100;
+        
+        updatedReports[existingReportIndex] = {
+          ...report,
+          extraCopyIncome: newExtraCopyIncome,
+          totalIncome: newTotalIncome,
+          profit: newProfit,
+          profitMargin: newProfitMargin
+        };
+        
+        setProfitReports(updatedReports);
+      } else {
+        // Create a new report
+        const contract = contracts.find(c => c.id === newBilling.contractId);
+        
+        if (contract) {
+          const newReport: AMCProfitReport = {
+            id: `report${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
+            contractId: newBilling.contractId,
+            machineId: newBilling.machineId,
+            customerId: newBilling.customerId,
+            customerName: newBilling.customerName,
+            machineModel: newBilling.machineModel,
+            serialNumber: newBilling.serialNumber,
+            month: newBilling.month,
+            rentReceived: contract.monthlyRent,
+            extraCopyIncome: newBilling.extraCopyCharge,
+            totalIncome: contract.monthlyRent + newBilling.extraCopyCharge,
+            consumablesCost: 0, // Will be updated when consumables are used
+            engineerVisitCost: 0,
+            totalExpense: 0,
+            profit: contract.monthlyRent + newBilling.extraCopyCharge,
+            profitMargin: 100 // 100% profit initially since no expenses yet
+          };
+          
+          setProfitReports(prevReports => [...prevReports, newReport]);
+        }
+      }
+      
+      // Update summary metrics
+      setSummaryMetrics(prev => {
+        const newRevenue = prev.totalRevenue + newBilling.extraCopyCharge;
+        const newProfit = newRevenue - prev.totalExpenses;
+        return {
+          totalRevenue: newRevenue,
+          totalExpenses: prev.totalExpenses,
+          netProfit: newProfit,
+          profitMargin: (newProfit / newRevenue) * 100
+        };
+      });
+    }
+    
+    // Update profitable machines list
+    updateProfitableMachines();
+  };
+  
+  // Function to update the list of profitable machines
+  const updateProfitableMachines = () => {
+    // Group profit reports by machine and calculate total profit
+    const machineProfits: Record<string, ProfitableMachine> = {};
+    
+    profitReports.forEach(report => {
+      if (!machineProfits[report.machineId]) {
+        machineProfits[report.machineId] = {
+          id: report.machineId,
+          customerName: report.customerName,
+          machineModel: report.machineModel,
+          serialNumber: report.serialNumber,
+          profit: 0,
+          profitMargin: 0
+        };
+      }
+      
+      machineProfits[report.machineId].profit += report.profit;
+      // Average profit margin across all reports for this machine
+      machineProfits[report.machineId].profitMargin = 
+        (machineProfits[report.machineId].profitMargin + report.profitMargin) / 2;
+    });
+    
+    // Sort machines by profit and take top 5
+    const sortedMachines = Object.values(machineProfits)
+      .sort((a, b) => b.profit - a.profit)
+      .slice(0, 5);
+    
+    setProfitableMachines(sortedMachines);
+  };
+  
+  // Function to generate a PDF invoice
+  const generateInvoice = (billing: AMCBilling) => {
+    toast.success(`Invoice generated for ${billing.customerName}`);
+    
+    // In a real application, this would generate a PDF
+    // For now, we'll just update the status
+    const updatedBillingData = billingData.map(bill => 
+      bill.id === billing.id 
+        ? { 
+            ...bill, 
+            billStatus: "Generated" as const,
+            invoiceNo: bill.invoiceNo || `INV/${new Date().getFullYear()}/${new Date().getMonth() + 1}/${bill.id.substring(4)}`
+          }
+        : bill
+    );
+    
+    setBillingData(updatedBillingData);
+  };
+  
+  // Function to print an invoice
+  const printInvoice = (billing: AMCBilling) => {
+    if (!billing.invoiceNo) {
+      toast.error("Please generate an invoice first");
+      return;
+    }
+    
+    toast.success(`Printing invoice ${billing.invoiceNo} for ${billing.customerName}`);
+    // In a real app, this would open a print dialog with the invoice PDF
+  };
+  
+  // Function to generate a profit report
+  const generateProfitReport = () => {
+    toast.success("Profit report generated successfully");
+    // In a real app, this would generate a detailed profit report
+  };
+  
+  // Filter function for search across all tabs
+  const filterItems = (items: any[], query: string) => {
+    if (!query) return items;
+    
+    return items.filter(item => 
+      Object.values(item).some(value => 
+        value !== null && 
+        value !== undefined &&
+        value.toString().toLowerCase().includes(query.toLowerCase())
+      )
+    );
+  };
+  
+  // Filtered data based on search query
+  const filteredContracts = filterItems(contracts, searchQuery);
+  const filteredMachines = filterItems(machines, searchQuery);
+  const filteredUsage = filterItems(consumableUsage, searchQuery);
+  const filteredBilling = filterItems(billingData, searchQuery);
+  const filteredReports = filterItems(profitReports, searchQuery);
 
   return (
     <div className="container mx-auto py-6">
@@ -292,10 +592,7 @@ const AmcTracker = () => {
             Track consumables and manage AMC/Rental contracts
           </p>
         </div>
-        <Button className="flex items-center gap-1 bg-black text-white hover:bg-black/90">
-          <Plus className="h-4 w-4" />
-          New AMC Contract
-        </Button>
+        <AddContractDialog onContractAdded={handleAddContract} />
       </div>
 
       {/* Search and filter row */}
@@ -348,7 +645,7 @@ const AmcTracker = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockContracts.map((contract) => (
+                  {filteredContracts.map((contract) => (
                     <TableRow key={contract.id}>
                       <TableCell className="font-medium">{contract.customerName}</TableCell>
                       <TableCell>{contract.machineModel}</TableCell>
@@ -368,9 +665,27 @@ const AmcTracker = () => {
                         <Badge variant="success">{contract.status}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Contract
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Printer className="h-4 w-4 mr-2" />
+                              Print Contract
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <File className="h-4 w-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -403,7 +718,7 @@ const AmcTracker = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockMachines.map((machine) => (
+                  {filteredMachines.map((machine) => (
                     <TableRow key={machine.id}>
                       <TableCell className="font-medium">{machine.customerName}</TableCell>
                       <TableCell>{machine.model}</TableCell>
@@ -418,9 +733,27 @@ const AmcTracker = () => {
                       <TableCell>{machine.copyLimit.toLocaleString()}</TableCell>
                       <TableCell>{machine.lastMeterReading.toLocaleString()}</TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <FileText className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setActiveTab("billing")}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Meter Reading
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit Machine
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <File className="h-4 w-4 mr-2" />
+                              View History
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -453,7 +786,7 @@ const AmcTracker = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockConsumableUsage.map((usage) => (
+                  {filteredUsage.map((usage) => (
                     <TableRow key={usage.id}>
                       <TableCell>{usage.date}</TableCell>
                       <TableCell className="font-medium">{usage.customerName}</TableCell>
@@ -470,10 +803,7 @@ const AmcTracker = () => {
               </Table>
               
               <div className="mt-4 flex justify-end">
-                <Button className="bg-black text-white hover:bg-black/90">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Consumable Usage
-                </Button>
+                <AddConsumableUsageDialog onUsageAdded={handleAddConsumableUsage} />
               </div>
             </CardContent>
           </Card>
@@ -506,7 +836,7 @@ const AmcTracker = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockBillingData.map((billing) => (
+                  {filteredBilling.map((billing) => (
                     <TableRow key={billing.id}>
                       <TableCell>{billing.month}</TableCell>
                       <TableCell className="font-medium">{billing.customerName}</TableCell>
@@ -526,10 +856,18 @@ const AmcTracker = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end space-x-1">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => generateInvoice(billing)}
+                          >
                             <FileText className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => printInvoice(billing)}
+                          >
                             <Printer className="h-4 w-4" />
                           </Button>
                         </div>
@@ -540,10 +878,7 @@ const AmcTracker = () => {
               </Table>
               
               <div className="mt-4 flex justify-end">
-                <Button className="bg-black text-white hover:bg-black/90">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Meter Reading
-                </Button>
+                <AddMeterReadingDialog onReadingAdded={handleAddMeterReading} />
               </div>
             </CardContent>
           </Card>
@@ -557,7 +892,7 @@ const AmcTracker = () => {
                 <CardTitle className="text-sm font-medium">Total AMC Revenue</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹87,450</div>
+                <div className="text-2xl font-bold">₹{summaryMetrics.totalRevenue.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   <span className="text-green-500">↑ 12%</span> from last month
                 </p>
@@ -569,7 +904,7 @@ const AmcTracker = () => {
                 <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹42,600</div>
+                <div className="text-2xl font-bold">₹{summaryMetrics.totalExpenses.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   <span className="text-red-500">↑ 8%</span> from last month
                 </p>
@@ -581,7 +916,7 @@ const AmcTracker = () => {
                 <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹44,850</div>
+                <div className="text-2xl font-bold">₹{summaryMetrics.netProfit.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   <span className="text-green-500">↑ 15%</span> from last month
                 </p>
@@ -593,7 +928,7 @@ const AmcTracker = () => {
                 <CardTitle className="text-sm font-medium">Average Profit Margin</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">51.3%</div>
+                <div className="text-2xl font-bold">{summaryMetrics.profitMargin.toFixed(1)}%</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   <span className="text-green-500">↑ 3%</span> from last month
                 </p>
@@ -625,7 +960,7 @@ const AmcTracker = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockProfitReports.map((report) => (
+                    {filteredReports.map((report) => (
                       <TableRow key={report.id}>
                         <TableCell>{report.month}</TableCell>
                         <TableCell className="font-medium">{report.customerName}</TableCell>
@@ -645,10 +980,13 @@ const AmcTracker = () => {
                 
                 <div className="mt-4 flex justify-end space-x-2">
                   <Button variant="outline" className="flex items-center gap-1">
-                    <Printer className="h-4 w-4" />
+                    <Download className="h-4 w-4" />
                     Export PDF
                   </Button>
-                  <Button className="flex items-center gap-1 bg-black text-white hover:bg-black/90">
+                  <Button 
+                    className="flex items-center gap-1 bg-black text-white hover:bg-black/90"
+                    onClick={generateProfitReport}
+                  >
                     <BarChart2 className="h-4 w-4" />
                     Generate Report
                   </Button>
@@ -663,7 +1001,7 @@ const AmcTracker = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {topProfitableMachines.map((machine, index) => (
+                  {profitableMachines.map((machine, index) => (
                     <div key={machine.id} className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
