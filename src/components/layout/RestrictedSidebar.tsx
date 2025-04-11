@@ -43,7 +43,10 @@ const RestrictedSidebar = () => {
     if (item.to === "/reports" && !hasPermission("reports")) return false;
     if (item.to === "/tasks" && !hasPermission("task_system") && !hasPermission("assigned_tasks")) return false;
     
-    // Settings and chat are accessible to all
+    // Make sure Command Copilot and Smart Assistant are accessible to all
+    if (item.to === "/command-copilot" || item.to === "/smart-assistant") return true;
+    
+    // Settings and other items are accessible to all
     return true;
   });
   
@@ -187,6 +190,15 @@ const RestrictedSidebar = () => {
             isCollapsed={isCollapsed} 
           />
         )}
+        
+        {/* Command Copilot and Smart Assistant (available to all users) */}
+        <MainNavItems 
+          items={filteredMainNavItems.filter(item => 
+            item.to === "/command-copilot" || item.to === "/smart-assistant"
+          )} 
+          isActive={isActive} 
+          isCollapsed={isCollapsed} 
+        />
       </SidebarContent>
 
       {/* Footer Item */}
