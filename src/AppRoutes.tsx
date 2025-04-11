@@ -69,6 +69,8 @@ const AppRoutes = () => (
       <Route path="/service-call-form" element={<ServiceCallForm />} />
       <Route path="/engineer/:id" element={<EngineerDetail />} />
       <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
+      
+      {/* Inventory Routes */}
       <Route path="/inventory" element={<Inventory />} />
       <Route path="/inventory/brands" element={<InventoryBrands />} />
       <Route path="/inventory/items" element={<InventoryItems />} />

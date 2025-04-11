@@ -293,7 +293,7 @@ const AppSidebar = () => {
                     tooltip={isCollapsed ? item.label : undefined}
                   >
                     <Link to={item.to}>
-                      <item.icon size={20} />
+                      <item.icon size={16} />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>

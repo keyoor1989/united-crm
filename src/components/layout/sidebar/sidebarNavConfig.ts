@@ -1,3 +1,4 @@
+
 import { 
   LayoutDashboard, 
   Users, 
@@ -265,7 +266,7 @@ export const financeSection: NavSection = {
   items: [
     {
       to: "/finance",
-      icon: BadgeDollarSign,
+      icon: PieChart,
       label: "Finance Dashboard"
     },
     {
