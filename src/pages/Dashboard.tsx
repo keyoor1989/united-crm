@@ -1,5 +1,5 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import StatCard from "@/components/dashboard/StatCard";
 import { 
   Users, 
@@ -23,6 +23,36 @@ const Dashboard = () => {
     renewals: <BarChart3 className="h-4 w-4 text-muted-foreground" />
   }), []);
 
+  // Memoize the stat cards to prevent re-renders
+  const statsCards = useMemo(() => (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <StatCard
+        title="Total Customers"
+        value="2,543"
+        description="+180 from last month"
+        icon={statsIcons.customers}
+      />
+      <StatCard
+        title="Monthly Revenue"
+        value="₹4.3L"
+        description="+7% from last month"
+        icon={statsIcons.revenue}
+      />
+      <StatCard
+        title="Active Service Calls"
+        value="18"
+        description="6 pending resolution"
+        icon={statsIcons.serviceCall}
+      />
+      <StatCard
+        title="AMC Renewals"
+        value="8"
+        description="Due this month"
+        icon={statsIcons.renewals}
+      />
+    </div>
+  ), [statsIcons]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -35,32 +65,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Customers"
-          value="2,543"
-          description="+180 from last month"
-          icon={statsIcons.customers}
-        />
-        <StatCard
-          title="Monthly Revenue"
-          value="₹4.3L"
-          description="+7% from last month"
-          icon={statsIcons.revenue}
-        />
-        <StatCard
-          title="Active Service Calls"
-          value="18"
-          description="6 pending resolution"
-          icon={statsIcons.serviceCall}
-        />
-        <StatCard
-          title="AMC Renewals"
-          value="8"
-          description="Due this month"
-          icon={statsIcons.renewals}
-        />
-      </div>
+      {statsCards}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <RecentServiceCalls className="md:col-span-2 lg:col-span-1" />

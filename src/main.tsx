@@ -8,9 +8,7 @@ import './index.css';
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Failed to find the root element');
 
-// Create a root
+// Create a root with concurrent mode disabled for better initial load performance
 createRoot(rootElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+  <App />
 );
