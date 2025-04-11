@@ -41,11 +41,14 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
   const customerPhoneFromUrl = queryParams.get('customerPhone') || '';
   
   // Debug: Log the parameters to see what's being passed
-  console.log("URL Parameters:", {
+  console.log("URL Parameters in QuotationGenerator:", {
     customerId: customerIdFromUrl,
     customerName: customerNameFromUrl,
     customerEmail: customerEmailFromUrl,
-    customerPhone: customerPhoneFromUrl
+    customerPhone: customerPhoneFromUrl,
+    pathname: location.pathname,
+    search: location.search,
+    fullURL: window.location.href
   });
   
   // State for customer search
@@ -56,9 +59,9 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
   
   // Initialize state with URL parameters or initialData as fallback
   const [customerId, setCustomerId] = useState(customerIdFromUrl || '');
-  const [customerName, setCustomerName] = useState(customerNameFromUrl || initialData.customerName || '');
-  const [customerEmail, setCustomerEmail] = useState(customerEmailFromUrl || '');
-  const [customerPhone, setCustomerPhone] = useState(customerPhoneFromUrl || '');
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [gstPercent, setGstPercent] = useState("18");
   const [items, setItems] = useState(initialData.models.map(model => {
     const product = products.find(p => p.id === model.productId);
@@ -74,7 +77,7 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
 
   // Effect to initialize state once component is mounted
   useEffect(() => {
-    // First try URL parameters, then fall back to initialData
+    // Set customer details from URL parameters if available
     if (customerNameFromUrl) {
       setCustomerName(customerNameFromUrl);
       console.log("Setting customer name from URL:", customerNameFromUrl);
@@ -85,13 +88,19 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
     
     if (customerEmailFromUrl) {
       setCustomerEmail(customerEmailFromUrl);
-      console.log("Setting customer email from URL:", customerEmailFromUrl);
     }
     
     if (customerPhoneFromUrl) {
       setCustomerPhone(customerPhoneFromUrl);
     }
-  }, [customerNameFromUrl, customerEmailFromUrl, customerPhoneFromUrl, initialData.customerName]);
+    
+    // Auto search for customers if we only have a name but no ID
+    if (customerNameFromUrl && !customerIdFromUrl && customerNameFromUrl.length > 2) {
+      console.log("Auto-searching for customer:", customerNameFromUrl);
+      searchCustomers(customerNameFromUrl);
+      setShowCustomerSearch(true);
+    }
+  }, [customerNameFromUrl, customerEmailFromUrl, customerPhoneFromUrl, initialData.customerName, customerIdFromUrl]);
 
   // Debug: Log state after it should be set
   useEffect(() => {
@@ -155,6 +164,7 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
         status: "Active"
       }));
       
+      console.log("Search results:", customers);
       setSearchResults(customers);
     } catch (error) {
       console.error("Error in search process:", error);
@@ -245,7 +255,7 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
 
   return (
     <div className="space-y-4 bg-muted p-4 rounded-md">
-      <h3 className="font-medium">Generate Quotation</h3>
+      <h3 className="font-medium">Generate Quotation {customerNameFromUrl ? `for ${customerNameFromUrl}` : ''}</h3>
       
       <div className="space-y-2">
         <div className="flex items-end gap-2">
@@ -279,6 +289,7 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
                   searchCustomers(e.target.value);
                 }}
                 className="flex-1"
+                autoFocus
               />
               <Button 
                 variant="ghost" 
@@ -304,7 +315,10 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
                     <User className="h-4 w-4 text-muted-foreground" />
                     <div className="flex-1">
                       <div className="font-medium">{customer.name}</div>
-                      <div className="text-xs text-muted-foreground">{customer.phone}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {customer.phone}
+                        {customer.email && ` • ${customer.email}`}
+                      </div>
                     </div>
                     {customer.machines.length > 0 && (
                       <Badge variant="outline" className="text-xs">
