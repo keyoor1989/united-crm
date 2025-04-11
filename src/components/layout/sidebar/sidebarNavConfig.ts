@@ -1,4 +1,3 @@
-
 import { 
   LayoutDashboard, 
   Users, 
@@ -72,7 +71,7 @@ export const mainNavItems: NavItem[] = [
   {
     to: "/finance",
     icon: CreditCard,
-    label: "Finance"
+    label: "Finance Dashboard"
   },
   {
     to: "/reports",
@@ -329,9 +328,9 @@ export const reportsSection: NavSection = {
       label: "Branch P&L Report"
     },
     {
-      to: "/finance",
+      to: "/finance/revenue",
       icon: BadgeDollarSign,
-      label: "Financial Reports"
+      label: "Revenue Reports"
     },
     {
       to: "/inventory/profit-report",

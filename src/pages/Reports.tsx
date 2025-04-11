@@ -15,7 +15,8 @@ import {
   Clock,
   Wrench,
   MessageSquare,
-  Building
+  Building,
+  TrendingUp
 } from "lucide-react";
 
 const Reports = () => {
@@ -47,10 +48,10 @@ const Reports = () => {
       path: "/reports/branch-profit"
     },
     {
-      title: "Financial Reports",
-      description: "Revenue, expenses and profit analysis",
+      title: "Revenue Reports",
+      description: "Detailed revenue analysis and trends",
       icon: <BadgeDollarSign className="h-12 w-12 text-green-500" />,
-      path: "/finance"
+      path: "/finance/revenue"
     },
     {
       title: "Sales Performance",
@@ -65,10 +66,10 @@ const Reports = () => {
       path: "/reports"
     },
     {
-      title: "Inventory Reports",
-      description: "Stock levels, movements and valuation",
-      icon: <FileSpreadsheet className="h-12 w-12 text-amber-500" />,
-      path: "/inventory"
+      title: "Inventory Profit Report",
+      description: "Profit analysis for inventory items and sales",
+      icon: <TrendingUp className="h-12 w-12 text-amber-500" />,
+      path: "/inventory/profit-report"
     },
     {
       title: "Service Trend Analysis",
