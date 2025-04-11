@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,11 @@ export default function CustomerMachines() {
       return;
     }
     
+    if (!newMachineData.machineType) {
+      toast.error("Please select a machine type");
+      return;
+    }
+    
     if (!customerId) {
       toast.error("Customer ID is missing");
       return;
@@ -72,9 +78,11 @@ export default function CustomerMachines() {
     setIsLoading(true);
     
     try {
+      console.log("Adding machine for customer:", customerId);
       await MachineService.addMachine(customerId, newMachineData);
       toast.success("Machine added successfully!");
       
+      // Reset only required fields after successful addition
       setNewMachineData({
         model: "",
         machineType: "copier",
@@ -86,6 +94,7 @@ export default function CustomerMachines() {
       fetchCustomerMachines();
       
     } catch (error) {
+      console.error("Error details:", error);
       toast.error("An error occurred while adding the machine");
     } finally {
       setIsLoading(false);

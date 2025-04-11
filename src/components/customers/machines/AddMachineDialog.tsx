@@ -117,7 +117,10 @@ export const AddMachineDialog: React.FC<AddMachineDialogProps> = ({
         </div>
         <DialogFooter>
           <Button onClick={() => onOpenChange(false)} variant="outline">Cancel</Button>
-          <Button onClick={onAddMachine} disabled={isLoading || !newMachineData.model || !newMachineData.machineType}>
+          <Button 
+            onClick={onAddMachine} 
+            disabled={isLoading || !newMachineData.model || !newMachineData.machineType}
+          >
             {isLoading ? "Adding..." : "Add Machine"}
           </Button>
         </DialogFooter>

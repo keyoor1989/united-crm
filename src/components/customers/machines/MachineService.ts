@@ -18,10 +18,10 @@ export const fetchCustomerMachines = async (customerId: string): Promise<Machine
       return data.map((machine) => ({
         id: machine.id,
         model: machine.machine_name,
-        serialNumber: "N/A", // Default for customers who don't have machines sold by us
-        installationDate: "N/A", // Default for customers who don't have machines sold by us
+        serialNumber: machine.machine_serial || "N/A", // Use default for missing data
+        installationDate: machine.installation_date || "N/A", // Use default for missing data
         status: "active",
-        lastService: "N/A" // Default value
+        lastService: machine.last_service || "N/A" // Use default for missing data
       }));
     }
     
@@ -34,12 +34,16 @@ export const fetchCustomerMachines = async (customerId: string): Promise<Machine
 
 export const addMachine = async (customerId: string, machineData: MachineFormData) => {
   try {
+    console.log("Adding machine with data:", machineData, "for customer:", customerId);
+    
     // Only include fields that exist in the customer_machines table
     const data = {
       customer_id: customerId,
       machine_name: machineData.model,
       machine_type: machineData.machineType
     };
+    
+    console.log("Submitting to Supabase:", data);
     
     const { data: result, error } = await supabase
       .from('customer_machines')
@@ -51,6 +55,7 @@ export const addMachine = async (customerId: string, machineData: MachineFormDat
       throw error;
     }
     
+    console.log("Machine added successfully:", result);
     return result;
   } catch (err) {
     console.error("Unexpected error adding machine:", err);
