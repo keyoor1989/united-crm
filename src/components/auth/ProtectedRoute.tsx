@@ -12,7 +12,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
-  // Show loading state
+  // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -21,13 +21,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  // Redirect to login if not authenticated
+  // If not authenticated, redirect to login
   if (!isAuthenticated) {
+    console.log("User not authenticated, redirecting to login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check if user has permission to access this route
   if (user && !isRouteAccessible(location.pathname, user.role)) {
+    console.log("Access denied to path:", location.pathname);
     return <Navigate to="/access-denied" replace />;
   }
 
