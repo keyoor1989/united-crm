@@ -70,6 +70,10 @@ export default function CustomerFormComponent() {
           ? data.lead_status as "New" | "Quoted" | "Follow-up" | "Converted" | "Lost"
           : "New";
         
+        // The source field is not in the database schema, so we handle it safely
+        // by providing a default empty string
+        const sourceValue = ""; // Default empty string since source field doesn't exist yet
+        
         // Update form with customer data
         form.reset({
           name: data.name,
@@ -81,7 +85,7 @@ export default function CustomerFormComponent() {
           dateOfBirth: data.date_of_birth || "",
           machineInterest: "",
           machineType: "",
-          source: data.source || "", // This field might not exist in the database yet
+          source: sourceValue, // Using our default value
           notes: "",
           leadStatus: leadStatus,
           isNewCustomer: false
