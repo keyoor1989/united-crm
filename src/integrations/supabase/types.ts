@@ -14,21 +14,33 @@ export type Database = {
           created_at: string | null
           customer_id: string
           id: string
+          installation_date: string | null
+          is_external_purchase: boolean | null
+          last_service: string | null
           machine_name: string
+          machine_serial: string | null
           machine_type: string | null
         }
         Insert: {
           created_at?: string | null
           customer_id: string
           id?: string
+          installation_date?: string | null
+          is_external_purchase?: boolean | null
+          last_service?: string | null
           machine_name: string
+          machine_serial?: string | null
           machine_type?: string | null
         }
         Update: {
           created_at?: string | null
           customer_id?: string
           id?: string
+          installation_date?: string | null
+          is_external_purchase?: boolean | null
+          last_service?: string | null
           machine_name?: string
+          machine_serial?: string | null
           machine_type?: string | null
         }
         Relationships: [

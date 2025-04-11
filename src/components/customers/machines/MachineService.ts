@@ -52,23 +52,19 @@ export const addMachine = async (customerId: string, machineData: MachineFormDat
     }
     
     // Prepare data for Supabase
-    const data: Record<string, any> = {
+    const data = {
       customer_id: customerId,
       machine_name: machineData.model,
       machine_type: machineData.machineType,
-      is_external_purchase: true // Default assumption unless installation data is provided
+      is_external_purchase: true, // Default assumption unless installation data is provided
+      machine_serial: machineData.serialNumber || null,
+      installation_date: machineData.installationDate || null,
+      last_service: null
     };
     
-    // If serial number provided, add it
-    if (machineData.serialNumber) {
-      data.machine_serial = machineData.serialNumber;
-      data.is_external_purchase = false; // If we have serial, likely one of our sales
-    }
-    
-    // If installation date provided, add it
-    if (machineData.installationDate) {
-      data.installation_date = machineData.installationDate;
-      data.is_external_purchase = false; // If we have installation date, likely one of our sales
+    // If serial number or installation date provided, mark as not external purchase
+    if (machineData.serialNumber || machineData.installationDate) {
+      data.is_external_purchase = false;
     }
     
     console.log("Submitting to Supabase:", data);
