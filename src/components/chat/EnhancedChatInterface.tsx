@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,8 @@ import {
   FileDown,
   Loader2,
   UserPlus,
-  ClipboardList
+  ClipboardList,
+  Phone
 } from "lucide-react";
 import EnhancedChatMessage from "./EnhancedChatMessage";
 import { toast } from "sonner";
@@ -37,12 +39,14 @@ import { parseQuotationCommand, ParsedQuotationRequest } from "@/utils/chatComma
 import { parseInventoryCommand, ParsedInventoryQuery } from "@/utils/chatCommands/inventoryParser";
 import { parseCustomerCommand, checkDuplicateCustomer, createNewCustomer } from "@/utils/chatCommands/customerParser";
 import { parseTaskCommand, createNewTask } from "@/utils/chatCommands/taskParser";
+import { parsePhoneNumberCommand, findCustomerByPhone } from "@/utils/chatCommands/customerLookupParser";
 import { useCustomers } from "@/hooks/useCustomers";
 import { CustomerType } from "@/types/customer";
 import { Task } from "@/types/task";
 import QuotationGenerator from "./QuotationGenerator";
 import InventoryResultView from "./InventoryResultView";
 import CustomerCreationView from "./CustomerCreationView";
+import CustomerLookupView from "./CustomerLookupView";
 import TaskCreationView from "./TaskCreationView";
 import { Quotation } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
