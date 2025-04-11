@@ -41,11 +41,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "claude-3-opus-20240229",
         max_tokens: 4000,
+        system: systemPrompt || "You are a helpful AI assistant for a copier business management system.",
         messages: [
-          {
-            role: "system",
-            content: systemPrompt || "You are a helpful AI assistant for a copier business management system."
-          },
           {
             role: "user",
             content: prompt
@@ -72,7 +69,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         content: data.content && data.content[0] ? data.content[0].text : "No response from Claude",
-        model: data.model || "claude-3" 
+        model: data.model || "claude-3-7" 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

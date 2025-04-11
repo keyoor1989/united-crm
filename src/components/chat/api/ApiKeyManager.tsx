@@ -8,34 +8,14 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ApiKeyManager = () => {
-  const [claudeApiKey, setClaudeApiKey] = useState("");
   const [openRouterApiKey, setOpenRouterApiKey] = useState("");
-  const [showClaudeApiKey, setShowClaudeApiKey] = useState(false);
   const [showOpenRouterApiKey, setShowOpenRouterApiKey] = useState(false);
-  const [isTestingConnection, setIsTestingConnection] = useState(false);
 
   // Load saved API keys on component mount
   useEffect(() => {
-    const savedClaudeKey = sessionStorage.getItem("claude_api_key");
     const savedOpenRouterKey = sessionStorage.getItem("openrouter_api_key");
-    if (savedClaudeKey) setClaudeApiKey(savedClaudeKey);
     if (savedOpenRouterKey) setOpenRouterApiKey(savedOpenRouterKey);
   }, []);
-
-  const saveClaudeApiKey = () => {
-    if (!claudeApiKey) {
-      toast.error("Please enter a valid Claude API key");
-      return;
-    }
-    
-    // Basic validation for Claude API key format
-    if (!claudeApiKey.startsWith("sk-")) {
-      toast.warning("Claude API key usually starts with 'sk-'. Please verify your key format.");
-    }
-    
-    sessionStorage.setItem("claude_api_key", claudeApiKey);
-    toast.success("Claude API key saved successfully");
-  };
 
   const saveOpenRouterApiKey = () => {
     if (!openRouterApiKey) {
@@ -48,9 +28,7 @@ const ApiKeyManager = () => {
   };
 
   const clearApiKeys = () => {
-    sessionStorage.removeItem("claude_api_key");
     sessionStorage.removeItem("openrouter_api_key");
-    setClaudeApiKey("");
     setOpenRouterApiKey("");
     toast.success("API keys cleared successfully");
   };

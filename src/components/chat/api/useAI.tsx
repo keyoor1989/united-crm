@@ -165,42 +165,28 @@ export const useAI = ({
           addMessageToChat(botMessage);
           return true;
         } catch (error) {
-          // Try Claude as fallback if available
-          if (openRouterApiKey) {
-            try {
-              const fallbackResponse = await processClaudeAi(userInput);
-              const botMessage: Message = {
-                id: `msg-${Date.now()}-bot`,
-                content: fallbackResponse,
-                sender: "bot",
-                timestamp: new Date(),
-                isAiResponse: true,
-                aiModel: "claude-3-7"
-              };
-              addMessageToChat(botMessage);
-              return true;
-            } catch (fallbackError) {
-              const errorMessage = fallbackError instanceof Error ? String(fallbackError.message) : String(fallbackError || "Unknown error");
-              const botMessage: Message = {
-                id: `msg-${Date.now()}-bot`,
-                content: `I couldn't process that request through any AI service. Error: ${errorMessage}`,
-                sender: "bot",
-                timestamp: new Date(),
-              };
-              addMessageToChat(botMessage);
-              return false;
-            }
-          } else {
-            // No fallback available, show OpenRouter error
-            const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
+          // Try Claude as fallback
+          try {
+            const fallbackResponse = await processClaudeAi(userInput);
             const botMessage: Message = {
               id: `msg-${Date.now()}-bot`,
-              content: `I couldn't process that request through the OpenRouter AI. Error: ${errorMessage}`,
+              content: fallbackResponse,
+              sender: "bot",
+              timestamp: new Date(),
+              isAiResponse: true,
+              aiModel: "claude-3-7"
+            };
+            addMessageToChat(botMessage);
+            return true;
+          } catch (fallbackError) {
+            const errorMessage = fallbackError instanceof Error ? String(fallbackError.message) : String(fallbackError || "Unknown error");
+            const botMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: `I couldn't process that request through any AI service. Error: ${errorMessage}`,
               sender: "bot",
               timestamp: new Date(),
             };
             addMessageToChat(botMessage);
-            setShowApiKeyInput(true);
             return false;
           }
         }
@@ -210,7 +196,7 @@ export const useAI = ({
           setShowApiKeyInput(true);
           const botMessage: Message = {
             id: `msg-${Date.now()}-bot`,
-            content: "Please enter your OpenRouter API key to enable AI responses with Claude 3.7.",
+            content: "Claude AI is configured through Supabase. You can add an OpenRouter API key as a backup option.",
             sender: "bot",
             timestamp: new Date(),
           };
@@ -219,7 +205,7 @@ export const useAI = ({
           setShowApiKeyInput(true);
           const botMessage: Message = {
             id: `msg-${Date.now()}-bot`,
-            content: "Please enter your OpenRouter API key to use Claude 3.7.",
+            content: "You can optionally add an OpenRouter API key as a backup option.",
             sender: "bot",
             timestamp: new Date(),
           };
