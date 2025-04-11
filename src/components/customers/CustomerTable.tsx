@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -69,11 +70,21 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
     });
   };
 
-  const handleCreateQuotation = (customerId: string) => {
-    navigate(`/quotation-form?customerId=${customerId}`);
+  const handleCreateQuotation = (customer: CustomerType) => {
+    // Pass customer data as URL parameters for auto-filling
+    const queryParams = new URLSearchParams({
+      customerId: customer.id,
+      customerName: customer.name,
+      customerEmail: customer.email || '',
+      customerPhone: customer.phone || '',
+      customerLocation: customer.location || ''
+    }).toString();
+    
+    navigate(`/quotation-form?${queryParams}`);
+    
     toast({
       title: "Create Quotation",
-      description: "Creating a new quotation for this customer",
+      description: `Creating a new quotation for ${customer.name}`,
     });
   };
 
@@ -227,7 +238,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                     <DropdownMenuItem onClick={() => handleMachineHistory(customer.id)}>
                       Machine History
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleCreateQuotation(customer.id)}>
+                    <DropdownMenuItem onClick={() => handleCreateQuotation(customer)}>
                       Create Quotation
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleScheduleService(customer.id)}>

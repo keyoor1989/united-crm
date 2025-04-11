@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import {
 import { Quotation, Product } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
 import { toast } from "sonner";
+import { useLocation } from "react-router-dom";
 
 interface QuotationGeneratorProps {
   initialData: ParsedQuotationRequest;
@@ -27,8 +28,16 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
   onComplete,
   onCancel
 }) => {
-  const [customerName, setCustomerName] = useState(initialData.customerName || "");
-  const [customerEmail, setCustomerEmail] = useState("");
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  
+  // Extract customer data from URL parameters if available
+  const customerIdFromUrl = queryParams.get('customerId') || '';
+  const customerNameFromUrl = queryParams.get('customerName') || '';
+  const customerEmailFromUrl = queryParams.get('customerEmail') || '';
+  
+  const [customerName, setCustomerName] = useState(customerNameFromUrl || initialData.customerName || "");
+  const [customerEmail, setCustomerEmail] = useState(customerEmailFromUrl || "");
   const [gstPercent, setGstPercent] = useState("18");
   const [items, setItems] = useState(initialData.models.map(model => {
     const product = products.find(p => p.id === model.productId);
@@ -41,6 +50,18 @@ const QuotationGenerator: React.FC<QuotationGeneratorProps> = ({
       unitPrice: product ? 165000 : 150000, // Default price if not found
     };
   }));
+
+  // Effect to initialize with URL parameters
+  useEffect(() => {
+    // This will run if the component is mounted directly from URL with params
+    // and ensures the fields are populated with URL data
+    if (customerNameFromUrl) {
+      setCustomerName(customerNameFromUrl);
+    }
+    if (customerEmailFromUrl) {
+      setCustomerEmail(customerEmailFromUrl);
+    }
+  }, [customerNameFromUrl, customerEmailFromUrl]);
 
   const handleUnitPriceChange = (index: number, price: string) => {
     const newItems = [...items];
