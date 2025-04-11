@@ -2,6 +2,7 @@
 import { format } from 'date-fns';
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
+import { TDocumentDefinitions } from 'pdfmake/interfaces';
 
 // Initialize pdfMake
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
@@ -92,12 +93,15 @@ export const exportToPdf = (data: any[], title: string) => {
         value = value === 'Income' ? 'Cash In' : 'Cash Out';
       }
       
-      return { text: value?.toString() || '', style: header === 'type' ? (value === 'Cash In' ? 'income' : 'expense') : '' };
+      return { 
+        text: value?.toString() || '', 
+        style: header === 'type' ? (value === 'Cash In' ? 'income' : 'expense') : '' 
+      };
     });
   });
   
   // Create document definition
-  const docDefinition = {
+  const docDefinition: TDocumentDefinitions = {
     content: [
       { text: title, style: 'header' },
       { text: `Generated on ${format(new Date(), 'PPP')}`, style: 'subheader' },

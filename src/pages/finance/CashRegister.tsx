@@ -17,6 +17,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDown, ArrowUp, Calendar, Download, Filter } from "lucide-react";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
+import { DateRange } from "react-day-picker";
 
 const cashPurposes = [
   "Sales Payment", "Service Payment", "Utility Bills", "Office Supplies", 
@@ -34,10 +35,7 @@ const CashRegister = () => {
   });
   
   // Filter states
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: undefined,
-    to: undefined
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   const [filteredEntries, setFilteredEntries] = useState<CashEntry[]>(entries);
 
@@ -46,7 +44,7 @@ const CashRegister = () => {
     let filtered = [...entries];
     
     // Date range filter
-    if (dateRange.from && dateRange.to) {
+    if (dateRange?.from && dateRange?.to) {
       filtered = filtered.filter(entry => {
         const entryDate = parseISO(entry.date);
         return isWithinInterval(entryDate, { 
@@ -127,7 +125,7 @@ const CashRegister = () => {
   };
 
   const handleResetFilters = () => {
-    setDateRange({ from: undefined, to: undefined });
+    setDateRange(undefined);
     setDepartmentFilter("");
   };
 
