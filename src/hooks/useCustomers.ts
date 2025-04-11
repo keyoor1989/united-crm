@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CustomerType } from "@/types/customer";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,18 +8,7 @@ const fetchCustomers = async (): Promise<CustomerType[]> => {
     console.log("Fetching customers from Supabase");
     const { data, error } = await supabase
       .from('customers')
-      .select(`
-        id,
-        name,
-        phone,
-        email, 
-        area as location,
-        lead_status,
-        last_contact,
-        customer_machines (
-          machine_name
-        )
-      `)
+      .select('id, name, phone, email, area, lead_status, last_contact, customer_machines(machine_name)')
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -41,7 +29,7 @@ const fetchCustomers = async (): Promise<CustomerType[]> => {
       name: customer.name,
       phone: customer.phone,
       email: customer.email || "",
-      location: customer.location,
+      location: customer.area,
       lastContact: new Date(customer.last_contact).toLocaleDateString() || "Never",
       machines: customer.customer_machines ? customer.customer_machines.map((m: any) => m.machine_name) : [],
       status: mapLeadStatusToCustomerStatus(customer.lead_status)

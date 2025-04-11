@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -92,9 +93,9 @@ export default function CustomerFormComponent() {
           address: data.address,
           area: data.area,
           customer_type: data.customerType,
-          date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+          date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
           lead_status: data.leadStatus,
-          last_contact: new Date()
+          last_contact: new Date().toISOString()
         })
         .select('id')
         .single();
