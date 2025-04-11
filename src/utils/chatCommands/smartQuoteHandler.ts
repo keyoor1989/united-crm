@@ -121,16 +121,19 @@ export const handleQuotationCommand = async ({
   // Add the Claude response to the chat
   addMessageToChat({
     id: `msg-${Date.now()}-bot`,
-    content: (
-      <>
-        <p className="mb-2">I've prepared a quotation based on your request:</p>
-        <div className="border-l-4 border-primary/40 pl-4 py-1 whitespace-pre-line">
-          {claudeResponse}
-        </div>
-        <div className="mt-4">
-          <button 
-            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors inline-flex items-center"
-            onClick={() => {
+    content: React.createElement(
+      React.Fragment,
+      null,
+      React.createElement("p", { className: "mb-2" }, "I've prepared a quotation based on your request:"),
+      React.createElement("div", { className: "border-l-4 border-primary/40 pl-4 py-1 whitespace-pre-line" }, claudeResponse),
+      React.createElement(
+        "div",
+        { className: "mt-4" },
+        React.createElement(
+          "button",
+          {
+            className: "bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors inline-flex items-center",
+            onClick: () => {
               // Create a quotation object and generate PDF
               const quotation: Quotation = {
                 id: Math.random().toString(36).substring(2, 9),
@@ -165,13 +168,12 @@ export const handleQuotationCommand = async ({
 
               // Call onCompleteQuotation to handle the quotation
               onCompleteQuotation(quotation);
-            }}
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Confirm & Create PDF Quotation
-          </button>
-        </div>
-      </>
+            }
+          },
+          React.createElement(FileText, { className: "mr-2 h-4 w-4" }),
+          "Confirm & Create PDF Quotation"
+        )
+      )
     ),
     sender: "bot",
     timestamp: new Date(),
