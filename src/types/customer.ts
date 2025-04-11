@@ -10,4 +10,5 @@ export interface CustomerType {
   location: string;
   machines: string[];
   status: CustomerStatus;
+  machineDetails?: any[]; // Add machineDetails property to fix the build errors
 }

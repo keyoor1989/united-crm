@@ -54,19 +54,23 @@ const ApiKeyManager = () => {
                 <p className="mb-2">
                   Your Claude API key is securely stored in Supabase Edge Function Secrets and ready to use with your Smart Assistant.
                 </p>
-                <p>
+                <p className="mb-2">
                   When you input a 10-digit mobile number, the system will fetch customer data from your database and have Claude summarize it.
+                </p>
+                <p>
+                  When you request a quotation, the assistant will guide you through the process and provide a professional summary.
                 </p>
               </AlertDescription>
             </Alert>
             
             <div className="mt-4 p-3 bg-muted rounded-md text-sm">
-              <h4 className="font-medium mb-1">API Details:</h4>
+              <h4 className="font-medium mb-1">Sales Assistant Capabilities:</h4>
               <ul className="list-disc pl-4 space-y-1">
-                <li>Model: claude-3-opus-20240229</li>
-                <li>Integration: Supabase Edge Function</li>
-                <li>Security: API key stored as secure secret</li>
-                <li>Features: Customer profile summarization</li>
+                <li>Customer profile lookups via mobile number</li>
+                <li>Quotation generation with guided workflow</li>
+                <li>Product recommendations based on customer history</li>
+                <li>Professional summaries of customer information</li>
+                <li>Follow-up and task scheduling</li>
               </ul>
             </div>
           </div>

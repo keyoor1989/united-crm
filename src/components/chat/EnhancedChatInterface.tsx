@@ -245,7 +245,7 @@ const EnhancedChatInterface = () => {
     }
   };
 
-  const buildCustomerProfilePrompt = (customer: CustomerType): string => {
+  const buildCustomerProfilePrompt = async (customer: CustomerType): Promise<string> => {
     const machineDetails = customer.machineDetails && customer.machineDetails.length > 0 
       ? customer.machineDetails.map((machine: any) => 
           `${machine.machine_name} (${machine.machine_type || "Unknown type"})` +
@@ -358,7 +358,166 @@ Please summarize this customer profile in a concise, professional format. Focus 
     setIsTyping(true);
     
     try {
-      if (isMobileNumber(inputValue)) {
+      const isQuotationRequest = inputValue.toLowerCase().includes("quote") || 
+                                inputValue.toLowerCase().includes("quotation") ||
+                                inputValue.toLowerCase().includes("price");
+      
+      if (isQuotationRequest) {
+        const parsedQuote = parseQuotationCommand(inputValue);
+        
+        if (parsedQuote.models.length === 0 || !parsedQuote.customerName) {
+          const missingInfoMessage: Message = {
+            id: `msg-${Date.now()}-bot`,
+            content: (
+              <div className="space-y-3">
+                <p>I'd be happy to prepare a quotation. Could you please provide the following details:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {!parsedQuote.customerName && <li>Customer name and mobile number</li>}
+                  {parsedQuote.models.length === 0 && <li>Product model name</li>}
+                  <li>Quantity (optional, default is 1)</li>
+                </ul>
+                <p>For example: "Generate quotation for 2 Kyocera 2554ci for ABC Company"</p>
+              </div>
+            ),
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, missingInfoMessage]);
+        } else {
+          let customerExists = false;
+          if (parsedQuote.customerName) {
+            try {
+              const { data } = await supabase
+                .from('customers')
+                .select('id, name')
+                .ilike('name', `%${parsedQuote.customerName}%`)
+                .limit(1);
+              
+              customerExists = data && data.length > 0;
+            } catch (error) {
+              console.error("Error checking customer:", error);
+            }
+          }
+          
+          if (!customerExists) {
+            const noCustomerMessage: Message = {
+              id: `msg-${Date.now()}-bot`,
+              content: (
+                <div className="space-y-3">
+                  <p>I don't see this customer in our database. Would you like to add them first?</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        setInputValue(`Add new customer ${parsedQuote.customerName}`);
+                      }}
+                    >
+                      Add Customer
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => {
+                        setQuotationData(parsedQuote);
+                      }}
+                    >
+                      Continue with Quotation
+                    </Button>
+                  </div>
+                </div>
+              ),
+              sender: "bot",
+              timestamp: new Date(),
+            };
+            
+            setMessages((prev) => [...prev, noCustomerMessage]);
+          } else {
+            const quotationDetails = `
+Quotation Request:
+- Customer: ${parsedQuote.customerName}
+- Product: ${parsedQuote.models.map(m => m.model).join(", ")}
+- Quantity: ${parsedQuote.models.map(m => m.quantity).join(", ")}
+- Price: ₹${parsedQuote.models.map(m => {
+  const product = products.find(p => p.id === m.productId);
+  return product ? (165000 * m.quantity).toLocaleString() : (150000 * m.quantity).toLocaleString();
+}).join(", ")}
+`;
+
+            try {
+              const aiResponse = await processClaudeAI(quotationDetails);
+              
+              const quotSummaryMessage: Message = {
+                id: `msg-${Date.now()}-bot`,
+                content: (
+                  <div className="space-y-3">
+                    <p>{aiResponse}</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => {
+                          setQuotationData(parsedQuote);
+                        }}
+                      >
+                        Generate Quotation
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => {
+                          // Do nothing
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ),
+                sender: "bot",
+                timestamp: new Date(),
+                isAiResponse: true,
+                aiModel: "claude-3-7"
+              };
+              
+              setMessages((prev) => [...prev, quotSummaryMessage]);
+            } catch (error) {
+              console.error("Error getting AI response:", error);
+              
+              const quotConfirmMessage: Message = {
+                id: `msg-${Date.now()}-bot`,
+                content: (
+                  <div className="space-y-3">
+                    <p>I can create a quotation for {parsedQuote.customerName} for {parsedQuote.models.map(m => m.model).join(", ")}. Would you like to proceed?</p>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => {
+                          setQuotationData(parsedQuote);
+                        }}
+                      >
+                        Generate Quotation
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => {
+                          // Do nothing
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ),
+                sender: "bot",
+                timestamp: new Date(),
+              };
+              
+              setMessages((prev) => [...prev, quotConfirmMessage]);
+            }
+          }
+        }
+      } else if (isMobileNumber(inputValue)) {
         const customer = await getCustomerFromSupabase(inputValue);
         
         if (customer) {

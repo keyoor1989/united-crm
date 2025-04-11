@@ -31,12 +31,17 @@ serve(async (req) => {
 
     console.log("Calling Claude API with prompt:", prompt.substring(0, 50) + "...");
 
-    // Use a specific system prompt for customer data summarization if it appears to be a customer profile
+    // Determine the type of content we're dealing with
     const isCustomerProfile = prompt.includes("Customer Profile:") || prompt.includes("Mobile:") || prompt.includes("Last Service:");
+    const isQuotationRequest = prompt.includes("Quotation Request:") || prompt.includes("Quote for") || prompt.includes("price for");
     
-    const effectiveSystemPrompt = isCustomerProfile ? 
-      "You are a helpful assistant for a copier business management system. When presented with customer profile data, summarize it concisely in a professional business format. Do not fabricate any information or claim to fetch or access any data. Only summarize the customer information provided to you." :
-      (systemPrompt || "You are a helpful AI assistant for a copier business management system.");
+    let effectiveSystemPrompt = systemPrompt || "You are a helpful AI assistant for a copier business management system.";
+    
+    if (isCustomerProfile) {
+      effectiveSystemPrompt = "You are a helpful assistant for a copier business management system. When presented with customer profile data, summarize it concisely in a professional business format. Do not fabricate any information or claim to fetch or access any data. Only summarize the customer information provided to you.";
+    } else if (isQuotationRequest) {
+      effectiveSystemPrompt = "You are a sales assistant for a copier business. When presented with quotation details, format them professionally as: 'Quotation prepared: [Item Name] for [Customer] @ ₹[price] + GST. Delivery in 7-10 days. Includes standard warranty.' Do not fabricate any information. Only use the quotation information provided to you.";
+    }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
