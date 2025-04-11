@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { format, formatDistance, isToday, isThisWeek } from "date-fns";
@@ -48,6 +49,7 @@ const CustomerFollowUps = () => {
   const fetchFollowUps = async () => {
     setIsLoading(true);
     try {
+      console.log("Fetching all follow-ups from database");
       // Fetch all follow-ups from the database
       const { data, error } = await supabase
         .from('sales_followups')
@@ -59,6 +61,8 @@ const CustomerFollowUps = () => {
         toast.error("Failed to load follow-ups");
         return;
       }
+      
+      console.log("Follow-ups data from database:", data);
       
       if (data) {
         // Map to our SalesFollowUp type with proper type validation
@@ -76,6 +80,7 @@ const CustomerFollowUps = () => {
           location: item.location || ""
         }));
         
+        console.log("Formatted follow-ups:", formattedFollowUps);
         setFollowUps(formattedFollowUps);
       }
     } catch (error) {

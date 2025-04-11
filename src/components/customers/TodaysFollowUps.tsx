@@ -25,6 +25,7 @@ const TodaysFollowUps = () => {
   const fetchFollowUps = async () => {
     setIsLoading(true);
     try {
+      console.log("Fetching follow-ups from database");
       // Fetch all pending follow-ups from the database
       const { data, error } = await supabase
         .from('sales_followups')
@@ -37,6 +38,8 @@ const TodaysFollowUps = () => {
         toast.error("Failed to load follow-ups");
         return;
       }
+      
+      console.log("Fetched follow-ups data:", data);
       
       if (data) {
         // Map to our SalesFollowUp type with proper type validation
@@ -54,6 +57,7 @@ const TodaysFollowUps = () => {
           location: item.location || ""
         }));
         
+        console.log("Formatted follow-ups:", formattedFollowUps);
         setFollowUps(formattedFollowUps);
       }
     } catch (error) {
