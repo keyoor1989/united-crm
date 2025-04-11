@@ -1,13 +1,22 @@
 
-import { SalesFollowUp } from "../machines/types";
+import { format, isToday, isThisWeek, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { SalesFollowUp } from "../machines/types";
 import { toast } from "sonner";
-import { format, isToday, isThisWeek } from "date-fns";
 
-// Fetch follow-ups from the database
-export const fetchAllFollowUps = async (): Promise<SalesFollowUp[] | null> => {
+// Helper function to validate the follow-up type
+export const validateFollowUpType = (type: string): "quotation" | "demo" | "negotiation" | "closure" => {
+  const validTypes = ["quotation", "demo", "negotiation", "closure"];
+  return validTypes.includes(type) 
+    ? type as "quotation" | "demo" | "negotiation" | "closure" 
+    : "quotation"; // Default to quotation if an invalid type is provided
+};
+
+// Fetch follow-ups from database
+export const fetchFollowUps = async (): Promise<SalesFollowUp[] | null> => {
   try {
-    console.log("Fetching all follow-ups from database");
+    console.log("Fetching follow-ups from database");
+    // Fetch all follow-ups from the database (both pending and completed)
     const { data, error } = await supabase
       .from('sales_followups')
       .select('*')
@@ -19,16 +28,19 @@ export const fetchAllFollowUps = async (): Promise<SalesFollowUp[] | null> => {
       return null;
     }
     
-    console.log("Follow-ups data from database:", data);
+    console.log("Fetched follow-ups data:", data);
     
     if (data) {
+      // Map to our SalesFollowUp type with proper type validation
       const formattedFollowUps: SalesFollowUp[] = data.map(item => ({
         id: item.id,
         date: new Date(item.date),
         customerId: item.customer_id,
         customerName: item.customer_name,
         notes: item.notes || "",
+        // Ensure status matches the expected union type
         status: item.status === "completed" ? "completed" : "pending",
+        // Ensure type matches the expected union type
         type: validateFollowUpType(item.type),
         contactPhone: item.contact_phone || "",
         location: item.location || ""
@@ -40,7 +52,7 @@ export const fetchAllFollowUps = async (): Promise<SalesFollowUp[] | null> => {
     
     return [];
   } catch (error) {
-    console.error("Error in fetchAllFollowUps:", error);
+    console.error("Error in fetchFollowUps:", error);
     toast.error("An error occurred loading follow-ups");
     return null;
   }
@@ -69,12 +81,24 @@ export const markFollowUpComplete = async (id: number): Promise<boolean> => {
   }
 };
 
-// Helper function to validate the follow-up type
-export const validateFollowUpType = (type: string): "quotation" | "demo" | "negotiation" | "closure" => {
-  const validTypes = ["quotation", "demo", "negotiation", "closure"];
-  return validTypes.includes(type) 
-    ? type as "quotation" | "demo" | "negotiation" | "closure" 
-    : "quotation";
+// Helper functions for contacts
+export const handleCall = (phone?: string) => {
+  if (phone) {
+    window.location.href = `tel:${phone}`;
+    toast.info(`Calling ${phone}`);
+  } else {
+    toast.error("No phone number available");
+  }
+};
+
+export const handleWhatsApp = (phone?: string) => {
+  if (phone) {
+    const cleanPhone = phone.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanPhone}`, '_blank');
+    toast.info("Opening WhatsApp chat");
+  } else {
+    toast.error("No phone number available");
+  }
 };
 
 // Filter follow-ups based on criteria

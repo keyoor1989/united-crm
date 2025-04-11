@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarClock, Search, X, Phone, MapPin, Printer } from "lucide-react";
@@ -61,7 +60,9 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
     setNewSalesFollowUp({
       ...newSalesFollowUp,
       customerName: customer.name,
-      customerId: customer.id
+      customerId: customer.id,
+      contactPhone: customer.phone,
+      location: customer.location
     });
     setShowCustomerSearch(false);
     
@@ -159,12 +160,14 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
     setNewSalesFollowUp({
       ...newSalesFollowUp,
       customerName: "",
-      customerId: undefined
+      customerId: undefined,
+      contactPhone: undefined,
+      location: undefined
     });
     toast.info("Customer selection cleared");
   };
 
-  const handleSaveFollowUp = () => {
+  const handleSaveFollowUp = async () => {
     // Validate required fields
     if (!newSalesFollowUp.customerName) {
       toast.error("Please select a customer");
@@ -181,21 +184,55 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
       return;
     }
     
-    // Call the parent's onAddSalesFollowUp function
-    onAddSalesFollowUp();
-    
-    // Show success notification with action date
-    const formattedDate = newSalesFollowUp.date ? format(newSalesFollowUp.date, "dd MMM yyyy") : "Unknown date";
-    toast.success(`Follow-up scheduled for ${formattedDate}`, {
-      description: `A ${newSalesFollowUp.type} follow-up has been scheduled for ${newSalesFollowUp.customerName}`,
-      action: {
-        label: "View Calendar",
-        onClick: () => {
-          // You could navigate to a calendar view here if available
-          console.log("Navigate to calendar view");
-        }
+    try {
+      console.log("Saving follow-up to database:", newSalesFollowUp);
+      
+      // Prepare data for insertion
+      const followUpData = {
+        customer_id: newSalesFollowUp.customerId,
+        customer_name: newSalesFollowUp.customerName,
+        date: newSalesFollowUp.date?.toISOString(),
+        notes: newSalesFollowUp.notes || "",
+        type: newSalesFollowUp.type,
+        status: "pending",
+        contact_phone: newSalesFollowUp.contactPhone || "",
+        location: newSalesFollowUp.location || ""
+      };
+      
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('sales_followups')
+        .insert(followUpData)
+        .select('*')
+        .single();
+      
+      if (error) {
+        console.error("Error saving follow-up:", error);
+        toast.error("Failed to save follow-up: " + error.message);
+        return;
       }
-    });
+      
+      console.log("Follow-up saved successfully:", data);
+      
+      // Call the parent's onAddSalesFollowUp function
+      onAddSalesFollowUp();
+      
+      // Show success notification with action date
+      const formattedDate = newSalesFollowUp.date ? format(newSalesFollowUp.date, "dd MMM yyyy") : "Unknown date";
+      toast.success(`Follow-up scheduled for ${formattedDate}`, {
+        description: `A ${newSalesFollowUp.type} follow-up has been scheduled for ${newSalesFollowUp.customerName}`,
+        action: {
+          label: "View Calendar",
+          onClick: () => {
+            // You could navigate to a calendar view here if available
+            console.log("Navigate to calendar view");
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Unexpected error saving follow-up:", err);
+      toast.error("An unexpected error occurred. Please try again.");
+    }
   };
 
   return (
@@ -362,4 +399,3 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
     </Dialog>
   );
 };
-

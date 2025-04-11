@@ -24,7 +24,9 @@ export const useFollowUps = () => {
   const loadFollowUps = async () => {
     setIsLoading(true);
     try {
+      console.log("Loading follow-ups...");
       const data = await fetchAllFollowUps();
+      console.log("Follow-ups loaded:", data);
       if (data) {
         setFollowUps(data);
       }
@@ -37,13 +39,21 @@ export const useFollowUps = () => {
   };
   
   const handleMarkComplete = async (id: number) => {
-    const success = await markFollowUpComplete(id);
-    if (success) {
-      // Update local state
-      setFollowUps(followUps.map(item => 
-        item.id === id ? { ...item, status: "completed" } : item
-      ));
-      toast.success("Follow-up marked as complete!");
+    console.log("Marking follow-up complete in hook:", id);
+    try {
+      const success = await markFollowUpComplete(id);
+      if (success) {
+        // Update local state
+        setFollowUps(prevFollowUps => 
+          prevFollowUps.map(item => 
+            item.id === id ? { ...item, status: "completed" } : item
+          )
+        );
+        toast.success("Follow-up marked as complete!");
+      }
+    } catch (error) {
+      console.error("Error marking follow-up complete:", error);
+      toast.error("Failed to mark follow-up as complete");
     }
   };
   
