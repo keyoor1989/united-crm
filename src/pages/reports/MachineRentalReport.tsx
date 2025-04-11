@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   FileSpreadsheet, 
-  FilePdf, 
+  FileText, 
   Mail, 
   Download, 
   Share2, 
@@ -16,7 +15,6 @@ import {
 } from "lucide-react";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
 
-// Define the data type for the machine rental report
 interface MachineRentalData {
   id: string;
   customerName: string;
@@ -36,7 +34,6 @@ interface MachineRentalData {
   profitMargin: number;
 }
 
-// Sample data for demonstration
 const sampleRentalData: MachineRentalData[] = [
   {
     id: "1",
@@ -137,7 +134,6 @@ const MachineRentalReport = () => {
   const [branch, setBranch] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Filter the data based on the selected filters
   const filteredData = sampleRentalData.filter((item) => {
     return (
       (customer === "all" || item.customerName.includes(customer)) &&
@@ -151,19 +147,16 @@ const MachineRentalReport = () => {
     );
   });
 
-  // Calculate summary totals
   const totalRentalIncome = filteredData.reduce((sum, item) => sum + item.rentAmount + item.extraCharges, 0);
   const totalConsumableCost = filteredData.reduce((sum, item) => sum + item.tonerCosts + item.partCosts, 0);
-  const totalEngineerCost = filteredData.reduce((sum, item) => sum + (item.engineerVisits * 500), 0); // Assuming 500 per visit
+  const totalEngineerCost = filteredData.reduce((sum, item) => sum + (item.engineerVisits * 500), 0);
   const overallRentalProfit = filteredData.reduce((sum, item) => sum + item.netProfit, 0);
   const overallProfitMargin = totalRentalIncome > 0 ? (overallRentalProfit / totalRentalIncome) * 100 : 0;
 
-  // Handle export to CSV
   const handleExportCSV = () => {
     exportToCsv(filteredData, 'Machine_Rental_Report');
   };
 
-  // Handle export to PDF
   const handleExportPDF = () => {
     exportToPdf(filteredData, 'Machine Rental Report');
   };
@@ -172,7 +165,6 @@ const MachineRentalReport = () => {
     <div className="container mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold mb-6">Machine-wise Rental Report</h1>
       
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
@@ -212,7 +204,6 @@ const MachineRentalReport = () => {
         </Card>
       </div>
       
-      {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 items-end">
           <div className="w-full md:w-1/5">
@@ -291,7 +282,6 @@ const MachineRentalReport = () => {
         </div>
       </div>
       
-      {/* Export Options */}
       <div className="flex justify-between items-center mb-4">
         <div className="text-sm text-gray-500">
           Showing {filteredData.length} of {sampleRentalData.length} entries
@@ -302,7 +292,7 @@ const MachineRentalReport = () => {
             Excel
           </Button>
           <Button onClick={handleExportPDF} variant="outline" size="sm" className="flex items-center">
-            <FilePdf className="mr-2 h-4 w-4" />
+            <FileText className="mr-2 h-4 w-4" />
             PDF
           </Button>
           <Button variant="outline" size="sm" className="flex items-center">
@@ -320,7 +310,6 @@ const MachineRentalReport = () => {
         </div>
       </div>
       
-      {/* Report Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
