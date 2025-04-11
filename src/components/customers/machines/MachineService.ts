@@ -18,10 +18,10 @@ export const fetchCustomerMachines = async (customerId: string): Promise<Machine
       return data.map((machine) => ({
         id: machine.id,
         model: machine.machine_name,
-        serialNumber: machine.machine_serial || `SN${Math.floor(Math.random() * 1000000)}`,
-        installationDate: machine.installation_date || new Date().toISOString().split('T')[0],
+        serialNumber: `SN${Math.floor(Math.random() * 1000000)}`, // Generate a dummy serial number since it doesn't exist in DB
+        installationDate: new Date().toISOString().split('T')[0], // Default to current date
         status: "active",
-        lastService: machine.last_service || new Date().toISOString().split('T')[0]
+        lastService: new Date().toISOString().split('T')[0] // Default to current date
       }));
     }
     
