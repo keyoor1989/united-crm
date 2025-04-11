@@ -7,10 +7,11 @@ import {
   FileText, 
   Package, 
   ListChecks, 
-  BarChart4, 
+  BarChart4,
   HelpCircle 
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import "@/components/chat/chat-assistant.css";
 
 const ChatAssistant = () => {
   return (

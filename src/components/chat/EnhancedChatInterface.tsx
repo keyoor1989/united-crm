@@ -13,7 +13,8 @@ import {
   ListChecks, 
   BarChart4,
   HelpCircle,
-  FileDown
+  FileDown,
+  Loader2
 } from "lucide-react";
 import EnhancedChatMessage from "./EnhancedChatMessage";
 import { toast } from "sonner";
@@ -30,8 +31,11 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { parseQuotationCommand, ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
+import QuotationGenerator from "./QuotationGenerator";
+import { Quotation } from "@/types/sales";
+import { generateQuotationPdf } from "@/utils/pdfGenerator";
 
-// Define message type
 interface Message {
   id: string;
   content: string | React.ReactNode;
@@ -39,7 +43,6 @@ interface Message {
   timestamp: Date;
 }
 
-// Define command intent types
 type CommandIntent = 
   | "quotation" 
   | "task" 
@@ -49,9 +52,9 @@ type CommandIntent =
   | "help" 
   | "unknown";
 
-// Define suggestions for autocomplete
 const suggestions = [
   "Send quotation for Kyocera 2554ci to Mr. Rajesh",
+  "Generate quotation for 3 machines: Kyocera 2554ci, Canon IR2525, HP LaserJet",
   "Create a task for Ravi engineer for tomorrow at 10 AM",
   "Check inventory for Ricoh 2014 toner",
   "Generate AMC invoice for Gufic Bio for April 2025",
@@ -73,17 +76,18 @@ const EnhancedChatInterface = () => {
   
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [quotationData, setQuotationData] = useState<ParsedQuotationRequest | null>(null);
+  const [currentQuotation, setCurrentQuotation] = useState<Quotation | null>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to the bottom when new messages appear
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Update suggestions based on input
   useEffect(() => {
     if (inputValue.length > 2) {
       const filtered = suggestions.filter(suggestion => 
@@ -96,11 +100,11 @@ const EnhancedChatInterface = () => {
     }
   }, [inputValue]);
 
-  // Parse command to determine intent
   const parseCommand = (command: string): CommandIntent => {
     const commandLower = command.toLowerCase();
     
-    if (commandLower.includes("quotation") || commandLower.includes("quote")) {
+    if (commandLower.includes("quotation") || commandLower.includes("quote") || 
+        commandLower.match(/quote for|generate quote|create quote|make quotation/)) {
       return "quotation";
     } else if (commandLower.includes("task") || commandLower.includes("schedule")) {
       return "task";
@@ -117,30 +121,90 @@ const EnhancedChatInterface = () => {
     return "unknown";
   };
 
-  // Generate response based on intent
   const generateResponse = (intent: CommandIntent, command: string): React.ReactNode => {
     switch (intent) {
       case "quotation":
+        const parsedQuote = parseQuotationCommand(command);
+        
+        if (parsedQuote.models.length === 0) {
+          return (
+            <div className="space-y-3">
+              <p>I'd be happy to create a quotation for you. Please provide more details:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Which machine model(s) do you need a quotation for?</li>
+                <li>Who is the customer?</li>
+                <li>How many units of each model?</li>
+              </ul>
+              <p>For example: "Generate quotation for 2 Kyocera 2554ci for ABC Company"</p>
+            </div>
+          );
+        }
+        
+        setQuotationData(parsedQuote);
+        
         return (
           <div className="space-y-3">
-            <p>I've created a draft quotation based on your request. Here's a preview:</p>
-            <div className="bg-muted p-3 rounded-md text-sm">
-              <div className="flex justify-between mb-2">
-                <span className="font-medium">Quotation #QT-2025-042</span>
-                <Badge variant="outline">Draft</Badge>
-              </div>
-              <p><strong>Product:</strong> Kyocera 2554ci</p>
-              <p><strong>Client:</strong> Mr. Rajesh</p>
-              <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
-              <p><strong>Amount:</strong> ₹1,65,000 + GST</p>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="flex items-center gap-2">
-                <FileDown className="h-4 w-4" />
-                Download PDF
-              </Button>
-              <Button size="sm">View Full Quotation</Button>
-            </div>
+            <p>I'll create a quotation based on your request. Let's fill in the details:</p>
+            <QuotationGenerator 
+              initialData={parsedQuote}
+              onComplete={(quotation) => {
+                setCurrentQuotation(quotation);
+                setQuotationData(null);
+                
+                const successMsg: Message = {
+                  id: `msg-${Date.now()}-bot-success`,
+                  content: (
+                    <div className="space-y-3">
+                      <p>Quotation created successfully! Here's a summary:</p>
+                      <div className="bg-muted p-3 rounded-md text-sm">
+                        <div className="flex justify-between mb-2">
+                          <span className="font-medium">Quotation #{quotation.quotationNumber}</span>
+                          <Badge variant="outline">Draft</Badge>
+                        </div>
+                        <p><strong>Customer:</strong> {quotation.customerName}</p>
+                        <p><strong>Items:</strong> {quotation.items.length}</p>
+                        <p><strong>Total Amount:</strong> ₹{quotation.grandTotal.toLocaleString()}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex items-center gap-2"
+                          onClick={() => {
+                            try {
+                              generateQuotationPdf(quotation);
+                              toast.success("PDF downloaded successfully");
+                            } catch (error) {
+                              toast.error("Error generating PDF");
+                            }
+                          }}
+                        >
+                          <FileDown className="h-4 w-4" />
+                          Download PDF
+                        </Button>
+                        <Button size="sm">View Full Quotation</Button>
+                      </div>
+                    </div>
+                  ),
+                  sender: "bot",
+                  timestamp: new Date(),
+                };
+                
+                setMessages(prev => [...prev, successMsg]);
+              }}
+              onCancel={() => {
+                setQuotationData(null);
+                
+                const cancelMsg: Message = {
+                  id: `msg-${Date.now()}-bot-cancel`,
+                  content: "Quotation creation cancelled. Let me know if you'd like to try again or if there's something else I can help you with.",
+                  sender: "bot",
+                  timestamp: new Date(),
+                };
+                
+                setMessages(prev => [...prev, cancelMsg]);
+              }}
+            />
           </div>
         );
       
@@ -164,7 +228,6 @@ const EnhancedChatInterface = () => {
         );
       
       case "inventory":
-        // Extract product from command
         const productMatch = command.match(/for\s+([A-Za-z0-9\s]+)(?:\s+toner)?/i);
         const product = productMatch ? productMatch[1] : "unknown product";
         
@@ -204,7 +267,6 @@ const EnhancedChatInterface = () => {
         );
       
       case "invoice":
-        // Extract client and month from command
         const clientMatch = command.match(/for\s+([A-Za-z0-9\s]+)(?:\s+for)/i);
         const monthMatch = command.match(/for\s+([A-Za-z]+\s+\d{4})/i);
         const client = clientMatch ? clientMatch[1] : "the client";
@@ -301,7 +363,6 @@ const EnhancedChatInterface = () => {
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
     
-    // Add user message
     const userMessage: Message = {
       id: `msg-${Date.now()}-user`,
       content: inputValue,
@@ -313,14 +374,11 @@ const EnhancedChatInterface = () => {
     setInputValue("");
     setShowSuggestions(false);
     
-    // Simulate bot typing
     setIsTyping(true);
     
-    // Parse command and generate response
     const intent = parseCommand(inputValue);
     const response = generateResponse(intent, inputValue);
     
-    // Simulate bot response after a delay
     setTimeout(() => {
       const botMessage: Message = {
         id: `msg-${Date.now()}-bot`,
@@ -332,8 +390,7 @@ const EnhancedChatInterface = () => {
       setMessages((prev) => [...prev, botMessage]);
       setIsTyping(false);
       
-      // Show toast for successful operations
-      if (intent !== "unknown" && intent !== "help") {
+      if (intent !== "unknown" && intent !== "help" && intent !== "quotation") {
         toast.success(`Successfully processed your ${intent} request`);
       }
     }, 1000);
@@ -398,6 +455,18 @@ const EnhancedChatInterface = () => {
                 <div className="typing-dot"></div>
                 <div className="typing-dot"></div>
                 <div className="typing-dot"></div>
+              </div>
+            </div>
+          )}
+          
+          {isProcessing && (
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex items-center gap-2 bg-muted p-3 rounded-md max-w-[80%]">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <p>Processing your request...</p>
               </div>
             </div>
           )}
