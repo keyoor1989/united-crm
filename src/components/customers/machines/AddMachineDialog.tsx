@@ -40,14 +40,14 @@ export const AddMachineDialog: React.FC<AddMachineDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add New Machine</DialogTitle>
+          <DialogTitle>Add Machine (Including External Purchases)</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="machine-model">Machine Model*</Label>
             <Input
               id="machine-model"
-              placeholder="Enter machine model"
+              placeholder="Enter machine model (e.g., Kyocera Taskalfa 2554ci)"
               value={newMachineData.model}
               onChange={(e) => setNewMachineData({...newMachineData, model: e.target.value})}
               required
@@ -63,7 +63,7 @@ export const AddMachineDialog: React.FC<AddMachineDialogProps> = ({
               onChange={(e) => setNewMachineData({...newMachineData, serialNumber: e.target.value})}
             />
             <p className="text-xs text-muted-foreground">
-              Optional for customers who buy toners only
+              Optional - Leave blank for machines not purchased from us
             </p>
           </div>
 
@@ -94,7 +94,7 @@ export const AddMachineDialog: React.FC<AddMachineDialogProps> = ({
               onChange={(e) => setNewMachineData({...newMachineData, installationDate: e.target.value})}
             />
             <p className="text-xs text-muted-foreground">
-              Optional for customers who don't have machines installed by us
+              Optional - Leave blank for machines not installed by us
             </p>
           </div>
 

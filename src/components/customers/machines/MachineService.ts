@@ -18,10 +18,10 @@ export const fetchCustomerMachines = async (customerId: string): Promise<Machine
       return data.map((machine) => ({
         id: machine.id,
         model: machine.machine_name,
-        serialNumber: "N/A", // Default for customers who don't have machines sold by us
-        installationDate: "N/A", // Default for customers who don't have machines sold by us
+        serialNumber: machine.machine_serial || "Not Available", // Better user-friendly label
+        installationDate: machine.installation_date || "External Purchase", // Indicating external purchase
         status: "active",
-        lastService: "N/A" // Default value
+        lastService: machine.last_service || "Not Serviced By Us" // Clearer messaging
       }));
     }
     
@@ -51,12 +51,25 @@ export const addMachine = async (customerId: string, machineData: MachineFormDat
       throw new Error("Machine type is required");
     }
     
-    // Only include fields that exist in the customer_machines table
-    const data = {
+    // Prepare data for Supabase
+    const data: Record<string, any> = {
       customer_id: customerId,
       machine_name: machineData.model,
-      machine_type: machineData.machineType
+      machine_type: machineData.machineType,
+      is_external_purchase: true // Default assumption unless installation data is provided
     };
+    
+    // If serial number provided, add it
+    if (machineData.serialNumber) {
+      data.machine_serial = machineData.serialNumber;
+      data.is_external_purchase = false; // If we have serial, likely one of our sales
+    }
+    
+    // If installation date provided, add it
+    if (machineData.installationDate) {
+      data.installation_date = machineData.installationDate;
+      data.is_external_purchase = false; // If we have installation date, likely one of our sales
+    }
     
     console.log("Submitting to Supabase:", data);
     
