@@ -85,6 +85,7 @@ const AppRoutes = () => (
         <Route path="/" element={<Dashboard />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customer-form" element={<CustomerForm />} />
+        <Route path="/customer-form/:id" element={<CustomerForm />} />
         
         {/* Finance Routes */}
         <Route path="/finance" element={<FinanceDashboard />} />
@@ -104,6 +105,7 @@ const AppRoutes = () => (
         {/* Service Routes */}
         <Route path="/service" element={<Service />} />
         <Route path="/service-call-form" element={<ServiceCallForm />} />
+        <Route path="/service/service-call-form" element={<ServiceCallForm />} />
         <Route path="/engineer/:id" element={<EngineerDetail />} />
         <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
         
@@ -135,6 +137,7 @@ const AppRoutes = () => (
         <Route path="/quotations" element={<Quotations />} />
         <Route path="/quotation-form" element={<QuotationForm />} />
         <Route path="/quotation-form/:id" element={<QuotationForm />} />
+        <Route path="/sales/quotation-form" element={<QuotationForm />} />
         <Route path="/sent-quotations" element={<SentQuotations />} />
         <Route path="/quotation-products" element={<QuotationProducts />} />
         <Route path="/contract-upload" element={<ContractUpload />} />

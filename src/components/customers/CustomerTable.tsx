@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -71,7 +70,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   };
 
   const handleCreateQuotation = (customerId: string) => {
-    navigate(`/sales/quotation-form?customerId=${customerId}`);
+    navigate(`/quotation-form?customerId=${customerId}`);
     toast({
       title: "Create Quotation",
       description: "Creating a new quotation for this customer",
@@ -79,7 +78,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   };
 
   const handleScheduleService = (customerId: string) => {
-    navigate(`/service/service-call-form?customerId=${customerId}`);
+    navigate(`/service-call-form?customerId=${customerId}`);
     toast({
       title: "Schedule Service",
       description: "Scheduling a service call for this customer",
@@ -104,7 +103,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   };
 
   const confirmDeleteCustomer = (customerId: string) => {
-    // In a real implementation, this would call an API to delete the customer
     toast({
       title: "Customer Deleted",
       description: "The customer has been successfully deleted.",
