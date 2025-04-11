@@ -992,6 +992,23 @@ Quotation Request:
     }
   };
 
+  useEffect(() => {
+    const handleSmartAssistantCommand = (event: CustomEvent) => {
+      if (event.detail && event.detail.command) {
+        setInputValue(event.detail.command);
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }
+    };
+
+    window.addEventListener('smart-assistant-command', handleSmartAssistantCommand as EventListener);
+
+    return () => {
+      window.removeEventListener('smart-assistant-command', handleSmartAssistantCommand as EventListener);
+    };
+  }, []);
+
   return (
     <Card className="border-border">
       <CardContent className="p-0 flex flex-col h-[calc(100vh-350px)]">

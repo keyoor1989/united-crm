@@ -10,11 +10,39 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const ApiKeyManager = () => {
   const [openRouterApiKey, setOpenRouterApiKey] = useState("");
   const [showOpenRouterApiKey, setShowOpenRouterApiKey] = useState(false);
+  const [isClaudeConfigured, setIsClaudeConfigured] = useState(true);
 
   // Load saved API keys on component mount
   useEffect(() => {
     const savedOpenRouterKey = sessionStorage.getItem("openrouter_api_key");
     if (savedOpenRouterKey) setOpenRouterApiKey(savedOpenRouterKey);
+    
+    // Check if Claude is configured
+    const checkClaudeConfig = async () => {
+      try {
+        const { data, error } = await fetch('https://klieshkrqryigtqtshka.supabase.co/functions/v1/claude-assistant', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtsaWVzaGtycXJ5aWd0cXRzaGthIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNzUxODIsImV4cCI6MjA1OTk1MTE4Mn0.45vdOu9sWjNG9vpDSl637vjRDkeJbJ-wTxRk-cm7ADY`
+          },
+          body: JSON.stringify({
+            prompt: "Hello",
+            systemPrompt: "Respond with 'Claude is configured' if you can read this."
+          })
+        }).then(res => res.json());
+        
+        if (error || !data || data.error) {
+          console.error("Claude connection test failed:", error || data?.error);
+          setIsClaudeConfigured(false);
+        }
+      } catch (error) {
+        console.error("Error checking Claude configuration:", error);
+        setIsClaudeConfigured(false);
+      }
+    };
+    
+    checkClaudeConfig();
   }, []);
 
   const saveOpenRouterApiKey = () => {
@@ -47,21 +75,36 @@ const ApiKeyManager = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <Alert className="bg-green-50 border border-green-200 text-green-800">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertTitle>Claude API Connected</AlertTitle>
-              <AlertDescription className="mt-2">
-                <p className="mb-2">
-                  Your Claude API key is securely stored in Supabase Edge Function Secrets and ready to use with your Smart Assistant.
-                </p>
-                <p className="mb-2">
-                  When you input a 10-digit mobile number, the system will fetch customer data from your database and have Claude summarize it.
-                </p>
-                <p>
-                  When you request a quotation, the assistant will guide you through the process and provide a professional summary.
-                </p>
-              </AlertDescription>
-            </Alert>
+            {isClaudeConfigured ? (
+              <Alert className="bg-green-50 border border-green-200 text-green-800">
+                <CheckCircle2 className="h-4 w-4" />
+                <AlertTitle>Claude API Connected</AlertTitle>
+                <AlertDescription className="mt-2">
+                  <p className="mb-2">
+                    Your Claude API key is securely stored in Supabase Edge Function Secrets and ready to use with your Smart Assistant.
+                  </p>
+                  <p className="mb-2">
+                    When you input a 10-digit mobile number, the system will fetch customer data from your database and have Claude summarize it.
+                  </p>
+                  <p>
+                    When you request a quotation, the assistant will guide you through the process and provide a professional summary.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="bg-amber-50 border border-amber-200 text-amber-800">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Claude API Key Not Configured</AlertTitle>
+                <AlertDescription className="mt-2">
+                  <p className="mb-2">
+                    Your Claude API key is not properly configured in Supabase Edge Function Secrets.
+                  </p>
+                  <p>
+                    Please contact the administrator to set up the Claude API key.
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
             
             <div className="mt-4 p-3 bg-muted rounded-md text-sm">
               <h4 className="font-medium mb-1">Sales Assistant Capabilities:</h4>
