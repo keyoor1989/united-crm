@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -228,9 +229,10 @@ const CommandCopilotInterface = () => {
     } catch (error) {
       console.error("Error processing message:", error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      // FIX: Ensure error message is converted to string when used in a string template
       const botMessage: Message = {
         id: `msg-${Date.now()}-bot`,
-        content: `Sorry, I encountered an error processing your request. ${errorMessage}`,
+        content: `Sorry, I encountered an error processing your request. ${String(errorMessage)}`,
         sender: "bot",
         timestamp: new Date(),
       };
