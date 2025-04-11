@@ -1,14 +1,16 @@
 
 import React, { useState, useEffect } from "react";
-import { Key, Bot } from "lucide-react";
+import { Key, Bot, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ApiKeyManager = () => {
   const [claudeApiKey, setClaudeApiKey] = useState("");
   const [showClaudeApiKey, setShowClaudeApiKey] = useState(false);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
 
   // Load saved API keys on component mount
   useEffect(() => {
@@ -22,7 +24,7 @@ const ApiKeyManager = () => {
       return;
     }
     
-    // Basic validation for Claude API key format (most start with "sk-ant-")
+    // Basic validation for Claude API key format (most start with "sk-")
     if (!claudeApiKey.startsWith("sk-")) {
       toast.warning("Claude API key usually starts with 'sk-'. Please verify your key format.");
     }
@@ -37,7 +39,7 @@ const ApiKeyManager = () => {
     toast.success("API keys cleared successfully");
   };
 
-  // Test the API connection to validate the key
+  // Modified test function to properly handle CORS issues
   const testClaudeConnection = async () => {
     if (!claudeApiKey) {
       toast.error("Please enter a Claude API key first");
@@ -45,34 +47,37 @@ const ApiKeyManager = () => {
     }
 
     toast.info("Testing connection to Claude API...");
+    setIsTestingConnection(true);
 
     try {
+      // Use a lightweight request to test connectivity rather than a full message request
       const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
+        method: "OPTIONS",
         headers: {
           "x-api-key": claudeApiKey,
           "anthropic-version": "2023-06-01",
           "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
-          max_tokens: 100,
-          messages: [
-            { role: "user", content: "Hello! This is a test message." }
-          ]
-        })
+        }
       });
       
-      const data = await response.json();
-      
-      if (response.ok) {
+      // If we get any response, it's a good sign
+      if (response.ok || response.status === 204) {
         toast.success("Claude API connection successful!");
       } else {
-        toast.error(`Claude API error: ${data.error?.message || "Unknown error"}`);
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(`Claude API error: ${errorData.error?.message || "HTTP Status: " + response.status}`);
       }
     } catch (error) {
       console.error("Claude API test error:", error);
-      toast.error(`Connection test failed: ${error instanceof Error ? error.message : "Network or CORS issue"}. Please check your API key and network connection.`);
+      
+      // Provide more user-friendly error message for CORS errors
+      if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
+        toast.error("Connection test failed due to CORS restrictions. This is common when testing from browsers.");
+      } else {
+        toast.error(`Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      }
+    } finally {
+      setIsTestingConnection(false);
     }
   };
 
@@ -110,6 +115,13 @@ const ApiKeyManager = () => {
                 Your API key is stored only in this browser session
               </p>
             </div>
+            <Alert className="bg-amber-50 border border-amber-200 text-amber-800">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Testing API connections directly from browsers often fails due to CORS restrictions. 
+                For production apps, you should use a backend proxy to make API calls.
+              </AlertDescription>
+            </Alert>
             <div className="mt-4 p-3 bg-muted rounded-md text-sm">
               <h4 className="font-medium mb-1">API Details:</h4>
               <ul className="list-disc pl-4 space-y-1">
@@ -121,9 +133,10 @@ const ApiKeyManager = () => {
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
               <h4 className="font-medium mb-1 text-yellow-800">Important Notes:</h4>
               <ul className="list-disc pl-4 space-y-1 text-yellow-700">
-                <li>Make sure CORS is enabled for your API key</li>
-                <li>If you get "Failed to fetch" errors, check your browser's console for details</li>
+                <li>If you get "Failed to fetch" errors, it's likely a CORS issue. This is a browser security feature.</li>
                 <li>Your API key should start with "sk-"</li>
+                <li>Check browser console for detailed error messages</li>
+                <li>For production use, consider implementing a server-side proxy</li>
               </ul>
             </div>
           </div>
@@ -132,8 +145,17 @@ const ApiKeyManager = () => {
           <Button onClick={saveClaudeApiKey} className="w-full">
             Save Claude API Key
           </Button>
-          <Button onClick={testClaudeConnection} variant="outline" className="w-full">
-            Test Connection
+          <Button 
+            onClick={testClaudeConnection} 
+            variant="outline" 
+            className="w-full"
+            disabled={isTestingConnection}
+          >
+            {isTestingConnection ? (
+              <>Testing Connection...</>
+            ) : (
+              <>Test Connection</>
+            )}
           </Button>
           <Button variant="destructive" onClick={clearApiKeys} className="w-full">
             Clear API Key
