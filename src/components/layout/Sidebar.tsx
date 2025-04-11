@@ -7,7 +7,8 @@ import {
   inventorySection,
   quotationsSection,
   reportsSection,
-  locationNavItems 
+  locationNavItems,
+  taskSection
 } from "./sidebar/config";
 import { 
   Sidebar as SidebarComp, 
@@ -39,7 +40,9 @@ const AppSidebar = () => {
     location.pathname === "/quotations" || location.pathname === "/purchase-orders" || 
     location.pathname === "/sent-quotations" || location.pathname === "/sent-orders" || 
     location.pathname === "/order-history" || location.pathname === "/quotation-products" ||
-    location.pathname === "/contract-upload") ? "quotations" : ""
+    location.pathname === "/contract-upload") ? "quotations" : "",
+    (location.pathname.startsWith("/tasks")) ? "tasks" : "",
+    (location.pathname.startsWith("/reports")) ? "reports" : ""
   ].filter(Boolean);
 
   const [openSections, setOpenSections] = React.useState<string[]>(initialSections);
@@ -76,6 +79,16 @@ const AppSidebar = () => {
           isActive={isActive} 
           isPathActive={(path) => location.pathname.startsWith(path)}
           isCollapsed={isCollapsed} 
+        />
+        
+        {/* Task Section */}
+        <SectionGroup 
+          section={taskSection}
+          isOpen={openSections.includes("tasks")}
+          toggleSection={() => toggleSection("tasks")}
+          isSectionActive={isSectionActive}
+          isActive={isActive}
+          isCollapsed={isCollapsed}
         />
         
         {/* Quotations Section */}

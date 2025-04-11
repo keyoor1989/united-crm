@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -56,6 +57,9 @@ import EngineerServiceReport from "@/pages/reports/EngineerServiceReport";
 import CustomerFollowUpReport from "@/pages/reports/CustomerFollowUpReport";
 import BranchProfitReport from "@/pages/reports/BranchProfitReport";
 
+// Import Task Management
+import TaskDashboard from "@/pages/tasks/TaskDashboard";
+
 const AppRoutes = () => (
   <Routes>
     <Route element={<Layout />}>
@@ -83,6 +87,9 @@ const AppRoutes = () => (
       <Route path="/service-call-form" element={<ServiceCallForm />} />
       <Route path="/engineer/:id" element={<EngineerDetail />} />
       <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
+      
+      {/* Task Management Routes */}
+      <Route path="/tasks" element={<TaskDashboard />} />
       
       {/* Inventory Routes */}
       <Route path="/inventory" element={<Inventory />} />

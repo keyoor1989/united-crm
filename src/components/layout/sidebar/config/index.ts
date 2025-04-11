@@ -5,3 +5,4 @@ export * from './inventorySection';
 export * from './quotationsSection';
 export * from './reportsSection';
 export * from './locationNavItems';
+export * from './taskSection';
