@@ -15,6 +15,11 @@ interface FollowUpItemProps {
 }
 
 const FollowUpItem: React.FC<FollowUpItemProps> = ({ followUp, onMarkComplete }) => {
+  const handleComplete = () => {
+    console.log("Marking follow-up complete:", followUp.id);
+    onMarkComplete(followUp.id);
+  };
+
   return (
     <div key={followUp.id} className="border rounded-md p-3 bg-card">
       <div className="flex justify-between items-start">
@@ -35,7 +40,7 @@ const FollowUpItem: React.FC<FollowUpItemProps> = ({ followUp, onMarkComplete })
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onMarkComplete(followUp.id)}>
+            <DropdownMenuItem onClick={handleComplete}>
               Mark Complete
             </DropdownMenuItem>
             <DropdownMenuItem>
@@ -79,7 +84,7 @@ const FollowUpItem: React.FC<FollowUpItemProps> = ({ followUp, onMarkComplete })
           size="sm" 
           variant="default" 
           className="h-7 px-2 text-xs"
-          onClick={() => onMarkComplete(followUp.id)}
+          onClick={handleComplete}
         >
           <ClipboardCheck className="h-3 w-3 mr-1" />
           Complete

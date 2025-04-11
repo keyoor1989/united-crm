@@ -7,6 +7,7 @@ import {
   filterFollowUps,
   calculateTodayStats
 } from "@/components/customers/followups/followUpService";
+import { toast } from "sonner";
 
 export const useFollowUps = () => {
   const [followUps, setFollowUps] = useState<SalesFollowUp[]>([]);
@@ -29,6 +30,7 @@ export const useFollowUps = () => {
       }
     } catch (error) {
       console.error("Error loading follow-ups:", error);
+      toast.error("Failed to load follow-ups");
     } finally {
       setIsLoading(false);
     }
@@ -41,6 +43,7 @@ export const useFollowUps = () => {
       setFollowUps(followUps.map(item => 
         item.id === id ? { ...item, status: "completed" } : item
       ));
+      toast.success("Follow-up marked as complete!");
     }
   };
   

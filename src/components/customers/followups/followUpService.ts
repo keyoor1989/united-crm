@@ -49,6 +49,7 @@ export const fetchAllFollowUps = async (): Promise<SalesFollowUp[] | null> => {
 // Mark a follow-up as complete
 export const markFollowUpComplete = async (id: number): Promise<boolean> => {
   try {
+    console.log("Marking follow-up complete:", id);
     const { error } = await supabase
       .from('sales_followups')
       .update({ status: 'completed' })
