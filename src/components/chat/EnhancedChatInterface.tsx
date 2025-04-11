@@ -49,6 +49,7 @@ import CustomerLookupView from "./CustomerLookupView";
 import TaskCreationView from "./TaskCreationView";
 import { Quotation } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
+import { supabase } from "@/utils/supabase";
 
 interface Message {
   id: string;
@@ -141,58 +142,34 @@ const EnhancedChatInterface = () => {
   }, [inputValue]);
 
   const processClaudeAI = async (prompt: string): Promise<string> => {
-    const openRouterApiKey = getOpenRouterApiKey();
-    
-    if (!openRouterApiKey) {
-      throw new Error("OpenRouter API key is not set. Please go to API Settings to add your key.");
-    }
-    
     try {
-      console.log("Calling Claude 3.7 via OpenRouter API");
+      console.log("Calling Claude 3 via Supabase Edge Function");
       
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${openRouterApiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "Command Copilot"
-        },
-        body: JSON.stringify({
-          model: "anthropic/claude-3-7-sonnet-20250219",
-          messages: [
-            {
-              role: "system",
-              content: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
-            },
-            { 
-              role: "user", 
-              content: prompt 
-            }
-          ]
-        })
+      const { data, error } = await supabase.functions.invoke('claude-assistant', {
+        body: {
+          prompt: prompt,
+          systemPrompt: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
+        }
       });
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("OpenRouter API returned an error:", response.status, errorData);
-        throw new Error(`API returned ${response.status}: ${errorData.error?.message || "Unknown error"}`);
+      if (error) {
+        console.error("Error calling Claude Edge Function:", error);
+        throw new Error(`Edge function error: ${error.message}`);
       }
       
-      const data = await response.json();
-      
-      if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-        return data.choices[0].message.content;
+      if (data?.content) {
+        console.log("Claude response received successfully");
+        return data.content;
       } else {
-        console.error("Unexpected OpenRouter API response format:", data);
-        throw new Error("Received an unexpected response format from OpenRouter API");
+        console.error("Unexpected Claude response format:", data);
+        throw new Error("Unexpected response format from Claude AI");
       }
     } catch (error) {
       console.error("Claude API error details:", error);
       
       // Provide more specific error messages based on error type
       if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
-        throw new Error("Failed to connect to OpenRouter API. This could be due to network issues, CORS restrictions, or an invalid API endpoint. Please check your network connection and API settings.");
+        throw new Error("Failed to connect to Claude API via Supabase. This could be due to network issues or an invalid API configuration.");
       }
       
       const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");

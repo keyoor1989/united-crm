@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import { Message } from "../types/chatTypes";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UseAIProps {
   claudeApiKey: string;
@@ -20,36 +20,28 @@ export const useAI = ({
 
   const processClaudeAi = async (userInput: string): Promise<string> => {
     try {
-      // Use OpenRouter API to access Claude 3.7
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${openRouterApiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "Command Copilot"
-        },
-        body: JSON.stringify({
-          model: "anthropic/claude-3-7-sonnet-20250219",
-          messages: [
-            {
-              role: "system",
-              content: "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations."
-            },
-            { 
-              role: "user", 
-              content: userInput 
-            }
-          ]
-        })
+      console.log("Calling Claude AI via Supabase Edge Function...");
+      
+      const systemPrompt = "You are a helpful and intelligent assistant inside a copier dealership ERP. Provide concise, helpful information about printers, copiers, maintenance, and business operations.";
+      
+      const { data, error } = await supabase.functions.invoke('claude-assistant', {
+        body: {
+          prompt: userInput,
+          systemPrompt: systemPrompt
+        }
       });
       
-      const data = await response.json();
+      if (error) {
+        console.error("Error calling Claude Edge Function:", error);
+        throw new Error(`Edge function error: ${error.message}`);
+      }
       
-      if (response.ok && data.choices && data.choices[0]) {
-        return data.choices[0].message.content;
+      if (data?.content) {
+        console.log("Claude response received successfully");
+        return data.content;
       } else {
-        throw new Error(data.error?.message || "Failed to get Claude AI response");
+        console.error("Unexpected Claude response format:", data);
+        throw new Error("Unexpected response format from Claude AI");
       }
     } catch (error) {
       console.error("Claude API error:", error);
@@ -105,7 +97,7 @@ export const useAI = ({
     setIsProcessing(true);
     
     try {
-      if (preferredAiModel === "claude" && openRouterApiKey) {
+      if (preferredAiModel === "claude") {
         try {
           const aiResponse = await processClaudeAi(userInput);
           const botMessage: Message = {
@@ -114,7 +106,7 @@ export const useAI = ({
             sender: "bot",
             timestamp: new Date(),
             isAiResponse: true,
-            aiModel: "claude-3-7"
+            aiModel: "claude-3"
           };
           addMessageToChat(botMessage);
           return true;
@@ -159,7 +151,6 @@ export const useAI = ({
           }
         }
       } else if (preferredAiModel === "openrouter" && openRouterApiKey) {
-        // Use OpenRouter
         try {
           const aiResponse = await processOpenRouterAi(userInput);
           const botMessage: Message = {
@@ -183,7 +174,7 @@ export const useAI = ({
                 sender: "bot",
                 timestamp: new Date(),
                 isAiResponse: true,
-                aiModel: "claude-3-7"
+                aiModel: "claude-3"
               };
               addMessageToChat(botMessage);
               return true;
