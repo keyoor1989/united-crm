@@ -15,7 +15,8 @@ import {
   HelpCircle,
   FileDown,
   Loader2,
-  UserPlus
+  UserPlus,
+  ClipboardList
 } from "lucide-react";
 import EnhancedChatMessage from "./EnhancedChatMessage";
 import { toast } from "sonner";
@@ -35,11 +36,14 @@ import { Badge } from "@/components/ui/badge";
 import { parseQuotationCommand, ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
 import { parseInventoryCommand, ParsedInventoryQuery } from "@/utils/chatCommands/inventoryParser";
 import { parseCustomerCommand, checkDuplicateCustomer, createNewCustomer } from "@/utils/chatCommands/customerParser";
+import { parseTaskCommand, createNewTask } from "@/utils/chatCommands/taskParser";
 import { useCustomers } from "@/hooks/useCustomers";
 import { CustomerType } from "@/types/customer";
+import { Task } from "@/types/task";
 import QuotationGenerator from "./QuotationGenerator";
 import InventoryResultView from "./InventoryResultView";
 import CustomerCreationView from "./CustomerCreationView";
+import TaskCreationView from "./TaskCreationView";
 import { Quotation } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
 
@@ -57,6 +61,7 @@ type CommandIntent =
   | "invoice" 
   | "report" 
   | "customer"
+  | "follow-up"
   | "help" 
   | "unknown";
 
@@ -71,6 +76,9 @@ const suggestions = [
   "Add new customer Ravi Sharma from Bhopal",
   "Create lead: Mahesh Sharma, number 8103449999, interested in Ricoh 2014D",
   "Naya customer Vinay Jain, Indore, 8888000011, spare part enquiry",
+  "Add follow-up task for Rahul Mehta tomorrow at 11 AM",
+  "Reminder: call Prakash on 15th April at 3PM",
+  "Create task to follow up with ABC Corp regarding Kyocera quote",
   "Show open service calls for this week",
   "Schedule a follow-up with ABC Corp next Monday",
   "How many machines are due for service this month?",
@@ -96,6 +104,7 @@ const EnhancedChatInterface = () => {
   const [currentQuotation, setCurrentQuotation] = useState<Quotation | null>(null);
   const [inventoryData, setInventoryData] = useState<ParsedInventoryQuery | null>(null);
   const [customerData, setCustomerData] = useState<CustomerType | null>(null);
+  const [taskData, setTaskData] = useState<Task | null>(null);
   const [isDuplicateCustomer, setIsDuplicateCustomer] = useState<boolean>(false);
   const { customers } = useCustomers();
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -123,6 +132,10 @@ const EnhancedChatInterface = () => {
     if (commandLower.includes("quotation") || commandLower.includes("quote") || 
         commandLower.match(/quote for|generate quote|create quote|make quotation/)) {
       return "quotation";
+    } else if (commandLower.includes("follow-up") || commandLower.includes("follow up") || 
+               commandLower.includes("reminder") || commandLower.includes("remind me") ||
+               (commandLower.includes("task") && commandLower.includes("follow"))) {
+      return "follow-up";
     } else if (commandLower.includes("task") || commandLower.includes("schedule")) {
       return "task";
     } else if (commandLower.includes("inventory") || commandLower.includes("stock") || 
@@ -249,6 +262,36 @@ const EnhancedChatInterface = () => {
               <Button size="sm">View Task Details</Button>
             </div>
           </div>
+        );
+      
+      case "follow-up":
+        const parsedTask = parseTaskCommand(command);
+        
+        if (!parsedTask.isValid) {
+          return (
+            <div className="space-y-3">
+              <p>I'd be happy to create a follow-up task for you. Please provide the following missing information:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                {parsedTask.missingFields.includes("customerName") && (
+                  <li>Who do you need to follow up with?</li>
+                )}
+                {parsedTask.missingFields.includes("dueDate") && (
+                  <li>When should the follow-up be scheduled?</li>
+                )}
+                {!parsedTask.taskTitle && (
+                  <li>What's the purpose of this follow-up? (optional)</li>
+                )}
+              </ul>
+              <p>For example: "Add follow-up task for Rahul Mehta tomorrow at 11 AM" or "Reminder: call Prakash on 15th April at 3PM"</p>
+            </div>
+          );
+        }
+        
+        const newTask = createNewTask(parsedTask);
+        setTaskData(newTask);
+        
+        return (
+          <TaskCreationView task={newTask} />
         );
       
       case "inventory":
@@ -404,6 +447,7 @@ const EnhancedChatInterface = () => {
             <ul className="list-disc pl-5 space-y-1">
               <li>Create quotations (e.g., "Send quotation for Kyocera 2554ci to Mr. Rajesh")</li>
               <li>Schedule tasks (e.g., "Create a task for Ravi engineer for tomorrow at 10 AM")</li>
+              <li>Add follow-ups (e.g., "Add follow-up task for Rahul Mehta tomorrow at 11 AM")</li>
               <li>Check inventory (e.g., "Check inventory for Ricoh 2014 toner" or "Kitna stock hai Sharp MX3070 ka?")</li>
               <li>Add customers (e.g., "Add new customer Ravi Sharma from Bhopal" or "Create lead: Mahesh Sharma, number 8103449999")</li>
               <li>Generate invoices (e.g., "Generate AMC invoice for Gufic Bio for April 2025")</li>
@@ -487,6 +531,9 @@ const EnhancedChatInterface = () => {
         break;
       case "task":
         command = "Create a task for ";
+        break;
+      case "follow-up":
+        command = "Add follow-up for ";
         break;
       case "report":
         command = "Show report for ";
@@ -599,6 +646,22 @@ const EnhancedChatInterface = () => {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Create Task</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => handleQuickAction("follow-up")}
+                  className="shrink-0"
+                >
+                  <ClipboardList className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add Follow-up</TooltipContent>
             </Tooltip>
           </TooltipProvider>
           
