@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +14,6 @@ import {
   MessageSquare
 } from "lucide-react";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
-import { CalendarIcon } from "@radix-ui/react-icons";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -270,7 +268,7 @@ const CustomerFollowUpReport = () => {
                     variant="outline"
                     className="w-full justify-start text-left font-normal"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Calendar className="mr-2 h-4 w-4" />
                     {startDate ? format(startDate, "PPP") : "Start Date"}
                   </Button>
                 </PopoverTrigger>
@@ -290,7 +288,7 @@ const CustomerFollowUpReport = () => {
                     variant="outline"
                     className="w-full justify-start text-left font-normal"
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Calendar className="mr-2 h-4 w-4" />
                     {endDate ? format(endDate, "PPP") : "End Date"}
                   </Button>
                 </PopoverTrigger>
