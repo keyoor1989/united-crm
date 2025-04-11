@@ -1,10 +1,8 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, FilePen, CalendarPlus, User, Phone, Mail, MapPin } from "lucide-react";
-import { ParsedCustomerCommand } from "@/utils/chatCommands/customerParser";
 import { CustomerType } from "@/types/customer";
 import { toast } from "sonner";
 

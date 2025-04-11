@@ -1,13 +1,15 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ChevronLeft, ChevronRight, Phone, Mail, MessageSquare, UserPlus, Filter } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type Customer = {
-  id: number;
+  id: string;
   name: string;
   contact: string;
   area: string;
@@ -15,72 +17,6 @@ type Customer = {
   status: "New" | "Quoted" | "Follow-up" | "Converted" | "Lost";
   lastContact: Date;
 };
-
-const mockCustomers: Customer[] = [
-  {
-    id: 1,
-    name: "Govt. Medical College",
-    contact: "9876543210",
-    area: "Indore",
-    machineType: "Kyocera 2554ci",
-    status: "New",
-    lastContact: new Date(2025, 3, 5),
-  },
-  {
-    id: 2,
-    name: "Sunrise Hospital",
-    contact: "8765432109",
-    area: "Bhopal",
-    machineType: "Xerox 7845",
-    status: "Quoted",
-    lastContact: new Date(2025, 3, 7),
-  },
-  {
-    id: 3,
-    name: "Rajesh Enterprises",
-    contact: "7654321098",
-    area: "Jabalpur",
-    machineType: "Ricoh MP2014",
-    status: "Follow-up",
-    lastContact: new Date(2025, 3, 8),
-  },
-  {
-    id: 4,
-    name: "City Hospital",
-    contact: "6543210987",
-    area: "Indore",
-    machineType: "Kyocera 2040",
-    status: "Converted",
-    lastContact: new Date(2025, 3, 1),
-  },
-  {
-    id: 5,
-    name: "ABC School",
-    contact: "9512348760",
-    area: "Bhopal",
-    machineType: "HP LaserJet",
-    status: "Lost",
-    lastContact: new Date(2025, 2, 28),
-  },
-  {
-    id: 6,
-    name: "Global Solutions",
-    contact: "8876543210",
-    area: "Indore",
-    machineType: "Canon IR2525",
-    status: "New",
-    lastContact: new Date(2025, 3, 9),
-  },
-  {
-    id: 7,
-    name: "Prime Industries",
-    contact: "7712345678",
-    area: "Jabalpur",
-    machineType: "Kyocera 2554ci",
-    status: "Follow-up",
-    lastContact: new Date(2025, 3, 6),
-  },
-];
 
 const stages = ["New", "Quoted", "Follow-up", "Converted", "Lost"];
 
@@ -106,16 +42,159 @@ const getInitials = (name: string) => {
 };
 
 export default function LeadPipeline() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('customers')
+          .select('id, name, phone, area, lead_status, last_contact, customer_machines(machine_name)')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error("Error fetching customers for pipeline:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load customer data",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (data) {
+          const formattedCustomers: Customer[] = data.map(customer => ({
+            id: customer.id,
+            name: customer.name,
+            contact: customer.phone,
+            area: customer.area,
+            machineType: customer.customer_machines && customer.customer_machines.length > 0 
+              ? customer.customer_machines[0].machine_name 
+              : "Unknown",
+            status: customer.lead_status as Customer["status"],
+            lastContact: new Date(customer.last_contact || new Date())
+          }));
+          
+          setCustomers(formattedCustomers);
+        }
+      } catch (error) {
+        console.error("Error in fetchCustomers for pipeline:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCustomers();
+  }, [toast]);
   
   const filteredCustomers = selectedStage 
-    ? mockCustomers.filter(customer => customer.status === selectedStage)
-    : mockCustomers;
+    ? customers.filter(customer => customer.status === selectedStage)
+    : customers;
     
-  const moveCustomer = (customerId: number, direction: "forward" | "backward") => {
-    // This would typically update the customer status in a real implementation
-    console.log(`Moving customer ${customerId} ${direction}`);
+  const moveCustomer = async (customerId: string, direction: "forward" | "backward") => {
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) return;
+    
+    const currentStatusIndex = stages.indexOf(customer.status);
+    let newStatus: Customer["status"];
+    
+    if (direction === "forward" && currentStatusIndex < stages.length - 1) {
+      newStatus = stages[currentStatusIndex + 1] as Customer["status"];
+    } else if (direction === "backward" && currentStatusIndex > 0) {
+      newStatus = stages[currentStatusIndex - 1] as Customer["status"];
+    } else {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .update({ lead_status: newStatus })
+        .eq('id', customerId);
+        
+      if (error) {
+        console.error("Error updating customer status:", error);
+        toast({
+          title: "Update Failed",
+          description: "Could not update customer status",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update local state
+      setCustomers(customers.map(c => 
+        c.id === customerId ? { ...c, status: newStatus } : c
+      ));
+      
+      toast({
+        title: "Status Updated",
+        description: `${customer.name} moved to ${newStatus}`,
+      });
+      
+    } catch (error) {
+      console.error("Error in moveCustomer:", error);
+    }
   };
+
+  const handleContact = (type: "call" | "email" | "whatsapp", contact: string) => {
+    switch (type) {
+      case "call":
+        window.location.href = `tel:${contact}`;
+        break;
+      case "email":
+        // This would need an email field in the data
+        toast({
+          title: "Feature Unavailable",
+          description: "Email functionality coming soon",
+        });
+        break;
+      case "whatsapp":
+        const cleanPhone = contact.replace(/\D/g, '');
+        window.open(`https://wa.me/${cleanPhone}`, '_blank');
+        break;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center animate-pulse">
+          <div className="flex space-x-2">
+            {stages.map((_, i) => (
+              <div key={i} className="h-8 w-20 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+          <div className="h-8 w-24 bg-gray-200 rounded"></div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {stages.map((stage) => (
+            <Card key={stage} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <div className="h-5 w-16 bg-gray-200 rounded"></div>
+                  <div className="h-5 w-8 bg-gray-200 rounded-full"></div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[1, 2].map((i) => (
+                  <div key={i} className="border rounded-md p-3 bg-white">
+                    <div className="h-12 w-full bg-gray-200 rounded mb-2"></div>
+                    <div className="h-8 w-full bg-gray-200 rounded"></div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -149,7 +228,7 @@ export default function LeadPipeline() {
                   {stage}
                 </Badge>
                 <Badge variant="outline">
-                  {mockCustomers.filter(c => c.status === stage).length}
+                  {customers.filter(c => c.status === stage).length}
                 </Badge>
               </div>
             </CardHeader>
@@ -179,13 +258,31 @@ export default function LeadPipeline() {
                     
                     <div className="flex justify-between">
                       <div className="flex space-x-1">
-                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Call">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          title="Call"
+                          onClick={() => handleContact("call", customer.contact)}
+                        >
                           <Phone className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" title="Email">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          title="Email"
+                          onClick={() => handleContact("email", customer.contact)}
+                        >
                           <Mail className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" title="WhatsApp">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6" 
+                          title="WhatsApp"
+                          onClick={() => handleContact("whatsapp", customer.contact)}
+                        >
                           <MessageSquare className="h-3 w-3" />
                         </Button>
                       </div>

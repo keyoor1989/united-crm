@@ -90,7 +90,7 @@ export const checkDuplicateCustomer = (phone: string, customers: CustomerType[])
 
 export const createNewCustomer = (data: ParsedCustomerCommand): CustomerType => {
   return {
-    id: Math.floor(Math.random() * 10000), // In a real app, this would be handled by the backend
+    id: uuidv4(), // Changed from Math.random() to uuidv4() to generate a proper string ID
     name: data.name,
     lastContact: "Just now",
     phone: data.phone,
