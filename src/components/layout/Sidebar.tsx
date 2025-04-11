@@ -8,7 +8,7 @@ import {
   quotationsSection,
   reportsSection,
   locationNavItems 
-} from "./sidebar/sidebarNavConfig";
+} from "./sidebar/config";
 import { 
   Sidebar as SidebarComp, 
   SidebarContent, 

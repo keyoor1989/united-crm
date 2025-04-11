@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { NavSection } from "../sidebarNavConfig";
+import { NavSection } from "../types/navTypes";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { 
   SidebarGroup, 

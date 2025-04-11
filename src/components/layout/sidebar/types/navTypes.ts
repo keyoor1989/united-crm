@@ -1,0 +1,15 @@
+
+import { LucideIcon } from "lucide-react";
+
+export type NavItem = {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+};
+
+export type NavSection = {
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  items: NavItem[];
+};

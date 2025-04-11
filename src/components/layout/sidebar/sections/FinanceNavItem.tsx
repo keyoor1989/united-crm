@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { NavItem } from "../sidebarNavConfig";
+import { NavItem } from "../types/navTypes";
 import { 
   SidebarGroup, 
   SidebarGroupContent, 
