@@ -1,10 +1,12 @@
+
 import React, { useState, useEffect } from "react";
 import { format, isToday, isThisWeek, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PhoneCall, Calendar, MessageSquare, ClipboardCheck, MoreHorizontal } from "lucide-react";
+import { PhoneCall, Calendar, MessageSquare, ClipboardCheck, MoreHorizontal, ExternalLink } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SalesFollowUp } from "./machines/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -170,9 +172,17 @@ const TodaysFollowUps = () => {
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center justify-between">
           <span>Follow-ups Dashboard</span>
-          <Button variant="outline" size="sm" onClick={fetchFollowUps} className="h-8">
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link to="/customers/follow-ups">
+              <Button variant="link" size="sm" className="gap-1 text-xs h-8 p-0">
+                View All Follow-ups
+                <ExternalLink className="h-3 w-3" />
+              </Button>
+            </Link>
+            <Button variant="outline" size="sm" onClick={fetchFollowUps} className="h-8">
+              Refresh
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>

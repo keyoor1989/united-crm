@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Calendar, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CustomerTable from "@/components/customers/CustomerTable";
 import CustomerFilters from "@/components/customers/CustomerFilters";
@@ -74,12 +74,20 @@ const Customers = () => {
             Manage your customer relationships and follow-ups
           </p>
         </div>
-        <Link to="/customer-form">
-          <Button className="gap-1 bg-brand-500 hover:bg-brand-600">
-            <Plus className="h-4 w-4" />
-            Add Customer
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link to="/customers/follow-ups">
+            <Button variant="outline" className="gap-1">
+              <Calendar className="h-4 w-4" />
+              Follow-ups
+            </Button>
+          </Link>
+          <Link to="/customer-form">
+            <Button className="gap-1 bg-brand-500 hover:bg-brand-600">
+              <Plus className="h-4 w-4" />
+              Add Customer
+            </Button>
+          </Link>
+        </div>
       </div>
       
       {/* Follow-ups Dashboard */}

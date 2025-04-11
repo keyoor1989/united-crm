@@ -1,10 +1,10 @@
-
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Customers from "@/pages/Customers";
 import CustomerForm from "@/pages/CustomerForm";
+import CustomerFollowUps from "@/pages/customers/CustomerFollowUps";
 import Service from "@/pages/Service";
 import ServiceCallForm from "@/pages/ServiceCallForm";
 import EngineerDetail from "@/pages/EngineerDetail";
@@ -84,6 +84,7 @@ const AppRoutes = () => (
         {/* Redirect root to dashboard for iframe preview */}
         <Route path="/" element={<Dashboard />} />
         <Route path="/customers" element={<Customers />} />
+        <Route path="/customers/follow-ups" element={<CustomerFollowUps />} />
         <Route path="/customer-form" element={<CustomerForm />} />
         <Route path="/customer-form/:id" element={<CustomerForm />} />
         
