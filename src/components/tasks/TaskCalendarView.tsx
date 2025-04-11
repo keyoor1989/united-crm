@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { format, isSameDay, isToday, startOfMonth, parse } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -43,14 +42,11 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ tasks, onTaskUpdate
     }
   };
 
-  // Function to render task dots on calendar days
   const renderDay = (day: Date) => {
-    // Get tasks for this day
     const tasksOnDay = tasks.filter(task => isSameDay(new Date(task.dueDate), day));
     
     if (tasksOnDay.length === 0) return undefined;
     
-    // Get the highest priority task
     const highPriorityTask = tasksOnDay.find(task => task.priority === "High");
     const mediumPriorityTask = tasksOnDay.find(task => task.priority === "Medium");
     
@@ -64,7 +60,6 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ tasks, onTaskUpdate
       dotClassName += " bg-blue-500";
     }
     
-    // Show count for multiple tasks
     return (
       <div className="relative">
         <div className={dotClassName}></div>
@@ -86,13 +81,12 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ tasks, onTaskUpdate
           onSelect={handleDayClick}
           className="border rounded-md p-3"
           components={{
-            Day: ({ date, ...dayProps }: DayProps) => (
+            Day: ({ date, ...props }: DayProps) => (
               <div
-                {...dayProps}
+                {...props}
                 className={cn(
-                  dayProps.className,
-                  isToday(date) && "bg-accent text-accent-foreground",
-                  "relative"
+                  "relative",
+                  isToday(date) && "bg-accent text-accent-foreground"
                 )}
               >
                 {format(date, "d")}
