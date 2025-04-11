@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { receivableEntries } from "@/data/financeData";
+import { receivableEntries } from "@/data/finance";
 import EntryTable from "@/components/finance/EntryTable";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
 import { Badge } from "@/components/ui/badge";

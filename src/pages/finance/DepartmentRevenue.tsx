@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { revenueEntries, departments, categories, paymentMethods } from "@/data/financeData";
+import { revenueEntries, departments, categories, paymentMethods } from "@/data/finance";
 import EntryTable from "@/components/finance/EntryTable";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
 import { Badge } from "@/components/ui/badge";

@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from "react";
-import { revenueEntries } from "@/data/financeData";
+import { revenueEntries } from "@/data/finance";
 import EntryTable from "@/components/finance/EntryTable";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
 import DateRangeFilter from "@/components/finance/DateRangeFilter";

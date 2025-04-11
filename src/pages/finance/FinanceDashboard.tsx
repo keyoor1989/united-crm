@@ -6,7 +6,7 @@ import {
   financeSummary, 
   financeMonthlyTrend,
   receivableEntries
-} from "@/data/financeData";
+} from "@/data/finance";
 import { formatCurrency } from "@/utils/finance/financeUtils";
 import SummaryCards from "@/components/finance/dashboard/SummaryCards";
 import MonthlyTrendChart from "@/components/finance/dashboard/MonthlyTrendChart";

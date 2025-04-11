@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { format, isWithinInterval, parseISO } from "date-fns";
 import { 
@@ -24,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import DateRangeFilter from "@/components/finance/DateRangeFilter";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
 import EntryTable from "@/components/finance/EntryTable";
-import { cashEntries, departments, categories, paymentMethods } from "@/data/financeData";
+import { cashEntries, departments, categories, paymentMethods } from "@/data/finance";
 import { CashEntry } from "@/types/finance";
 import { DateRange } from "react-day-picker";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
