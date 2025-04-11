@@ -61,6 +61,15 @@ export default function CustomerFormComponent() {
       if (data) {
         setCustomerData(data);
         
+        // Safely map returned data to the expected types
+        const customerType = ["individual", "government", "corporate"].includes(data.customer_type) 
+          ? data.customer_type as "individual" | "government" | "corporate" 
+          : "individual";
+          
+        const leadStatus = ["New", "Quoted", "Follow-up", "Converted", "Lost"].includes(data.lead_status)
+          ? data.lead_status as "New" | "Quoted" | "Follow-up" | "Converted" | "Lost"
+          : "New";
+        
         // Update form with customer data
         form.reset({
           name: data.name,
@@ -68,13 +77,13 @@ export default function CustomerFormComponent() {
           email: data.email || "",
           address: data.address || "",
           area: data.area,
-          customerType: data.customer_type,
+          customerType: customerType,
           dateOfBirth: data.date_of_birth || "",
           machineInterest: "",
           machineType: "",
-          source: data.source || "",
+          source: data.source || "", // This field might not exist in the database yet
           notes: "",
-          leadStatus: data.lead_status,
+          leadStatus: leadStatus,
           isNewCustomer: false
         });
       }

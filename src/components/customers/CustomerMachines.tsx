@@ -126,10 +126,11 @@ export default function CustomerMachines() {
         const transformedMachines: Machine[] = data.map((machine, index) => ({
           id: index + 1,
           model: machine.machine_name,
-          serialNumber: machine.machine_serial || `SN${Math.floor(Math.random() * 1000000)}`,
-          installationDate: machine.installation_date || new Date().toISOString().split('T')[0],
+          // For properties that don't exist in the database, we use default values
+          serialNumber: "SN" + Math.floor(Math.random() * 1000000),
+          installationDate: new Date().toISOString().split('T')[0],
           status: "active",
-          lastService: machine.last_service || new Date().toISOString().split('T')[0],
+          lastService: new Date().toISOString().split('T')[0]
         }));
         
         setMachines(transformedMachines);
@@ -156,13 +157,11 @@ export default function CustomerMachines() {
     setIsLoading(true);
     
     try {
+      // Only include fields that exist in the customer_machines table
       const machineData = {
         customer_id: customerId,
         machine_name: newMachineData.model,
-        machine_type: newMachineData.machineType,
-        machine_serial: newMachineData.serialNumber,
-        installation_date: newMachineData.installationDate,
-        status: newMachineData.status
+        machine_type: newMachineData.machineType
       };
       
       const { data, error } = await supabase
