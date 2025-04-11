@@ -144,6 +144,8 @@ const EnhancedChatInterface = () => {
     }
     
     try {
+      console.log("Calling Claude API with key:", claudeApiKey ? "Key exists (hidden)" : "No key");
+      
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -161,15 +163,28 @@ const EnhancedChatInterface = () => {
         })
       });
       
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Claude API returned an error:", response.status, errorData);
+        throw new Error(`API returned ${response.status}: ${errorData.error?.message || "Unknown error"}`);
+      }
+      
       const data = await response.json();
       
-      if (response.ok && data.content && data.content.length > 0) {
+      if (data.content && data.content.length > 0) {
         return data.content[0].text;
       } else {
-        throw new Error(data.error?.message || "Failed to get Claude AI response");
+        console.error("Unexpected Claude API response format:", data);
+        throw new Error("Received an unexpected response format from Claude AI");
       }
     } catch (error) {
-      console.error("Claude API error:", error);
+      console.error("Claude API error details:", error);
+      
+      // Provide more specific error messages based on error type
+      if (error instanceof TypeError && error.message.includes("Failed to fetch")) {
+        throw new Error("Failed to connect to Claude API. This could be due to network issues, CORS restrictions, or an invalid API endpoint. Please check your network connection and API settings.");
+      }
+      
       const errorMessage = error instanceof Error ? String(error.message) : String(error || "Unknown error");
       throw new Error(`Claude AI error: ${errorMessage}`);
     }
@@ -326,8 +341,11 @@ Please summarize this in a short and helpful business format.
             toast.success(`Successfully processed your ${intent} request`);
           }
         } else {
+          setIsProcessing(true);
           try {
+            console.log("Processing message with Claude AI...");
             const aiResponse = await processClaudeAI(inputValue);
+            console.log("Claude AI response received:", aiResponse ? "Response received" : "No response");
             
             const botMessage: Message = {
               id: `msg-${Date.now()}-bot`,
@@ -340,6 +358,7 @@ Please summarize this in a short and helpful business format.
             
             setMessages((prev) => [...prev, botMessage]);
           } catch (error) {
+            console.error("Error processing Claude AI request:", error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             
             const botMessage: Message = {
@@ -350,6 +369,8 @@ Please summarize this in a short and helpful business format.
             };
             
             setMessages((prev) => [...prev, botMessage]);
+          } finally {
+            setIsProcessing(false);
           }
         }
       }
@@ -801,106 +822,4 @@ Please summarize this in a short and helpful business format.
                   onClick={() => handleQuickAction("customer")}
                   className="shrink-0"
                 >
-                  <UserPlus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add Customer</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => handleQuickAction("task")}
-                  className="shrink-0"
-                >
-                  <ListChecks className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Create Task</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => handleQuickAction("follow-up")}
-                  className="shrink-0"
-                >
-                  <ClipboardList className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add Follow-up</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="icon" 
-                  onClick={() => handleQuickAction("report")}
-                  className="shrink-0"
-                >
-                  <BarChart4 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View Reports</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
-            <PopoverTrigger asChild>
-              <div className="relative flex-1">
-                <Textarea
-                  ref={inputRef}
-                  placeholder="Type your message or command..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="min-h-[60px] resize-none"
-                />
-              </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0" align="start">
-              <div className="max-h-[200px] overflow-y-auto">
-                {filteredSuggestions.map((suggestion, index) => (
-                  <div
-                    key={index}
-                    className="p-2 hover:bg-muted cursor-pointer"
-                    onClick={() => selectSuggestion(suggestion)}
-                  >
-                    {suggestion}
-                  </div>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleAttachment}
-            className="shrink-0"
-          >
-            <PaperclipIcon className="h-4 w-4" />
-          </Button>
-          
-          <Button onClick={handleSendMessage} className="shrink-0">
-            <Send className="h-4 w-4 mr-2" />
-            Send
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default EnhancedChatInterface;
+                  <UserPlus className="h
