@@ -16,11 +16,9 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ApiKeyManager from "@/components/chat/api/ApiKeyManager";
 import "@/components/chat/chat-assistant.css";
-import { useNavigate } from "react-router-dom";
 
 const SmartAssistant = () => {
   const [activeTab, setActiveTab] = useState("chat");
-  const navigate = useNavigate();
 
   const handleQuickAction = (action: string) => {
     switch(action) {
