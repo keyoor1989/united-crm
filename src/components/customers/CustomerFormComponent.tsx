@@ -44,7 +44,7 @@ const formSchema = z.object({
   }),
   dateOfBirth: z.string().optional(),
   machineInterest: z.string().optional(),
-  machineType: z.string().min(1, { message: "Please select a machine type" }).optional(),
+  machineType: z.string().optional(),
   source: z.string().min(1, { message: "Please select a source" }),
   notes: z.string().optional(),
   leadStatus: z.enum(["New", "Quoted", "Follow-up", "Converted", "Lost"]),
@@ -394,6 +394,33 @@ export default function CustomerFormComponent() {
                                 />
                               </div>
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="machineType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Machine Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select machine type" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="printer">Printer</SelectItem>
+                                <SelectItem value="scanner">Scanner</SelectItem>
+                                <SelectItem value="copier">Copier</SelectItem>
+                                <SelectItem value="multifunctional">Multifunctional</SelectItem>
+                                <SelectItem value="large_format">Large Format</SelectItem>
+                                <SelectItem value="3d_printer">3D Printer</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
