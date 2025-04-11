@@ -50,6 +50,7 @@ import TaskCreationView from "./TaskCreationView";
 import { Quotation } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
 import { supabase } from "@/integrations/supabase/client";
+import { products } from "@/data/salesData";
 
 interface Message {
   id: string;
