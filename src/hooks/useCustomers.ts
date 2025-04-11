@@ -31,7 +31,7 @@ const fetchCustomers = async (): Promise<CustomerType[]> => {
       phone: customer.phone,
       email: customer.email || "",
       location: customer.area,
-      lastContact: new Date(customer.last_contact).toLocaleDateString() || "Never",
+      lastContact: customer.last_contact ? new Date(customer.last_contact).toLocaleDateString() : "Never",
       machines: customer.customer_machines ? customer.customer_machines.map((m: any) => m.machine_name) : [],
       status: mapLeadStatusToCustomerStatus(customer.lead_status)
     }));

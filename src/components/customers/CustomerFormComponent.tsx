@@ -86,7 +86,7 @@ export default function CustomerFormComponent() {
       // Save customer to Supabase
       const { data: newCustomer, error: customerError } = await supabase
         .from('customers')
-        .insert({
+        .insert([{
           name: data.name,
           phone: data.phone,
           email: data.email || null,
@@ -96,7 +96,7 @@ export default function CustomerFormComponent() {
           date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
           lead_status: data.leadStatus,
           last_contact: new Date().toISOString()
-        })
+        }])
         .select('id')
         .single();
       
@@ -112,11 +112,11 @@ export default function CustomerFormComponent() {
       if (data.machineInterest && newCustomer.id) {
         const { error: machineError } = await supabase
           .from('customer_machines')
-          .insert({
+          .insert([{
             customer_id: newCustomer.id,
             machine_name: data.machineInterest,
             machine_type: data.machineType || null
-          });
+          }]);
         
         if (machineError) {
           console.error("Error saving machine interest:", machineError);
@@ -128,11 +128,11 @@ export default function CustomerFormComponent() {
       if (data.notes && newCustomer.id) {
         const { error: notesError } = await supabase
           .from('customer_notes')
-          .insert({
+          .insert([{
             customer_id: newCustomer.id,
             content: data.notes,
             created_by: "System"
-          });
+          }]);
         
         if (notesError) {
           console.error("Error saving customer notes:", notesError);
