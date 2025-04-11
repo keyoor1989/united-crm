@@ -98,6 +98,7 @@ export type Database = {
           lead_status: string
           name: string
           phone: string
+          source: string | null
           updated_at: string | null
         }
         Insert: {
@@ -112,6 +113,7 @@ export type Database = {
           lead_status: string
           name: string
           phone: string
+          source?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -126,6 +128,7 @@ export type Database = {
           lead_status?: string
           name?: string
           phone?: string
+          source?: string | null
           updated_at?: string | null
         }
         Relationships: []

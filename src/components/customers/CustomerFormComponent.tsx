@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -85,7 +84,7 @@ export default function CustomerFormComponent() {
           dateOfBirth: data.date_of_birth || "",
           machineInterest: "",
           machineType: "",
-          source: sourceValue, // Using our default value
+          source: data.source || "",  // Now safely handling the source field
           notes: "",
           leadStatus: leadStatus,
           isNewCustomer: false
@@ -115,7 +114,7 @@ export default function CustomerFormComponent() {
         date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
         lead_status: data.leadStatus,
         last_contact: new Date().toISOString(),
-        source: data.source
+        source: data.source || null  // Make sure to handle source appropriately
       };
       
       let customerId;
