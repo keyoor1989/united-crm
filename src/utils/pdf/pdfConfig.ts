@@ -1,6 +1,6 @@
 
 import pdfMake from "pdfmake/build/pdfmake";
-import * as pdfFonts from "pdfmake/build/vfs_fonts";
+import pdfFonts from "pdfmake/build/vfs_fonts";
 import { Alignment } from "pdfmake/interfaces";
 
 // Register the virtual file system with pdfMake

@@ -1,6 +1,12 @@
 
 import { format } from "date-fns";
+import { Content, ContentText } from "pdfmake/interfaces";
 import { styles, logoImagePath, companyInfo } from "./pdfConfig";
+
+// Interface for text with margin
+interface TextWithMargin extends ContentText {
+  margin?: [number, number, number, number];
+}
 
 // Create document header with logo and title
 export const createDocumentHeader = (title: string) => {
@@ -49,22 +55,21 @@ export const createDocumentDetails = (details: { label: string, value: string }[
 
 // Create client/vendor information section
 export const createEntityInfoSection = (label: string, name: string, address?: string) => {
-  const infoStack = [
+  const infoStack: (ContentText | TextWithMargin)[] = [
     { text: `${label}:`, style: 'sectionTitle' },
     { text: name }
   ];
   
   if (address) {
-    // We need to create a valid text node with margin property
     infoStack.push({ 
       text: address, 
-      margin: [0, 0, 0, 20] as [number, number, number, number]
-    });
+      margin: [0, 0, 0, 20]
+    } as TextWithMargin);
   } else {
     infoStack.push({ 
       text: '', 
-      margin: [0, 0, 0, 20] as [number, number, number, number]
-    });
+      margin: [0, 0, 0, 20]
+    } as TextWithMargin);
   }
   
   return { stack: infoStack };
@@ -103,7 +108,7 @@ export const createTotalsSection = (subtotal: number, totalGst: number, grandTot
 
 // Create terms and conditions section
 export const createTermsSection = (standardTerms: string[], customTerms?: string) => {
-  const termsContent = [
+  const termsContent: (ContentText | TextWithMargin)[] = [
     { text: 'Terms & Conditions', style: 'termsHeader' },
     ...standardTerms.map(term => ({ text: `• ${term}`, style: 'termsList' }))
   ];
@@ -112,8 +117,8 @@ export const createTermsSection = (standardTerms: string[], customTerms?: string
     termsContent.push({ 
       text: customTerms, 
       style: 'termsList', 
-      margin: [0, 5, 0, 0] as [number, number, number, number]
-    });
+      margin: [0, 5, 0, 0]
+    } as TextWithMargin);
   }
   
   return termsContent;
@@ -134,6 +139,6 @@ export const createThankYouNote = (message: string) => {
   return { 
     text: message, 
     style: 'footer', 
-    margin: [0, 20, 0, 0] as [number, number, number, number] 
-  };
+    margin: [0, 20, 0, 0]
+  } as TextWithMargin;
 };
