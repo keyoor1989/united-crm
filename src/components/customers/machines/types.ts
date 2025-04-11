@@ -37,6 +37,7 @@ export interface MachineFormData {
 export interface SalesFollowUpFormData {
   date?: Date;
   customerName?: string;
+  customerId?: number | string; // Added the missing customerId property
   notes?: string;
   status: "pending" | "completed";
   type: "quotation" | "demo" | "negotiation" | "closure";
