@@ -5,7 +5,7 @@ import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
 
 // Initialize pdfMake - fix the reference to vfs
-pdfMake.vfs = pdfFonts.pdfMake?.vfs || {};
+pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs || {};
 
 /**
  * Export data to CSV file
