@@ -66,7 +66,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
     });
     setShowCustomerSearch(false);
     
-    // Show notification when customer is selected
     toast.success(`Customer "${customer.name}" selected`, {
       description: "Customer information has been added to the follow-up"
     });
@@ -82,7 +81,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
     try {
       console.log("Searching for term:", term);
       
-      // Search in Supabase database - can search by name, phone, location (area), or machine
       const { data: nameData, error: nameError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
@@ -90,7 +88,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
         .order('name')
         .limit(10);
       
-      // Search by phone - using exact match and partial match
       const { data: phoneData, error: phoneError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
@@ -98,7 +95,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
         .order('name')
         .limit(10);
       
-      // Search by location/area
       const { data: areaData, error: areaError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
@@ -106,7 +102,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
         .order('name')
         .limit(10);
       
-      // Search by machine model via the related table
       const { data: machineData, error: machineError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines!inner(machine_name)')
@@ -120,7 +115,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
         return;
       }
       
-      // Combine results and remove duplicates
       const combinedResults = [...(nameData || []), ...(phoneData || []), ...(areaData || []), ...(machineData || [])];
       
       console.log("Search results:", {
@@ -135,7 +129,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
         index === self.findIndex(c => c.id === customer.id)
       );
       
-      // Convert to CustomerType format
       const customers: CustomerType[] = uniqueCustomers.map(customer => ({
         id: customer.id,
         name: customer.name,
@@ -168,7 +161,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
   };
 
   const handleSaveFollowUp = async () => {
-    // Validate required fields
     if (!newSalesFollowUp.customerName) {
       toast.error("Please select a customer");
       return;
@@ -187,9 +179,8 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
     try {
       console.log("Saving follow-up to database:", newSalesFollowUp);
       
-      // Prepare data for insertion
       const followUpData = {
-        customer_id: newSalesFollowUp.customerId,
+        customer_id: newSalesFollowUp.customerId ? String(newSalesFollowUp.customerId) : '',
         customer_name: newSalesFollowUp.customerName,
         date: newSalesFollowUp.date?.toISOString(),
         notes: newSalesFollowUp.notes || "",
@@ -199,7 +190,6 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
         location: newSalesFollowUp.location || ""
       };
       
-      // Insert into Supabase
       const { data, error } = await supabase
         .from('sales_followups')
         .insert(followUpData)
@@ -214,17 +204,14 @@ export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
       
       console.log("Follow-up saved successfully:", data);
       
-      // Call the parent's onAddSalesFollowUp function
       onAddSalesFollowUp();
       
-      // Show success notification with action date
       const formattedDate = newSalesFollowUp.date ? format(newSalesFollowUp.date, "dd MMM yyyy") : "Unknown date";
       toast.success(`Follow-up scheduled for ${formattedDate}`, {
         description: `A ${newSalesFollowUp.type} follow-up has been scheduled for ${newSalesFollowUp.customerName}`,
         action: {
           label: "View Calendar",
           onClick: () => {
-            // You could navigate to a calendar view here if available
             console.log("Navigate to calendar view");
           }
         }

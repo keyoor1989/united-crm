@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { SalesFollowUp } from "@/components/customers/machines/types";
 import { 
-  fetchAllFollowUps, 
+  fetchFollowUps, 
   markFollowUpComplete, 
   filterFollowUps,
   calculateTodayStats
@@ -25,7 +25,7 @@ export const useFollowUps = () => {
     setIsLoading(true);
     try {
       console.log("Loading follow-ups...");
-      const data = await fetchAllFollowUps();
+      const data = await fetchFollowUps();
       console.log("Follow-ups loaded:", data);
       if (data) {
         setFollowUps(data);
