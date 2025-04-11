@@ -84,7 +84,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
         font: 'Roboto'
       },
       footer: getPageFooter(),
-      styles
+      styles: styles
     };
 
     downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);

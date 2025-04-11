@@ -55,9 +55,16 @@ export const createEntityInfoSection = (label: string, name: string, address?: s
   ];
   
   if (address) {
-    infoStack.push({ text: address, margin: [0, 0, 0, 20] });
+    // We need to create a valid text node with margin property
+    infoStack.push({ 
+      text: address, 
+      margin: [0, 0, 0, 20] as [number, number, number, number]
+    });
   } else {
-    infoStack.push({ text: '', margin: [0, 0, 0, 20] });
+    infoStack.push({ 
+      text: '', 
+      margin: [0, 0, 0, 20] as [number, number, number, number]
+    });
   }
   
   return { stack: infoStack };
@@ -90,7 +97,7 @@ export const createTotalsSection = (subtotal: number, totalGst: number, grandTot
         layout: 'noBorders'
       }
     ],
-    margin: [0, 15, 0, 15]
+    margin: [0, 15, 0, 15] as [number, number, number, number]
   };
 };
 
@@ -102,7 +109,11 @@ export const createTermsSection = (standardTerms: string[], customTerms?: string
   ];
   
   if (customTerms) {
-    termsContent.push({ text: customTerms, style: 'termsList', margin: [0, 5, 0, 0] });
+    termsContent.push({ 
+      text: customTerms, 
+      style: 'termsList', 
+      margin: [0, 5, 0, 0] as [number, number, number, number]
+    });
   }
   
   return termsContent;
@@ -120,5 +131,9 @@ export const createNotesSection = (notes?: string) => {
 
 // Create thank you note
 export const createThankYouNote = (message: string) => {
-  return { text: message, style: 'footer', margin: [0, 20, 0, 0] };
+  return { 
+    text: message, 
+    style: 'footer', 
+    margin: [0, 20, 0, 0] as [number, number, number, number] 
+  };
 };

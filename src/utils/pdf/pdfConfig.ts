@@ -1,9 +1,10 @@
 
 import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
+import * as pdfFonts from "pdfmake/build/vfs_fonts";
+import { Alignment } from "pdfmake/interfaces";
 
 // Register the virtual file system with pdfMake
-pdfMake.vfs = (pdfFonts as any).vfs;
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 // Define fonts for the document
 pdfMake.fonts = {
@@ -24,7 +25,7 @@ export const styles = {
     fontSize: 22,
     bold: true,
     color: '#0047AB', // Royal blue color for header
-    alignment: 'center',
+    alignment: 'center' as Alignment,
     margin: [0, 10, 0, 20] as [number, number, number, number]
   },
   subheader: {
@@ -54,7 +55,7 @@ export const styles = {
     fontSize: 12,
     color: 'white',
     fillColor: '#0047AB',
-    alignment: 'center'
+    alignment: 'center' as Alignment
   },
   tableRow: {
     fontSize: 10
@@ -75,7 +76,7 @@ export const styles = {
   footer: {
     fontSize: 10,
     italic: true,
-    alignment: 'center',
+    alignment: 'center' as Alignment,
     color: '#0047AB',
     margin: [0, 10, 0, 0] as [number, number, number, number]
   }
@@ -96,8 +97,8 @@ export const getPageFooter = () => {
       columns: [
         { 
           text: companyInfo.tagline,
-          alignment: 'center',
-          margin: [40, 0, 40, 0],
+          alignment: 'center' as Alignment,
+          margin: [40, 0, 40, 0] as [number, number, number, number],
           fontSize: 8,
           color: '#0047AB',
           italics: true

@@ -83,7 +83,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
         font: 'Roboto'
       },
       footer: getPageFooter(),
-      styles
+      styles: styles
     };
 
     downloadPdf(docDefinition, `PO_${order.poNumber}.pdf`);
