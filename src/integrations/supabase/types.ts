@@ -410,6 +410,39 @@ export type Database = {
           },
         ]
       }
+      part_reconciliations: {
+        Row: {
+          created_at: string
+          engineer_id: string
+          id: string
+          part_id: string
+          part_name: string
+          quantity: number
+          reconciled_at: string
+          service_call_id: string
+        }
+        Insert: {
+          created_at?: string
+          engineer_id: string
+          id?: string
+          part_id: string
+          part_name: string
+          quantity: number
+          reconciled_at?: string
+          service_call_id: string
+        }
+        Update: {
+          created_at?: string
+          engineer_id?: string
+          id?: string
+          part_id?: string
+          part_name?: string
+          quantity?: number
+          reconciled_at?: string
+          service_call_id?: string
+        }
+        Relationships: []
+      }
       quotations: {
         Row: {
           created_at: string

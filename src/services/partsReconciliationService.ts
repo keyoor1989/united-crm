@@ -99,20 +99,20 @@ export const updatePartReconciliation = async (
     
     // Only update engineer inventory if reconciling (not unreconciling)
     if (reconciled && !part.isReconciled) {
-      // First, check if the part has already been reconciled in the database
-      const { data: reconciliationRecord, error: reconciliationError } = await supabase
+      // Check if the part has already been reconciled in the database
+      const { data: existingRecords, error: recordsError } = await supabase
         .from('part_reconciliations')
         .select('*')
         .eq('service_call_id', serviceCallId)
         .eq('part_id', partId)
-        .single();
+        .limit(1);
       
-      if (reconciliationError && reconciliationError.code !== 'PGRST116') { // PGRST116 means "no rows returned"
-        console.error("Error checking part reconciliation status:", reconciliationError);
+      if (recordsError) {
+        console.error("Error checking part reconciliation records:", recordsError);
       }
       
       // If not already reconciled in database, update engineer inventory and save reconciliation record
-      if (!reconciliationRecord) {
+      if (!existingRecords || existingRecords.length === 0) {
         const { data: engineerItems, error: itemsError } = await supabase
           .from('engineer_inventory')
           .select('*')
@@ -169,8 +169,7 @@ export const updatePartReconciliation = async (
               part_id: partId,
               part_name: part.name,
               quantity: part.quantity,
-              engineer_id: serviceCall.engineer_id,
-              reconciled_at: new Date().toISOString()
+              engineer_id: serviceCall.engineer_id
             });
             
           if (insertError) {
@@ -251,20 +250,20 @@ export const updateServiceCallReconciliation = async (
       for (const part of partsUsed) {
         if (!part.isReconciled) {
           // Check if this part has already been reconciled in the database
-          const { data: reconciliationRecord, error: reconciliationError } = await supabase
+          const { data: existingRecords, error: recordsError } = await supabase
             .from('part_reconciliations')
             .select('*')
             .eq('service_call_id', serviceCallId)
             .eq('part_id', part.id)
-            .single();
+            .limit(1);
             
-          if (reconciliationError && reconciliationError.code !== 'PGRST116') { 
-            console.error("Error checking part reconciliation status:", reconciliationError);
+          if (recordsError) {
+            console.error("Error checking part reconciliation records:", recordsError);
             continue;
           }
           
           // Only update inventory if not already reconciled in database
-          if (!reconciliationRecord) {
+          if (!existingRecords || existingRecords.length === 0) {
             const { data: engineerItems, error: itemsError } = await supabase
               .from('engineer_inventory')
               .select('*')
@@ -323,8 +322,7 @@ export const updateServiceCallReconciliation = async (
                   part_id: part.id,
                   part_name: part.name,
                   quantity: part.quantity,
-                  engineer_id: serviceCall.engineer_id,
-                  reconciled_at: new Date().toISOString()
+                  engineer_id: serviceCall.engineer_id
                 });
                 
               if (insertError) {
