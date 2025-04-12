@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ServiceCall, Engineer, Part, Feedback, EngineerStatus } from "@/types/service";
+import { ServiceCall, Engineer, Part, Feedback, EngineerStatus, EngineerSkillLevel } from "@/types/service";
 import { useToast } from "@/hooks/use-toast";
 import ServiceCallDetail from "@/components/service/ServiceCallDetail";
 import { ServiceSearchBar } from "@/components/service/ServiceSearchBar";
@@ -50,9 +50,10 @@ const Service = () => {
         email: eng.email,
         location: eng.location,
         status: eng.status as EngineerStatus,
-        skillLevel: eng.skill_level,
+        skillLevel: eng.skill_level as EngineerSkillLevel,
         currentJob: eng.current_job,
-        currentLocation: eng.current_location
+        currentLocation: eng.current_location,
+        leaveEndDate: eng.leave_end_date
       }));
       
       setEngineers(transformedEngineers);

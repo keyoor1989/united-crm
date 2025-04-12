@@ -73,10 +73,11 @@ const EngineerServiceReport = () => {
         phone: eng.phone,
         email: eng.email,
         location: eng.location,
-        status: eng.status,
-        skillLevel: eng.skill_level,
+        status: eng.status as EngineerStatus,
+        skillLevel: eng.skill_level as EngineerSkillLevel,
         currentJob: eng.current_job,
-        currentLocation: eng.current_location
+        currentLocation: eng.current_location,
+        leaveEndDate: eng.leave_end_date
       }));
       
       setEngineers(transformedEngineers);

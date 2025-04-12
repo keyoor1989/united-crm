@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback, EngineerStatus, EngineerSkillLevel } from "@/types/service";
@@ -101,7 +102,7 @@ const EngineerDetail = () => {
         skillLevel: data.skill_level as EngineerSkillLevel,
         currentJob: data.current_job,
         currentLocation: data.current_location,
-        leaveEndDate: data.leave_end_date
+        leaveEndDate: data.leave_end_date || undefined
       };
 
       setEngineer(engineerData);

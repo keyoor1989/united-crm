@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +40,7 @@ import {
   Loader2,
   Users,
 } from "lucide-react";
-import { ServiceCall, Customer, Machine, Engineer, EngineerStatus } from "@/types/service";
+import { ServiceCall, Customer, Machine, Engineer, EngineerStatus, EngineerSkillLevel } from "@/types/service";
 import { mockMachines } from "@/data/mockData";
 import { CustomerType } from "@/types/customer";
 import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
@@ -121,9 +122,10 @@ const ServiceCallForm = () => {
         email: eng.email,
         location: eng.location,
         status: eng.status as EngineerStatus,
-        skillLevel: eng.skill_level,
+        skillLevel: eng.skill_level as EngineerSkillLevel,
         currentJob: eng.current_job,
-        currentLocation: eng.current_location
+        currentLocation: eng.current_location,
+        leaveEndDate: eng.leave_end_date
       }));
       
       setEngineers(transformedEngineers);
