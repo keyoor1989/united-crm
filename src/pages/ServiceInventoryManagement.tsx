@@ -81,7 +81,7 @@ const ServiceInventoryManagement = () => {
 
   return (
     <div className="container mx-auto space-y-6">
-      <InventoryHeader activeTab={activeTab} />
+      <InventoryHeader activeTab={activeTab} onTabChange={setActiveTab} />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsContent value="engineer-inventory">
