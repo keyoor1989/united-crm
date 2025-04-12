@@ -65,65 +65,214 @@ interface OpeningStockEntryFormProps {
 const categories = ["Toner", "Drum", "Maintenance Kit", "Fuser", "Developer", "Other"];
 
 const fetchBrands = async (): Promise<Brand[]> => {
-  return [
-    { id: "1", name: "Kyocera", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: "2", name: "Canon", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: "3", name: "HP", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: "4", name: "Konica Minolta", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: "5", name: "Ricoh", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: "6", name: "Sharp", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-  ];
+  try {
+    const { data, error } = await supabase
+      .from('inventory_brands')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      console.error("Error fetching brands from Supabase:", error);
+      return [
+        { id: "1", name: "Kyocera", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "2", name: "Canon", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "3", name: "HP", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "4", name: "Konica Minolta", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "5", name: "Ricoh", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "6", name: "Sharp", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      ];
+    }
+    
+    if (data && data.length > 0) {
+      return data.map(brand => ({
+        id: brand.id,
+        name: brand.name,
+        createdAt: brand.created_at,
+        updatedAt: brand.updated_at
+      }));
+    } else {
+      return [
+        { id: "1", name: "Kyocera", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "2", name: "Canon", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "3", name: "HP", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "4", name: "Konica Minolta", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "5", name: "Ricoh", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "6", name: "Sharp", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      ];
+    }
+  } catch (error) {
+    console.error("Exception fetching brands:", error);
+    return [
+      { id: "1", name: "Kyocera", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "2", name: "Canon", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "3", name: "HP", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "4", name: "Konica Minolta", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "5", name: "Ricoh", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "6", name: "Sharp", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ];
+  }
 };
 
 const fetchModelsByBrand = async (brandId: string): Promise<Model[]> => {
-  const allModels: Record<string, Model[]> = {
-    "1": [
-      { id: "k1", brandId: "1", name: "ECOSYS M2040dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "k2", brandId: "1", name: "ECOSYS M2540dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "k3", brandId: "1", name: "ECOSYS M2640idw", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "k4", brandId: "1", name: "TASKalfa 2554ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "k5", brandId: "1", name: "TASKalfa 2553ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "k6", brandId: "1", name: "TASKalfa 2552ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    ],
-    "2": [
-      { id: "c1", brandId: "2", name: "IR 2002", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "c2", brandId: "2", name: "IR 2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "c3", brandId: "2", name: "IR 2006", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "c4", brandId: "2", name: "IR ADV 4025", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "c5", brandId: "2", name: "IR ADV 4035", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "c6", brandId: "2", name: "IR ADV 4045", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    ],
-    "3": [
-      { id: "h1", brandId: "3", name: "LaserJet Pro M402", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "h2", brandId: "3", name: "LaserJet Pro M426", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "h3", brandId: "3", name: "LaserJet Enterprise M507", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "h4", brandId: "3", name: "LaserJet Enterprise M607", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    ],
-    "4": [
-      { id: "km1", brandId: "4", name: "Bizhub C224e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "km2", brandId: "4", name: "Bizhub C284e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "km3", brandId: "4", name: "Bizhub 367", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "km4", brandId: "4", name: "Bizhub 458", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    ],
-    "5": [
-      { id: "r1", brandId: "5", name: "MP 2014", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "r2", brandId: "5", name: "MP 301", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "r3", brandId: "5", name: "Aficio MP 2501L", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "r4", brandId: "5", name: "MP C2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    ],
-    "6": [
-      { id: "s1", brandId: "6", name: "AR-6020", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "s2", brandId: "6", name: "MX-M264N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "s3", brandId: "6", name: "MX-3050N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "s4", brandId: "6", name: "MX-3070N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    ]
-  };
-  
-  return allModels[brandId] || [];
+  try {
+    const { data, error } = await supabase
+      .from('inventory_models')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('name');
+    
+    if (error) {
+      console.error("Error fetching models from Supabase:", error);
+      const allModels: Record<string, Model[]> = {
+        "1": [
+          { id: "k1", brandId: "1", name: "ECOSYS M2040dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k2", brandId: "1", name: "ECOSYS M2540dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k3", brandId: "1", name: "ECOSYS M2640idw", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k4", brandId: "1", name: "TASKalfa 2554ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k5", brandId: "1", name: "TASKalfa 2553ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k6", brandId: "1", name: "TASKalfa 2552ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "2": [
+          { id: "c1", brandId: "2", name: "IR 2002", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c2", brandId: "2", name: "IR 2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c3", brandId: "2", name: "IR 2006", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c4", brandId: "2", name: "IR ADV 4025", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c5", brandId: "2", name: "IR ADV 4035", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c6", brandId: "2", name: "IR ADV 4045", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "3": [
+          { id: "h1", brandId: "3", name: "LaserJet Pro M402", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "h2", brandId: "3", name: "LaserJet Pro M426", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "h3", brandId: "3", name: "LaserJet Enterprise M507", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "h4", brandId: "3", name: "LaserJet Enterprise M607", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "4": [
+          { id: "km1", brandId: "4", name: "Bizhub C224e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "km2", brandId: "4", name: "Bizhub C284e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "km3", brandId: "4", name: "Bizhub 367", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "km4", brandId: "4", name: "Bizhub 458", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "5": [
+          { id: "r1", brandId: "5", name: "MP 2014", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "r2", brandId: "5", name: "MP 301", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "r3", brandId: "5", name: "Aficio MP 2501L", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "r4", brandId: "5", name: "MP C2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "6": [
+          { id: "s1", brandId: "6", name: "AR-6020", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "s2", brandId: "6", name: "MX-M264N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "s3", brandId: "6", name: "MX-3050N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "s4", brandId: "6", name: "MX-3070N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ]
+      };
+      return allModels[brandId] || [];
+    }
+    
+    if (data && data.length > 0) {
+      return data.map(model => ({
+        id: model.id,
+        brandId: model.brand_id,
+        name: model.name,
+        type: model.type,
+        createdAt: model.created_at,
+        updatedAt: model.updated_at
+      }));
+    } else {
+      const allModels: Record<string, Model[]> = {
+        "1": [
+          { id: "k1", brandId: "1", name: "ECOSYS M2040dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k2", brandId: "1", name: "ECOSYS M2540dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k3", brandId: "1", name: "ECOSYS M2640idw", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k4", brandId: "1", name: "TASKalfa 2554ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k5", brandId: "1", name: "TASKalfa 2553ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "k6", brandId: "1", name: "TASKalfa 2552ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "2": [
+          { id: "c1", brandId: "2", name: "IR 2002", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c2", brandId: "2", name: "IR 2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c3", brandId: "2", name: "IR 2006", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c4", brandId: "2", name: "IR ADV 4025", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c5", brandId: "2", name: "IR ADV 4035", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "c6", brandId: "2", name: "IR ADV 4045", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "3": [
+          { id: "h1", brandId: "3", name: "LaserJet Pro M402", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "h2", brandId: "3", name: "LaserJet Pro M426", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "h3", brandId: "3", name: "LaserJet Enterprise M507", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "h4", brandId: "3", name: "LaserJet Enterprise M607", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "4": [
+          { id: "km1", brandId: "4", name: "Bizhub C224e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "km2", brandId: "4", name: "Bizhub C284e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "km3", brandId: "4", name: "Bizhub 367", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "km4", brandId: "4", name: "Bizhub 458", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "5": [
+          { id: "r1", brandId: "5", name: "MP 2014", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "r2", brandId: "5", name: "MP 301", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "r3", brandId: "5", name: "Aficio MP 2501L", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "r4", brandId: "5", name: "MP C2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ],
+        "6": [
+          { id: "s1", brandId: "6", name: "AR-6020", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "s2", brandId: "6", name: "MX-M264N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "s3", brandId: "6", name: "MX-3050N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          { id: "s4", brandId: "6", name: "MX-3070N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        ]
+      };
+      return allModels[brandId] || [];
+    }
+  } catch (error) {
+    console.error("Exception fetching models:", error);
+    const allModels: Record<string, Model[]> = {
+      "1": [
+        { id: "k1", brandId: "1", name: "ECOSYS M2040dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "k2", brandId: "1", name: "ECOSYS M2540dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "k3", brandId: "1", name: "ECOSYS M2640idw", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "k4", brandId: "1", name: "TASKalfa 2554ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "k5", brandId: "1", name: "TASKalfa 2553ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "k6", brandId: "1", name: "TASKalfa 2552ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      ],
+      "2": [
+        { id: "c1", brandId: "2", name: "IR 2002", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "c2", brandId: "2", name: "IR 2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "c3", brandId: "2", name: "IR 2006", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "c4", brandId: "2", name: "IR ADV 4025", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "c5", brandId: "2", name: "IR ADV 4035", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "c6", brandId: "2", name: "IR ADV 4045", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      ],
+      "3": [
+        { id: "h1", brandId: "3", name: "LaserJet Pro M402", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "h2", brandId: "3", name: "LaserJet Pro M426", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "h3", brandId: "3", name: "LaserJet Enterprise M507", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "h4", brandId: "3", name: "LaserJet Enterprise M607", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      ],
+      "4": [
+        { id: "km1", brandId: "4", name: "Bizhub C224e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "km2", brandId: "4", name: "Bizhub C284e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "km3", brandId: "4", name: "Bizhub 367", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "km4", brandId: "4", name: "Bizhub 458", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      ],
+      "5": [
+        { id: "r1", brandId: "5", name: "MP 2014", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "r2", brandId: "5", name: "MP 301", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "r3", brandId: "5", name: "Aficio MP 2501L", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "r4", brandId: "5", name: "MP C2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      ],
+      "6": [
+        { id: "s1", brandId: "6", name: "AR-6020", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "s2", brandId: "6", name: "MX-M264N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "s3", brandId: "6", name: "MX-3050N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+        { id: "s4", brandId: "6", name: "MX-3070N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+      ]
+    };
+    return allModels[brandId] || [];
+  }
 };
 
 const fetchWarehouses = async (): Promise<Warehouse[]> => {
   try {
+    console.log("Fetching warehouses from Supabase...");
     const { data, error } = await supabase
       .from('warehouses')
       .select('*')
@@ -132,6 +281,7 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
       
     if (error) {
       console.error("Error fetching warehouses:", error);
+      console.log("Falling back to mock warehouse data");
       return [
         { 
           id: "default", 
@@ -143,23 +293,65 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
           contactPhone: "1234567890",
           isActive: true,
           createdAt: new Date().toISOString()
+        },
+        { 
+          id: "branch1", 
+          name: "Branch Warehouse 1", 
+          code: "BR1", 
+          location: "Mumbai",
+          address: "456 Branch Street",
+          contactPerson: "Manager",
+          contactPhone: "9876543210",
+          isActive: true,
+          createdAt: new Date().toISOString()
         }
       ];
     }
     
-    return data.map(warehouse => ({
-      id: warehouse.id,
-      name: warehouse.name,
-      code: warehouse.code,
-      location: warehouse.location,
-      address: warehouse.address,
-      contactPerson: warehouse.contact_person,
-      contactPhone: warehouse.contact_phone,
-      isActive: warehouse.is_active,
-      createdAt: warehouse.created_at
-    }));
+    console.log("Warehouse data from Supabase:", data);
+    
+    if (data && data.length > 0) {
+      return data.map(warehouse => ({
+        id: warehouse.id,
+        name: warehouse.name,
+        code: warehouse.code,
+        location: warehouse.location,
+        address: warehouse.address,
+        contactPerson: warehouse.contact_person,
+        contactPhone: warehouse.contact_phone,
+        isActive: warehouse.is_active,
+        createdAt: warehouse.created_at
+      }));
+    } else {
+      console.log("No warehouse data from Supabase, using mock data");
+      return [
+        { 
+          id: "default", 
+          name: "Main Warehouse", 
+          code: "MAIN", 
+          location: "Chennai",
+          address: "123 Main Street",
+          contactPerson: "Admin",
+          contactPhone: "1234567890",
+          isActive: true,
+          createdAt: new Date().toISOString()
+        },
+        { 
+          id: "branch1", 
+          name: "Branch Warehouse 1", 
+          code: "BR1", 
+          location: "Mumbai",
+          address: "456 Branch Street",
+          contactPerson: "Manager",
+          contactPhone: "9876543210",
+          isActive: true,
+          createdAt: new Date().toISOString()
+        }
+      ];
+    }
   } catch (error) {
     console.error("Exception fetching warehouses:", error);
+    console.log("Falling back to mock warehouse data due to exception");
     return [
       { 
         id: "default", 
@@ -171,6 +363,17 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
         contactPhone: "1234567890",
         isActive: true,
         createdAt: new Date().toISOString()
+      },
+      { 
+        id: "branch1", 
+        name: "Branch Warehouse 1", 
+        code: "BR1", 
+        location: "Mumbai",
+        address: "456 Branch Street",
+        contactPerson: "Manager",
+        contactPhone: "9876543210",
+        isActive: true,
+        createdAt: new Date().toISOString()
       }
     ];
   }
@@ -180,17 +383,19 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   
-  const { data: brands = [] } = useQuery({
+  const { data: brands = [], isLoading: isLoadingBrands } = useQuery({
     queryKey: ['brands'],
     queryFn: fetchBrands
   });
   
-  const { data: warehouses = [] } = useQuery({
+  const { data: warehouses = [], isLoading: isLoadingWarehouses } = useQuery({
     queryKey: ['warehouses'],
     queryFn: fetchWarehouses
   });
   
-  const { data: models = [] } = useQuery({
+  console.log("Warehouse data in component:", warehouses);
+  
+  const { data: models = [], isLoading: isLoadingModels } = useQuery({
     queryKey: ['models', selectedBrand],
     queryFn: () => selectedBrand ? fetchModelsByBrand(selectedBrand) : Promise.resolve([]),
     enabled: !!selectedBrand
@@ -319,39 +524,9 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     form.setValue("compatibleModels", updatedModels);
   };
 
-  const renderWarehouseField = () => (
-    <FormField
-      control={form.control}
-      name="warehouseId"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Warehouse Location</FormLabel>
-          <Select 
-            onValueChange={field.onChange} 
-            defaultValue={field.value}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select warehouse" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {warehouses.length > 0 ? (
-                warehouses.map((warehouse) => (
-                  <SelectItem key={warehouse.id} value={warehouse.id}>
-                    {warehouse.name} ({warehouse.location})
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="default">Main Warehouse (Default)</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
+  useEffect(() => {
+    console.log("Current warehouses data:", warehouses);
+  }, [warehouses]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -382,11 +557,17 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {brands.map((brand) => (
-                          <SelectItem key={brand.id} value={brand.id}>
-                            {brand.name}
-                          </SelectItem>
-                        ))}
+                        {isLoadingBrands ? (
+                          <SelectItem value="loading" disabled>Loading brands...</SelectItem>
+                        ) : brands.length > 0 ? (
+                          brands.map((brand) => (
+                            <SelectItem key={brand.id} value={brand.id}>
+                              {brand.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="none" disabled>No brands available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -403,27 +584,39 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                     <FormControl>
                       <div className="border rounded-md overflow-hidden">
                         {selectedBrand ? (
-                          <ScrollArea className="h-[100px] p-2">
-                            <div className="space-y-2">
-                              {models.map((model) => (
-                                <div key={model.id} className="flex items-center space-x-2">
-                                  <Checkbox 
-                                    id={`model-${model.id}`} 
-                                    checked={selectedModels.includes(model.name)}
-                                    onCheckedChange={(checked) => 
-                                      handleModelChange(model.name, checked as boolean)
-                                    }
-                                  />
-                                  <label
-                                    htmlFor={`model-${model.id}`}
-                                    className="text-sm cursor-pointer"
-                                  >
-                                    {model.name}
-                                  </label>
-                                </div>
-                              ))}
+                          isLoadingModels ? (
+                            <div className="h-[100px] flex items-center justify-center">
+                              <p className="text-sm text-muted-foreground">Loading models...</p>
                             </div>
-                          </ScrollArea>
+                          ) : (
+                            <ScrollArea className="h-[100px] p-2">
+                              <div className="space-y-2">
+                                {models.length > 0 ? (
+                                  models.map((model) => (
+                                    <div key={model.id} className="flex items-center space-x-2">
+                                      <Checkbox 
+                                        id={`model-${model.id}`} 
+                                        checked={selectedModels.includes(model.name)}
+                                        onCheckedChange={(checked) => 
+                                          handleModelChange(model.name, checked as boolean)
+                                        }
+                                      />
+                                      <label
+                                        htmlFor={`model-${model.id}`}
+                                        className="text-sm cursor-pointer"
+                                      >
+                                        {model.name}
+                                      </label>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-sm text-muted-foreground p-2">
+                                    No models available for this brand
+                                  </div>
+                                )}
+                              </div>
+                            </ScrollArea>
+                          )
                         ) : (
                           <div className="h-[100px] flex items-center justify-center text-sm text-muted-foreground">
                             Select a brand first
@@ -557,7 +750,9 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {warehouses.length > 0 ? (
+                      {isLoadingWarehouses ? (
+                        <SelectItem value="loading" disabled>Loading warehouses...</SelectItem>
+                      ) : warehouses.length > 0 ? (
                         warehouses.map((warehouse) => (
                           <SelectItem key={warehouse.id} value={warehouse.id}>
                             {warehouse.name} ({warehouse.location})
