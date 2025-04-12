@@ -5,17 +5,14 @@ import {
   Calendar,
   CheckCircle2,
   ClipboardList,
-  Settings as CogIcon,
-  PieChart as FilePieIcon,
+  Settings,
+  PieChart,
   GaugeCircle,
   Home,
   ListChecks,
   LucideIcon,
   Mail,
   MessagesSquare,
-  PieChart,
-  Settings,
-  ShoppingBag,
   User,
   Users,
   LayoutDashboard,
@@ -24,12 +21,11 @@ import {
   ShoppingCart,
   ExternalLink,
   Repeat,
-  Wrench as ToolIcon,
+  Wrench,
   Cpu,
   Layers,
   Box,
   BarChart,
-  PieChart as PieChartIcon,
   FileText,
   Wallet,
   Contact2,
@@ -53,31 +49,8 @@ import {
   FileTerminal,
   FileUp,
   FileWarning,
-  Archive as FileZipIcon,
+  Archive,
   FileSearch,
-  FileSignature as FileSignatureIcon,
-  ScrollText as ScrollTextIcon,
-  FileDown as FileDownIcon,
-  BadgePercent as BadgePercentIcon,
-  KanbanSquare as KanbanSquareIcon,
-  ListTodo as ListTodoIcon,
-  AlertCircle as AlertCircleIcon,
-  File as FileIcon,
-  FilePlus2 as FilePlus2Icon,
-  FileEdit as FileEditIcon,
-  FileCheck as FileCheckIcon,
-  FileCode2 as FileCode2Icon,
-  FileJson2 as FileJson2Icon,
-  FileKey2 as FileKey2Icon,
-  FileLock2 as FileLock2Icon,
-  FileTerminal as FileTerminalIcon,
-  FileUp as FileUpIcon,
-  FileWarning as FileWarningIcon,
-  Archive as FileZipIcon2,
-  FileSearch as FileSearchIcon,
-  Contact2 as Contact2Icon,
-  ListOrdered as ListOrderedIcon,
-  Wallet as WalletIcon,
 } from "lucide-react";
 
 interface NavItem {
@@ -114,7 +87,7 @@ export const mainNavItems: NavItem[] = [
   },
   {
     to: "/service",
-    icon: CogIcon,
+    icon: Settings,
     label: "Service",
   },
   {
@@ -124,7 +97,7 @@ export const mainNavItems: NavItem[] = [
   },
   {
     to: "/reports",
-    icon: FilePieIcon,
+    icon: PieChart,
     label: "Reports",
   },
   {
@@ -142,6 +115,7 @@ export const mainNavItems: NavItem[] = [
 export const customersSection = {
   title: "Customers",
   id: "customers",
+  icon: Users, // Added icon property
   items: [
     {
       to: "/customers",
@@ -164,6 +138,7 @@ export const customersSection = {
 export const taskSection = {
   title: "Tasks",
   id: "tasks",
+  icon: ListChecks, // Added icon property
   items: [
     {
       to: "/tasks",
@@ -186,6 +161,7 @@ export const taskSection = {
 export const quotationsSection = {
   title: "Quotations",
   id: "quotations",
+  icon: FileText, // Added icon property
   items: [
     {
       to: "/quotations",
@@ -194,7 +170,7 @@ export const quotationsSection = {
     },
     {
       to: "/purchase-orders",
-      icon: ShoppingBag,
+      icon: ShoppingCart,
       label: "Purchase Orders",
     },
     {
@@ -228,6 +204,7 @@ export const quotationsSection = {
 export const serviceSection = {
   title: "Service",
   id: "service",
+  icon: Settings, // Added icon property
   items: [
     {
       to: "/service",
@@ -265,6 +242,7 @@ export const serviceSection = {
 export const inventorySection = {
   title: "Inventory",
   id: "inventory",
+  icon: Boxes, // Added icon property
   items: [
     {
       to: "/inventory",
@@ -303,7 +281,7 @@ export const inventorySection = {
     },
     {
       to: "/inventory/engineer-inventory",
-      icon: ToolIcon,
+      icon: Wrench,
       label: "Engineer Inventory"
     },
     {
@@ -323,7 +301,7 @@ export const inventorySection = {
     },
     {
       to: "/inventory/profit-report",
-      icon: PieChartIcon,
+      icon: PieChart,
       label: "Profit Reports"
     },
     {
@@ -337,6 +315,7 @@ export const inventorySection = {
 export const reportsSection = {
   title: "Reports",
   id: "reports",
+  icon: PieChart, // Added icon property
   items: [
     {
       to: "/reports/sales",

@@ -221,6 +221,7 @@ export type PartProfitability = {
   createdAt: string;
 };
 
+// Updated AMC types to match database schema
 export type AMCContract = {
   id: string;
   contract_id?: string; // For compatibility with DB
@@ -351,6 +352,15 @@ export type AMCProfitReport = {
   created_at?: string;
 };
 
+export type ProfitableMachine = {
+  id: string;
+  customerName: string;
+  machineModel: string;
+  serialNumber: string;
+  profit: number;
+  profitMargin: number;
+};
+
 export type CustomerType = 'Regular' | 'Dealer' | 'Government';
 
 export type PaymentStatus = 'Pending' | 'Partial' | 'Completed';
@@ -397,13 +407,4 @@ export type SaleItem = {
   taxRate: number;
   discount: number;
   total: number;
-};
-
-export type ProfitableMachine = {
-  id: string;
-  customerName: string;
-  machineModel: string;
-  serialNumber: string;
-  profit: number;
-  profitMargin: number;
 };
