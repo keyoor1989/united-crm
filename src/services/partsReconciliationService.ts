@@ -42,7 +42,16 @@ export const fetchServiceCallsWithParts = async (): Promise<ServiceCall[]> => {
       slaDeadline: call.sla_deadline || "",
       startTime: call.start_time || null,
       completionTime: call.completion_time || null,
-      partsUsed: Array.isArray(call.parts_used) ? call.parts_used : [],
+      partsUsed: Array.isArray(call.parts_used) ? call.parts_used.map((part: any) => ({
+        id: part.id,
+        name: part.name,
+        partNumber: part.partNumber,
+        quantity: part.quantity,
+        price: part.price,
+        cost: part.cost || undefined,
+        profit: part.profit || undefined,
+        isReconciled: part.isReconciled || false
+      })) : [],
       feedback: null,
       serviceCharge: call.service_charge || 0,
       isPaid: call.is_paid || false,
@@ -84,7 +93,7 @@ export const updatePartReconciliation = async (
     }
     
     // Update the parts_used array with the new reconciliation status
-    const updatedPartsUsed = serviceCall.parts_used.map((part: Part) => {
+    const updatedPartsUsed = serviceCall.parts_used.map((part: any) => {
       if (part.id === partId) {
         return { ...part, isReconciled: reconciled };
       }
@@ -92,7 +101,7 @@ export const updatePartReconciliation = async (
     });
     
     // Check if all parts are now reconciled
-    const allReconciled = updatedPartsUsed.every((part: Part) => part.isReconciled);
+    const allReconciled = updatedPartsUsed.every((part: any) => part.isReconciled);
     
     // Update the service call with the modified parts_used array and parts_reconciled flag
     const { error: updateError } = await supabase
@@ -139,7 +148,7 @@ export const updateServiceCallReconciliation = async (
     }
     
     // Update all parts in the parts_used array with the new reconciliation status
-    const updatedPartsUsed = serviceCall.parts_used.map((part: Part) => ({
+    const updatedPartsUsed = serviceCall.parts_used.map((part: any) => ({
       ...part,
       isReconciled: reconciled
     }));
@@ -161,6 +170,62 @@ export const updateServiceCallReconciliation = async (
     return true;
   } catch (err) {
     console.error("Unexpected error updating service call reconciliation:", err);
+    return false;
+  }
+};
+
+export const addPartToServiceCall = async (
+  serviceCallId: string,
+  part: Partial<Part>
+): Promise<boolean> => {
+  try {
+    // First fetch the current service call to get the parts_used array
+    const { data: serviceCall, error: fetchError } = await supabase
+      .from('service_calls')
+      .select('parts_used')
+      .eq('id', serviceCallId)
+      .single();
+    
+    if (fetchError) {
+      console.error("Error fetching service call for adding part:", fetchError);
+      return false;
+    }
+    
+    // Make sure parts_used is an array
+    const currentParts = Array.isArray(serviceCall.parts_used) ? serviceCall.parts_used : [];
+    
+    // Create a new part with a unique ID
+    const newPart = {
+      id: crypto.randomUUID(),
+      name: part.name || "Unknown Part",
+      partNumber: part.partNumber || "N/A",
+      quantity: part.quantity || 1,
+      price: part.price || 0,
+      cost: part.cost,
+      profit: part.profit,
+      isReconciled: false
+    };
+    
+    // Add the new part to the parts_used array
+    const updatedPartsUsed = [...currentParts, newPart];
+    
+    // Update the service call with the modified parts_used array
+    const { error: updateError } = await supabase
+      .from('service_calls')
+      .update({ 
+        parts_used: updatedPartsUsed,
+        parts_reconciled: false
+      })
+      .eq('id', serviceCallId);
+    
+    if (updateError) {
+      console.error("Error adding part to service call:", updateError);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error("Unexpected error adding part to service call:", err);
     return false;
   }
 };

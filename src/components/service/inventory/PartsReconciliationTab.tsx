@@ -5,11 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, Check, X, FileText, ArrowDownToLine } from "lucide-react";
+import { Search, Check, X, FileText, ArrowDownToLine, Plus } from "lucide-react";
 import { ServiceCall, Part } from "@/types/service";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { fetchServiceCallsWithParts, updatePartReconciliation, updateServiceCallReconciliation } from "@/services/partsReconciliationService";
+import { 
+  fetchServiceCallsWithParts, 
+  updatePartReconciliation, 
+  updateServiceCallReconciliation,
+  addPartToServiceCall
+} from "@/services/partsReconciliationService";
 import { useToast } from "@/hooks/use-toast";
+import AddPartDialog from "./AddPartDialog";
 
 interface PartsReconciliationTabProps {
   serviceCalls?: ServiceCall[];
@@ -28,6 +34,8 @@ const PartsReconciliationTab = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [isLoading, setIsLoading] = useState(propIsLoading || true);
+  const [showAddPartDialog, setShowAddPartDialog] = useState(false);
+  const [selectedServiceCall, setSelectedServiceCall] = useState<ServiceCall | null>(null);
   
   // Use either the props or fetch from the database
   useEffect(() => {
@@ -140,6 +148,36 @@ const PartsReconciliationTab = ({
       }
     }
   };
+
+  // Handle adding a part to service call
+  const handleAddPart = async (part: Partial<Part>) => {
+    if (!selectedServiceCall) return;
+    
+    const success = await addPartToServiceCall(selectedServiceCall.id, part);
+    if (success) {
+      // Refresh the data to include the new part
+      fetchServiceCallsFromDB();
+      
+      toast({
+        title: "Part Added",
+        description: `${part.quantity} ${part.name} added to service call for ${selectedServiceCall.customerName}`,
+      });
+      
+      setShowAddPartDialog(false);
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to add part to service call.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Open add part dialog for specific service call
+  const openAddPartDialog = (serviceCall: ServiceCall) => {
+    setSelectedServiceCall(serviceCall);
+    setShowAddPartDialog(true);
+  };
   
   // Filter service calls with parts
   const callsWithParts = serviceCalls.filter(call => 
@@ -147,7 +185,7 @@ const PartsReconciliationTab = ({
   );
   
   // Filter based on search term - now also searches engineer name
-  const filteredCalls = callsWithParts.filter(call => 
+  const filteredCalls = serviceCalls.filter(call => 
     call.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (call.engineerName && call.engineerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     call.machineModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -211,6 +249,9 @@ const PartsReconciliationTab = ({
             <ArrowDownToLine className="mr-2 h-4 w-4" />
             Export
           </Button>
+          <Button onClick={fetchServiceCallsFromDB}>
+            Refresh
+          </Button>
         </div>
         
         {filteredCalls.length === 0 ? (
@@ -235,6 +276,13 @@ const PartsReconciliationTab = ({
                       <Badge variant={call.partsReconciled ? "outline" : "secondary"}>
                         {call.partsReconciled ? "Reconciled" : "Pending"}
                       </Badge>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => openAddPartDialog(call)}
+                      >
+                        <Plus className="mr-1 h-4 w-4" /> Add Part
+                      </Button>
                       <Button 
                         size="sm" 
                         variant="outline"
@@ -264,36 +312,53 @@ const PartsReconciliationTab = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {call.partsUsed.map((part: Part) => (
-                        <TableRow key={part.id}>
-                          <TableCell className="font-medium">{part.name}</TableCell>
-                          <TableCell>{part.partNumber}</TableCell>
-                          <TableCell className="text-right">{part.quantity}</TableCell>
-                          <TableCell className="text-right">₹{part.price.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">₹{(part.quantity * part.price).toFixed(2)}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge variant={part.isReconciled ? "outline" : "secondary"}>
-                              {part.isReconciled ? "Reconciled" : "Pending"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePartReconcile(call.id, part.id, !part.isReconciled)}
-                            >
-                              {part.isReconciled ? (
-                                <X className="h-4 w-4" />
-                              ) : (
-                                <Check className="h-4 w-4" />
-                              )}
-                              <span className="sr-only">
-                                {part.isReconciled ? "Unreconcile" : "Reconcile"}
-                              </span>
-                            </Button>
+                      {call.partsUsed.length > 0 ? (
+                        call.partsUsed.map((part: Part) => (
+                          <TableRow key={part.id}>
+                            <TableCell className="font-medium">{part.name}</TableCell>
+                            <TableCell>{part.partNumber}</TableCell>
+                            <TableCell className="text-right">{part.quantity}</TableCell>
+                            <TableCell className="text-right">₹{part.price.toFixed(2)}</TableCell>
+                            <TableCell className="text-right">₹{(part.quantity * part.price).toFixed(2)}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant={part.isReconciled ? "outline" : "secondary"}>
+                                {part.isReconciled ? "Reconciled" : "Pending"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePartReconcile(call.id, part.id, !part.isReconciled)}
+                              >
+                                {part.isReconciled ? (
+                                  <X className="h-4 w-4" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                                <span className="sr-only">
+                                  {part.isReconciled ? "Unreconcile" : "Reconcile"}
+                                </span>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-4">
+                            No parts recorded for this service call yet.
+                            <div className="mt-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => openAddPartDialog(call)}
+                              >
+                                <Plus className="mr-1 h-4 w-4" /> Add Part
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -302,6 +367,14 @@ const PartsReconciliationTab = ({
           </div>
         )}
       </CardContent>
+      
+      {/* Add Part Dialog */}
+      <AddPartDialog 
+        open={showAddPartDialog} 
+        onClose={() => setShowAddPartDialog(false)}
+        onSave={handleAddPart}
+        serviceCall={selectedServiceCall}
+      />
     </Card>
   );
 };
