@@ -122,6 +122,10 @@ export const ServiceCallCard: React.FC<ServiceCallCardProps> = ({
     { addSuffix: true }
   );
 
+  // Show assignment button for 'New' and unassigned calls
+  const needsEngineerAssignment = (status.toLowerCase() === "new" && !engineerId) || 
+                                 (status.toLowerCase() === "pending" && !engineerId);
+
   return (
     <>
       <Card className="overflow-hidden">
@@ -171,7 +175,7 @@ export const ServiceCallCard: React.FC<ServiceCallCardProps> = ({
                 </span>
               </div>
               <div className="flex gap-1">
-                {!engineerId && status.toLowerCase() === "pending" && (
+                {needsEngineerAssignment && (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -179,6 +183,18 @@ export const ServiceCallCard: React.FC<ServiceCallCardProps> = ({
                     onClick={() => setShowAssignSheet(true)}
                   >
                     <UserPlus className="h-4 w-4" />
+                    Assign
+                  </Button>
+                )}
+                {engineerId && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1"
+                    onClick={() => onReassign(id)}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Reassign
                   </Button>
                 )}
                 <Button 

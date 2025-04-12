@@ -51,10 +51,11 @@ export interface Engineer {
   phone: string;
   email: string;
   location: string;
-  status: string;
+  status: "Available" | "On Call" | "On Leave" | "At Warehouse" | "Busy";
   skillLevel: string;
   currentJob: string | null;
   currentLocation: string;
+  leaveEndDate?: string;
 }
 
 export interface Part {

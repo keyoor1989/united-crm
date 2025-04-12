@@ -2,90 +2,117 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, User, Wrench, Zap } from "lucide-react";
 import { Engineer } from "@/types/service";
+import { User, MapPin, Phone, Wrench, Clock } from "lucide-react";
+import { format, isPast, parseISO } from "date-fns";
 
 interface EngineerCardProps {
   engineer: Engineer;
-  showFullDetails?: boolean;
 }
 
-export const EngineerCard: React.FC<EngineerCardProps> = ({ 
-  engineer, 
-  showFullDetails = false 
-}) => {
-  const { name, status, location, skillLevel, currentJob } = engineer;
+export const EngineerCard: React.FC<EngineerCardProps> = ({ engineer }) => {
+  const {
+    name,
+    location,
+    phone,
+    status,
+    skillLevel,
+    currentJob,
+    currentLocation,
+    leaveEndDate
+  } = engineer;
 
   const getStatusBadge = () => {
-    switch (status.toLowerCase()) {
-      case "available":
-        return <Badge className="mt-1.5 bg-green-500">Available</Badge>;
-      case "on call":
-        return <Badge className="mt-1.5 bg-blue-500">On Call</Badge>;
-      case "break":
-        return <Badge className="mt-1.5 bg-amber-500">Break</Badge>;
-      case "off duty":
-        return <Badge className="mt-1.5 bg-red-500">Off Duty</Badge>;
+    switch (status) {
+      case "Available":
+        return <Badge className="bg-green-500">Available</Badge>;
+      case "On Call":
+        return <Badge className="bg-amber-500">On Call</Badge>;
+      case "On Leave":
+        return <Badge className="bg-red-500">On Leave</Badge>;
+      case "At Warehouse":
+        return <Badge className="bg-blue-500">At Warehouse</Badge>;
+      case "Busy":
+        return <Badge className="bg-gray-500">Busy</Badge>;
       default:
-        return <Badge className="mt-1.5 bg-gray-500">{status}</Badge>;
+        return <Badge className="bg-green-500">Available</Badge>;
     }
   };
 
-  const getStatusColor = () => {
-    switch (status.toLowerCase()) {
-      case "available":
-        return "bg-green-100 text-green-700";
-      case "on call":
-        return "bg-blue-100 text-blue-700";
-      case "break":
-        return "bg-amber-100 text-amber-700";
-      case "off duty":
-        return "bg-red-100 text-red-700";
+  const getSkillLevelBadge = () => {
+    switch (skillLevel) {
+      case "Beginner":
+        return <Badge variant="outline" className="ml-2">Beginner</Badge>;
+      case "Intermediate":
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 ml-2">Intermediate</Badge>;
+      case "Advanced":
+        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 ml-2">Advanced</Badge>;
+      case "Expert":
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 ml-2">Expert</Badge>;
       default:
-        return "bg-gray-100 text-gray-700";
+        return <Badge variant="outline" className="ml-2">Beginner</Badge>;
     }
   };
 
-  const getSkillIcon = () => {
-    switch (skillLevel.toLowerCase()) {
-      case "expert":
-        return <Zap className="h-3 w-3" />;
-      case "senior":
-        return <Zap className="h-3 w-3" />;
-      default:
-        return null;
-    }
-  };
+  // Calculate leave status if applicable
+  const isOnLeave = status === "On Leave";
+  const leaveEnded = leaveEndDate ? isPast(parseISO(leaveEndDate)) : false;
 
   return (
-    <Card className={`overflow-hidden transition-shadow hover:shadow-md ${showFullDetails ? 'border-brand-500' : ''}`}>
-      <CardContent className={`pt-6 ${showFullDetails ? 'pb-6' : ''}`}>
-        <div className="flex items-start gap-2">
-          <div className={`h-8 w-8 rounded-full flex items-center justify-center ${getStatusColor()}`}>
-            <User className="h-4 w-4" />
+    <Card className="h-full">
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+              <User className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="ml-3">
+              <h3 className="font-semibold">{name}</h3>
+            </div>
           </div>
-          <div className="flex-1">
-            <div className={`font-medium flex items-center gap-1 ${showFullDetails ? 'text-lg' : ''}`}>
-              {name}
-              {getSkillIcon() && (
-                <span className="ml-1 text-amber-500 flex">
-                  {getSkillIcon()}
-                </span>
-              )}
-            </div>
-            
-            <div className="flex items-center text-xs text-muted-foreground gap-1">
-              <MapPin className="h-3 w-3" /> {location}
-            </div>
-            
-            {currentJob && (
-              <div className="flex items-center text-xs text-muted-foreground gap-1 mt-1">
-                <Wrench className="h-3 w-3" /> Working at: {currentJob}
-              </div>
-            )}
-            
+          <div className="flex flex-col items-end gap-1">
             {getStatusBadge()}
+            {getSkillLevelBadge()}
           </div>
+        </div>
+        
+        <div className="flex flex-col gap-1 mt-2">
+          <div className="flex items-center gap-1">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">Base: {location}</span>
+          </div>
+          
+          {currentLocation && currentLocation !== location && (
+            <div className="flex items-center gap-1">
+              <MapPin className="h-4 w-4 text-amber-500" />
+              <span className="text-sm text-amber-700">Currently at: {currentLocation}</span>
+            </div>
+          )}
+          
+          <div className="flex items-center gap-1">
+            <Phone className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">{phone}</span>
+          </div>
+          
+          {currentJob && (
+            <div className="flex items-center gap-1">
+              <Wrench className="h-4 w-4 text-amber-500" />
+              <span className="text-sm text-amber-700">
+                {currentJob}
+              </span>
+            </div>
+          )}
+          
+          {isOnLeave && leaveEndDate && (
+            <div className="flex items-center gap-1 mt-1">
+              <Clock className="h-4 w-4 text-red-500" />
+              <span className={`text-sm ${leaveEnded ? "text-green-600" : "text-red-600"}`}>
+                {leaveEnded 
+                  ? "Leave ended on " + format(parseISO(leaveEndDate), "PP")
+                  : "Returns on " + format(parseISO(leaveEndDate), "PP")}
+              </span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

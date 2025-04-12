@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -36,12 +37,14 @@ import {
   AlertTriangle,
   Save,
   Loader2,
+  Users,
 } from "lucide-react";
 import { ServiceCall, Customer, Machine, Engineer } from "@/types/service";
 import { mockMachines } from "@/data/mockData";
 import { CustomerType } from "@/types/customer";
 import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
 
 const serviceCallSchema = z.object({
   customerId: z.string().min(1, { message: "Customer is required" }),
@@ -71,6 +74,7 @@ const ServiceCallForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slaTime, setSlaTime] = useState<number | null>(null);
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+  const [assignEngineerNow, setAssignEngineerNow] = useState(false);
 
   const form = useForm<ServiceCallFormValues>({
     resolver: zodResolver(serviceCallSchema),
@@ -289,6 +293,13 @@ const ServiceCallForm = () => {
       const slaHours = slaTime || 48;
       const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000).toISOString();
       
+      // If not assigning engineer now, clear the engineerId
+      if (!assignEngineerNow) {
+        data.engineerId = null;
+      }
+
+      const initialStatus = data.engineerId ? "Pending" : "New";
+      
       const { data: serviceCallData, error: serviceCallError } = await supabase
         .from('service_calls')
         .insert({
@@ -303,7 +314,7 @@ const ServiceCallForm = () => {
           issue_description: data.issueDescription,
           call_type: data.callType,
           priority: data.priority,
-          status: "Pending",
+          status: initialStatus,
           engineer_id: data.engineerId || null,
           engineer_name: data.engineerId 
             ? engineers.find(e => e.id === data.engineerId)?.name || ""
@@ -327,6 +338,27 @@ const ServiceCallForm = () => {
       }
       
       console.log("Service Call Created in Database:", serviceCallData);
+      
+      // If engineer was assigned, update their status
+      if (data.engineerId) {
+        const { error: engineerError } = await supabase
+          .from('engineers')
+          .update({
+            status: "On Call",
+            current_job: `Service Call #${serviceCallData.id}`,
+            current_location: data.location
+          })
+          .eq('id', data.engineerId);
+          
+        if (engineerError) {
+          console.error("Error updating engineer status:", engineerError);
+          toast({
+            title: "Warning",
+            description: "Service call created but failed to update engineer status",
+            variant: "destructive",
+          });
+        }
+      }
       
       toast({
         title: "Service Call Created",
@@ -573,45 +605,64 @@ const ServiceCallForm = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="engineerId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assign Engineer</FormLabel>
-                      <div className="flex gap-2">
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="flex-1">
-                              <SelectValue placeholder="Select engineer" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {engineers
-                              .filter((engineer) => engineer.status === "Available")
-                              .map((engineer) => (
-                                <SelectItem key={engineer.id} value={engineer.id}>
-                                  {engineer.name} ({engineer.location})
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={autoAssignEngineer}
-                          disabled={!selectedCustomer}
-                        >
-                          Auto-Assign
-                        </Button>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="col-span-2">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Assign Engineer Now</FormLabel>
+                      <FormDescription className="text-xs text-muted-foreground">
+                        Toggle to assign an engineer immediately or leave for later
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={assignEngineerNow}
+                        onCheckedChange={setAssignEngineerNow}
+                      />
+                    </FormControl>
+                  </FormItem>
+                </div>
+
+                {assignEngineerNow && (
+                  <FormField
+                    control={form.control}
+                    name="engineerId"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2">
+                        <FormLabel>Assign Engineer</FormLabel>
+                        <div className="flex gap-2">
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Select engineer" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {engineers
+                                .filter((engineer) => engineer.status === "Available")
+                                .map((engineer) => (
+                                  <SelectItem key={engineer.id} value={engineer.id}>
+                                    {engineer.name} ({engineer.location})
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={autoAssignEngineer}
+                            disabled={!selectedCustomer}
+                          >
+                            Auto-Assign
+                          </Button>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <FormField

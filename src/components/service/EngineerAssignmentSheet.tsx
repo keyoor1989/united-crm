@@ -17,7 +17,8 @@ import {
   Search,
   Star,
   Zap,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { ServiceCall, Engineer } from "@/types/service";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +42,10 @@ const EngineerAssignmentSheet: React.FC<EngineerAssignmentSheetProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEngineerId, setSelectedEngineerId] = useState<string | null>(null);
   
-  const availableEngineers = engineers.filter(eng => eng.status === "Available");
+  // Filter out engineers who are not available or on leave
+  const availableEngineers = engineers.filter(eng => 
+    eng.status === "Available" || eng.status === "At Warehouse"
+  );
   
   const filteredEngineers = availableEngineers.filter(eng =>
     eng.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -104,6 +108,17 @@ const EngineerAssignmentSheet: React.FC<EngineerAssignmentSheetProps> = ({
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "Available":
+        return <Badge className="bg-green-500">Available</Badge>;
+      case "At Warehouse":
+        return <Badge className="bg-blue-500">At Warehouse</Badge>;
+      default:
+        return <Badge className="bg-green-500">Available</Badge>;
+    }
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md">
@@ -151,6 +166,18 @@ const EngineerAssignmentSheet: React.FC<EngineerAssignmentSheetProps> = ({
             )}
           </div>
           
+          {engineers.length > 0 && availableEngineers.length === 0 && (
+            <div className="p-3 rounded-md border border-amber-200 bg-amber-50 mb-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <span className="font-medium text-amber-700">No Available Engineers</span>
+              </div>
+              <p className="text-sm text-amber-600 mt-1">
+                All engineers are currently busy or on leave. Consider waiting for an engineer to become available or marking the task as urgent to prioritize reassignment.
+              </p>
+            </div>
+          )}
+          
           <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
             {sortedEngineers.map((engineer) => (
               <div
@@ -174,7 +201,7 @@ const EngineerAssignmentSheet: React.FC<EngineerAssignmentSheetProps> = ({
                           <Zap className="h-3 w-3 text-amber-500" />
                         )}
                       </div>
-                      <Badge className="bg-green-500">Available</Badge>
+                      {getStatusBadge(engineer.status)}
                     </div>
                     <div className="flex items-center text-xs text-muted-foreground gap-1 mt-1">
                       <MapPin className="h-3 w-3" />
