@@ -30,7 +30,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [engineerId, setEngineerId] = useState(serviceCall.engineerId || "");
   const [status, setStatus] = useState(serviceCall.status || "");
-  const [resolutionNotes, setResolutionNotes] = useState(serviceCall.resolutionNotes || "");
+  const [resolutionNotes, setResolutionNotes] = useState(serviceCall.issue_description || ""); // Changed from resolutionNotes to issue_description
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleSaveChanges = async () => {
@@ -49,7 +49,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
         ...serviceCall,
         engineerId,
         status,
-        resolutionNotes,
+        issue_description: resolutionNotes, // Changed from resolutionNotes to issue_description
         updatedAt: new Date().toISOString()
       };
       
@@ -125,19 +125,19 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
           <div>
             <Label>Phone</Label>
             <div className="p-2 rounded bg-muted font-medium">
-              {serviceCall.customerPhone}
+              {serviceCall.phone}
             </div>
           </div>
           <div>
             <Label>Address</Label>
             <div className="p-2 rounded bg-muted font-medium">
-              {serviceCall.customerAddress}
+              {serviceCall.location}
             </div>
           </div>
           <div>
             <Label>Email</Label>
             <div className="p-2 rounded bg-muted font-medium">
-              {serviceCall.customerEmail || "N/A"}
+              N/A
             </div>
           </div>
         </div>
@@ -275,7 +275,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
             <div>
               <Label>Resolution Notes</Label>
               <div className="p-2 rounded bg-muted font-medium whitespace-pre-line min-h-[80px]">
-                {serviceCall.resolutionNotes || "No resolution notes yet."}
+                {serviceCall.issueDescription || "No resolution notes yet."}
               </div>
             </div>
           </div>
