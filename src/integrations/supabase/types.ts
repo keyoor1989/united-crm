@@ -228,6 +228,62 @@ export type Database = {
           },
         ]
       }
+      opening_stock_entries: {
+        Row: {
+          brand: string
+          category: string
+          compatible_models: Json | null
+          created_at: string
+          created_by: string | null
+          id: string
+          min_stock: number
+          part_name: string
+          part_number: string | null
+          purchase_price: number
+          quantity: number
+          warehouse_id: string | null
+          warehouse_name: string | null
+        }
+        Insert: {
+          brand: string
+          category: string
+          compatible_models?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          min_stock?: number
+          part_name: string
+          part_number?: string | null
+          purchase_price: number
+          quantity?: number
+          warehouse_id?: string | null
+          warehouse_name?: string | null
+        }
+        Update: {
+          brand?: string
+          category?: string
+          compatible_models?: Json | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          min_stock?: number
+          part_name?: string
+          part_number?: string | null
+          purchase_price?: number
+          quantity?: number
+          warehouse_id?: string | null
+          warehouse_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opening_stock_entries_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotations: {
         Row: {
           created_at: string

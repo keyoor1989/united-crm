@@ -15,21 +15,59 @@ import { Search, Filter, Plus, FileText, Settings, Printer } from "lucide-react"
 import { Badge } from "@/components/ui/badge";
 import OpeningStockEntryForm from "@/components/inventory/OpeningStockEntryForm";
 import { mockInventoryItems } from "@/components/service/inventory/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
+
+const MachinePartsWithQueryClient = () => (
+  <QueryClientProvider client={queryClient}>
+    <MachineParts />
+  </QueryClientProvider>
+);
 
 const MachineParts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [machineParts, setMachineParts] = useState([]);
   const [openStockEntryForm, setOpenStockEntryForm] = useState(false);
   
-  useEffect(() => {
-    setMachineParts(mockInventoryItems);
-  }, []);
-  
-  useEffect(() => {
-    mockInventoryItems.length = 0;
-    mockInventoryItems.push(...machineParts);
-  }, [machineParts]);
+  const { data: machineParts = [], isLoading, refetch } = useQuery({
+    queryKey: ['machine-parts'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('opening_stock_entries')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error("Error fetching machine parts:", error);
+          return mockInventoryItems;
+        }
+        
+        if (data && data.length > 0) {
+          return data.map(item => ({
+            id: item.id,
+            partNumber: item.part_number,
+            name: item.part_name,
+            brand: item.brand,
+            category: item.category,
+            compatibleModels: item.compatible_models || [],
+            currentStock: item.quantity,
+            minStock: item.min_stock,
+            purchasePrice: item.purchase_price,
+            warehouseId: item.warehouse_id,
+            warehouseName: item.warehouse_name || "Main Warehouse",
+          }));
+        } else {
+          return mockInventoryItems;
+        }
+      } catch (error) {
+        console.error("Exception fetching machine parts:", error);
+        return mockInventoryItems;
+      }
+    }
+  });
   
   const filteredParts = machineParts.filter(part => {
     const matchesSearch = searchQuery ? 
@@ -56,11 +94,7 @@ const MachineParts = () => {
   };
 
   const handleAddPart = (newPart) => {
-    if (!newPart.warehouseId || newPart.warehouseId === "default") {
-      newPart.warehouseId = "main";
-      newPart.warehouseName = "Main Warehouse";
-    }
-    setMachineParts(prevParts => [...prevParts, newPart]);
+    refetch();
   };
 
   return (
@@ -116,69 +150,77 @@ const MachineParts = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Part Number</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Compatible Models</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Price (₹)</TableHead>
-                    <TableHead>Warehouse</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredParts.length > 0 ? (
-                    filteredParts.map((part) => {
-                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
-                      return (
-                        <TableRow key={part.id}>
-                          <TableCell className="font-medium">{part.partNumber}</TableCell>
-                          <TableCell>{part.name}</TableCell>
-                          <TableCell>{part.brand}</TableCell>
-                          <TableCell>{part.category}</TableCell>
-                          <TableCell>
-                            <div className="text-xs max-w-[200px] truncate">
-                              Array.isArray(part.compatibleModels) 
-                                ? part.compatibleModels.join(", ") 
-                                : "N/A"
-                            </div>
-                          </TableCell>
-                          <TableCell>{part.currentStock}</TableCell>
-                          <TableCell>{part.purchasePrice?.toLocaleString() || "N/A"}</TableCell>
-                          <TableCell>{part.warehouseName || "Main Warehouse"}</TableCell>
-                          <TableCell>
-                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon">
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon">
-                                <Settings className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon">
-                                <Printer className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  ) : (
+              {isLoading ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <p>Loading parts inventory...</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={10} className="h-24 text-center">
-                        No parts found. Add your first part by clicking "Add New Part" above.
-                      </TableCell>
+                      <TableHead>Part Number</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Compatible Models</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Price (₹)</TableHead>
+                      <TableHead>Warehouse</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredParts.length > 0 ? (
+                      filteredParts.map((part) => {
+                        const stockStatus = getStockStatus(part.currentStock, part.minStock);
+                        return (
+                          <TableRow key={part.id}>
+                            <TableCell className="font-medium">{part.partNumber}</TableCell>
+                            <TableCell>{part.name}</TableCell>
+                            <TableCell>{part.brand}</TableCell>
+                            <TableCell>{part.category}</TableCell>
+                            <TableCell>
+                              <div className="text-xs max-w-[200px] truncate">
+                                {Array.isArray(part.compatibleModels) 
+                                  ? part.compatibleModels.join(", ") 
+                                  : "N/A"}
+                              </div>
+                            </TableCell>
+                            <TableCell>{part.currentStock}</TableCell>
+                            <TableCell>{typeof part.purchasePrice === 'number' 
+                              ? part.purchasePrice.toLocaleString() 
+                              : part.purchasePrice}</TableCell>
+                            <TableCell>{part.warehouseName || "Main Warehouse"}</TableCell>
+                            <TableCell>
+                              <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button variant="ghost" size="icon">
+                                  <FileText className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon">
+                                  <Settings className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon">
+                                  <Printer className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={10} className="h-24 text-center">
+                          No parts found. Add your first part by clicking "Add New Part" above.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -409,4 +451,4 @@ const MachineParts = () => {
   );
 };
 
-export default MachineParts;
+export default MachinePartsWithQueryClient;

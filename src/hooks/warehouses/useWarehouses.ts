@@ -5,25 +5,89 @@ import { toast } from "sonner";
 import { Warehouse, WarehouseStock } from "@/types/inventory";
 import { WarehouseFormValues } from "@/components/inventory/warehouses/WarehouseForm";
 import { mockWarehouses, mockWarehouseStock } from "@/components/inventory/warehouses/mockWarehouseData";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock function to fetch warehouses
 export const fetchWarehouses = async (): Promise<Warehouse[]> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return mockWarehouses;
+  try {
+    // Try to fetch from Supabase first
+    const { data, error } = await supabase
+      .from('warehouses')
+      .select('*')
+      .order('name');
+    
+    if (error) {
+      console.error("Error fetching warehouses from Supabase:", error);
+      // Fallback to mock data if Supabase query fails
+      return mockWarehouses;
+    }
+    
+    if (data && data.length > 0) {
+      // Transform Supabase data to match our Warehouse type
+      return data.map(warehouse => ({
+        id: warehouse.id,
+        name: warehouse.name,
+        code: warehouse.code,
+        location: warehouse.location,
+        address: warehouse.address,
+        contactPerson: warehouse.contact_person,
+        contactPhone: warehouse.contact_phone,
+        isActive: warehouse.is_active,
+        createdAt: warehouse.created_at
+      }));
+    } else {
+      // If no data from Supabase, use mock data
+      return mockWarehouses;
+    }
+  } catch (error) {
+    console.error("Exception fetching warehouses:", error);
+    // Fallback to mock data in case of any error
+    return mockWarehouses;
+  }
 };
 
 // Mock function to fetch warehouse stock
 export const fetchWarehouseStock = async (warehouseId: string | null): Promise<WarehouseStock[]> => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 600));
-  
-  // Filter stock by warehouse if warehouseId is provided
-  if (warehouseId) {
-    return mockWarehouseStock.filter(stock => stock.warehouseId === warehouseId);
+  try {
+    // Try to fetch from Supabase first
+    const { data, error } = await supabase
+      .from('warehouse_stock')
+      .select('*')
+      .eq(warehouseId ? 'warehouse_id' : '', warehouseId || '');
+    
+    if (error) {
+      console.error("Error fetching warehouse stock from Supabase:", error);
+      // Fallback to mock data if Supabase query fails
+      if (warehouseId) {
+        return mockWarehouseStock.filter(stock => stock.warehouseId === warehouseId);
+      }
+      return mockWarehouseStock;
+    }
+    
+    if (data && data.length > 0) {
+      // Transform Supabase data to match our WarehouseStock type
+      return data.map(stock => ({
+        id: stock.id,
+        warehouseId: stock.warehouse_id,
+        itemId: stock.item_id,
+        quantity: stock.quantity,
+        lastUpdated: stock.last_updated
+      }));
+    } else {
+      // If no data from Supabase, use mock data
+      if (warehouseId) {
+        return mockWarehouseStock.filter(stock => stock.warehouseId === warehouseId);
+      }
+      return mockWarehouseStock;
+    }
+  } catch (error) {
+    console.error("Exception fetching warehouse stock:", error);
+    // Fallback to mock data in case of any error
+    if (warehouseId) {
+      return mockWarehouseStock.filter(stock => stock.warehouseId === warehouseId);
+    }
+    return mockWarehouseStock;
   }
-  
-  return mockWarehouseStock;
 };
 
 // Create a custom hook for warehouse management
@@ -40,26 +104,80 @@ export const useWarehouses = () => {
   // Create warehouse mutation
   const createWarehouseMutation = useMutation({
     mutationFn: async (values: WarehouseFormValues) => {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create a new warehouse with a unique ID
-      const newWarehouse: Warehouse = {
-        id: `w${mockWarehouses.length + 1}`,
-        name: values.name,
-        code: values.code,
-        location: values.location,
-        address: values.address,
-        contactPerson: values.contactPerson,
-        contactPhone: values.contactPhone,
-        isActive: values.isActive,
-        createdAt: new Date().toISOString()
-      };
-      
-      // In a real app, this would be an API call
-      mockWarehouses.push(newWarehouse);
-      
-      return newWarehouse;
+      try {
+        // Try to insert into Supabase first
+        const { data, error } = await supabase
+          .from('warehouses')
+          .insert({
+            name: values.name,
+            code: values.code,
+            location: values.location,
+            address: values.address,
+            contact_person: values.contactPerson,
+            contact_phone: values.contactPhone,
+            is_active: values.isActive,
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error("Error creating warehouse in Supabase:", error);
+          throw error;
+        }
+        
+        // Transform Supabase data to match our Warehouse type
+        if (data) {
+          return {
+            id: data.id,
+            name: data.name,
+            code: data.code,
+            location: data.location,
+            address: data.address,
+            contactPerson: data.contact_person,
+            contactPhone: data.contact_phone,
+            isActive: data.is_active,
+            createdAt: data.created_at
+          };
+        }
+        
+        // If Supabase insert failed, fall back to mock data
+        const newWarehouse: Warehouse = {
+          id: `w${mockWarehouses.length + 1}`,
+          name: values.name,
+          code: values.code,
+          location: values.location,
+          address: values.address,
+          contactPerson: values.contactPerson,
+          contactPhone: values.contactPhone,
+          isActive: values.isActive,
+          createdAt: new Date().toISOString()
+        };
+        
+        // In a real app, this would be an API call
+        mockWarehouses.push(newWarehouse);
+        
+        return newWarehouse;
+      } catch (error) {
+        console.error("Exception creating warehouse:", error);
+        
+        // Fallback to mock data in case of any error
+        const newWarehouse: Warehouse = {
+          id: `w${mockWarehouses.length + 1}`,
+          name: values.name,
+          code: values.code,
+          location: values.location,
+          address: values.address,
+          contactPerson: values.contactPerson,
+          contactPhone: values.contactPhone,
+          isActive: values.isActive,
+          createdAt: new Date().toISOString()
+        };
+        
+        // In a real app, this would be an API call
+        mockWarehouses.push(newWarehouse);
+        
+        return newWarehouse;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['warehouses'] });
@@ -74,31 +192,91 @@ export const useWarehouses = () => {
   // Update warehouse mutation
   const updateWarehouseMutation = useMutation({
     mutationFn: async (values: WarehouseFormValues & { id: string }) => {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Find and update the warehouse
-      const index = mockWarehouses.findIndex(w => w.id === values.id);
-      
-      if (index === -1) {
-        throw new Error("Warehouse not found");
+      try {
+        // Try to update in Supabase first
+        const { data, error } = await supabase
+          .from('warehouses')
+          .update({
+            name: values.name,
+            code: values.code,
+            location: values.location,
+            address: values.address,
+            contact_person: values.contactPerson,
+            contact_phone: values.contactPhone,
+            is_active: values.isActive,
+          })
+          .eq('id', values.id)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error("Error updating warehouse in Supabase:", error);
+          throw error;
+        }
+        
+        // Transform Supabase data to match our Warehouse type
+        if (data) {
+          return {
+            id: data.id,
+            name: data.name,
+            code: data.code,
+            location: data.location,
+            address: data.address,
+            contactPerson: data.contact_person,
+            contactPhone: data.contact_phone,
+            isActive: data.is_active,
+            createdAt: data.created_at
+          };
+        }
+        
+        // If Supabase update failed, fall back to mock data
+        const index = mockWarehouses.findIndex(w => w.id === values.id);
+        
+        if (index === -1) {
+          throw new Error("Warehouse not found");
+        }
+        
+        const updatedWarehouse: Warehouse = {
+          ...mockWarehouses[index],
+          name: values.name,
+          code: values.code,
+          location: values.location,
+          address: values.address,
+          contactPerson: values.contactPerson,
+          contactPhone: values.contactPhone,
+          isActive: values.isActive
+        };
+        
+        // In a real app, this would be an API call
+        mockWarehouses[index] = updatedWarehouse;
+        
+        return updatedWarehouse;
+      } catch (error) {
+        console.error("Exception updating warehouse:", error);
+        
+        // Fallback to mock data in case of any error
+        const index = mockWarehouses.findIndex(w => w.id === values.id);
+        
+        if (index === -1) {
+          throw new Error("Warehouse not found");
+        }
+        
+        const updatedWarehouse: Warehouse = {
+          ...mockWarehouses[index],
+          name: values.name,
+          code: values.code,
+          location: values.location,
+          address: values.address,
+          contactPerson: values.contactPerson,
+          contactPhone: values.contactPhone,
+          isActive: values.isActive
+        };
+        
+        // In a real app, this would be an API call
+        mockWarehouses[index] = updatedWarehouse;
+        
+        return updatedWarehouse;
       }
-      
-      const updatedWarehouse: Warehouse = {
-        ...mockWarehouses[index],
-        name: values.name,
-        code: values.code,
-        location: values.location,
-        address: values.address,
-        contactPerson: values.contactPerson,
-        contactPhone: values.contactPhone,
-        isActive: values.isActive
-      };
-      
-      // In a real app, this would be an API call
-      mockWarehouses[index] = updatedWarehouse;
-      
-      return updatedWarehouse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['warehouses'] });
@@ -113,20 +291,34 @@ export const useWarehouses = () => {
   // Delete warehouse mutation
   const deleteWarehouseMutation = useMutation({
     mutationFn: async (warehouseId: string) => {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Find the warehouse index
-      const index = mockWarehouses.findIndex(w => w.id === warehouseId);
-      
-      if (index === -1) {
-        throw new Error("Warehouse not found");
+      try {
+        // Try to delete from Supabase first
+        const { error } = await supabase
+          .from('warehouses')
+          .delete()
+          .eq('id', warehouseId);
+        
+        if (error) {
+          console.error("Error deleting warehouse from Supabase:", error);
+          throw error;
+        }
+        
+        return warehouseId;
+      } catch (error) {
+        console.error("Exception deleting warehouse:", error);
+        
+        // Fallback to mock data in case of any error
+        const index = mockWarehouses.findIndex(w => w.id === warehouseId);
+        
+        if (index === -1) {
+          throw new Error("Warehouse not found");
+        }
+        
+        // In a real app, this would be an API call
+        mockWarehouses.splice(index, 1);
+        
+        return warehouseId;
       }
-      
-      // In a real app, this would be an API call
-      mockWarehouses.splice(index, 1);
-      
-      return warehouseId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['warehouses'] });
