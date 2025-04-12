@@ -30,22 +30,19 @@ const IssueInventory = () => {
         </TabsList>
         
         <TabsContent value="issue" className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            <Card className="mb-4">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl flex items-center">
-                  <PackageCheck className="h-5 w-5 mr-2" />
-                  Issue Inventory Item
-                </CardTitle>
-                <CardDescription>
-                  Search, select and issue items to engineers, customers, or branches
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <InventoryIssueForm />
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl">
+                Issue Inventory Item
+              </CardTitle>
+              <CardDescription>
+                Issue items to engineers, customers, or branches from selected warehouse
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <InventoryIssueForm />
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="history">

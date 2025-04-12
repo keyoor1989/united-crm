@@ -1,11 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Package, Search } from "lucide-react";
+import { User, Box, Search, PackageCheck } from "lucide-react";
 
 import {
   Form,
@@ -32,6 +32,8 @@ import {
   TableHead, 
   TableCell 
 } from "@/components/ui/table";
+import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
+import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
 
 // Form schema
 const formSchema = z.object({
@@ -61,6 +63,11 @@ const InventoryIssueForm = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<string>("");
+  const [selectedModel, setSelectedModel] = useState<string>("");
+  
+  const { warehouses, isLoadingWarehouses } = useWarehouses();
   
   // Form setup
   const form = useForm<FormValues>({
@@ -88,26 +95,61 @@ const InventoryIssueForm = () => {
 
   // Fetch inventory items
   const { data: items = [], isLoading: isLoadingItems } = useQuery({
-    queryKey: ['inventory_items'],
+    queryKey: ['inventory_items', selectedWarehouse],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('opening_stock_entries')
         .select('id, part_name, category, quantity, min_stock, purchase_price, brand')
         .order('part_name');
+      
+      if (selectedWarehouse) {
+        query = query.eq('warehouse_id', selectedWarehouse);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data as InventoryItem[];
     },
   });
 
-  // Filter items based on search term
+  // Extract unique brands from items
+  const brands = React.useMemo(() => {
+    const brandSet = new Set<string>();
+    items.forEach(item => {
+      if (item.brand) {
+        brandSet.add(item.brand);
+      }
+    });
+    return Array.from(brandSet).sort();
+  }, [items]);
+
+  // Get categories (models) based on selected brand
+  const models = React.useMemo(() => {
+    const modelSet = new Set<string>();
+    items.forEach(item => {
+      if ((!selectedBrand || item.brand === selectedBrand) && item.category) {
+        modelSet.add(item.category);
+      }
+    });
+    return Array.from(modelSet).sort();
+  }, [items, selectedBrand]);
+
+  // Filter items based on search term, brand and model
   const filteredItems = items.filter(item => {
     const matchesSearch = searchTerm 
-      ? item.part_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (item.brand && item.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        item.category.toLowerCase().includes(searchTerm.toLowerCase())
+      ? item.part_name.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
-    return matchesSearch;
+    
+    const matchesBrand = selectedBrand 
+      ? item.brand === selectedBrand 
+      : true;
+    
+    const matchesModel = selectedModel 
+      ? item.category === selectedModel 
+      : true;
+    
+    return matchesSearch && matchesBrand && matchesModel;
   });
 
   // Handle selecting an item from the table
@@ -147,6 +189,10 @@ const InventoryIssueForm = () => {
         item_name: selectedItem.part_name,
         quantity: values.quantity,
         assigned_date: new Date().toISOString(),
+        warehouse_id: selectedWarehouse,
+        warehouse_source: selectedWarehouse 
+          ? warehouses.find(w => w.id === selectedWarehouse)?.name 
+          : null
       };
       
       // Insert into database
@@ -169,6 +215,8 @@ const InventoryIssueForm = () => {
       });
       setSelectedItemId(null);
       setSearchTerm("");
+      setSelectedBrand("");
+      setSelectedModel("");
       
     } catch (error) {
       console.error("Error issuing item:", error);
@@ -183,78 +231,130 @@ const InventoryIssueForm = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Issue Type */}
+        <div className="space-y-4">
+          {/* Warehouse Selector */}
           <div>
-            <FormLabel>Issue Type</FormLabel>
-            <FormField
-              control={form.control}
-              name="issueType"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <User className="h-4 w-4 mr-2" />
-                        <SelectValue placeholder="Select issue type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Engineer">Engineer</SelectItem>
-                      <SelectItem value="Customer">Customer</SelectItem>
-                      <SelectItem value="Branch">Branch</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
+            <h3 className="text-base font-medium mb-2">Select Warehouse</h3>
+            <WarehouseSelector 
+              warehouses={warehouses}
+              selectedWarehouse={selectedWarehouse}
+              onSelectWarehouse={setSelectedWarehouse}
+              isLoading={isLoadingWarehouses}
             />
           </div>
 
-          {/* Engineer Selection */}
-          <div>
-            <FormLabel>Engineer Name</FormLabel>
-            <FormField
-              control={form.control}
-              name="engineerId"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select engineer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {engineers.map((engineer) => (
-                        <SelectItem key={engineer.id} value={engineer.id}>
-                          {engineer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Issue Type */}
+            <div>
+              <FormLabel>Issue Type</FormLabel>
+              <FormField
+                control={form.control}
+                name="issueType"
+                render={({ field }) => (
+                  <FormItem>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <User className="h-4 w-4 mr-2" />
+                          <SelectValue placeholder="Select issue type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Engineer">Engineer</SelectItem>
+                        <SelectItem value="Customer">Customer</SelectItem>
+                        <SelectItem value="Branch">Branch</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Engineer Selection */}
+            <div>
+              <FormLabel>Engineer Name</FormLabel>
+              <FormField
+                control={form.control}
+                name="engineerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select engineer" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {engineers.map((engineer) => (
+                          <SelectItem key={engineer.id} value={engineer.id}>
+                            {engineer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
         </div>
 
         <div className="border-t pt-4">
-          <h3 className="text-lg font-medium mb-4">Select Item</h3>
+          <h3 className="text-lg font-medium mb-4">Item Details</h3>
           
-          <div className="relative mb-4">
-            <Search className="h-4 w-4 absolute top-3 left-3 text-gray-500" />
-            <Input 
-              placeholder="Search items by name, brand or type..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            {/* Search */}
+            <div>
+              <div className="relative">
+                <Search className="h-4 w-4 absolute top-3 left-3 text-gray-500" />
+                <Input 
+                  placeholder="Search items..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            {/* Brand Selection */}
+            <div>
+              <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Brands</SelectItem>
+                  {brands.map(brand => (
+                    <SelectItem key={brand} value={brand}>
+                      {brand}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Model Selection */}
+            <div>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Models</SelectItem>
+                  {models.map(model => (
+                    <SelectItem key={model} value={model}>
+                      {model}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Items Table */}
@@ -264,7 +364,6 @@ const InventoryIssueForm = () => {
                 <TableRow>
                   <TableHead className="w-16">Select</TableHead>
                   <TableHead>Item Name</TableHead>
-                  <TableHead>Brand</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Price</TableHead>
@@ -284,7 +383,6 @@ const InventoryIssueForm = () => {
                         />
                       </TableCell>
                       <TableCell>{item.part_name}</TableCell>
-                      <TableCell>{item.brand || "-"}</TableCell>
                       <TableCell>{item.category}</TableCell>
                       <TableCell>
                         <span className={item.quantity < item.min_stock ? "text-destructive" : "text-green-600"}>
@@ -299,8 +397,8 @@ const InventoryIssueForm = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4">
-                      No items found. Try adjusting your search.
+                    <TableCell colSpan={5} className="text-center py-4">
+                      No items found. Try adjusting your search or filters.
                     </TableCell>
                   </TableRow>
                 )}
@@ -309,34 +407,13 @@ const InventoryIssueForm = () => {
           </div>
         </div>
 
-        {/* Quantity */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="quantity"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quantity</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="1"
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </div>
-
         <div className="flex justify-center mt-6">
           <Button 
             type="submit" 
-            className="w-full md:w-auto"
+            className="w-full max-w-md"
             disabled={!selectedItemId}
           >
-            <Package className="mr-2 h-5 w-5" />
+            <Box className="mr-2 h-5 w-5" />
             Issue Item
           </Button>
         </div>
