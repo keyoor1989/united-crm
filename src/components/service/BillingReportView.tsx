@@ -43,7 +43,6 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [reconciliationDetails, setReconciliationDetails] = useState<Record<string, ReconciliationDetail[]>>({});
   
-  // Function to handle sorting
   const requestSort = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
     
@@ -54,11 +53,9 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     setSortConfig({ key, direction });
   };
   
-  // Fetch reconciled parts details with actual purchase prices
   useEffect(() => {
     const fetchReconciledPartsDetails = async () => {
       try {
-        // First get all part_reconciliations to find which parts are reconciled
         const { data: reconciliations, error: reconciliationError } = await supabase
           .from('part_reconciliations')
           .select('service_call_id, part_id, part_name');
@@ -72,13 +69,10 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
           return;
         }
         
-        // Organize reconciliations by service call ID
         const detailsByServiceCall: Record<string, ReconciliationDetail[]> = {};
         
-        // Get unique part names to fetch their purchase prices
         const partNames = [...new Set(reconciliations.map(r => r.part_name))];
         
-        // Fetch purchase prices for these parts
         const { data: stockEntries, error: stockError } = await supabase
           .from('opening_stock_entries')
           .select('part_name, purchase_price')
@@ -89,13 +83,11 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
           return;
         }
         
-        // Create a map of part name to purchase price
         const partPriceMap: Record<string, number> = {};
         stockEntries?.forEach(entry => {
           partPriceMap[entry.part_name] = Number(entry.purchase_price);
         });
         
-        // Organize reconciliation details by service call ID
         reconciliations.forEach(recon => {
           if (!detailsByServiceCall[recon.service_call_id]) {
             detailsByServiceCall[recon.service_call_id] = [];
@@ -116,18 +108,12 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     fetchReconciledPartsDetails();
   }, []);
   
-  // Fetch service expenses
   useEffect(() => {
     const getServiceExpenses = async () => {
       setIsLoadingExpenses(true);
       try {
         const expenses = await fetchServiceExpenses();
-        // Filter to only include reimbursed expenses (service charges)
-        const serviceCharges = expenses.filter(expense => 
-          expense.isReimbursed && 
-          expense.customerName // Only include expenses with customer names (service charges)
-        );
-        setServiceExpenses(serviceCharges);
+        setServiceExpenses(expenses);
       } catch (error) {
         console.error("Error fetching service expenses:", error);
       } finally {
@@ -138,38 +124,38 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     getServiceExpenses();
   }, []);
   
-  // Pre-process the calls to calculate profits
   const processedCalls = serviceCalls.map(call => {
-    // Get reconciliation details for this call if available
     const reconciledParts = reconciliationDetails[call.id] || [];
     
-    // Calculate parts cost with accurate purchase prices for reconciled parts
+    const callExpenses = call.expenses || [];
+    const actualExpenses = callExpenses.filter(expense => 
+      expense.engineerId !== "system" && !expense.isReimbursed
+    );
+    
     const partsCost = call.partsUsed?.reduce((total, part) => {
-      // Check if this part has reconciliation details with purchase price
       const reconciledPart = reconciledParts.find(rp => rp.partId === part.id);
       
-      // Use reconciled purchase price if available, otherwise use part.cost or estimate as before
       const costPerUnit = reconciledPart ? reconciledPart.purchasePrice : 
                           (part.cost || part.price * 0.6);
                           
       return total + (costPerUnit * part.quantity);
     }, 0) || 0;
     
-    // Calculate total expenses
-    const totalExpenses = (call.expenses?.reduce((total, expense) => 
-      total + expense.amount, 0) || 0) + partsCost;
+    const serviceExpensesTotal = actualExpenses.reduce((total, expense) => 
+      total + expense.amount, 0) || 0;
     
-    // Calculate total revenue
+    const totalExpenses = serviceExpensesTotal + partsCost;
+    
     const partsRevenue = call.partsUsed?.reduce((total, part) => 
       total + (part.price * part.quantity), 0) || 0;
     const totalRevenue = (call.serviceCharge || 0) + partsRevenue;
     
-    // Calculate profit
     const profit = totalRevenue - totalExpenses;
     
     return {
       ...call,
       partsCost,
+      serviceExpensesTotal,
       totalExpenses,
       totalRevenue,
       profit,
@@ -177,7 +163,6 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     };
   });
   
-  // Convert service expenses to billing format
   const serviceChargeItems = serviceExpenses.map(expense => {
     return {
       id: expense.id,
@@ -195,7 +180,6 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     };
   });
   
-  // Combine service calls and service charges
   const allBillingItems = [...processedCalls, ...serviceChargeItems];
   
   const filteredCalls = allBillingItems.filter(call => {
@@ -227,7 +211,6 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     return true;
   });
   
-  // Add sorting functionality
   const sortedCalls = [...tabFilteredCalls].sort((a, b) => {
     if (!sortConfig) return 0;
 
@@ -277,7 +260,6 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     }
   });
   
-  // Calculate totals
   const totalServiceCharges = sortedCalls.reduce((sum, call) => sum + (call.serviceCharge || 0), 0);
   const totalPartsValue = sortedCalls.reduce((sum, call) => {
     if (call.type === "service_charge") return sum;
@@ -286,14 +268,12 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   const totalExpenses = sortedCalls.reduce((sum, call) => sum + (call.totalExpenses || 0), 0);
   const totalProfit = sortedCalls.reduce((sum, call) => sum + (call.profit || 0), 0);
   
-  // Unpaid value
   const unpaidAmount = sortedCalls.filter(call => !call.isPaid).reduce((sum, call) => {
-    if (call.type === "service_charge") return sum; // Service charges are always paid
+    if (call.type === "service_charge") return sum;
     const partsValue = call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
     return sum + (call.serviceCharge || 0) + partsValue;
   }, 0);
   
-  // Parts reconciliation stats
   const paidCalls = filteredCalls.filter(call => call.isPaid).length;
   const unpaidCalls = filteredCalls.filter(call => !call.isPaid).length;
   const reconciledCalls = filteredCalls.filter(call => call.partsReconciled).length;

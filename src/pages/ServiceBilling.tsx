@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import BillingReportView from "@/components/service/BillingReportView";
 import { useServiceData } from "@/hooks/useServiceData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,12 +6,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, CircleDollarSign, PiggyBank, BadgeDollarSign, Receipt, TrendingUp } from "lucide-react";
 import { ServiceCall } from "@/types/service";
 import ServiceChargeForm from "@/components/service/ServiceChargeForm";
+import ServiceExpenseList from "@/components/service/ServiceExpenseList";
+import { fetchServiceExpenses } from "@/services/serviceExpenseService";
+import { ServiceExpense } from "@/types/serviceExpense";
 
 const ServiceBilling = () => {
   const { allCalls, isLoading, fetchServiceCalls } = useServiceData();
   const [activeView, setActiveView] = useState<string>("billing");
+  const [serviceExpenses, setServiceExpenses] = useState<ServiceExpense[]>([]);
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(true);
   
-  // Calculate summary data
+  useEffect(() => {
+    const getServiceExpenses = async () => {
+      setIsLoadingExpenses(true);
+      try {
+        const expenses = await fetchServiceExpenses();
+        setServiceExpenses(expenses);
+      } catch (error) {
+        console.error("Error fetching service expenses:", error);
+      } finally {
+        setIsLoadingExpenses(false);
+      }
+    };
+    
+    getServiceExpenses();
+  }, []);
+  
   const calculateSummary = () => {
     if (!allCalls.length) return {
       totalRevenue: 0,
@@ -27,25 +46,30 @@ const ServiceBilling = () => {
     };
     
     const processedCalls = allCalls.map(call => {
-      // Calculate parts cost (estimated at 60% of selling price if cost not provided)
       const partsCost = call.partsUsed?.reduce((total, part) => 
         total + ((part.cost || part.price * 0.6) * part.quantity), 0) || 0;
       
-      // Calculate total expenses
-      const totalExpenses = (call.expenses?.reduce((total, expense) => 
-        total + expense.amount, 0) || 0) + partsCost;
+      const callExpenses = serviceExpenses.filter(expense => 
+        expense.serviceCallId === call.id && 
+        expense.engineerId !== "system" && 
+        !expense.isReimbursed
+      );
       
-      // Calculate total revenue
+      const serviceCallExpenses = callExpenses.reduce((total, expense) => 
+        total + expense.amount, 0) || 0;
+      
+      const totalExpenses = serviceCallExpenses + partsCost;
+      
       const partsRevenue = call.partsUsed?.reduce((total, part) => 
         total + (part.price * part.quantity), 0) || 0;
       const totalRevenue = (call.serviceCharge || 0) + partsRevenue;
       
-      // Calculate profit
       const profit = totalRevenue - totalExpenses;
       
       return {
         ...call,
         partsCost,
+        serviceCallExpenses,
         totalExpenses,
         totalRevenue,
         profit
@@ -67,7 +91,6 @@ const ServiceBilling = () => {
       ? (profitableCalls.length / processedCalls.length) * 100 
       : 0;
     
-    // Calculate service type distribution
     const serviceTypes = [...new Set(processedCalls.map(call => call.issueType))];
     const serviceTypeDistribution = serviceTypes.map(type => {
       const callsOfType = processedCalls.filter(call => call.issueType === type);
@@ -102,6 +125,24 @@ const ServiceBilling = () => {
     fetchServiceCalls();
   };
 
+  const handleExpenseStatusChanged = () => {
+    fetchServiceCalls();
+    
+    const refreshExpenses = async () => {
+      setIsLoadingExpenses(true);
+      try {
+        const expenses = await fetchServiceExpenses();
+        setServiceExpenses(expenses);
+      } catch (error) {
+        console.error("Error refreshing service expenses:", error);
+      } finally {
+        setIsLoadingExpenses(false);
+      }
+    };
+    
+    refreshExpenses();
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -111,7 +152,7 @@ const ServiceBilling = () => {
         </p>
       </div>
 
-      {isLoading ? (
+      {isLoading || isLoadingExpenses ? (
         <div className="flex items-center justify-center h-64">
           <p>Loading billing data...</p>
         </div>
@@ -129,6 +170,10 @@ const ServiceBilling = () => {
             <TabsTrigger value="add-charge" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-green-500" />
               Add Service Income
+            </TabsTrigger>
+            <TabsTrigger value="expenses" className="flex items-center gap-2">
+              <Receipt className="h-4 w-4" />
+              Income & Expenses
             </TabsTrigger>
           </TabsList>
           
@@ -282,6 +327,13 @@ const ServiceBilling = () => {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+          
+          <TabsContent value="expenses">
+            <ServiceExpenseList 
+              expenses={serviceExpenses} 
+              onExpenseStatusChanged={handleExpenseStatusChanged}
+            />
           </TabsContent>
         </Tabs>
       )}

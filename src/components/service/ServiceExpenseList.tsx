@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { updateExpenseReimbursementStatus } from "@/services/serviceExpenseService";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ServiceExpenseListProps {
   expenses: ServiceExpense[];
@@ -23,6 +24,7 @@ const ServiceExpenseList = ({
   const { toast } = useToast();
   const [updating, setUpdating] = useState<string | null>(null);
   const [customerFilter, setCustomerFilter] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("all");
   
   const filteredExpenses = expenses.filter(expense => {
     if (!customerFilter) return true;
@@ -30,21 +32,31 @@ const ServiceExpenseList = ({
     return customerName.toLowerCase().includes(customerFilter.toLowerCase());
   });
   
-  const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalReimbursed = filteredExpenses
-    .filter(expense => expense.isReimbursed)
-    .reduce((sum, expense) => sum + expense.amount, 0);
-  const totalPending = totalExpenses - totalReimbursed;
-  
   // Separate income records (service charges to customers) from expenses
   const incomeRecords = filteredExpenses.filter(expense => 
     expense.isReimbursed && expense.customerName && expense.engineerId === "system");
   
   const expenseRecords = filteredExpenses.filter(expense => 
     !(expense.isReimbursed && expense.customerName && expense.engineerId === "system"));
-    
+  
+  // Apply tab filtering
+  const displayedRecords = activeTab === "all" 
+    ? filteredExpenses 
+    : activeTab === "income" 
+      ? incomeRecords 
+      : expenseRecords;
+  
+  const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalReimbursed = filteredExpenses
+    .filter(expense => expense.isReimbursed)
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const totalPending = totalExpenses - totalReimbursed;
+  
   const totalIncome = incomeRecords.reduce((sum, expense) => sum + expense.amount, 0);
   const totalActualExpenses = expenseRecords.reduce((sum, expense) => sum + expense.amount, 0);
+  
+  // Calculate true profit (income - expenses)
+  const totalProfit = totalIncome - totalActualExpenses;
   
   const handleToggleReimbursement = async (expense: ServiceExpense) => {
     const newStatus = !expense.isReimbursed;
@@ -75,7 +87,7 @@ const ServiceExpenseList = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-col sm:flex-row justify-between gap-2">
-          <span>Service Finances</span>
+          <span>Service Finances Overview</span>
           <div className="flex gap-4 text-sm">
             <span className="flex items-center">
               <Badge variant="outline" className="mr-1">Total:</Badge> 
@@ -93,29 +105,53 @@ const ServiceExpenseList = ({
               </Badge> 
               ₹{totalActualExpenses.toFixed(2)}
             </span>
+            <span className="flex items-center">
+              <Badge variant={totalProfit >= 0 ? "success" : "destructive"} className="mr-1">
+                Profit:
+              </Badge> 
+              ₹{totalProfit.toFixed(2)}
+            </span>
           </div>
         </CardTitle>
-        <div className="flex w-full max-w-sm items-center space-x-2 mt-2">
-          <Input
-            placeholder="Filter by customer name"
-            value={customerFilter}
-            onChange={e => setCustomerFilter(e.target.value)}
-            className="h-9"
-          />
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setCustomerFilter("")}
-            disabled={!customerFilter}
-          >
-            Clear
-          </Button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 mt-2">
+          <div className="flex w-full max-w-sm items-center space-x-2">
+            <Input
+              placeholder="Filter by customer name"
+              value={customerFilter}
+              onChange={e => setCustomerFilter(e.target.value)}
+              className="h-9"
+            />
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setCustomerFilter("")}
+              disabled={!customerFilter}
+            >
+              Clear
+            </Button>
+          </div>
+          
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="all">
+                All ({filteredExpenses.length})
+              </TabsTrigger>
+              <TabsTrigger value="income" className="text-green-600">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                Income ({incomeRecords.length})
+              </TabsTrigger>
+              <TabsTrigger value="expenses" className="text-red-600">
+                <TrendingDown className="h-3 w-3 mr-1" />
+                Expenses ({expenseRecords.length})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </CardHeader>
       <CardContent>
-        {filteredExpenses.length === 0 ? (
+        {displayedRecords.length === 0 ? (
           <p className="text-center text-muted-foreground py-4">
-            {expenses.length === 0 ? "No expenses recorded" : "No expenses match your filter"}
+            {expenses.length === 0 ? "No expenses or income recorded" : "No records match your filter"}
           </p>
         ) : (
           <Table>
@@ -133,7 +169,7 @@ const ServiceExpenseList = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredExpenses.map((expense) => {
+              {displayedRecords.map((expense) => {
                 const isIncomeRecord = expense.isReimbursed && expense.customerName && expense.engineerId === "system";
                 
                 return (
