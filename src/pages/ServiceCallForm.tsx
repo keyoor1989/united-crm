@@ -48,7 +48,7 @@ const serviceCallSchema = z.object({
   customerId: z.string().min(1, { message: "Customer is required" }),
   phone: z.string().min(1, { message: "Phone number is required" }),
   machineId: z.string().min(1, { message: "Machine is required" }),
-  serialNumber: z.string().min(1, { message: "Serial number is required" }),
+  serialNumber: z.string().optional(), // Changed from required to optional
   location: z.string().min(1, { message: "Location is required" }),
   issueType: z.string().min(1, { message: "Issue type is required" }),
   issueDescription: z
@@ -162,7 +162,7 @@ const ServiceCallForm = () => {
     const machine = customerMachines.find((m) => m.id === machineId);
     if (machine) {
       setSelectedMachine(machine);
-      form.setValue("serialNumber", machine.serialNumber);
+      form.setValue("serialNumber", machine.serialNumber || "");
     }
   };
 
@@ -232,10 +232,30 @@ const ServiceCallForm = () => {
     }
   };
 
-  const onSubmit = (data: ServiceCallFormValues) => {
+  const onSubmit = async (data: ServiceCallFormValues) => {
     setIsSubmitting(true);
     
-    setTimeout(() => {
+    try {
+      // If the machine exists and the serial number is provided, update the machine's serial number
+      if (data.serialNumber && data.machineId) {
+        const { error: updateError } = await supabase
+          .from('customer_machines')
+          .update({ machine_serial: data.serialNumber })
+          .eq('id', data.machineId);
+          
+        if (updateError) {
+          console.error("Error updating machine serial number:", updateError);
+          toast({
+            title: "Error",
+            description: "Failed to update machine serial number",
+            variant: "destructive",
+          });
+        } else {
+          console.log("Machine serial number updated successfully");
+        }
+      }
+      
+      // Continue with creating the service call
       const newServiceCall: ServiceCall = {
         id: `SC-${Date.now()}`,
         customerId: data.customerId,
@@ -243,7 +263,7 @@ const ServiceCallForm = () => {
         phone: data.phone,
         machineId: data.machineId,
         machineModel: selectedMachine?.model || "",
-        serialNumber: data.serialNumber,
+        serialNumber: data.serialNumber || "",
         location: data.location,
         issueType: data.issueType,
         issueDescription: data.issueDescription,
@@ -271,7 +291,15 @@ const ServiceCallForm = () => {
       
       setIsSubmitting(false);
       navigate("/service");
-    }, 1000);
+    } catch (error) {
+      console.error("Error in form submission:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while creating the service call",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -390,7 +418,10 @@ const ServiceCallForm = () => {
                     <FormItem>
                       <FormLabel>Serial Number</FormLabel>
                       <FormControl>
-                        <Input {...field} readOnly={!!selectedMachine} />
+                        <Input 
+                          {...field} 
+                          placeholder="Enter serial number (optional)" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
