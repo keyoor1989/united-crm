@@ -194,6 +194,7 @@ export type Database = {
           current_location: string
           email: string
           id: string
+          leave_end_date: string | null
           location: string
           name: string
           phone: string
@@ -206,6 +207,7 @@ export type Database = {
           current_location: string
           email: string
           id?: string
+          leave_end_date?: string | null
           location: string
           name: string
           phone: string
@@ -218,6 +220,7 @@ export type Database = {
           current_location?: string
           email?: string
           id?: string
+          leave_end_date?: string | null
           location?: string
           name?: string
           phone?: string
@@ -512,15 +515,20 @@ export type Database = {
           engineer_name: string | null
           feedback: Json | null
           id: string
+          is_paid: boolean | null
           issue_description: string
           issue_type: string
           location: string
           machine_id: string | null
           machine_model: string
+          parts_reconciled: boolean | null
           parts_used: Json | null
+          payment_date: string | null
+          payment_method: string | null
           phone: string
           priority: string
           serial_number: string | null
+          service_charge: number | null
           sla_deadline: string | null
           start_time: string | null
           status: string
@@ -535,15 +543,20 @@ export type Database = {
           engineer_name?: string | null
           feedback?: Json | null
           id?: string
+          is_paid?: boolean | null
           issue_description: string
           issue_type: string
           location: string
           machine_id?: string | null
           machine_model: string
+          parts_reconciled?: boolean | null
           parts_used?: Json | null
+          payment_date?: string | null
+          payment_method?: string | null
           phone: string
           priority: string
           serial_number?: string | null
+          service_charge?: number | null
           sla_deadline?: string | null
           start_time?: string | null
           status: string
@@ -558,15 +571,20 @@ export type Database = {
           engineer_name?: string | null
           feedback?: Json | null
           id?: string
+          is_paid?: boolean | null
           issue_description?: string
           issue_type?: string
           location?: string
           machine_id?: string | null
           machine_model?: string
+          parts_reconciled?: boolean | null
           parts_used?: Json | null
+          payment_date?: string | null
+          payment_method?: string | null
           phone?: string
           priority?: string
           serial_number?: string | null
+          service_charge?: number | null
           sla_deadline?: string | null
           start_time?: string | null
           status?: string
