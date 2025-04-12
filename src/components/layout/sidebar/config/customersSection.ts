@@ -5,27 +5,27 @@ import {
   List, 
   Calendar 
 } from "lucide-react";
+import { NavSection } from "../types/navTypes";
 
-export const customersSection = {
+export const customersSection: NavSection = {
   key: "customers",
-  label: "Customers",
   icon: Users,
-  to: "/customers",
+  label: "Customers",
   items: [
     {
-      label: "Customer List",
-      icon: List,
       to: "/customers",
+      icon: List,
+      label: "Customer List"
     },
     {
-      label: "Add Customer",
-      icon: UserPlus,
       to: "/customer-form",
+      icon: UserPlus,
+      label: "Add Customer"
     },
     {
-      label: "Follow-Up Reminders",
-      icon: Calendar,
       to: "/customers/follow-ups",
+      icon: Calendar,
+      label: "Follow-Up Reminders"
     }
   ]
 };

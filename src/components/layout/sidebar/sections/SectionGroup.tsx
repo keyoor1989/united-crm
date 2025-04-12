@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { NavSection } from "../types/navTypes";
+import { NavSection, SidebarSectionConfig } from "../types/navTypes";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { 
   SidebarGroup, 
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 
 type SectionGroupProps = {
-  section: NavSection;
+  section: NavSection | SidebarSectionConfig;
   isOpen: boolean;
   toggleSection: () => void;
   isSectionActive: (paths: string[]) => boolean;
@@ -28,6 +28,9 @@ const SectionGroup = ({
   isActive, 
   isCollapsed 
 }: SectionGroupProps) => {
+  // Get the section label based on type
+  const sectionLabel = 'label' in section ? section.label : section.title;
+  
   return (
     <SidebarGroup>
       <SidebarGroupContent>
@@ -36,10 +39,10 @@ const SectionGroup = ({
             <SidebarMenuButton 
               onClick={toggleSection} 
               isActive={isSectionActive(section.items.map(item => item.to))}
-              tooltip={isCollapsed ? section.label : undefined}
+              tooltip={isCollapsed ? sectionLabel : undefined}
             >
               <section.icon size={20} />
-              <span>{section.label}</span>
+              <span>{sectionLabel}</span>
               {isOpen ? 
                 <ChevronDown size={16} className="ml-auto" /> : 
                 <ChevronRight size={16} className="ml-auto" />
