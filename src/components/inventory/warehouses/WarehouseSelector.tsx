@@ -43,14 +43,18 @@ const WarehouseSelector = ({
         All Warehouses
       </Button>
       {warehouses.map((warehouse) => {
-        // Ensure we never try to use undefined or null values for the key or name
-        const warehouseId = warehouse.id || `warehouse-${Date.now()}-${Math.random()}`;
+        // Ensure we never try to use undefined or null values for the key, id, or name
+        if (!warehouse.id) {
+          console.warn("Found warehouse with missing ID, skipping", warehouse);
+          return null;
+        }
+        
         const warehouseName = warehouse.name || "Unnamed Warehouse";
         const warehouseLocation = warehouse.location || "Unknown Location";
         
         return (
           <Button
-            key={warehouseId}
+            key={warehouse.id}
             variant={selectedWarehouse === warehouse.id ? "default" : "outline"}
             onClick={() => onSelectWarehouse(warehouse.id)}
             disabled={!warehouse.isActive}
