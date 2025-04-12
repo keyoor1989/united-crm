@@ -39,7 +39,15 @@ const data = [
   },
 ];
 
-export const SlaComplianceChart = () => {
+interface SlaComplianceChartProps {
+  engineerId: string;
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+}
+
+export const SlaComplianceChart: React.FC<SlaComplianceChartProps> = ({ engineerId, dateRange }) => {
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">

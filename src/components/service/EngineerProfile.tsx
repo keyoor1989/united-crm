@@ -2,14 +2,18 @@
 import React from "react";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Engineer } from "@/types/service";
-import { Phone, Mail, MapPin, Briefcase, User } from "lucide-react";
+import { Engineer, EngineerStatus } from "@/types/service";
+import { Phone, Mail, MapPin, Briefcase, User, Clock } from "lucide-react";
+import { format, isPast, parseISO } from "date-fns";
 
 interface EngineerProfileProps {
   engineer: Engineer;
 }
 
 export const EngineerProfile: React.FC<EngineerProfileProps> = ({ engineer }) => {
+  const isOnLeave = engineer.status === "On Leave";
+  const leaveEnded = engineer.leaveEndDate && isPast(new Date(engineer.leaveEndDate));
+
   return (
     <Card>
       <CardHeader>
@@ -26,6 +30,8 @@ export const EngineerProfile: React.FC<EngineerProfileProps> = ({ engineer }) =>
                 ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
                 : engineer.status === "On Leave"
                 ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                : engineer.status === "At Warehouse"
+                ? "bg-purple-100 text-purple-800 hover:bg-purple-100"
                 : "bg-gray-100 text-gray-800 hover:bg-gray-100"
             }
           >
@@ -52,6 +58,17 @@ export const EngineerProfile: React.FC<EngineerProfileProps> = ({ engineer }) =>
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span>Current Location: {engineer.currentLocation}</span>
             </div>
+            
+            {isOnLeave && engineer.leaveEndDate && (
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-red-500" />
+                <span className={`${leaveEnded ? "text-green-600" : "text-red-600"}`}>
+                  {leaveEnded 
+                    ? "Leave ended on " + format(new Date(engineer.leaveEndDate), "PP")
+                    : "Returns on " + format(new Date(engineer.leaveEndDate), "PP")}
+                </span>
+              </div>
+            )}
           </div>
           <div className="space-y-4">
             <div className="flex items-center gap-2">

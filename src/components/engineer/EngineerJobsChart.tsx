@@ -39,7 +39,15 @@ const data = [
   },
 ];
 
-export const EngineerJobsChart = () => {
+interface EngineerJobsChartProps {
+  engineerId: string;
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+}
+
+export const EngineerJobsChart: React.FC<EngineerJobsChartProps> = ({ engineerId, dateRange }) => {
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">

@@ -38,7 +38,15 @@ const data = [
   },
 ];
 
-export const CompletionTimeChart = () => {
+interface CompletionTimeChartProps {
+  engineerId: string;
+  dateRange: {
+    from: Date;
+    to: Date;
+  };
+}
+
+export const CompletionTimeChart: React.FC<CompletionTimeChartProps> = ({ engineerId, dateRange }) => {
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">

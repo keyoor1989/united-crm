@@ -1,17 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { 
-  ChartContainer, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  Legend
-} from "@/components/ui/chart";
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
+  ResponsiveContainer, LineChart, Line, Legend 
+} from "recharts";
 import { 
   Card, 
   CardContent, 
@@ -29,10 +21,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { addDays, format } from "date-fns";
-import CompletionTimeChart from "@/components/engineer/CompletionTimeChart";
-import SlaComplianceChart from "@/components/engineer/SlaComplianceChart";
-import JobTypeDistributionChart from "@/components/engineer/JobTypeDistributionChart";
-import EngineerJobsChart from "@/components/engineer/EngineerJobsChart";
+import { CompletionTimeChart } from "@/components/engineer/CompletionTimeChart";
+import { SlaComplianceChart } from "@/components/engineer/SlaComplianceChart";
+import { JobTypeDistributionChart } from "@/components/engineer/JobTypeDistributionChart";
+import { EngineerJobsChart } from "@/components/engineer/EngineerJobsChart";
 import { Badge } from "@/components/ui/badge";
 import { Engineer, EngineerStatus, EngineerSkillLevel } from "@/types/service";
 import { supabase } from "@/integrations/supabase/client";
