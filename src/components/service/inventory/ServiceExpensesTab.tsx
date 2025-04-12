@@ -54,8 +54,8 @@ const ServiceExpensesTab = ({
     const success = await addServiceExpense(expense);
     
     if (success) {
-      // Update local state
-      setExpenses(prev => [expense, ...prev]);
+      // Refresh the expenses list
+      await loadExpenses();
       
       // Notify parent component if needed
       if (onExpenseAdded) {
@@ -75,6 +75,11 @@ const ServiceExpensesTab = ({
     if (engineer) {
       setSelectedEngineer(engineer);
     }
+  };
+  
+  const handleExpenseStatusChanged = () => {
+    // Refresh the expenses list when status changes
+    loadExpenses();
   };
 
   if (isLoading || loadingExpenses) {
@@ -123,6 +128,7 @@ const ServiceExpensesTab = ({
       <div className="md:col-span-2">
         <ServiceExpenseList 
           expenses={expenses} 
+          onExpenseStatusChanged={handleExpenseStatusChanged}
         />
       </div>
     </div>

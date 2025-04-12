@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { ServiceExpense } from "@/types/serviceExpense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,10 +12,16 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ServiceExpenseListProps {
   expenses: ServiceExpense[];
+  onExpenseStatusChanged?: () => void;
 }
 
-const ServiceExpenseList = ({ expenses }: ServiceExpenseListProps) => {
+const ServiceExpenseList = ({ 
+  expenses,
+  onExpenseStatusChanged 
+}: ServiceExpenseListProps) => {
   const { toast } = useToast();
+  const [updating, setUpdating] = useState<string | null>(null);
+  
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const totalReimbursed = expenses
     .filter(expense => expense.isReimbursed)
@@ -24,11 +30,18 @@ const ServiceExpenseList = ({ expenses }: ServiceExpenseListProps) => {
   
   const handleToggleReimbursement = async (expense: ServiceExpense) => {
     const newStatus = !expense.isReimbursed;
+    setUpdating(expense.id);
+    
     const success = await updateExpenseReimbursementStatus(expense.id, newStatus);
     
     if (success) {
-      // Update the expense in the UI (this is handled by the parent component in a real app)
+      // Update the local state
       expense.isReimbursed = newStatus;
+      
+      // Notify parent component if a callback is provided
+      if (onExpenseStatusChanged) {
+        onExpenseStatusChanged();
+      }
       
       toast({
         title: newStatus ? "Expense Reimbursed" : "Reimbursement Cancelled",
@@ -36,6 +49,8 @@ const ServiceExpenseList = ({ expenses }: ServiceExpenseListProps) => {
         variant: newStatus ? "default" : "destructive",
       });
     }
+    
+    setUpdating(null);
   };
   
   return (
@@ -107,6 +122,7 @@ const ServiceExpenseList = ({ expenses }: ServiceExpenseListProps) => {
                       variant="outline" 
                       size="sm"
                       onClick={() => handleToggleReimbursement(expense)}
+                      disabled={updating === expense.id}
                     >
                       <DollarSign className="h-4 w-4 mr-1" />
                       {expense.isReimbursed ? "Mark Unpaid" : "Reimburse"}

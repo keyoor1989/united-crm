@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceExpense, ExpenseCategory } from "@/types/serviceExpense";
 import { toast } from "@/hooks/use-toast";
+import { v4 as uuidv4 } from "uuid";
 
 export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
   try {
@@ -44,10 +45,16 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
 export const addServiceExpense = async (expense: ServiceExpense): Promise<boolean> => {
   try {
     console.log("Adding service expense:", expense);
+    
+    // Generate a UUID for general expenses
+    const serviceCallId = expense.serviceCallId === "general" 
+      ? uuidv4() // Generate a new UUID for general expenses
+      : expense.serviceCallId;
+    
     const { error } = await supabase
       .from('service_expenses')
       .insert({
-        service_call_id: expense.serviceCallId,
+        service_call_id: serviceCallId,
         engineer_id: expense.engineerId,
         engineer_name: expense.engineerName,
         category: expense.category,
@@ -67,6 +74,11 @@ export const addServiceExpense = async (expense: ServiceExpense): Promise<boolea
       });
       return false;
     }
+    
+    toast({
+      title: "Success",
+      description: "Service expense added successfully",
+    });
     
     return true;
   } catch (err) {
