@@ -99,6 +99,9 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
           });
         });
         
+        console.log("Reconciliation details:", detailsByServiceCall);
+        console.log("Part price map:", partPriceMap);
+        
         setReconciliationDetails(detailsByServiceCall);
       } catch (error) {
         console.error("Error in fetchReconciledPartsDetails:", error);
@@ -113,6 +116,7 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
       setIsLoadingExpenses(true);
       try {
         const expenses = await fetchServiceExpenses();
+        console.log("BillingReportView - Fetched service expenses:", expenses);
         setServiceExpenses(expenses);
       } catch (error) {
         console.error("Error fetching service expenses:", error);
@@ -125,6 +129,8 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   }, []);
   
   const processedCalls = serviceCalls.map(call => {
+    console.log("Processing service call:", call.id, call.customerName);
+    
     const reconciledParts = reconciliationDetails[call.id] || [];
     
     const callExpenses = serviceExpenses.filter(expense => 
@@ -153,10 +159,12 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     
     const profit = totalRevenue - totalExpenses;
     
-    console.log(`Service Call ${call.id}:`, {
+    console.log(`BillingReportView - Service Call ${call.id}:`, {
       revenue: totalRevenue,
       partsCost,
       serviceExpenses: serviceExpensesTotal,
+      allExpensesForThisCall: serviceExpenses.filter(expense => expense.serviceCallId === call.id),
+      callExpensesConsideredForProfit: callExpenses,
       totalExpenses,
       profit,
       unreimbursedExpensesCount: callExpenses.length
@@ -176,6 +184,8 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   const serviceChargeItems = serviceExpenses
     .filter(expense => expense.engineerId === "system" && expense.isReimbursed)
     .map(expense => {
+      console.log("Service charge item:", expense);
+      
       return {
         id: expense.id,
         createdAt: expense.date,

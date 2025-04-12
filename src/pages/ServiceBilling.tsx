@@ -23,6 +23,7 @@ const ServiceBilling = () => {
       try {
         const expenses = await fetchServiceExpenses();
         setServiceExpenses(expenses);
+        console.log("Fetched service expenses:", expenses);
       } catch (error) {
         console.error("Error fetching service expenses:", error);
       } finally {
@@ -45,6 +46,8 @@ const ServiceBilling = () => {
       profitableCallsPercent: 0,
       serviceTypeDistribution: []
     };
+    
+    console.log("All service expenses before processing:", serviceExpenses);
     
     const processedCalls = allCalls.map(call => {
       // Calculate parts cost
@@ -73,6 +76,19 @@ const ServiceBilling = () => {
       
       // Profit calculation - only considering expenses that haven't been reimbursed
       const profit = totalRevenue - totalExpenses;
+      
+      console.log(`Service Call ${call.id} calculation:`, {
+        id: call.id,
+        customerName: call.customerName,
+        partsCost,
+        unreimbursedExpenses: callExpenses,
+        serviceCallExpenses,
+        totalExpenses,
+        partsRevenue,
+        serviceCharge: call.serviceCharge || 0,
+        totalRevenue,
+        profit
+      });
       
       return {
         ...call,
@@ -115,6 +131,14 @@ const ServiceBilling = () => {
       };
     }).sort((a, b) => b.revenue - a.revenue);
     
+    console.log("Final summary calculation:", {
+      totalRevenue,
+      totalExpenses,
+      totalProfit,
+      paidAmount,
+      unpaidAmount
+    });
+    
     return {
       totalRevenue,
       totalExpenses,
@@ -135,12 +159,14 @@ const ServiceBilling = () => {
   };
 
   const handleExpenseStatusChanged = () => {
+    console.log("Expense status changed, refreshing data...");
     fetchServiceCalls();
     
     const refreshExpenses = async () => {
       setIsLoadingExpenses(true);
       try {
         const expenses = await fetchServiceExpenses();
+        console.log("Refreshed service expenses:", expenses);
         setServiceExpenses(expenses);
       } catch (error) {
         console.error("Error refreshing service expenses:", error);
