@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -37,7 +37,6 @@ import {
 const formSchema = z.object({
   issueType: z.string().min(1, "Issue type is required"),
   engineerId: z.string().min(1, "Engineer is required"),
-  itemId: z.string().optional(),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
 });
 
@@ -55,12 +54,11 @@ interface InventoryItem {
   quantity: number;
   min_stock: number;
   purchase_price: number;
+  brand?: string;
 }
 
 const InventoryIssueForm = () => {
   const { toast } = useToast();
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   
@@ -70,7 +68,6 @@ const InventoryIssueForm = () => {
     defaultValues: {
       issueType: "Engineer",
       engineerId: "",
-      itemId: "",
       quantity: 1,
     },
   });
@@ -89,53 +86,13 @@ const InventoryIssueForm = () => {
     },
   });
 
-  // Fetch brands
-  const { data: brands = [], isLoading: isLoadingBrands } = useQuery({
-    queryKey: ['brands'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('inventory_brands')
-        .select('id, name');
-      
-      if (error) throw error;
-      return data.map(brand => ({
-        id: brand.id,
-        name: brand.name,
-      }));
-    },
-  });
-
-  // Fetch models based on selected brand
-  const { data: models = [], isLoading: isLoadingModels } = useQuery({
-    queryKey: ['models', selectedBrand],
-    queryFn: async () => {
-      let query = supabase
-        .from('inventory_models')
-        .select('id, name, brand_id');
-      
-      if (selectedBrand) {
-        query = query.eq('brand_id', selectedBrand);
-      }
-      
-      const { data, error } = await query.order('name');
-      
-      if (error) throw error;
-      return data.map(model => ({
-        id: model.id,
-        name: model.name,
-        brandId: model.brand_id,
-      }));
-    },
-    enabled: !!selectedBrand,
-  });
-
   // Fetch inventory items
   const { data: items = [], isLoading: isLoadingItems } = useQuery({
-    queryKey: ['items'],
+    queryKey: ['inventory_items'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('opening_stock_entries')
-        .select('id, part_name, category, quantity, min_stock, purchase_price')
+        .select('id, part_name, category, quantity, min_stock, purchase_price, brand')
         .order('part_name');
       
       if (error) throw error;
@@ -143,27 +100,19 @@ const InventoryIssueForm = () => {
     },
   });
 
-  // Handle brand change
-  const handleBrandChange = (brandId: string) => {
-    setSelectedBrand(brandId);
-    setSelectedModel(null);
-  };
-
-  // Handle model change
-  const handleModelChange = (modelId: string) => {
-    setSelectedModel(modelId);
-  };
-
-  // Filter items based on search term, brand and model
+  // Filter items based on search term
   const filteredItems = items.filter(item => {
-    const matchesSearch = item.part_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = searchTerm 
+      ? item.part_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (item.brand && item.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        item.category.toLowerCase().includes(searchTerm.toLowerCase())
+      : true;
     return matchesSearch;
   });
 
   // Handle selecting an item from the table
   const handleSelectItem = (itemId: string) => {
     setSelectedItemId(itemId);
-    form.setValue("itemId", itemId);
   };
 
   // Handle form submission
@@ -216,11 +165,8 @@ const InventoryIssueForm = () => {
       form.reset({
         issueType: "Engineer",
         engineerId: "",
-        itemId: "",
         quantity: 1,
       });
-      setSelectedBrand(null);
-      setSelectedModel(null);
       setSelectedItemId(null);
       setSearchTerm("");
       
@@ -299,51 +245,16 @@ const InventoryIssueForm = () => {
         </div>
 
         <div className="border-t pt-4">
-          <h3 className="text-lg font-medium mb-4">Item Details</h3>
+          <h3 className="text-lg font-medium mb-4">Select Item</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="relative">
-              <Input 
-                placeholder="Search items..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-              <Search className="h-4 w-4 absolute top-3 left-3 text-gray-500" />
-            </div>
-            
-            <Select
-              value={selectedBrand || ""}
-              onValueChange={handleBrandChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Brand" />
-              </SelectTrigger>
-              <SelectContent>
-                {brands.map((brand) => (
-                  <SelectItem key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={selectedModel || ""}
-              onValueChange={handleModelChange}
-              disabled={!selectedBrand}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={selectedBrand ? "Select Model" : "Select Brand first"} />
-              </SelectTrigger>
-              <SelectContent>
-                {models.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="relative mb-4">
+            <Search className="h-4 w-4 absolute top-3 left-3 text-gray-500" />
+            <Input 
+              placeholder="Search items by name, brand or type..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
 
           {/* Items Table */}
@@ -353,6 +264,7 @@ const InventoryIssueForm = () => {
                 <TableRow>
                   <TableHead className="w-16">Select</TableHead>
                   <TableHead>Item Name</TableHead>
+                  <TableHead>Brand</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Price</TableHead>
@@ -372,17 +284,23 @@ const InventoryIssueForm = () => {
                         />
                       </TableCell>
                       <TableCell>{item.part_name}</TableCell>
+                      <TableCell>{item.brand || "-"}</TableCell>
                       <TableCell>{item.category}</TableCell>
                       <TableCell>
-                        {item.quantity} (Min: {item.min_stock})
+                        <span className={item.quantity < item.min_stock ? "text-destructive" : "text-green-600"}>
+                          {item.quantity}
+                        </span>{" "}
+                        <span className="text-muted-foreground">
+                          (Min: {item.min_stock})
+                        </span>
                       </TableCell>
                       <TableCell>₹{item.purchase_price}</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      No items found
+                    <TableCell colSpan={6} className="text-center py-4">
+                      No items found. Try adjusting your search.
                     </TableCell>
                   </TableRow>
                 )}

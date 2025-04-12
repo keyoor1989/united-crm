@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Helmet } from "react-helmet";
-import { Box } from "lucide-react";
+import { Box, PackageCheck } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -34,11 +34,11 @@ const IssueInventory = () => {
             <Card className="mb-4">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xl flex items-center">
-                  <Box className="h-5 w-5 mr-2" />
+                  <PackageCheck className="h-5 w-5 mr-2" />
                   Issue Inventory Item
                 </CardTitle>
                 <CardDescription>
-                  Issue items to engineers, customers, or branches
+                  Search, select and issue items to engineers, customers, or branches
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -57,7 +57,7 @@ const IssueInventory = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p>History will be displayed here (to be implemented)</p>
+              <p>Issue history will be displayed here (to be implemented)</p>
             </CardContent>
           </Card>
         </TabsContent>
