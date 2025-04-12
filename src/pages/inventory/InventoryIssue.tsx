@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -131,19 +130,19 @@ const inventoryItems: InventoryItem[] = [
 
 // Sample brands and models
 const mockBrands: Brand[] = [
-  { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
-  { id: "2", name: "Ricoh", createdAt: "2025-03-02" },
-  { id: "3", name: "Xerox", createdAt: "2025-03-03" },
-  { id: "4", name: "Canon", createdAt: "2025-03-04" },
-  { id: "5", name: "HP", createdAt: "2025-03-05" }
+  { id: "1", name: "Kyocera", createdAt: "2025-03-01", updatedAt: "2025-03-01" },
+  { id: "2", name: "Ricoh", createdAt: "2025-03-02", updatedAt: "2025-03-02" },
+  { id: "3", name: "Xerox", createdAt: "2025-03-03", updatedAt: "2025-03-03" },
+  { id: "4", name: "Canon", createdAt: "2025-03-04", updatedAt: "2025-03-04" },
+  { id: "5", name: "HP", createdAt: "2025-03-05", updatedAt: "2025-03-05" }
 ];
 
 const mockModels: Model[] = [
-  { id: "1", brandId: "1", name: "2554ci", type: "Machine", createdAt: "2025-03-01" },
-  { id: "2", brandId: "2", name: "MP2014", type: "Machine", createdAt: "2025-03-02" },
-  { id: "3", brandId: "3", name: "7845", type: "Machine", createdAt: "2025-03-03" },
-  { id: "4", brandId: "4", name: "2525", type: "Machine", createdAt: "2025-03-04" },
-  { id: "5", brandId: "5", name: "M428", type: "Machine", createdAt: "2025-03-05" }
+  { id: "1", brandId: "1", name: "2554ci", type: "Machine", createdAt: "2025-03-01", updatedAt: "2025-03-01" },
+  { id: "2", brandId: "2", name: "MP2014", type: "Machine", createdAt: "2025-03-02", updatedAt: "2025-03-02" },
+  { id: "3", brandId: "3", name: "7845", type: "Machine", createdAt: "2025-03-03", updatedAt: "2025-03-03" },
+  { id: "4", brandId: "4", name: "2525", type: "Machine", createdAt: "2025-03-04", updatedAt: "2025-03-04" },
+  { id: "5", brandId: "5", name: "M428", type: "Machine", createdAt: "2025-03-05", updatedAt: "2025-03-05" }
 ];
 
 // Sample engineers

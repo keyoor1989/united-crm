@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -78,8 +77,25 @@ const InventoryBrands = () => {
 
       if (modelsError) throw modelsError;
       
-      setBrands(brandsData);
-      setModels(modelsData);
+      // Transform data to match our type definitions
+      const transformedBrands: Brand[] = brandsData.map(brand => ({
+        id: brand.id,
+        name: brand.name,
+        createdAt: brand.created_at,
+        updatedAt: brand.updated_at
+      }));
+      
+      const transformedModels: Model[] = modelsData.map(model => ({
+        id: model.id,
+        brandId: model.brand_id,
+        name: model.name,
+        type: model.type as 'Machine' | 'Spare Part',
+        createdAt: model.created_at,
+        updatedAt: model.updated_at
+      }));
+      
+      setBrands(transformedBrands);
+      setModels(transformedModels);
     } catch (error) {
       toast.error("Failed to load data");
       console.error("Error fetching data:", error);

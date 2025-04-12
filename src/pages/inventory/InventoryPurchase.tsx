@@ -40,13 +40,13 @@ import { toast } from "sonner";
 import { useVendors } from "@/contexts/VendorContext";
 
 const mockBrands: Brand[] = [
-  { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
-  { id: "2", name: "Ricoh", createdAt: "2025-03-02" },
+  { id: "1", name: "Kyocera", createdAt: "2025-03-01", updatedAt: "2025-03-01" },
+  { id: "2", name: "Ricoh", createdAt: "2025-03-02", updatedAt: "2025-03-02" },
 ];
 
 const mockModels: Model[] = [
-  { id: "1", brandId: "1", name: "2554ci", type: "Machine", createdAt: "2025-03-01" },
-  { id: "2", brandId: "2", name: "MP2014", type: "Machine", createdAt: "2025-03-03" },
+  { id: "1", brandId: "1", name: "2554ci", type: "Machine", createdAt: "2025-03-01", updatedAt: "2025-03-01" },
+  { id: "2", brandId: "2", name: "MP2014", type: "Machine", createdAt: "2025-03-03", updatedAt: "2025-03-03" },
 ];
 
 const mockItems: InventoryItem[] = [
