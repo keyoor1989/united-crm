@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,9 +20,15 @@ import { DateRange } from "react-day-picker";
 import { ArrowUpDown, TrendingUp, TrendingDown, DollarSign, FileText } from "lucide-react";
 import { fetchServiceExpenses } from "@/services/serviceExpenseService";
 import { ServiceExpense } from "@/types/serviceExpense";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BillingReportViewProps {
   serviceCalls: ServiceCall[];
+}
+
+interface ReconciliationDetail {
+  partId: string;
+  purchasePrice: number;
 }
 
 const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
@@ -36,6 +41,7 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   } | null>(null);
   const [serviceExpenses, setServiceExpenses] = useState<ServiceExpense[]>([]);
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
+  const [reconciliationDetails, setReconciliationDetails] = useState<Record<string, ReconciliationDetail[]>>({});
   
   // Function to handle sorting
   const requestSort = (key: string) => {
@@ -47,6 +53,68 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     
     setSortConfig({ key, direction });
   };
+  
+  // Fetch reconciled parts details with actual purchase prices
+  useEffect(() => {
+    const fetchReconciledPartsDetails = async () => {
+      try {
+        // First get all part_reconciliations to find which parts are reconciled
+        const { data: reconciliations, error: reconciliationError } = await supabase
+          .from('part_reconciliations')
+          .select('service_call_id, part_id, part_name');
+          
+        if (reconciliationError) {
+          console.error("Error fetching part reconciliations:", reconciliationError);
+          return;
+        }
+        
+        if (!reconciliations || reconciliations.length === 0) {
+          return;
+        }
+        
+        // Organize reconciliations by service call ID
+        const detailsByServiceCall: Record<string, ReconciliationDetail[]> = {};
+        
+        // Get unique part names to fetch their purchase prices
+        const partNames = [...new Set(reconciliations.map(r => r.part_name))];
+        
+        // Fetch purchase prices for these parts
+        const { data: stockEntries, error: stockError } = await supabase
+          .from('opening_stock_entries')
+          .select('part_name, purchase_price')
+          .in('part_name', partNames);
+          
+        if (stockError) {
+          console.error("Error fetching stock entries:", stockError);
+          return;
+        }
+        
+        // Create a map of part name to purchase price
+        const partPriceMap: Record<string, number> = {};
+        stockEntries?.forEach(entry => {
+          partPriceMap[entry.part_name] = Number(entry.purchase_price);
+        });
+        
+        // Organize reconciliation details by service call ID
+        reconciliations.forEach(recon => {
+          if (!detailsByServiceCall[recon.service_call_id]) {
+            detailsByServiceCall[recon.service_call_id] = [];
+          }
+          
+          detailsByServiceCall[recon.service_call_id].push({
+            partId: recon.part_id,
+            purchasePrice: partPriceMap[recon.part_name] || 0
+          });
+        });
+        
+        setReconciliationDetails(detailsByServiceCall);
+      } catch (error) {
+        console.error("Error in fetchReconciledPartsDetails:", error);
+      }
+    };
+    
+    fetchReconciledPartsDetails();
+  }, []);
   
   // Fetch service expenses
   useEffect(() => {
@@ -72,9 +140,20 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   
   // Pre-process the calls to calculate profits
   const processedCalls = serviceCalls.map(call => {
-    // Calculate parts cost
-    const partsCost = call.partsUsed?.reduce((total, part) => 
-      total + ((part.cost || part.price * 0.6) * part.quantity), 0) || 0;
+    // Get reconciliation details for this call if available
+    const reconciledParts = reconciliationDetails[call.id] || [];
+    
+    // Calculate parts cost with accurate purchase prices for reconciled parts
+    const partsCost = call.partsUsed?.reduce((total, part) => {
+      // Check if this part has reconciliation details with purchase price
+      const reconciledPart = reconciledParts.find(rp => rp.partId === part.id);
+      
+      // Use reconciled purchase price if available, otherwise use part.cost or estimate as before
+      const costPerUnit = reconciledPart ? reconciledPart.purchasePrice : 
+                          (part.cost || part.price * 0.6);
+                          
+      return total + (costPerUnit * part.quantity);
+    }, 0) || 0;
     
     // Calculate total expenses
     const totalExpenses = (call.expenses?.reduce((total, expense) => 
