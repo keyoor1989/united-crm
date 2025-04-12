@@ -1,11 +1,11 @@
 
 import React from "react";
 import { Helmet } from "react-helmet";
-import { Box, PackageCheck } from "lucide-react";
+import { Send, ArrowLeft, CircleCheck } from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InventoryIssueForm from "@/components/inventory/issue/InventoryIssueForm";
+import { Card, CardContent } from "@/components/ui/card";
 
 const IssueInventory = () => {
   return (
@@ -14,39 +14,55 @@ const IssueInventory = () => {
         <title>Issue Inventory | Inventory Management</title>
       </Helmet>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Issue Inventory</h1>
-          <p className="text-muted-foreground">
-            Assign inventory items to engineers, customers, or branches
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-medium">Issue inventory to engineers or receive returns</h1>
       </div>
 
       <Tabs defaultValue="issue" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="issue">Issue Items</TabsTrigger>
-          <TabsTrigger value="history">Issue History</TabsTrigger>
+        <TabsList className="bg-white border rounded-md p-1 w-full max-w-xl justify-start">
+          <TabsTrigger 
+            value="issue" 
+            className="flex items-center gap-2 data-[state=active]:bg-slate-100 data-[state=active]:shadow-none px-6"
+          >
+            <Send className="h-4 w-4" />
+            Issue Item
+          </TabsTrigger>
+          <TabsTrigger 
+            value="return" 
+            className="flex items-center gap-2 data-[state=active]:bg-slate-100 data-[state=active]:shadow-none px-6"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Return Item
+          </TabsTrigger>
+          <TabsTrigger 
+            value="activities" 
+            className="flex items-center gap-2 data-[state=active]:bg-slate-100 data-[state=active]:shadow-none px-6"
+          >
+            <CircleCheck className="h-4 w-4" />
+            Recent Activities
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="issue" className="space-y-4">
-          <Card>
-            <CardContent className="pt-6">
+          <Card className="rounded-md">
+            <CardContent className="p-0">
               <InventoryIssueForm />
             </CardContent>
           </Card>
         </TabsContent>
         
-        <TabsContent value="history">
+        <TabsContent value="return">
           <Card>
-            <CardHeader>
-              <CardTitle>Issue History</CardTitle>
-              <CardDescription>
-                Recent inventory issues and their status
-              </CardDescription>
-            </CardHeader>
             <CardContent>
-              <p>Issue history will be displayed here (to be implemented)</p>
+              <p>Return functionality will be implemented here</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="activities">
+          <Card>
+            <CardContent>
+              <p>Recent activities will be displayed here</p>
             </CardContent>
           </Card>
         </TabsContent>

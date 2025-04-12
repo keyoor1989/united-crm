@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Box, Search, PackageCheck, Maximize2 } from "lucide-react";
+import { User, Search, Box } from "lucide-react";
 
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
 } from "@/components/ui/form";
 import {
   Select,
@@ -31,14 +31,13 @@ import {
   TableHead, 
   TableCell 
 } from "@/components/ui/table";
-import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
 import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
 
 // Form schema
 const formSchema = z.object({
   issueType: z.string().min(1, "Issue type is required"),
   engineerId: z.string().min(1, "Engineer is required"),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1").default(1),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -229,85 +228,98 @@ const InventoryIssueForm = () => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="space-y-4">
-          {/* Warehouse Selector */}
-          <div>
-            <h3 className="text-base font-medium mb-2">Select Warehouse</h3>
-            <WarehouseSelector 
-              warehouses={warehouses}
-              selectedWarehouse={selectedWarehouse}
-              onSelectWarehouse={setSelectedWarehouse}
-              isLoading={isLoadingWarehouses}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Issue Type */}
-            <div>
-              <FormLabel>Issue Type</FormLabel>
-              <FormField
-                control={form.control}
-                name="issueType"
-                render={({ field }) => (
-                  <FormItem>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <User className="h-4 w-4 mr-2" />
-                          <SelectValue placeholder="Select issue type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Engineer">Engineer</SelectItem>
-                        <SelectItem value="Customer">Customer</SelectItem>
-                        <SelectItem value="Branch">Branch</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Engineer Selection */}
-            <div>
-              <FormLabel>Engineer Name</FormLabel>
-              <FormField
-                control={form.control}
-                name="engineerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select engineer" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {engineers.map((engineer) => (
-                          <SelectItem key={engineer.id} value={engineer.id}>
-                            {engineer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-            </div>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="p-6">
+        {/* Warehouse Selection */}
+        <div className="mb-6">
+          <h3 className="text-lg font-medium mb-3">Select Warehouse</h3>
+          <div className="flex gap-2">
+            <Button 
+              type="button"
+              variant="outline"
+              className={`rounded-md py-2 px-6 ${!selectedWarehouse ? 'bg-black text-white hover:bg-black hover:text-white' : ''}`}
+              onClick={() => setSelectedWarehouse(null)}
+            >
+              All Warehouses
+            </Button>
+            {warehouses.map(warehouse => (
+              <Button
+                key={warehouse.id}
+                type="button"
+                variant="outline"
+                className={`rounded-md py-2 px-6 ${selectedWarehouse === warehouse.id ? 'bg-black text-white hover:bg-black hover:text-white' : ''}`}
+                onClick={() => setSelectedWarehouse(warehouse.id)}
+              >
+                {warehouse.name} ({warehouse.location})
+              </Button>
+            ))}
           </div>
         </div>
 
-        <div className="border-t pt-4">
+        <div className="grid grid-cols-2 gap-6 mb-8">
+          {/* Issue Type */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Issue Type</label>
+            <FormField
+              control={form.control}
+              name="issueType"
+              render={({ field }) => (
+                <FormItem>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full h-11 rounded-md">
+                        <User className="h-4 w-4 mr-2 text-gray-500" />
+                        <SelectValue placeholder="Select issue type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Engineer">Engineer</SelectItem>
+                      <SelectItem value="Customer">Customer</SelectItem>
+                      <SelectItem value="Branch">Branch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Engineer Selection */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Engineer Name</label>
+            <FormField
+              control={form.control}
+              name="engineerId"
+              render={({ field }) => (
+                <FormItem>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full h-11 rounded-md">
+                        <SelectValue placeholder="Select engineer" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {engineers.map((engineer) => (
+                        <SelectItem key={engineer.id} value={engineer.id}>
+                          {engineer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="border-t pt-6">
           <h3 className="text-lg font-medium mb-4">Item Details</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-3 gap-4 mb-4">
             {/* Search */}
             <div>
               <div className="relative">
@@ -316,7 +328,7 @@ const InventoryIssueForm = () => {
                   placeholder="Search items..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-11 rounded-md"
                 />
               </div>
             </div>
@@ -324,7 +336,7 @@ const InventoryIssueForm = () => {
             {/* Brand Selection */}
             <div>
               <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 rounded-md">
                   <SelectValue placeholder="Select Brand" />
                 </SelectTrigger>
                 <SelectContent>
@@ -341,7 +353,7 @@ const InventoryIssueForm = () => {
             {/* Model Selection */}
             <div>
               <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 rounded-md">
                   <SelectValue placeholder="Select Model" />
                 </SelectTrigger>
                 <SelectContent>
@@ -357,11 +369,11 @@ const InventoryIssueForm = () => {
           </div>
 
           {/* Items Table */}
-          <div className="border rounded-md overflow-hidden">
+          <div className="border rounded-md overflow-hidden mb-8">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">Select</TableHead>
+                  <TableHead className="w-24">Select</TableHead>
                   <TableHead>Item Name</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Stock</TableHead>
@@ -373,13 +385,15 @@ const InventoryIssueForm = () => {
                   filteredItems.map((item) => (
                     <TableRow key={item.id} className={selectedItemId === item.id ? "bg-muted" : ""}>
                       <TableCell>
-                        <input
-                          type="radio"
-                          name="selectedItem"
-                          checked={selectedItemId === item.id}
-                          onChange={() => handleSelectItem(item.id)}
-                          className="h-4 w-4 rounded-full border-gray-300"
-                        />
+                        <div className="flex justify-center">
+                          <input
+                            type="radio"
+                            name="selectedItem"
+                            checked={selectedItemId === item.id}
+                            onChange={() => handleSelectItem(item.id)}
+                            className="h-4 w-4 rounded-full border-gray-300"
+                          />
+                        </div>
                       </TableCell>
                       <TableCell>{item.part_name}</TableCell>
                       <TableCell>{item.category}</TableCell>
@@ -406,10 +420,10 @@ const InventoryIssueForm = () => {
           </div>
         </div>
 
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center">
           <Button 
             type="submit" 
-            className="w-full max-w-md"
+            className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700"
             disabled={!selectedItemId}
           >
             <Box className="mr-2 h-5 w-5" />
