@@ -31,15 +31,7 @@ const IssueInventory = () => {
         
         <TabsContent value="issue" className="space-y-4">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl">
-                Issue Inventory Item
-              </CardTitle>
-              <CardDescription>
-                Issue items to engineers, customers, or branches from selected warehouse
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <InventoryIssueForm />
             </CardContent>
           </Card>

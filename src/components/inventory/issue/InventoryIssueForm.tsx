@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Box, Search, PackageCheck } from "lucide-react";
+import { User, Box, Search, PackageCheck, Maximize2 } from "lucide-react";
 
 import {
   Form,
