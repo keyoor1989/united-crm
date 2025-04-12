@@ -208,7 +208,7 @@ const EngineerDetail = () => {
             location: updatedEngineer.location,
             status: updatedEngineer.status,
             skill_level: updatedEngineer.skillLevel,
-            current_location: updatedEngineer.currentLocation,
+            current_location: updatedEngineer.currentLocation || updatedEngineer.location,
             current_job: updatedEngineer.currentJob || null
           })
           .select();

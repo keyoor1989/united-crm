@@ -44,6 +44,7 @@ const EngineerForm: React.FC<EngineerFormProps> = ({
   onSave,
   onCancel,
 }) => {
+  // Initialize form with existing engineer data or defaults for new engineer
   const form = useForm<z.infer<typeof engineerSchema>>({
     resolver: zodResolver(engineerSchema),
     defaultValues: {
@@ -58,6 +59,7 @@ const EngineerForm: React.FC<EngineerFormProps> = ({
   });
 
   const onSubmit = (values: z.infer<typeof engineerSchema>) => {
+    console.log("Form submitted with values:", values);
     onSave({
       ...engineer,
       ...values,

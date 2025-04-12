@@ -27,15 +27,21 @@ export const EngineerLocations: React.FC<EngineerLocationsProps> = ({
         </Link>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {engineers.map((engineer) => (
-          <div 
-            key={engineer.id} 
-            className="cursor-pointer hover:scale-[1.01] transition-transform"
-            onClick={() => onEngineerClick(engineer.id)}
-          >
-            <EngineerCard engineer={engineer} />
-          </div>
-        ))}
+        {engineers.length === 0 ? (
+          <p className="col-span-full text-center text-muted-foreground py-8">
+            No engineers found. Add your first engineer using the button above.
+          </p>
+        ) : (
+          engineers.map((engineer) => (
+            <div 
+              key={engineer.id} 
+              className="cursor-pointer hover:scale-[1.01] transition-transform"
+              onClick={() => onEngineerClick(engineer.id)}
+            >
+              <EngineerCard engineer={engineer} />
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
