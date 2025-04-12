@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EngineerInventoryItem } from "@/hooks/inventory/useEngineerItems";
+import { EngineerInventoryItem } from "@/hooks/inventory/useEngineerInventory";
 
 interface IssuedItemsTableProps {
   items: EngineerInventoryItem[];
@@ -55,16 +55,16 @@ const IssuedItemsTable = ({ items, isLoading }: IssuedItemsTableProps) => {
               <TableRow key={issue.id}>
                 <TableCell className="font-medium flex items-center gap-2">
                   <Package size={16} className="text-muted-foreground" />
-                  {issue.item_name}
+                  {issue.itemName}
                 </TableCell>
-                <TableCell>{issue.model_number || "—"}</TableCell>
-                <TableCell>{issue.model_brand || "—"}</TableCell>
-                <TableCell>{issue.quantity}</TableCell>
-                <TableCell>{issue.engineer_name}</TableCell>
-                <TableCell>{new Date(issue.assigned_date).toLocaleDateString()}</TableCell>
+                <TableCell>{issue.modelNumber || "—"}</TableCell>
+                <TableCell>{issue.modelBrand || "—"}</TableCell>
+                <TableCell>{issue.assignedQuantity}</TableCell>
+                <TableCell>{issue.engineerName}</TableCell>
+                <TableCell>{new Date(issue.lastUpdated).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <Badge variant="outline">
-                    {issue.warehouse_source || "Unknown Warehouse"}
+                    Main Warehouse
                   </Badge>
                 </TableCell>
               </TableRow>

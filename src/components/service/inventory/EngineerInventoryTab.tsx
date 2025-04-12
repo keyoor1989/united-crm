@@ -1,13 +1,11 @@
 
 import React from "react";
-import { InventoryItem } from "@/types/inventory";
-import { Engineer } from "@/types/service";
 import { Skeleton } from "@/components/ui/skeleton";
 import EngineerInventoryManager from "@/components/service/EngineerInventoryManager";
 import { useEngineerInventory } from "@/hooks/inventory/useEngineerInventory";
 
 interface EngineerInventoryTabProps {
-  engineers: Engineer[];
+  engineers: any[];
   inventoryItems: any[];
   selectedWarehouse: string | null;
   isLoading: boolean;
