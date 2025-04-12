@@ -29,13 +29,17 @@ const PartsReconciliationTab = ({
     call.partsUsed && call.partsUsed.length > 0
   );
   
-  // Filter based on search term
+  // Filter based on search term - now also searches engineer name
   const filteredCalls = callsWithParts.filter(call => 
     call.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    call.engineerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (call.engineerName && call.engineerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     call.machineModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
     call.partsUsed.some(part => part.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+  
+  console.log("Search term:", searchTerm);
+  console.log("Filtered calls:", filteredCalls);
+  console.log("Engineer names in calls:", callsWithParts.map(call => call.engineerName));
   
   if (isLoading) {
     return (
@@ -94,7 +98,7 @@ const PartsReconciliationTab = ({
                     <div>
                       <h3 className="font-semibold">{call.customerName}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {call.machineModel} (S/N: {call.serialNumber || 'N/A'}) • Engineer: {call.engineerName}
+                        {call.machineModel} (S/N: {call.serialNumber || 'N/A'}) • Engineer: {call.engineerName || 'Unassigned'}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -107,7 +111,7 @@ const PartsReconciliationTab = ({
                         onClick={() => onReconcile(call.id, !call.partsReconciled)}
                       >
                         {call.partsReconciled ? (
-                          <><X className="mr-1 h-4 w-4" /> Unreconcilepill</>
+                          <><X className="mr-1 h-4 w-4" /> Unreconcile</>
                         ) : (
                           <><Check className="mr-1 h-4 w-4" /> Reconcile All</>
                         )}

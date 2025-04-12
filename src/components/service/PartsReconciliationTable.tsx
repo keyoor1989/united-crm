@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -25,14 +24,18 @@ const PartsReconciliationTable = ({
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Filter service calls that have parts and are not reconciled
+  // Filter service calls that have parts and match search term
   const callsWithParts = serviceCalls.filter(call => 
     call.partsUsed && call.partsUsed.length > 0
   ).filter(call => 
     call.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (call.engineerName && call.engineerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     call.machineModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    call.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    (call.serialNumber && call.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+  
+  console.log("Engineer names in PartsReconciliationTable:", serviceCalls.map(call => call.engineerName));
+  console.log("Search term in PartsReconciliationTable:", searchTerm);
   
   const pendingReconciliation = callsWithParts.filter(call => !call.partsReconciled);
   const reconciled = callsWithParts.filter(call => call.partsReconciled);
@@ -78,7 +81,7 @@ const PartsReconciliationTable = ({
             <div className="relative w-60">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by customer or machine"
+                placeholder="Search by customer, engineer or machine"
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -137,11 +140,11 @@ const PartsReconciliationTable = ({
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{call.customerName}</div>
-                          <div className="text-xs text-muted-foreground">{call.issueType}</div>
+                          <div className="text-xs text-muted-foreground">{call.engineerName || "Unassigned"}</div>
                         </TableCell>
                         <TableCell>
                           <div>{call.machineModel}</div>
-                          <div className="text-xs text-muted-foreground">S/N: {call.serialNumber}</div>
+                          <div className="text-xs text-muted-foreground">S/N: {call.serialNumber || "N/A"}</div>
                         </TableCell>
                         <TableCell>
                           <div className="max-h-24 overflow-auto space-y-1">
@@ -228,11 +231,11 @@ const PartsReconciliationTable = ({
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">{call.customerName}</div>
-                          <div className="text-xs text-muted-foreground">{call.issueType}</div>
+                          <div className="text-xs text-muted-foreground">{call.engineerName || "Unassigned"}</div>
                         </TableCell>
                         <TableCell>
                           <div>{call.machineModel}</div>
-                          <div className="text-xs text-muted-foreground">S/N: {call.serialNumber}</div>
+                          <div className="text-xs text-muted-foreground">S/N: {call.serialNumber || "N/A"}</div>
                         </TableCell>
                         <TableCell>
                           <div className="max-h-24 overflow-auto space-y-1">
@@ -261,7 +264,7 @@ const PartsReconciliationTable = ({
                             variant="outline"
                             onClick={() => onReconcile(call.id, false)}
                           >
-                            Unrecouncile
+                            Unreconcile
                           </Button>
                         </TableCell>
                       </TableRow>
