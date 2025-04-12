@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,13 +13,15 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ExpenseCategory, ServiceExpense } from "@/types/serviceExpense";
+import { ServiceCall } from "@/types/service";
 import { v4 as uuidv4 } from "uuid";
-import { CalendarIcon, Receipt, User } from "lucide-react";
+import { CalendarIcon, Receipt, User, Tool } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useServiceData } from "@/hooks/useServiceData";
 
 interface ServiceExpenseFormProps {
   serviceCallId: string;
@@ -38,6 +40,18 @@ const ServiceExpenseForm = ({
   const [amount, setAmount] = useState<string>("0");
   const [description, setDescription] = useState<string>("");
   const [date, setDate] = useState<Date>(new Date());
+  const [selectedServiceCallId, setSelectedServiceCallId] = useState<string>(serviceCallId);
+  
+  const { allCalls, isLoading } = useServiceData();
+  
+  // Filter for active service calls
+  const activeServiceCalls = allCalls.filter(
+    call => call.status !== "Completed" && call.status !== "Cancelled"
+  );
+  
+  useEffect(() => {
+    setSelectedServiceCallId(serviceCallId);
+  }, [serviceCallId]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +62,7 @@ const ServiceExpenseForm = ({
     
     const newExpense: ServiceExpense = {
       id: uuidv4(),
-      serviceCallId,
+      serviceCallId: selectedServiceCallId,
       engineerId,
       engineerName,
       category,
@@ -81,6 +95,35 @@ const ServiceExpenseForm = ({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="service-call">Service Call</Label>
+            <Select
+              value={selectedServiceCallId}
+              onValueChange={setSelectedServiceCallId}
+            >
+              <SelectTrigger id="service-call">
+                <SelectValue placeholder="Select service call" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">
+                  <div className="flex items-center">
+                    <Tool className="h-4 w-4 mr-2" />
+                    General Expense (Not tied to specific call)
+                  </div>
+                </SelectItem>
+                
+                {activeServiceCalls.map((call) => (
+                  <SelectItem key={call.id} value={call.id}>
+                    <div className="flex flex-col">
+                      <span>{call.customerName} - {call.machineModel}</span>
+                      <span className="text-xs text-muted-foreground">{call.location}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Expense Category</Label>

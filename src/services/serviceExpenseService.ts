@@ -21,19 +21,52 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
       return [];
     }
     
-    const serviceExpenses: ServiceExpense[] = data.map(expense => ({
-      id: expense.id,
-      serviceCallId: expense.service_call_id,
-      engineerId: expense.engineer_id,
-      engineerName: expense.engineer_name,
-      category: expense.category as ExpenseCategory, // Cast to ExpenseCategory type
-      amount: expense.amount,
-      description: expense.description,
-      date: expense.date,
-      isReimbursed: expense.is_reimbursed,
-      receiptImageUrl: expense.receipt_image_url || undefined,
-      createdAt: expense.created_at
-    }));
+    // Create a map to store service call information
+    const serviceCallMap = new Map();
+    
+    // Get unique service call IDs that are not 'general'
+    const serviceCallIds = [...new Set(data
+      .filter(expense => expense.service_call_id !== 'general' && !uuidv4.validate)
+      .map(expense => expense.service_call_id))];
+    
+    // Fetch service call information if there are any valid IDs
+    if (serviceCallIds.length > 0) {
+      const { data: serviceCallsData, error: serviceCallsError } = await supabase
+        .from('service_calls')
+        .select('id, customer_name, location, machine_model')
+        .in('id', serviceCallIds);
+      
+      if (!serviceCallsError && serviceCallsData) {
+        // Create a map of service call ID to service call info
+        serviceCallsData.forEach(call => {
+          serviceCallMap.set(call.id, {
+            customerName: call.customer_name,
+            location: call.location,
+            machineModel: call.machine_model
+          });
+        });
+      }
+    }
+    
+    const serviceExpenses: ServiceExpense[] = data.map(expense => {
+      // Get service call info from the map
+      const serviceCallInfo = serviceCallMap.get(expense.service_call_id) || null;
+      
+      return {
+        id: expense.id,
+        serviceCallId: expense.service_call_id,
+        engineerId: expense.engineer_id,
+        engineerName: expense.engineer_name,
+        category: expense.category as ExpenseCategory, // Cast to ExpenseCategory type
+        amount: expense.amount,
+        description: expense.description,
+        date: expense.date,
+        isReimbursed: expense.is_reimbursed,
+        receiptImageUrl: expense.receipt_image_url || undefined,
+        createdAt: expense.created_at,
+        serviceCallInfo
+      };
+    });
     
     return serviceExpenses;
   } catch (err) {

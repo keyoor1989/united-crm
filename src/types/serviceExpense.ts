@@ -1,6 +1,12 @@
 
 export type ExpenseCategory = 'Travel' | 'Food' | 'Accommodation' | 'Fuel' | 'Other';
 
+export interface ServiceCallInfo {
+  customerName: string;
+  location?: string;
+  machineModel?: string;
+}
+
 export interface ServiceExpense {
   id: string;
   serviceCallId: string;
@@ -13,4 +19,5 @@ export interface ServiceExpense {
   isReimbursed: boolean;
   receiptImageUrl?: string;
   createdAt: string;
+  serviceCallInfo?: ServiceCallInfo | null;
 }
