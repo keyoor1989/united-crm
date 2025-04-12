@@ -9,7 +9,8 @@ import {
   Box,
   Receipt,
   CheckSquare,
-  BarChart2
+  BarChart2,
+  Clipboard
 } from "lucide-react";
 import { SidebarSectionConfig } from "../types/navTypes";
 
@@ -31,6 +32,11 @@ export const inventorySection: SidebarSectionConfig = {
       to: "/inventory/machine-parts",
       icon: QrCode,
       label: "Machine Parts"
+    },
+    {
+      to: "/inventory/brands",
+      icon: Clipboard,
+      label: "Brands & Models"
     },
     {
       to: "/inventory/warehouses",

@@ -28,6 +28,8 @@ import MachineParts from "@/pages/inventory/MachineParts";
 import InventoryVendors from "@/pages/inventory/InventoryVendors";
 import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
 import ProfitReport from "@/pages/inventory/ProfitReport";
+import InventoryItems from "@/pages/inventory/InventoryItems";
+import InventoryBrands from "@/pages/inventory/InventoryBrands";
 
 const AppRoutes = () => {
   return (
@@ -51,11 +53,13 @@ const AppRoutes = () => {
 
         {/* Inventory Routes */}
         <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+        <Route path="/inventory/items" element={<ProtectedRoute><InventoryItems /></ProtectedRoute>} />
         <Route path="/inventory/vendors" element={<ProtectedRoute><InventoryVendors /></ProtectedRoute>} />
         <Route path="/inventory/engineer-inventory" element={<ProtectedRoute><EngineerInventory /></ProtectedRoute>} />
         <Route path="/inventory/machine-parts" element={<ProtectedRoute><MachineParts /></ProtectedRoute>} />
         <Route path="/inventory/vendor-performance" element={<ProtectedRoute><VendorPerformanceDemo /></ProtectedRoute>} />
         <Route path="/inventory/profit-report" element={<ProtectedRoute><ProfitReport /></ProtectedRoute>} />
+        <Route path="/inventory/brands" element={<ProtectedRoute><InventoryBrands /></ProtectedRoute>} />
         
         <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
         <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />
