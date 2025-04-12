@@ -1,90 +1,65 @@
 
 import { 
-  Package, Boxes, Tag, Store, ShoppingCart, Send, ArrowRightLeft, 
-  Building, RotateCcw, Cpu, BarChart2, Award, 
-  History, AlertTriangle, ShoppingBag 
+  Package, 
+  Truck, 
+  Warehouse, 
+  Store, 
+  QrCode, 
+  SendToBack,
+  Box,
+  Receipt,
+  CheckSquare
 } from "lucide-react";
-import { NavSection } from "../types/navTypes";
+import { SidebarSectionConfig } from "../types/navTypes";
 
-export const inventorySection: NavSection = {
-  key: "inventory",
+export const inventorySection: SidebarSectionConfig = {
+  title: "Inventory",
   icon: Package,
-  label: "Inventory",
   items: [
     {
       to: "/inventory",
-      icon: Boxes,
-      label: "Dashboard"
-    },
-    {
-      to: "/inventory/brands",
-      icon: Tag,
-      label: "Brands & Models"
+      icon: Package,
+      label: "Inventory Dashboard"
     },
     {
       to: "/inventory/items",
-      icon: Package,
-      label: "Item Master"
+      icon: Box,
+      label: "Inventory Items"
+    },
+    {
+      to: "/inventory/machine-parts",
+      icon: QrCode,
+      label: "Machine Parts"
+    },
+    {
+      to: "/inventory/warehouses",
+      icon: Warehouse,
+      label: "Warehouses"
     },
     {
       to: "/inventory/vendors",
       icon: Store,
-      label: "Vendor Management"
+      label: "Vendors"
     },
     {
-      to: "/inventory/purchase",
-      icon: ShoppingCart,
+      to: "/inventory/purchase-entry",
+      icon: Receipt,
       label: "Purchase Entry"
     },
     {
-      to: "/inventory/sales",
-      icon: ShoppingBag,
-      label: "Sales Management"
-    },
-    {
       to: "/inventory/issue",
-      icon: Send,
+      icon: SendToBack,
       label: "Issue Entry"
     },
     {
-      to: "/inventory/transfer",
-      icon: ArrowRightLeft,
-      label: "Warehouse Transfer"
+      to: "/inventory/transfers",
+      icon: Truck,
+      label: "Stock Transfers"
     },
     {
-      to: "/inventory/branch-transfer",
-      icon: Building,
-      label: "Branch Transfer"
-    },
-    {
-      to: "/inventory/returns",
-      icon: RotateCcw,
-      label: "Returns & Replacements"
-    },
-    {
-      to: "/inventory/machine-parts",
-      icon: Cpu,
-      label: "Machine Parts Usage"
-    },
-    {
-      to: "/inventory/profit-report",
-      icon: BarChart2,
-      label: "Profit Report"
-    },
-    {
-      to: "/inventory/vendor-performance-metrics",
-      icon: Award,
-      label: "Vendor Metrics Demo"
-    },
-    {
-      to: "/inventory/history",
-      icon: History,
-      label: "Stock History"
-    },
-    {
-      to: "/inventory/alerts",
-      icon: AlertTriangle,
-      label: "Low Stock Alerts"
+      to: "/service-inventory",
+      icon: CheckSquare,
+      label: "Service Inventory"
     }
   ]
 };

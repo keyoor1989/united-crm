@@ -1,3 +1,4 @@
+
 export interface ServiceCall {
   id: string;
   customerId: string;
@@ -25,6 +26,11 @@ export interface ServiceCall {
   paymentDate?: string;
   paymentMethod?: string;
   partsReconciled: boolean;
+  expenses?: ServiceExpense[];
+  totalExpenses?: number;
+  partsCost?: number;
+  totalRevenue?: number;
+  profit?: number;
 }
 
 export interface Customer {
@@ -71,6 +77,8 @@ export interface Part {
   partNumber: string;
   quantity: number;
   price: number;
+  cost?: number;
+  profit?: number;
   isReconciled?: boolean;
 }
 

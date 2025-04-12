@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ServiceCall } from "@/types/service";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
+import { ArrowUpDown, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
 
 interface BillingReportViewProps {
   serviceCalls: ServiceCall[];
@@ -26,8 +28,39 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [activeTab, setActiveTab] = useState("all");
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'ascending' | 'descending';
+  } | null>(null);
   
-  const filteredCalls = serviceCalls.filter(call => {
+  // Pre-process the calls to calculate profits
+  const processedCalls = serviceCalls.map(call => {
+    // Calculate parts cost
+    const partsCost = call.partsUsed?.reduce((total, part) => 
+      total + ((part.cost || part.price * 0.6) * part.quantity), 0) || 0;
+    
+    // Calculate total expenses
+    const totalExpenses = (call.expenses?.reduce((total, expense) => 
+      total + expense.amount, 0) || 0) + partsCost;
+    
+    // Calculate total revenue
+    const partsRevenue = call.partsUsed?.reduce((total, part) => 
+      total + (part.price * part.quantity), 0) || 0;
+    const totalRevenue = (call.serviceCharge || 0) + partsRevenue;
+    
+    // Calculate profit
+    const profit = totalRevenue - totalExpenses;
+    
+    return {
+      ...call,
+      partsCost,
+      totalExpenses,
+      totalRevenue,
+      profit
+    };
+  });
+  
+  const filteredCalls = processedCalls.filter(call => {
     const callDate = new Date(call.createdAt);
     
     if (dateRange.from && dateRange.to) {
@@ -51,19 +84,82 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     if (activeTab === "unpaid") return !call.isPaid; 
     if (activeTab === "reconciled") return call.partsReconciled;
     if (activeTab === "unreconciled") return !call.partsReconciled;
+    if (activeTab === "profitable") return (call.profit || 0) > 0;
+    if (activeTab === "unprofitable") return (call.profit || 0) <= 0;
     return true;
   });
   
-  const totalServiceCharges = tabFilteredCalls.reduce((sum, call) => sum + (call.serviceCharge || 0), 0);
-  const totalPartsValue = tabFilteredCalls.reduce((sum, call) => {
+  // Add sorting functionality
+  const sortedCalls = [...tabFilteredCalls].sort((a, b) => {
+    if (!sortConfig) return 0;
+
+    let aValue, bValue;
+    
+    switch (sortConfig.key) {
+      case 'date':
+        aValue = new Date(a.createdAt).getTime();
+        bValue = new Date(b.createdAt).getTime();
+        break;
+      case 'customer':
+        aValue = a.customerName;
+        bValue = b.customerName;
+        break;
+      case 'serviceCharge':
+        aValue = a.serviceCharge || 0;
+        bValue = b.serviceCharge || 0;
+        break;
+      case 'partsValue':
+        aValue = a.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
+        bValue = b.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
+        break;
+      case 'total':
+        aValue = (a.serviceCharge || 0) + (a.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0);
+        bValue = (b.serviceCharge || 0) + (b.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0);
+        break;
+      case 'profit':
+        aValue = a.profit || 0;
+        bValue = b.profit || 0;
+        break;
+      default:
+        return 0;
+    }
+    
+    if (sortConfig.direction === 'ascending') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
+  
+  const requestSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  // Calculate totals
+  const totalServiceCharges = sortedCalls.reduce((sum, call) => sum + (call.serviceCharge || 0), 0);
+  const totalPartsValue = sortedCalls.reduce((sum, call) => {
     return sum + (call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0);
   }, 0);
+  const totalExpenses = sortedCalls.reduce((sum, call) => sum + (call.totalExpenses || 0), 0);
+  const totalProfit = sortedCalls.reduce((sum, call) => sum + (call.profit || 0), 0);
   
+  // Unpaid value
+  const unpaidAmount = sortedCalls.filter(call => !call.isPaid).reduce((sum, call) => {
+    const partsValue = call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
+    return sum + (call.serviceCharge || 0) + partsValue;
+  }, 0);
+  
+  // Parts reconciliation stats
   const paidCalls = filteredCalls.filter(call => call.isPaid).length;
   const unpaidCalls = filteredCalls.filter(call => !call.isPaid).length;
-  
   const reconciledCalls = filteredCalls.filter(call => call.partsReconciled).length;
   const unreconciledCalls = filteredCalls.filter(call => !call.partsReconciled).length;
+  const profitableCalls = filteredCalls.filter(call => (call.profit || 0) > 0).length;
+  const unprofitableCalls = filteredCalls.filter(call => (call.profit || 0) <= 0).length;
   
   const exportToCSV = () => {
     const headers = [
@@ -72,12 +168,14 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
       "Service Type",
       "Service Charge (₹)",
       "Parts Value (₹)",
-      "Total (₹)",
+      "Expenses (₹)",
+      "Total Revenue (₹)",
+      "Profit/Loss (₹)",
       "Payment Status",
       "Parts Reconciled"
     ];
     
-    const rows = tabFilteredCalls.map(call => {
+    const rows = sortedCalls.map(call => {
       const partsValue = call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
       return [
         format(new Date(call.createdAt), "dd/MM/yyyy"),
@@ -85,7 +183,9 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
         call.issueType,
         call.serviceCharge || 0,
         partsValue,
-        (call.serviceCharge || 0) + partsValue,
+        call.totalExpenses || 0,
+        call.totalRevenue || 0,
+        call.profit || 0,
         call.isPaid ? "Paid" : "Unpaid",
         call.partsReconciled ? "Yes" : "No"
       ];
@@ -121,55 +221,79 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
         <Button onClick={exportToCSV}>Export to CSV</Button>
       </div>
       
-      <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
+      <div className="flex flex-col md:flex-row gap-4 md:items-start justify-between">
         <DateRangeFilter 
           dateRange={dateRange} 
           onDateRangeChange={setDateRange} 
         />
         
-        <div className="flex gap-2">
-          <Card className="w-32">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Card className="w-36">
             <CardContent className="p-3">
-              <div className="text-2xl font-bold text-center">₹{totalServiceCharges}</div>
+              <div className="text-2xl font-bold text-center">₹{totalServiceCharges.toFixed(2)}</div>
               <div className="text-xs text-center text-muted-foreground">Service Charges</div>
             </CardContent>
           </Card>
-          <Card className="w-32">
+          <Card className="w-36">
             <CardContent className="p-3">
-              <div className="text-2xl font-bold text-center">₹{totalPartsValue}</div>
+              <div className="text-2xl font-bold text-center">₹{totalPartsValue.toFixed(2)}</div>
               <div className="text-xs text-center text-muted-foreground">Parts Value</div>
+            </CardContent>
+          </Card>
+          <Card className="w-36">
+            <CardContent className="p-3">
+              <div className="text-2xl font-bold text-center text-red-500">₹{totalExpenses.toFixed(2)}</div>
+              <div className="text-xs text-center text-muted-foreground">Total Expenses</div>
+            </CardContent>
+          </Card>
+          <Card className="w-36">
+            <CardContent className="p-3">
+              <div className={`text-2xl font-bold text-center ${totalProfit >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                ₹{totalProfit.toFixed(2)}
+              </div>
+              <div className="text-xs text-center text-muted-foreground">Net Profit/Loss</div>
             </CardContent>
           </Card>
         </div>
       </div>
       
       <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 w-full md:w-auto">
+        <TabsList className="grid grid-cols-7 w-full md:w-auto">
           <TabsTrigger value="all">All ({filteredCalls.length})</TabsTrigger>
           <TabsTrigger value="paid">Paid ({paidCalls})</TabsTrigger>
           <TabsTrigger value="unpaid">Unpaid ({unpaidCalls})</TabsTrigger>
-          <TabsTrigger value="reconciled">Reconciled Parts ({reconciledCalls})</TabsTrigger>
-          <TabsTrigger value="unreconciled">Unreconciled Parts ({unreconciledCalls})</TabsTrigger>
+          <TabsTrigger value="reconciled">Reconciled ({reconciledCalls})</TabsTrigger>
+          <TabsTrigger value="unreconciled">Unreconciled ({unreconciledCalls})</TabsTrigger>
+          <TabsTrigger value="profitable">Profitable ({profitableCalls})</TabsTrigger>
+          <TabsTrigger value="unprofitable">Unprofitable ({unprofitableCalls})</TabsTrigger>
         </TabsList>
         
         <TabsContent value="all" className="mt-4">
-          <BillingTable calls={tabFilteredCalls} />
+          <BillingTable calls={sortedCalls} requestSort={requestSort} sortConfig={sortConfig} />
         </TabsContent>
         
         <TabsContent value="paid" className="mt-4">
-          <BillingTable calls={tabFilteredCalls} />
+          <BillingTable calls={sortedCalls} requestSort={requestSort} sortConfig={sortConfig} />
         </TabsContent>
         
         <TabsContent value="unpaid" className="mt-4">
-          <BillingTable calls={tabFilteredCalls} />
+          <BillingTable calls={sortedCalls} requestSort={requestSort} sortConfig={sortConfig} />
         </TabsContent>
         
         <TabsContent value="reconciled" className="mt-4">
-          <BillingTable calls={tabFilteredCalls} />
+          <BillingTable calls={sortedCalls} requestSort={requestSort} sortConfig={sortConfig} />
         </TabsContent>
         
         <TabsContent value="unreconciled" className="mt-4">
-          <BillingTable calls={tabFilteredCalls} />
+          <BillingTable calls={sortedCalls} requestSort={requestSort} sortConfig={sortConfig} />
+        </TabsContent>
+        
+        <TabsContent value="profitable" className="mt-4">
+          <BillingTable calls={sortedCalls} requestSort={requestSort} sortConfig={sortConfig} />
+        </TabsContent>
+        
+        <TabsContent value="unprofitable" className="mt-4">
+          <BillingTable calls={sortedCalls} requestSort={requestSort} sortConfig={sortConfig} />
         </TabsContent>
       </Tabs>
     </div>
@@ -178,20 +302,61 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
 
 interface BillingTableProps {
   calls: ServiceCall[];
+  requestSort: (key: string) => void;
+  sortConfig: {
+    key: string;
+    direction: 'ascending' | 'descending';
+  } | null;
 }
 
-const BillingTable = ({ calls }: BillingTableProps) => {
+const BillingTable = ({ calls, requestSort, sortConfig }: BillingTableProps) => {
+  const getSortIndicator = (key: string) => {
+    if (!sortConfig || sortConfig.key !== key) {
+      return <ArrowUpDown className="ml-1 h-4 w-4" />;
+    }
+    
+    return sortConfig.direction === 'ascending' 
+      ? <TrendingUp className="ml-1 h-4 w-4" />
+      : <TrendingDown className="ml-1 h-4 w-4" />;
+  };
+  
   return (
     <Table>
       <TableCaption>Service billing information</TableCaption>
       <TableHeader>
         <TableRow>
-          <TableHead>Date</TableHead>
-          <TableHead>Customer</TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('date')}>
+            <div className="flex items-center">
+              Date {getSortIndicator('date')}
+            </div>
+          </TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('customer')}>
+            <div className="flex items-center">
+              Customer {getSortIndicator('customer')}
+            </div>
+          </TableHead>
           <TableHead>Service Type</TableHead>
-          <TableHead className="text-right">Service Charge (₹)</TableHead>
-          <TableHead className="text-right">Parts Value (₹)</TableHead>
-          <TableHead className="text-right">Total (₹)</TableHead>
+          <TableHead className="text-right cursor-pointer" onClick={() => requestSort('serviceCharge')}>
+            <div className="flex items-center justify-end">
+              Service Charge (₹) {getSortIndicator('serviceCharge')}
+            </div>
+          </TableHead>
+          <TableHead className="text-right cursor-pointer" onClick={() => requestSort('partsValue')}>
+            <div className="flex items-center justify-end">
+              Parts Value (₹) {getSortIndicator('partsValue')}
+            </div>
+          </TableHead>
+          <TableHead className="text-right">Expenses (₹)</TableHead>
+          <TableHead className="text-right cursor-pointer" onClick={() => requestSort('total')}>
+            <div className="flex items-center justify-end">
+              Total Revenue (₹) {getSortIndicator('total')}
+            </div>
+          </TableHead>
+          <TableHead className="text-right cursor-pointer" onClick={() => requestSort('profit')}>
+            <div className="flex items-center justify-end">
+              Profit/Loss (₹) {getSortIndicator('profit')}
+            </div>
+          </TableHead>
           <TableHead>Payment Status</TableHead>
           <TableHead>Parts Reconciled</TableHead>
         </TableRow>
@@ -199,19 +364,28 @@ const BillingTable = ({ calls }: BillingTableProps) => {
       <TableBody>
         {calls.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center py-6">No service calls found</TableCell>
+            <TableCell colSpan={10} className="text-center py-6">No service calls found</TableCell>
           </TableRow>
         ) : (
           calls.map(call => {
             const partsValue = call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
+            const totalRevenue = (call.serviceCharge || 0) + partsValue;
+            const profit = call.profit || 0;
+            
             return (
               <TableRow key={call.id}>
                 <TableCell>{format(new Date(call.createdAt), "dd/MM/yyyy")}</TableCell>
                 <TableCell>{call.customerName}</TableCell>
                 <TableCell>{call.issueType}</TableCell>
-                <TableCell className="text-right">{call.serviceCharge || 0}</TableCell>
-                <TableCell className="text-right">{partsValue}</TableCell>
-                <TableCell className="text-right font-medium">{(call.serviceCharge || 0) + partsValue}</TableCell>
+                <TableCell className="text-right">{(call.serviceCharge || 0).toFixed(2)}</TableCell>
+                <TableCell className="text-right">{partsValue.toFixed(2)}</TableCell>
+                <TableCell className="text-right text-red-500">{(call.totalExpenses || 0).toFixed(2)}</TableCell>
+                <TableCell className="text-right">{totalRevenue.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-medium">
+                  <span className={profit >= 0 ? 'text-green-500' : 'text-red-500'}>
+                    {profit >= 0 && '+'}{profit.toFixed(2)}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <Badge variant={call.isPaid ? "success" : "outline"}>
                     {call.isPaid ? "Paid" : "Unpaid"}
