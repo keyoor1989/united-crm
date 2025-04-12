@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import ServiceExpenseForm from "@/components/service/ServiceExpenseForm";
 import ServiceExpenseList from "@/components/service/ServiceExpenseList";
 import { ServiceExpense } from "@/types/serviceExpense";
-import { Engineer } from "@/types/service";
 import { fetchServiceExpenses, addServiceExpense } from "@/services/serviceExpenseService";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -15,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Engineer } from "@/types/service";
 
 interface ServiceExpensesTabProps {
   engineers: Engineer[];
@@ -44,13 +44,25 @@ const ServiceExpensesTab = ({
   
   const loadExpenses = async () => {
     setLoadingExpenses(true);
-    const fetchedExpenses = await fetchServiceExpenses();
-    setExpenses(fetchedExpenses);
-    setLoadingExpenses(false);
+    try {
+      const fetchedExpenses = await fetchServiceExpenses();
+      console.log("Loaded expenses in ServiceExpensesTab:", fetchedExpenses);
+      setExpenses(fetchedExpenses);
+    } catch (error) {
+      console.error("Error loading expenses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load expenses. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingExpenses(false);
+    }
   };
   
   const handleExpenseAdded = async (expense: ServiceExpense) => {
     // Add to database
+    console.log("Adding expense:", expense);
     const success = await addServiceExpense(expense);
     
     if (success) {
@@ -66,6 +78,12 @@ const ServiceExpensesTab = ({
       toast({
         title: "Expense Added",
         description: `${expense.category} expense of ₹${expense.amount} added for ${expense.engineerName}`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to add expense. Please try again.",
+        variant: "destructive",
       });
     }
   };

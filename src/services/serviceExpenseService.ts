@@ -33,7 +33,7 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
   
   // For expenses tied to service calls, fetch the service call details
   const serviceCallIds = [...new Set(expenses
-    .filter(e => e.serviceCallId !== null && e.serviceCallId !== undefined)
+    .filter(e => e.serviceCallId !== null && e.serviceCallId !== undefined && e.serviceCallId !== '00000000-0000-0000-0000-000000000000')
     .map(e => e.serviceCallId))];
   
   if (serviceCallIds.length > 0) {
@@ -111,7 +111,7 @@ export const addServiceCharge = async (
       date
     });
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('service_expenses')
       .insert({
         service_call_id: placeholderServiceCallId, // Use a placeholder UUID instead of null
@@ -124,14 +124,15 @@ export const addServiceCharge = async (
         description: description,
         date: date,
         is_reimbursed: true // Marked as reimbursed so it counts as income
-      });
+      })
+      .select();
     
     if (error) {
       console.error("Error adding service charge:", error);
       return false;
     }
     
-    console.log(`Successfully added service charge of ${amount} for customer ${customerName}`);
+    console.log(`Successfully added service charge of ${amount} for customer ${customerName}`, data);
     return true;
   } catch (err) {
     console.error("Exception when adding service charge:", err);
@@ -147,7 +148,12 @@ export const addServiceExpense = async (expense: ServiceExpense): Promise<boolea
       ? '00000000-0000-0000-0000-000000000000' 
       : expense.serviceCallId;
     
-    const { error } = await supabase
+    console.log("Adding service expense with data:", {
+      ...expense,
+      service_call_id: serviceCallId
+    });
+    
+    const { data, error } = await supabase
       .from('service_expenses')
       .insert({
         service_call_id: serviceCallId,
@@ -161,14 +167,15 @@ export const addServiceExpense = async (expense: ServiceExpense): Promise<boolea
         date: expense.date,
         is_reimbursed: expense.isReimbursed,
         receipt_image_url: expense.receiptImageUrl
-      });
+      })
+      .select();
     
     if (error) {
       console.error("Error adding service expense:", error);
       return false;
     }
     
-    console.log(`Successfully added ${expense.category} expense of ${expense.amount} for ${expense.engineerName}`);
+    console.log(`Successfully added ${expense.category} expense of ${expense.amount} for ${expense.engineerName}`, data);
     return true;
   } catch (err) {
     console.error("Exception when adding service expense:", err);
