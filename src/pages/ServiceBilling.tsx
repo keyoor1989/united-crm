@@ -4,11 +4,12 @@ import BillingReportView from "@/components/service/BillingReportView";
 import { useServiceData } from "@/hooks/useServiceData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, CircleDollarSign, PiggyBank, BadgeDollarSign } from "lucide-react";
+import { BarChart, CircleDollarSign, PiggyBank, BadgeDollarSign, Receipt } from "lucide-react";
 import { ServiceCall } from "@/types/service";
+import ServiceChargeForm from "@/components/service/ServiceChargeForm";
 
 const ServiceBilling = () => {
-  const { allCalls, isLoading } = useServiceData();
+  const { allCalls, isLoading, fetchServiceCalls } = useServiceData();
   const [activeView, setActiveView] = useState<string>("billing");
   
   // Calculate summary data
@@ -96,6 +97,10 @@ const ServiceBilling = () => {
   };
   
   const summary = calculateSummary();
+  
+  const handleServiceChargeAdded = () => {
+    fetchServiceCalls();
+  };
 
   return (
     <div className="space-y-6">
@@ -120,6 +125,10 @@ const ServiceBilling = () => {
             <TabsTrigger value="summary" className="flex items-center gap-2">
               <BarChart className="h-4 w-4" />
               Financial Summary
+            </TabsTrigger>
+            <TabsTrigger value="add-charge" className="flex items-center gap-2">
+              <Receipt className="h-4 w-4" />
+              Add Service Charge
             </TabsTrigger>
           </TabsList>
           
@@ -232,6 +241,41 @@ const ServiceBilling = () => {
                   )}
                 </CardContent>
               </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="add-charge">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-1">
+                <ServiceChargeForm onChargeAdded={handleServiceChargeAdded} />
+              </div>
+              <div className="md:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Service Charge Instructions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p>
+                      Use this form to record service charges received from customers that are not already 
+                      associated with a specific service call in the system.
+                    </p>
+                    <div className="space-y-2">
+                      <h3 className="font-medium">How to add a service charge:</h3>
+                      <ol className="list-decimal list-inside space-y-1">
+                        <li>Select the customer who made the payment</li>
+                        <li>Enter the amount received</li>
+                        <li>Select the date when the payment was received</li>
+                        <li>Add a description of the service provided</li>
+                        <li>Click "Add Service Charge" to save the record</li>
+                      </ol>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Note: All service charges added here will appear in the expense reports and 
+                      will be marked as "reimbursed" by default.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

@@ -58,8 +58,8 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
         serviceCallId: expense.service_call_id,
         engineerId: expense.engineer_id,
         engineerName: expense.engineer_name,
-        customerId: serviceCallInfo ? serviceCallInfo.customerId : null,
-        customerName: serviceCallInfo ? serviceCallInfo.customerName : null,
+        customerId: expense.customer_id || (serviceCallInfo ? serviceCallInfo.customerId : null),
+        customerName: expense.customer_name || (serviceCallInfo ? serviceCallInfo.customerName : null),
         category: expense.category as ExpenseCategory,
         amount: expense.amount,
         description: expense.description,
@@ -143,6 +143,56 @@ export const updateExpenseReimbursementStatus = async (
     return true;
   } catch (err) {
     console.error("Unexpected error updating expense reimbursement status:", err);
+    return false;
+  }
+};
+
+export const addServiceCharge = async (
+  customerId: string,
+  customerName: string,
+  amount: number,
+  description: string,
+  date: string,
+  engineerId: string = "system",
+  engineerName: string = "System"
+): Promise<boolean> => {
+  try {
+    // Create a service expense entry for the service charge
+    const serviceCallId = uuidv4(); // Generate a unique ID for this transaction
+    
+    const { error } = await supabase
+      .from('service_expenses')
+      .insert({
+        service_call_id: serviceCallId,
+        engineer_id: engineerId,
+        engineer_name: engineerName,
+        category: "Other", // Using "Other" category for service charges
+        amount: amount,
+        description: description,
+        date: date,
+        is_reimbursed: true, // Already paid/received
+        customer_id: customerId,
+        customer_name: customerName
+      });
+    
+    if (error) {
+      console.error("Error adding service charge:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add service charge",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    toast({
+      title: "Success",
+      description: `Service charge of ₹${amount} for ${customerName} added successfully`,
+    });
+    
+    return true;
+  } catch (err) {
+    console.error("Unexpected error adding service charge:", err);
     return false;
   }
 };
