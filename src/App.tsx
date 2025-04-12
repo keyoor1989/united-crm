@@ -1,12 +1,15 @@
 
 import { Toaster } from "@/components/ui/toaster";
 import AppRoutes from "@/AppRoutes";
+import { VendorProvider } from "@/contexts/VendorContext";
 
 function App() {
   return (
     <>
-      <AppRoutes />
-      <Toaster />
+      <VendorProvider>
+        <AppRoutes />
+        <Toaster />
+      </VendorProvider>
     </>
   );
 }
