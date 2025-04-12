@@ -1,457 +1,386 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Layout from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { EngineerCard } from "@/components/service/EngineerCard";
-import { Badge } from "@/components/ui/badge";
-import { 
-  ArrowLeft, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  Clock,
-  Wrench,
-  CheckCircle2, 
-  AlertTriangle,
-  Calendar,
-  UserPlus,
-  AlertOctagon,
-  AlertCircle
-} from "lucide-react";
-import { Engineer, ServiceCall } from "@/types/service";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import EngineerForm from "@/components/service/EngineerForm";
+import { Engineer, ServiceCall, Part, Feedback } from "@/types/service";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  MapPin,
+  Edit,
+  Calendar,
+  CheckCircle,
+  Clock,
+  User,
+  Briefcase,
+} from "lucide-react";
+import EngineerForm from "@/components/service/EngineerForm";
+import { format, parseISO } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 const EngineerDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { engineerId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [engineer, setEngineer] = useState<Engineer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showFormDialog, setShowFormDialog] = useState(false);
-  const isNewEngineer = id === "new";
+  const [showEditForm, setShowEditForm] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      
-      if (isNewEngineer) {
-        setEngineer({
-          id: "",
-          name: "",
-          phone: "",
-          email: "",
-          location: "",
-          status: "Available",
-          skillLevel: "Intermediate",
-          currentJob: null,
-          currentLocation: "",
+    if (engineerId) {
+      fetchEngineer(engineerId);
+      fetchServiceCalls(engineerId);
+    }
+  }, [engineerId]);
+
+  const fetchEngineer = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("engineers")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching engineer:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load engineer data",
+          variant: "destructive",
         });
-        setServiceCalls([]);
-        setLoading(false);
         return;
       }
 
-      try {
-        const { data: engineerData, error: engineerError } = await supabase
-          .from('engineers')
-          .select('*')
-          .eq('id', id)
-          .single();
-          
-        if (engineerError) {
-          console.error("Error fetching engineer:", engineerError);
-          toast({
-            title: "Error",
-            description: "Failed to load engineer details",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
+      const engineerData: Engineer = {
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        location: data.location,
+        status: data.status,
+        skillLevel: data.skill_level,
+        currentJob: data.current_job,
+        currentLocation: data.current_location,
+      };
+
+      setEngineer(engineerData);
+    } catch (err) {
+      console.error("Unexpected error fetching engineer:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchServiceCalls = async (engineerId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("service_calls")
+        .select("*")
+        .eq("engineer_id", engineerId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching service calls:", error);
+        return;
+      }
+
+      const transformedCalls: ServiceCall[] = data.map(call => {
+        // Parse parts_used to ensure it's an array of Part objects
+        let parsedPartsUsed: Part[] = [];
+        if (Array.isArray(call.parts_used)) {
+          parsedPartsUsed = call.parts_used.map((part: any) => ({
+            id: part.id || "",
+            name: part.name || "",
+            partNumber: part.partNumber || "",
+            quantity: part.quantity || 0,
+            price: part.price || 0
+          }));
         }
         
-        if (engineerData) {
-          const transformedEngineer: Engineer = {
-            id: engineerData.id,
-            name: engineerData.name,
-            phone: engineerData.phone,
-            email: engineerData.email,
-            location: engineerData.location,
-            status: engineerData.status,
-            skillLevel: engineerData.skill_level,
-            currentJob: engineerData.current_job,
-            currentLocation: engineerData.current_location,
+        // Parse feedback to ensure it's a Feedback object or null
+        let parsedFeedback: Feedback | null = null;
+        if (call.feedback && typeof call.feedback === 'object') {
+          parsedFeedback = {
+            rating: typeof call.feedback.rating === 'number' ? call.feedback.rating : 0,
+            comment: typeof call.feedback.comment === 'string' ? call.feedback.comment : null,
+            date: typeof call.feedback.date === 'string' ? call.feedback.date : new Date().toISOString()
           };
-          
-          setEngineer(transformedEngineer);
-          
-          const { data: callsData, error: callsError } = await supabase
-            .from('service_calls')
-            .select('*')
-            .eq('engineer_id', id)
-            .order('created_at', { ascending: false });
-            
-          if (callsError) {
-            console.error("Error fetching service calls:", callsError);
-            toast({
-              title: "Warning",
-              description: "Failed to load engineer's service calls",
-              variant: "destructive",
-            });
-          } else {
-            const transformedCalls: ServiceCall[] = callsData.map(call => ({
-              id: call.id,
-              customerId: call.customer_id,
-              customerName: call.customer_name,
-              phone: call.phone,
-              machineId: call.machine_id || "",
-              machineModel: call.machine_model,
-              serialNumber: call.serial_number || "",
-              location: call.location,
-              issueType: call.issue_type,
-              issueDescription: call.issue_description,
-              callType: call.call_type,
-              priority: call.priority,
-              status: call.status,
-              engineerId: call.engineer_id,
-              engineerName: call.engineer_name || "",
-              createdAt: call.created_at,
-              slaDeadline: call.sla_deadline || new Date().toISOString(),
-              startTime: call.start_time,
-              completionTime: call.completion_time,
-              partsUsed: Array.isArray(call.parts_used) 
-                ? call.parts_used.map((part: any) => ({
-                    id: part.id || "",
-                    name: part.name || "",
-                    partNumber: part.partNumber || "",
-                    quantity: part.quantity || 0,
-                    price: part.price || 0
-                  }))
-                : [],
-              feedback: call.feedback 
-                ? {
-                    rating: call.feedback.rating || 0,
-                    comment: call.feedback.comment || null,
-                    date: call.feedback.date || new Date().toISOString()
-                  }
-                : null,
-            }));
-            
-            setServiceCalls(transformedCalls);
-          }
         }
-      } catch (error) {
-        console.error("Unexpected error:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchData();
-  }, [id, isNewEngineer, toast]);
+        return {
+          id: call.id,
+          customerId: call.customer_id,
+          customerName: call.customer_name,
+          phone: call.phone,
+          machineId: call.machine_id || "",
+          machineModel: call.machine_model,
+          serialNumber: call.serial_number || "",
+          location: call.location,
+          issueType: call.issue_type,
+          issueDescription: call.issue_description,
+          callType: call.call_type,
+          priority: call.priority,
+          status: call.status,
+          engineerId: call.engineer_id,
+          engineerName: call.engineer_name || "",
+          createdAt: call.created_at,
+          slaDeadline: call.sla_deadline || new Date().toISOString(),
+          startTime: call.start_time,
+          completionTime: call.completion_time,
+          partsUsed: parsedPartsUsed,
+          feedback: parsedFeedback,
+        };
+      });
+
+      setServiceCalls(transformedCalls);
+    } catch (err) {
+      console.error("Unexpected error fetching service calls:", err);
+    }
+  };
 
   const handleSaveEngineer = async (updatedEngineer: Engineer) => {
     try {
-      const engineerData = {
-        name: updatedEngineer.name,
-        phone: updatedEngineer.phone,
-        email: updatedEngineer.email,
-        location: updatedEngineer.location,
-        status: updatedEngineer.status,
-        skill_level: updatedEngineer.skillLevel,
-        current_job: updatedEngineer.currentJob,
-        current_location: updatedEngineer.currentLocation,
-      };
-      
-      if (isNewEngineer) {
-        const { data, error } = await supabase
-          .from('engineers')
-          .insert(engineerData)
-          .select();
-          
-        if (error) {
-          console.error("Error creating engineer:", error);
-          toast({
-            title: "Error",
-            description: "Failed to create engineer record",
-            variant: "destructive",
-          });
-          return;
-        }
-        
+      const { error } = await supabase
+        .from("engineers")
+        .update({
+          name: updatedEngineer.name,
+          phone: updatedEngineer.phone,
+          email: updatedEngineer.email,
+          location: updatedEngineer.location,
+          status: updatedEngineer.status,
+          skill_level: updatedEngineer.skillLevel,
+          current_location: updatedEngineer.currentLocation,
+        })
+        .eq("id", updatedEngineer.id);
+
+      if (error) {
+        console.error("Error updating engineer:", error);
         toast({
-          title: "Engineer Created",
-          description: "The engineer has been added successfully",
+          title: "Error",
+          description: "Failed to update engineer",
+          variant: "destructive",
         });
-      } else {
-        const { error } = await supabase
-          .from('engineers')
-          .update(engineerData)
-          .eq('id', updatedEngineer.id);
-          
-        if (error) {
-          console.error("Error updating engineer:", error);
-          toast({
-            title: "Error",
-            description: "Failed to update engineer record",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        toast({
-          title: "Engineer Updated",
-          description: "The engineer has been updated successfully",
-        });
+        return;
       }
-      
-      navigate("/service");
-    } catch (error) {
-      console.error("Unexpected error saving engineer:", error);
+
+      setEngineer(updatedEngineer);
+      setShowEditForm(false);
       toast({
-        title: "Error",
-        description: "An unexpected error occurred while saving",
-        variant: "destructive",
+        title: "Success",
+        description: "Engineer updated successfully",
       });
+    } catch (err) {
+      console.error("Unexpected error updating engineer:", err);
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "new":
-        return <Badge className="bg-blue-500">New</Badge>;
-      case "in progress":
-        return <Badge className="bg-amber-500">In Progress</Badge>;
-      case "delayed":
-        return <Badge className="bg-red-500">Delayed</Badge>;
-      case "escalated":
-        return <Badge className="bg-orange-500">Escalated</Badge>;
-      case "completed":
-        return <Badge className="bg-green-500">Completed</Badge>;
-      case "pending":
-        return <Badge className="bg-amber-500">Pending</Badge>;
-      default:
-        return <Badge className="bg-blue-500">New</Badge>;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "new":
-        return <AlertCircle className="h-4 w-4 text-blue-500" />;
-      case "in progress":
-        return <Wrench className="h-4 w-4 text-amber-500" />;
-      case "delayed":
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case "escalated":
-        return <AlertOctagon className="h-4 w-4 text-orange-500" />;
-      case "completed":
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case "pending":
-        return <AlertCircle className="h-4 w-4 text-amber-500" />;
-      default:
-        return <AlertCircle className="h-4 w-4 text-amber-500" />;
-    }
-  };
-
-  if (loading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500 mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">Loading engineer details...</p>
-          </div>
-        </div>
-      </Layout>
-    );
+  if (isLoading) {
+    return <div className="p-4">Loading engineer data...</div>;
   }
 
-  if (!engineer && !isNewEngineer) {
-    return (
-      <Layout>
-        <div className="flex flex-col items-center justify-center h-screen">
-          <AlertTriangle className="h-16 w-16 text-red-500 mb-4" />
-          <h1 className="text-2xl font-bold">Engineer Not Found</h1>
-          <p className="text-muted-foreground mb-6">
-            The engineer you are looking for does not exist or has been removed.
-          </p>
-          <Button onClick={() => navigate("/service")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Service
-          </Button>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (isNewEngineer) {
-    return (
-      <Layout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Button 
-                variant="ghost" 
-                onClick={() => navigate("/service")}
-                className="mb-4"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Service
-              </Button>
-              <h1 className="text-3xl font-bold tracking-tight">Add New Engineer</h1>
-              <p className="text-muted-foreground">
-                Create a new engineer profile in the system
-              </p>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Engineer Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <EngineerForm 
-                engineer={engineer} 
-                onSave={handleSaveEngineer}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
+  if (!engineer) {
+    return <div className="p-4">Engineer not found</div>;
   }
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate("/service")}
-              className="mb-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Service
-            </Button>
-            <h1 className="text-3xl font-bold tracking-tight">{engineer.name}</h1>
-            <p className="text-muted-foreground">
-              {engineer.skillLevel} Engineer • {engineer.location}
-            </p>
-          </div>
-          <Button onClick={() => setShowFormDialog(true)}>
-            Edit Engineer
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="gap-1">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        <Button onClick={() => setShowEditForm(!showEditForm)}>
+          <Edit className="h-4 w-4 mr-2" />
+          {showEditForm ? "Cancel Edit" : "Edit Engineer"}
+        </Button>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Engineer Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <EngineerCard engineer={engineer} showFullDetails={true} />
-                
-                <div className="pt-4 space-y-3">
+      {showEditForm ? (
+        <EngineerForm
+          engineer={engineer}
+          onSave={handleSaveEngineer}
+          onCancel={() => setShowEditForm(false)}
+        />
+      ) : (
+        <>
+          <Card>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-2xl font-bold">{engineer.name}</CardTitle>
+                  <CardDescription>{engineer.skillLevel} Engineer</CardDescription>
+                </div>
+                <Badge
+                  className={
+                    engineer.status === "Available"
+                      ? "bg-green-100 text-green-800 hover:bg-green-100"
+                      : engineer.status === "On Call"
+                      ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
+                      : engineer.status === "Break"
+                      ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                      : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                  }
+                >
+                  {engineer.status}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <span>{engineer.phone}</span>
                   </div>
-                  
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
                     <span>{engineer.email}</span>
                   </div>
-                  
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>Base Location: {engineer.location}</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span>Current Location: {engineer.currentLocation}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="md:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Assigned Service Calls</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {serviceCalls.length === 0 ? (
-                  <div className="text-center py-8">
-                    <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium">No Active Service Calls</h3>
-                    <p className="text-muted-foreground">
-                      {engineer.name} is not currently assigned to any service calls.
-                    </p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                    <span>Current Job: {engineer.currentJob || "None assigned"}</span>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {serviceCalls.map(call => (
-                      <Card key={call.id} className="overflow-hidden">
-                        <div className="p-2 bg-gray-50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(call.status)}
-                              <span className="font-medium">{call.id}</span>
-                            </div>
-                            {getStatusBadge(call.status)}
-                          </div>
-                        </div>
-                        
-                        <CardContent className="p-4">
-                          <div className="space-y-2">
-                            <div className="font-medium">{call.customerName}</div>
-                            <div className="text-sm text-muted-foreground">{call.machineModel} ({call.serialNumber})</div>
-                            <div className="text-sm">{call.issueType}: {call.issueDescription.substring(0, 60)}...</div>
-                            
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Calendar className="h-3 w-3" />
-                              <span>Created: {new Date(call.createdAt).toLocaleDateString()}</span>
-                              <Clock className="h-3 w-3 ml-2" />
-                              <span>SLA: {new Date(call.slaDeadline).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span>Skill Level: {engineer.skillLevel}</span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      <Dialog open={showFormDialog} onOpenChange={setShowFormDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Engineer: {engineer.name}</DialogTitle>
-          </DialogHeader>
-          {engineer && (
-            <EngineerForm 
-              engineer={engineer} 
-              onSave={(updatedEngineer) => {
-                handleSaveEngineer(updatedEngineer);
-                setShowFormDialog(false);
-              }}
-            />
+          <Tabs defaultValue="active" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="active">Active Calls</TabsTrigger>
+              <TabsTrigger value="completed">Completed Calls</TabsTrigger>
+              <TabsTrigger value="all">All Calls</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="active" className="space-y-4 mt-4">
+              {serviceCalls.filter(call => call.status !== "Completed").length === 0 ? (
+                <p className="text-center py-6 text-muted-foreground">
+                  No active service calls found for this engineer.
+                </p>
+              ) : (
+                serviceCalls
+                  .filter(call => call.status !== "Completed")
+                  .map(call => (
+                    <ServiceCallCard key={call.id} call={call} />
+                  ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="completed" className="space-y-4 mt-4">
+              {serviceCalls.filter(call => call.status === "Completed").length === 0 ? (
+                <p className="text-center py-6 text-muted-foreground">
+                  No completed service calls found for this engineer.
+                </p>
+              ) : (
+                serviceCalls
+                  .filter(call => call.status === "Completed")
+                  .map(call => (
+                    <ServiceCallCard key={call.id} call={call} />
+                  ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="all" className="space-y-4 mt-4">
+              {serviceCalls.length === 0 ? (
+                <p className="text-center py-6 text-muted-foreground">
+                  No service calls found for this engineer.
+                </p>
+              ) : (
+                serviceCalls.map(call => <ServiceCallCard key={call.id} call={call} />)
+              )}
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+    </div>
+  );
+};
+
+// Helper component for service call cards
+const ServiceCallCard = ({ call }: { call: ServiceCall }) => {
+  return (
+    <Card className="hover:bg-accent/10 transition-colors">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg">{call.customerName}</CardTitle>
+            <CardDescription>{call.machineModel} - {call.serialNumber}</CardDescription>
+          </div>
+          <Badge
+            className={
+              call.status === "Completed"
+                ? "bg-green-100 text-green-800"
+                : call.status === "In Progress"
+                ? "bg-blue-100 text-blue-800"
+                : "bg-amber-100 text-amber-800"
+            }
+          >
+            {call.status}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>{format(parseISO(call.createdAt), "MMM d, yyyy")}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>{call.location}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>SLA: {format(parseISO(call.slaDeadline), "MMM d, h:mm a")}</span>
+          </div>
+          {call.completionTime && (
+            <div className="flex items-center gap-1">
+              <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+              <span>{format(parseISO(call.completionTime), "MMM d, h:mm a")}</span>
+            </div>
           )}
-        </DialogContent>
-      </Dialog>
-    </Layout>
+        </div>
+        <Separator />
+        <div>
+          <p className="text-sm font-medium">Issue: {call.issueType}</p>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {call.issueDescription}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

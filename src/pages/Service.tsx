@@ -80,43 +80,53 @@ const Service = () => {
         return;
       }
       
-      const transformedCalls: ServiceCall[] = data.map(call => ({
-        id: call.id,
-        customerId: call.customer_id,
-        customerName: call.customer_name,
-        phone: call.phone,
-        machineId: call.machine_id || "",
-        machineModel: call.machine_model,
-        serialNumber: call.serial_number || "",
-        location: call.location,
-        issueType: call.issue_type,
-        issueDescription: call.issue_description,
-        callType: call.call_type,
-        priority: call.priority,
-        status: call.status,
-        engineerId: call.engineer_id,
-        engineerName: call.engineer_name || "",
-        createdAt: call.created_at,
-        slaDeadline: call.sla_deadline || new Date().toISOString(),
-        startTime: call.start_time,
-        completionTime: call.completion_time,
-        partsUsed: Array.isArray(call.parts_used) 
-          ? call.parts_used.map((part: any) => ({
-              id: part.id || "",
-              name: part.name || "",
-              partNumber: part.partNumber || "",
-              quantity: part.quantity || 0,
-              price: part.price || 0
-            }))
-          : [],
-        feedback: call.feedback 
-          ? {
-              rating: call.feedback.rating || 0,
-              comment: call.feedback.comment || null,
-              date: call.feedback.date || new Date().toISOString()
-            }
-          : null,
-      }));
+      const transformedCalls: ServiceCall[] = data.map(call => {
+        // Parse parts_used to ensure it's an array of Part objects
+        let parsedPartsUsed: Part[] = [];
+        if (Array.isArray(call.parts_used)) {
+          parsedPartsUsed = call.parts_used.map((part: any) => ({
+            id: part.id || "",
+            name: part.name || "",
+            partNumber: part.partNumber || "",
+            quantity: part.quantity || 0,
+            price: part.price || 0
+          }));
+        }
+        
+        // Parse feedback to ensure it's a Feedback object or null
+        let parsedFeedback: Feedback | null = null;
+        if (call.feedback && typeof call.feedback === 'object') {
+          parsedFeedback = {
+            rating: typeof call.feedback.rating === 'number' ? call.feedback.rating : 0,
+            comment: typeof call.feedback.comment === 'string' ? call.feedback.comment : null,
+            date: typeof call.feedback.date === 'string' ? call.feedback.date : new Date().toISOString()
+          };
+        }
+        
+        return {
+          id: call.id,
+          customerId: call.customer_id,
+          customerName: call.customer_name,
+          phone: call.phone,
+          machineId: call.machine_id || "",
+          machineModel: call.machine_model,
+          serialNumber: call.serial_number || "",
+          location: call.location,
+          issueType: call.issue_type,
+          issueDescription: call.issue_description,
+          callType: call.call_type,
+          priority: call.priority,
+          status: call.status,
+          engineerId: call.engineer_id,
+          engineerName: call.engineer_name || "",
+          createdAt: call.created_at,
+          slaDeadline: call.sla_deadline || new Date().toISOString(),
+          startTime: call.start_time,
+          completionTime: call.completion_time,
+          partsUsed: parsedPartsUsed,
+          feedback: parsedFeedback,
+        };
+      });
       
       setServiceCalls(transformedCalls);
       setIsLoading(false);

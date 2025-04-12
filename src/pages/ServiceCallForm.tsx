@@ -38,7 +38,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { ServiceCall, Customer, Machine, Engineer } from "@/types/service";
-import { mockMachines, mockEngineers } from "@/data/mockData";
+import { mockMachines } from "@/data/mockData";
 import { CustomerType } from "@/types/customer";
 import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,8 +90,43 @@ const ServiceCallForm = () => {
 
   useEffect(() => {
     setMachines(mockMachines);
-    setEngineers(mockEngineers);
+    fetchEngineers();
   }, []);
+
+  const fetchEngineers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('engineers')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error("Error fetching engineers:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load engineers",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const transformedEngineers: Engineer[] = data.map(eng => ({
+        id: eng.id,
+        name: eng.name,
+        phone: eng.phone,
+        email: eng.email,
+        location: eng.location,
+        status: eng.status,
+        skillLevel: eng.skill_level,
+        currentJob: eng.current_job,
+        currentLocation: eng.current_location
+      }));
+      
+      setEngineers(transformedEngineers);
+    } catch (err) {
+      console.error("Unexpected error fetching engineers:", err);
+    }
+  };
 
   const handleCustomerSelect = (customer: CustomerType) => {
     setSelectedCustomer(customer);

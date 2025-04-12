@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { 
   Download, 
@@ -34,10 +33,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
 import { mockServiceCalls } from "@/data/mockData";
-import { mockEngineers } from "@/data/mockData";
+import { Engineer } from "@/types/service";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 const EngineerServiceReport = () => {
+  // Engineers state
+  const [engineers, setEngineers] = useState<Engineer[]>([]);
+  
   // Filter states
   const [dateRange, setDateRange] = useState<{ from: string; to: string }>({
     from: format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'),
@@ -46,6 +49,41 @@ const EngineerServiceReport = () => {
   const [selectedEngineer, setSelectedEngineer] = useState<string>("");
   const [selectedServiceType, setSelectedServiceType] = useState<string>("");
   const [selectedBranch, setSelectedBranch] = useState<string>("");
+
+  // Fetch engineers
+  useEffect(() => {
+    fetchEngineers();
+  }, []);
+
+  const fetchEngineers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('engineers')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error("Error fetching engineers:", error);
+        return;
+      }
+      
+      const transformedEngineers: Engineer[] = data.map(eng => ({
+        id: eng.id,
+        name: eng.name,
+        phone: eng.phone,
+        email: eng.email,
+        location: eng.location,
+        status: eng.status,
+        skillLevel: eng.skill_level,
+        currentJob: eng.current_job,
+        currentLocation: eng.current_location
+      }));
+      
+      setEngineers(transformedEngineers);
+    } catch (err) {
+      console.error("Unexpected error fetching engineers:", err);
+    }
+  };
 
   // Process service calls data
   const filteredServiceCalls = mockServiceCalls.filter(call => {
@@ -234,7 +272,7 @@ const EngineerServiceReport = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Engineers</SelectItem>
-                  {mockEngineers.map((engineer) => (
+                  {engineers.map((engineer) => (
                     <SelectItem key={engineer.id} value={engineer.id}>
                       {engineer.name}
                     </SelectItem>
