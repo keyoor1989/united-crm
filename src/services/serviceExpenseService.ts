@@ -96,12 +96,25 @@ export const addServiceCharge = async (
   date: string
 ): Promise<boolean> => {
   try {
+    // Generate a placeholder UUID for service_call_id instead of using null
+    // to satisfy the not-null constraint
+    const placeholderServiceCallId = '00000000-0000-0000-0000-000000000000';
+    
     // For service charges, we record them as "reimbursed" expenses with engineerId="system"
     // This way they appear as income in financial reports
+    console.log("Adding service charge with data:", {
+      service_call_id: placeholderServiceCallId,
+      customer_id: customerId,
+      customer_name: customerName,
+      amount,
+      description,
+      date
+    });
+    
     const { error } = await supabase
       .from('service_expenses')
       .insert({
-        service_call_id: null, // Using null instead of "general" to conform to UUID type
+        service_call_id: placeholderServiceCallId, // Use a placeholder UUID instead of null
         engineer_id: "system", // System-generated charge
         engineer_name: "System",
         customer_id: customerId,
@@ -129,10 +142,15 @@ export const addServiceCharge = async (
 // Function to add an expense to the system
 export const addServiceExpense = async (expense: ServiceExpense): Promise<boolean> => {
   try {
+    // Use a placeholder UUID instead of "general" or null for service_call_id
+    const serviceCallId = expense.serviceCallId === "general" || !expense.serviceCallId 
+      ? '00000000-0000-0000-0000-000000000000' 
+      : expense.serviceCallId;
+    
     const { error } = await supabase
       .from('service_expenses')
       .insert({
-        service_call_id: expense.serviceCallId === "general" ? null : expense.serviceCallId,
+        service_call_id: serviceCallId,
         engineer_id: expense.engineerId,
         engineer_name: expense.engineerName,
         customer_id: expense.customerId || null,
