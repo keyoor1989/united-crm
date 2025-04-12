@@ -11,9 +11,6 @@ import {
   User,
   Wrench,
   Calendar,
-  DollarSign,
-  FileCheck,
-  ReceiptText,
 } from "lucide-react";
 import { ServiceCall, Part } from "@/types/service";
 import { format, formatDistanceToNow, isPast } from "date-fns";

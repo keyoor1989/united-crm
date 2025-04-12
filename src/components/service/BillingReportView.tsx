@@ -1,7 +1,6 @@
-
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   Table, 
   TableBody, 
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DateRangeFilter } from "@/components/finance/DateRangeFilter";
+import DateRangeFilter from "@/components/finance/DateRangeFilter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ServiceCall } from "@/types/service";
 import { format } from "date-fns";
@@ -27,7 +26,6 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [activeTab, setActiveTab] = useState("all");
   
-  // Filter service calls by date range if set
   const filteredCalls = serviceCalls.filter(call => {
     const callDate = new Date(call.createdAt);
     
@@ -46,7 +44,6 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     return true;
   });
 
-  // Further filter by tab/payment status
   const tabFilteredCalls = filteredCalls.filter(call => {
     if (activeTab === "all") return true;
     if (activeTab === "paid") return call.isPaid;
@@ -56,22 +53,18 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     return true;
   });
   
-  // Calculate totals
   const totalServiceCharges = tabFilteredCalls.reduce((sum, call) => sum + (call.serviceCharge || 0), 0);
   const totalPartsValue = tabFilteredCalls.reduce((sum, call) => {
     return sum + (call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0);
   }, 0);
   
-  // Calculate how many calls are paid and unpaid
   const paidCalls = filteredCalls.filter(call => call.isPaid).length;
   const unpaidCalls = filteredCalls.filter(call => !call.isPaid).length;
   
-  // Calculate how many calls have parts reconciled and unreconciled
   const reconciledCalls = filteredCalls.filter(call => call.partsReconciled).length;
   const unreconciledCalls = filteredCalls.filter(call => !call.partsReconciled).length;
   
   const exportToCSV = () => {
-    // Create CSV content
     const headers = [
       "Date",
       "Customer",
@@ -102,7 +95,6 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
       ...rows.map(row => row.join(","))
     ].join("\n");
     
-    // Create and download the file
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

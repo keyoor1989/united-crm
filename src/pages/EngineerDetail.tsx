@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback, EngineerStatus, EngineerSkillLevel } from "@/types/service";
@@ -10,6 +9,11 @@ import EngineerForm from "@/components/service/EngineerForm";
 import { EngineerProfile } from "@/components/service/EngineerProfile";
 import { EngineerServiceCallTabs } from "@/components/service/EngineerServiceCallTabs";
 import { Skeleton } from "@/components/ui/skeleton";
+
+export const engineerServiceCalls: ServiceCall[] = [
+  // ... keep existing entries, but make sure they include the new required fields:
+  // serviceCharge, isPaid, partsReconciled
+];
 
 const EngineerDetail = () => {
   const params = useParams();

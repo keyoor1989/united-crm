@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -140,7 +139,6 @@ export const useServiceData = () => {
           completionTime: call.completion_time,
           partsUsed: parsedPartsUsed,
           feedback: parsedFeedback,
-          // Add new financial fields with defaults
           serviceCharge: call.service_charge || 0,
           isPaid: call.is_paid || false,
           paymentDate: call.payment_date,
