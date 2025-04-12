@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback } from "@/types/service";
@@ -70,6 +69,7 @@ const EngineerDetail = () => {
   const fetchEngineer = async (id: string) => {
     setIsLoading(true);
     try {
+      console.log("Fetching engineer with ID:", id);
       const { data, error } = await supabase
         .from("engineers")
         .select("*")
@@ -80,9 +80,21 @@ const EngineerDetail = () => {
         console.error("Error fetching engineer:", error);
         toast({
           title: "Error",
-          description: "Failed to load engineer data",
+          description: "Failed to load engineer data: " + error.message,
           variant: "destructive",
         });
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Engineer data fetched:", data);
+      if (!data) {
+        toast({
+          title: "Not Found",
+          description: "Engineer not found",
+          variant: "destructive",
+        });
+        setIsLoading(false);
         return;
       }
 
@@ -101,6 +113,11 @@ const EngineerDetail = () => {
       setEngineer(engineerData);
     } catch (err) {
       console.error("Unexpected error fetching engineer:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +125,7 @@ const EngineerDetail = () => {
 
   const fetchServiceCalls = async (engineerId: string) => {
     try {
+      console.log("Fetching service calls for engineer:", engineerId);
       const { data, error } = await supabase
         .from("service_calls")
         .select("*")
@@ -119,26 +137,46 @@ const EngineerDetail = () => {
         return;
       }
 
+      console.log("Service calls data:", data);
       const transformedCalls: ServiceCall[] = data.map(call => {
         let parsedPartsUsed: Part[] = [];
-        if (Array.isArray(call.parts_used)) {
-          parsedPartsUsed = call.parts_used.map((part: any) => ({
-            id: part.id || "",
-            name: part.name || "",
-            partNumber: part.partNumber || "",
-            quantity: part.quantity || 0,
-            price: part.price || 0
-          }));
+        if (call.parts_used) {
+          try {
+            // Check if parts_used is already an array or needs parsing
+            const partsData = Array.isArray(call.parts_used) 
+              ? call.parts_used 
+              : (typeof call.parts_used === 'string' ? JSON.parse(call.parts_used) : []);
+            
+            parsedPartsUsed = partsData.map((part: any) => ({
+              id: part.id || "",
+              name: part.name || "",
+              partNumber: part.partNumber || "",
+              quantity: part.quantity || 0,
+              price: part.price || 0
+            }));
+          } catch (e) {
+            console.error("Error parsing parts_used:", e);
+          }
         }
         
         let parsedFeedback: Feedback | null = null;
-        if (call.feedback && typeof call.feedback === 'object' && !Array.isArray(call.feedback)) {
-          const feedbackObj = call.feedback as Record<string, any>;
-          parsedFeedback = {
-            rating: typeof feedbackObj.rating === 'number' ? feedbackObj.rating : 0,
-            comment: typeof feedbackObj.comment === 'string' ? feedbackObj.comment : null,
-            date: typeof feedbackObj.date === 'string' ? feedbackObj.date : new Date().toISOString()
-          };
+        if (call.feedback) {
+          try {
+            // Check if feedback is already an object or needs parsing
+            const feedbackData = typeof call.feedback === 'string' 
+              ? JSON.parse(call.feedback) 
+              : call.feedback;
+            
+            if (feedbackData && typeof feedbackData === 'object' && !Array.isArray(feedbackData)) {
+              parsedFeedback = {
+                rating: typeof feedbackData.rating === 'number' ? feedbackData.rating : 0,
+                comment: typeof feedbackData.comment === 'string' ? feedbackData.comment : null,
+                date: typeof feedbackData.date === 'string' ? feedbackData.date : new Date().toISOString()
+              };
+            }
+          } catch (e) {
+            console.error("Error parsing feedback:", e);
+          }
         }
 
         return {
@@ -174,6 +212,7 @@ const EngineerDetail = () => {
 
   const handleSaveEngineer = async (updatedEngineer: Engineer) => {
     try {
+      console.log("Saving engineer:", updatedEngineer);
       if (isNewEngineer) {
         // For new engineers, insert a new record
         const { data, error } = await supabase
@@ -194,7 +233,7 @@ const EngineerDetail = () => {
           console.error("Error creating engineer:", error);
           toast({
             title: "Error",
-            description: "Failed to create engineer",
+            description: "Failed to create engineer: " + error.message,
             variant: "destructive",
           });
           return;
@@ -224,6 +263,7 @@ const EngineerDetail = () => {
             status: updatedEngineer.status,
             skill_level: updatedEngineer.skillLevel,
             current_location: updatedEngineer.currentLocation,
+            current_job: updatedEngineer.currentJob
           })
           .eq("id", updatedEngineer.id);
 
@@ -231,7 +271,7 @@ const EngineerDetail = () => {
           console.error("Error updating engineer:", error);
           toast({
             title: "Error",
-            description: "Failed to update engineer",
+            description: "Failed to update engineer: " + error.message,
             variant: "destructive",
           });
           return;
@@ -246,15 +286,34 @@ const EngineerDetail = () => {
       }
     } catch (err) {
       console.error("Unexpected error saving engineer:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while saving",
+        variant: "destructive",
+      });
     }
   };
 
   if (isLoading) {
-    return <div className="p-4">Loading engineer data...</div>;
+    return (
+      <div className="p-4 flex justify-center items-center h-full">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading engineer data...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!engineer && !isNewEngineer) {
-    return <div className="p-4">Engineer not found</div>;
+    return (
+      <div className="p-4 text-center">
+        <p className="text-destructive">Engineer not found</p>
+        <Button variant="outline" onClick={() => navigate(-1)} className="mt-4">
+          Go Back
+        </Button>
+      </div>
+    );
   }
 
   return (
