@@ -415,6 +415,74 @@ export type Database = {
           },
         ]
       }
+      warehouse_stock: {
+        Row: {
+          id: string
+          item_id: string
+          last_updated: string
+          quantity: number
+          warehouse_id: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          last_updated?: string
+          quantity?: number
+          warehouse_id: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          last_updated?: string
+          quantity?: number
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warehouse_stock_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warehouses: {
+        Row: {
+          address: string
+          code: string
+          contact_person: string
+          contact_phone: string
+          created_at: string
+          id: string
+          is_active: boolean
+          location: string
+          name: string
+        }
+        Insert: {
+          address: string
+          code: string
+          contact_person: string
+          contact_phone: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location: string
+          name: string
+        }
+        Update: {
+          address?: string
+          code?: string
+          contact_person?: string
+          contact_phone?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location?: string
+          name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

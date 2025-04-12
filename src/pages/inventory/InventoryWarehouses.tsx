@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ import {
   Plus,
   Edit,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -41,12 +43,13 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Warehouse, WarehouseStock } from "@/types/inventory";
 
-// Clean, empty array for warehouses
-export const mockWarehouses = [];
-
-// Clean, empty array for warehouse stock
-const mockWarehouseStock = [];
+// Clear mock arrays - we'll use the database now
+export const mockWarehouses: Warehouse[] = [];
+const mockWarehouseStock: WarehouseStock[] = [];
 
 // Form schema for adding/editing warehouses
 const warehouseFormSchema = z.object({
@@ -61,12 +64,73 @@ const warehouseFormSchema = z.object({
 
 type WarehouseFormValues = z.infer<typeof warehouseFormSchema>;
 
+// Fetch warehouses from Supabase
+const fetchWarehouses = async (): Promise<Warehouse[]> => {
+  const { data, error } = await supabase
+    .from('warehouses')
+    .select('*')
+    .order('created_at', { ascending: false });
+    
+  if (error) {
+    throw error;
+  }
+  
+  // Transform the data to match our Warehouse type
+  return data.map(warehouse => ({
+    id: warehouse.id,
+    name: warehouse.name,
+    code: warehouse.code,
+    location: warehouse.location,
+    address: warehouse.address,
+    contactPerson: warehouse.contact_person,
+    contactPhone: warehouse.contact_phone,
+    isActive: warehouse.is_active,
+    createdAt: warehouse.created_at
+  }));
+};
+
+// Fetch warehouse stock from Supabase
+const fetchWarehouseStock = async (warehouseId: string | null): Promise<WarehouseStock[]> => {
+  let query = supabase
+    .from('warehouse_stock')
+    .select(`
+      id,
+      warehouse_id,
+      item_id,
+      quantity,
+      last_updated
+    `);
+    
+  if (warehouseId) {
+    query = query.eq('warehouse_id', warehouseId);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    throw error;
+  }
+  
+  return data.map(stock => ({
+    id: stock.id,
+    warehouseId: stock.warehouse_id,
+    itemId: stock.item_id,
+    quantity: stock.quantity,
+    lastUpdated: stock.last_updated,
+    itemName: 'Unknown', // We'll need to join with items table later
+    brand: 'Unknown',
+    model: 'Unknown'
+  }));
+};
+
 const InventoryWarehouses = () => {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("warehouses");
   const [searchQuery, setSearchQuery] = useState("");
   const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [editingWarehouse, setEditingWarehouse] = useState<any | null>(null);
+  const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Initialize form
   const form = useForm<WarehouseFormValues>({
@@ -82,8 +146,119 @@ const InventoryWarehouses = () => {
     },
   });
 
+  // Fetch warehouses query
+  const { 
+    data: warehouses = [], 
+    isLoading: isLoadingWarehouses,
+    error: warehousesError 
+  } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: fetchWarehouses
+  });
+
+  // Fetch warehouse stock query
+  const { 
+    data: warehouseStock = [], 
+    isLoading: isLoadingStock 
+  } = useQuery({
+    queryKey: ['warehouseStock', selectedWarehouse],
+    queryFn: () => fetchWarehouseStock(selectedWarehouse),
+    enabled: activeTab === "inventory"
+  });
+
+  // Create warehouse mutation
+  const createWarehouseMutation = useMutation({
+    mutationFn: async (values: WarehouseFormValues) => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .insert({
+          name: values.name,
+          code: values.code,
+          location: values.location,
+          address: values.address,
+          contact_person: values.contactPerson,
+          contact_phone: values.contactPhone,
+          is_active: values.isActive
+        })
+        .select();
+        
+      if (error) throw error;
+      return data[0];
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      setOpenAddDialog(false);
+      form.reset();
+      toast.success("Warehouse added successfully!");
+    },
+    onError: (error) => {
+      console.error("Error adding warehouse:", error);
+      toast.error("Failed to add warehouse: " + error.message);
+    }
+  });
+
+  // Update warehouse mutation
+  const updateWarehouseMutation = useMutation({
+    mutationFn: async (values: WarehouseFormValues & { id: string }) => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .update({
+          name: values.name,
+          code: values.code,
+          location: values.location,
+          address: values.address,
+          contact_person: values.contactPerson,
+          contact_phone: values.contactPhone,
+          is_active: values.isActive
+        })
+        .eq('id', values.id)
+        .select();
+        
+      if (error) throw error;
+      return data[0];
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      setOpenAddDialog(false);
+      setEditingWarehouse(null);
+      form.reset();
+      toast.success("Warehouse updated successfully!");
+    },
+    onError: (error) => {
+      console.error("Error updating warehouse:", error);
+      toast.error("Failed to update warehouse: " + error.message);
+    }
+  });
+
+  // Delete warehouse mutation
+  const deleteWarehouseMutation = useMutation({
+    mutationFn: async (warehouseId: string) => {
+      const { error } = await supabase
+        .from('warehouses')
+        .delete()
+        .eq('id', warehouseId);
+        
+      if (error) throw error;
+      return warehouseId;
+    },
+    onSuccess: (deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ['warehouses'] });
+      setDeleteConfirmId(null);
+      toast.success("Warehouse deleted successfully!");
+      
+      // If we're viewing stock for the deleted warehouse, reset selection
+      if (selectedWarehouse === deletedId) {
+        setSelectedWarehouse(null);
+      }
+    },
+    onError: (error) => {
+      console.error("Error deleting warehouse:", error);
+      toast.error("Failed to delete warehouse: " + error.message);
+    }
+  });
+
   // Filter warehouses based on search
-  const filteredWarehouses = mockWarehouses.filter(warehouse =>
+  const filteredWarehouses = warehouses.filter(warehouse =>
     searchQuery
       ? warehouse.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         warehouse.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -92,29 +267,24 @@ const InventoryWarehouses = () => {
   );
 
   // Filter stock based on selected warehouse
-  const filteredStock = mockWarehouseStock.filter(stock =>
+  const filteredStock = warehouseStock.filter(stock =>
     selectedWarehouse ? stock.warehouseId === selectedWarehouse : true
   );
 
   // Handle form submission
   const onSubmit = (values: WarehouseFormValues) => {
     if (editingWarehouse) {
-      // In a real app, update warehouse in database
-      console.log("Updating warehouse:", values);
-      toast.success(`Warehouse "${values.name}" updated successfully!`);
+      updateWarehouseMutation.mutate({
+        ...values,
+        id: editingWarehouse.id
+      });
     } else {
-      // In a real app, add new warehouse to database
-      console.log("Adding new warehouse:", values);
-      toast.success(`Warehouse "${values.name}" added successfully!`);
+      createWarehouseMutation.mutate(values);
     }
-    
-    setOpenAddDialog(false);
-    setEditingWarehouse(null);
-    form.reset();
   };
 
   // Handle edit warehouse
-  const handleEditWarehouse = (warehouse: any) => {
+  const handleEditWarehouse = (warehouse: Warehouse) => {
     setEditingWarehouse(warehouse);
     form.reset({
       name: warehouse.name,
@@ -130,10 +300,22 @@ const InventoryWarehouses = () => {
 
   // Handle delete warehouse
   const handleDeleteWarehouse = (warehouseId: string) => {
-    // In a real app, delete warehouse from database
-    console.log("Deleting warehouse:", warehouseId);
-    toast.success("Warehouse deleted successfully!");
+    setDeleteConfirmId(warehouseId);
   };
+
+  // Confirm delete warehouse
+  const confirmDeleteWarehouse = () => {
+    if (deleteConfirmId) {
+      deleteWarehouseMutation.mutate(deleteConfirmId);
+    }
+  };
+
+  // Handle errors with toast notifications
+  useEffect(() => {
+    if (warehousesError) {
+      toast.error(`Error loading warehouses: ${warehousesError.message}`);
+    }
+  }, [warehousesError]);
   
   return (
     <div className="container p-6">
@@ -185,61 +367,68 @@ const InventoryWarehouses = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Contact Person</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredWarehouses.map((warehouse) => (
-                    <TableRow key={warehouse.id}>
-                      <TableCell className="font-medium">{warehouse.name}</TableCell>
-                      <TableCell>{warehouse.code}</TableCell>
-                      <TableCell>{warehouse.location}</TableCell>
-                      <TableCell>{warehouse.contactPerson}</TableCell>
-                      <TableCell>{warehouse.contactPhone}</TableCell>
-                      <TableCell>
-                        <Badge variant={warehouse.isActive ? "success" : "secondary"}>
-                          {warehouse.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            onClick={() => handleEditWarehouse(warehouse)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => handleDeleteWarehouse(warehouse.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-
-                  {filteredWarehouses.length === 0 && (
+              {isLoadingWarehouses ? (
+                <div className="h-24 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">Loading warehouses...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
-                        No warehouses found
-                      </TableCell>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Contact Person</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredWarehouses.map((warehouse) => (
+                      <TableRow key={warehouse.id}>
+                        <TableCell className="font-medium">{warehouse.name}</TableCell>
+                        <TableCell>{warehouse.code}</TableCell>
+                        <TableCell>{warehouse.location}</TableCell>
+                        <TableCell>{warehouse.contactPerson}</TableCell>
+                        <TableCell>{warehouse.contactPhone}</TableCell>
+                        <TableCell>
+                          <Badge variant={warehouse.isActive ? "success" : "secondary"}>
+                            {warehouse.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="icon" 
+                              onClick={() => handleEditWarehouse(warehouse)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleDeleteWarehouse(warehouse.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+
+                    {filteredWarehouses.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          No warehouses found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -260,52 +449,60 @@ const InventoryWarehouses = () => {
                 >
                   All Warehouses
                 </Button>
-                {mockWarehouses.map((warehouse) => (
+                {warehouses.map((warehouse) => (
                   <Button
                     key={warehouse.id}
                     variant={selectedWarehouse === warehouse.id ? "default" : "outline"}
                     onClick={() => setSelectedWarehouse(warehouse.id)}
+                    disabled={!warehouse.isActive}
                   >
                     {warehouse.name}
                   </Button>
                 ))}
               </div>
 
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Model</TableHead>
-                    <TableHead>Warehouse</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredStock.map((stock) => {
-                    const warehouse = mockWarehouses.find(w => w.id === stock.warehouseId);
-                    return (
-                      <TableRow key={stock.id}>
-                        <TableCell className="font-medium">{stock.itemName}</TableCell>
-                        <TableCell>{stock.brand}</TableCell>
-                        <TableCell>{stock.model}</TableCell>
-                        <TableCell>{warehouse?.name || "Unknown"}</TableCell>
-                        <TableCell>{stock.quantity}</TableCell>
-                        <TableCell>{new Date(stock.lastUpdated).toLocaleDateString()}</TableCell>
-                      </TableRow>
-                    );
-                  })}
-
-                  {filteredStock.length === 0 && (
+              {isLoadingStock ? (
+                <div className="h-24 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">Loading inventory data...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
-                        No stock found
-                      </TableCell>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Warehouse</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Last Updated</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStock.map((stock) => {
+                      const warehouse = warehouses.find(w => w.id === stock.warehouseId);
+                      return (
+                        <TableRow key={stock.id}>
+                          <TableCell className="font-medium">{stock.itemName}</TableCell>
+                          <TableCell>{stock.brand}</TableCell>
+                          <TableCell>{stock.model}</TableCell>
+                          <TableCell>{warehouse?.name || "Unknown"}</TableCell>
+                          <TableCell>{stock.quantity}</TableCell>
+                          <TableCell>{new Date(stock.lastUpdated).toLocaleDateString()}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+
+                    {filteredStock.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-24 text-center">
+                          No stock found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -451,12 +648,49 @@ const InventoryWarehouses = () => {
                 >
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button 
+                  type="submit"
+                  disabled={createWarehouseMutation.isPending || updateWarehouseMutation.isPending}
+                >
+                  {(createWarehouseMutation.isPending || updateWarehouseMutation.isPending) && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {editingWarehouse ? "Update Warehouse" : "Add Warehouse"}
                 </Button>
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this warehouse? This action cannot be undone, and all inventory 
+              associated with this warehouse will also be deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="pt-4 flex justify-end space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteConfirmId(null)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeleteWarehouse}
+              disabled={deleteWarehouseMutation.isPending}
+            >
+              {deleteWarehouseMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Delete Warehouse
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
