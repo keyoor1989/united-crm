@@ -9,6 +9,7 @@ import { ArrowLeft, Edit } from "lucide-react";
 import EngineerForm from "@/components/service/EngineerForm";
 import { EngineerProfile } from "@/components/service/EngineerProfile";
 import { EngineerServiceCallTabs } from "@/components/service/EngineerServiceCallTabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const EngineerDetail = () => {
   const { engineerId } = useParams();
@@ -38,6 +39,7 @@ const EngineerDetail = () => {
         currentJob: null,
         currentLocation: "",
       });
+      // Important: Set isLoading to false immediately for new engineers
       setIsLoading(false);
       setShowEditForm(true);
     } else if (engineerId) {
@@ -209,7 +211,7 @@ const EngineerDetail = () => {
             status: updatedEngineer.status,
             skill_level: updatedEngineer.skillLevel,
             current_location: updatedEngineer.currentLocation || updatedEngineer.location,
-            current_job: updatedEngineer.currentJob || null
+            current_job: null
           })
           .select();
 
@@ -248,7 +250,7 @@ const EngineerDetail = () => {
             location: updatedEngineer.location,
             status: updatedEngineer.status,
             skill_level: updatedEngineer.skillLevel,
-            current_location: updatedEngineer.currentLocation,
+            current_location: updatedEngineer.currentLocation || updatedEngineer.location,
             current_job: updatedEngineer.currentJob || null
           })
           .eq("id", updatedEngineer.id);
@@ -280,7 +282,7 @@ const EngineerDetail = () => {
     }
   };
 
-  // If we're still loading data, show a spinner
+  // If we're still loading data and it's not a new engineer, show a spinner
   if (isLoading && !isNewEngineer) {
     return (
       <div className="p-4 flex justify-center items-center h-full">
