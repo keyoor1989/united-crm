@@ -1,3 +1,4 @@
+
 export type Brand = {
   id: string;
   name: string;
@@ -220,36 +221,134 @@ export type PartProfitability = {
   createdAt: string;
 };
 
-export type AMCConsumable = {
+export type AMCContract = {
   id: string;
-  machineId: string;
-  customerId: string;
-  customerName: string;
-  contractId: string;
-  itemId: string;
-  itemName: string;
-  quantity: number;
-  usageDate: string;
-  meterReading?: number;
-  copyCount?: number;
-  billingAmount?: number;
-  createdAt: string;
-  warehouseId?: string; // Source warehouse from which consumables were used
+  contract_id?: string; // For compatibility with DB
+  customer_id: string;
+  customer_name: string;
+  machine_model: string;
+  machine_type: "Black & White" | "Color";
+  serial_number: string;
+  contract_type: "AMC" | "Rental";
+  start_date: string;
+  end_date: string;
+  monthly_rent: number;
+  gst_percent: number;
+  copy_limit_a4: number;
+  copy_limit_a3: number;
+  extra_a4_copy_charge: number;
+  extra_a3_copy_charge: number;
+  billing_cycle: "Monthly" | "Quarterly" | "Yearly";
+  status: "Active" | "Pending" | "Expired" | "Cancelled" | "Renewal Due";
+  location?: string;
+  department?: string;
+  notes?: string;
+  created_at?: string;
 };
 
-export type VendorPerformance = {
+export type AMCMachine = {
   id: string;
-  vendorId: string;
-  vendorName: string;
-  totalOrders: number;
-  onTimeDelivery: number; // Number of on-time deliveries
-  avgDeliveryTime: number; // In days
-  priceConsistency: number; // Score out of 5
-  productQuality: number; // Score out of 5
-  returnRate: number; // Percentage
-  reliabilityScore: number; // Calculated score
-  period: string; // e.g., "Jan 2025", "Q1 2025", "2025"
-  createdAt: string;
+  contract_id: string;
+  customer_id: string;
+  customer_name: string;
+  model: string;
+  machine_type: "Black & White" | "Color";
+  serial_number: string;
+  location: string;
+  department?: string;
+  contract_type: "AMC" | "Rental";
+  start_date: string;
+  end_date: string;
+  current_rent: number;
+  copy_limit_a4: number;
+  copy_limit_a3: number;
+  last_a4_reading: number;
+  last_a3_reading: number;
+  last_reading_date?: string;
+  created_at?: string;
+};
+
+export type AMCConsumableUsage = {
+  id: string;
+  contract_id: string;
+  machine_id: string;
+  customer_id: string;
+  customer_name: string;
+  machine_model: string;
+  machine_type: "Black & White" | "Color";
+  serial_number: string;
+  engineer_id?: string;
+  engineer_name?: string;
+  date: string;
+  item_id?: string;
+  item_name: string;
+  quantity: number;
+  cost: number;
+  inventory_deducted?: boolean;
+  department?: string;
+  remarks?: string;
+  created_at?: string;
+};
+
+export type AMCBilling = {
+  id: string;
+  contract_id: string;
+  machine_id: string;
+  customer_id: string;
+  customer_name: string;
+  machine_model: string;
+  machine_type: "Black & White" | "Color";
+  serial_number: string;
+  department?: string;
+  billing_month: string;
+  a4_opening_reading: number;
+  a4_closing_reading: number;
+  a4_total_copies: number;
+  a4_free_copies: number;
+  a4_extra_copies: number;
+  a4_extra_copy_rate: number;
+  a4_extra_copy_charge: number;
+  a3_opening_reading: number;
+  a3_closing_reading: number;
+  a3_total_copies: number;
+  a3_free_copies: number;
+  a3_extra_copies: number;
+  a3_extra_copy_rate: number;
+  a3_extra_copy_charge: number;
+  gst_percent: number;
+  gst_amount: number;
+  rent: number;
+  rent_gst: number;
+  total_bill: number;
+  bill_date: string;
+  bill_status: "Generated" | "Pending" | "Paid";
+  invoice_no?: string;
+  created_at?: string;
+};
+
+export type AMCProfitReport = {
+  id: string;
+  contract_id: string;
+  machine_id: string;
+  customer_id: string;
+  customer_name: string;
+  machine_model: string;
+  machine_type: "Black & White" | "Color";
+  serial_number: string;
+  department?: string;
+  month: string;
+  rent_received: number;
+  extra_copy_income: number;
+  total_income: number;
+  consumables_cost: number;
+  engineer_visit_cost: number;
+  travel_expense: number;
+  food_expense: number;
+  other_expense: number;
+  total_expense: number;
+  profit: number;
+  profit_margin: number;
+  created_at?: string;
 };
 
 export type CustomerType = 'Regular' | 'Dealer' | 'Government';
@@ -298,113 +397,6 @@ export type SaleItem = {
   taxRate: number;
   discount: number;
   total: number;
-};
-
-export type AMCContractType = 'AMC' | 'Rental';
-export type BillingCycle = 'Monthly' | 'Quarterly' | 'Yearly';
-export type ContractStatus = 'Active' | 'Pending' | 'Expired' | 'Cancelled' | 'Renewal Due';
-export type BillStatus = 'Generated' | 'Pending' | 'Paid';
-
-export type AMCContract = {
-  id: string;
-  customerId: string;
-  customerName: string;
-  machineModel: string;
-  serialNumber: string;
-  contractType: AMCContractType;
-  startDate: string;
-  endDate: string;
-  monthlyRent: number;
-  gstPercent: number;
-  copyLimit: number;
-  extraCopyCharge: number;
-  billingCycle: BillingCycle;
-  status: ContractStatus;
-  createdAt?: string;
-};
-
-export type AMCMachine = {
-  id: string;
-  contractId: string;
-  customerId: string;
-  customerName: string;
-  model: string;
-  serialNumber: string;
-  location: string;
-  contractType: AMCContractType;
-  startDate: string;
-  endDate: string;
-  currentRent: number;
-  copyLimit: number;
-  lastMeterReading: number;
-  lastReadingDate: string;
-  createdAt?: string;
-};
-
-export type AMCConsumableUsage = {
-  id: string;
-  contractId: string;
-  machineId: string;
-  customerId: string;
-  customerName: string;
-  machineModel: string;
-  serialNumber: string;
-  engineerId: string;
-  engineerName: string;
-  date: string;
-  itemId: string;
-  itemName: string;
-  quantity: number;
-  cost: number;
-  remarks: string;
-  createdAt?: string;
-};
-
-export type AMCBilling = {
-  id: string;
-  contractId: string;
-  machineId: string;
-  customerId: string;
-  customerName: string;
-  machineModel: string;
-  serialNumber: string;
-  month: string;
-  openingReading: number;
-  closingReading: number;
-  totalCopies: number;
-  freeCopies: number;
-  extraCopies: number;
-  extraCopyRate: number;
-  extraCopyCharge: number;
-  gstPercent: number;
-  gstAmount: number;
-  rent: number;
-  rentGst: number;
-  totalBill: number;
-  billDate: string;
-  billStatus: BillStatus;
-  invoiceNo: string;
-  createdAt?: string;
-};
-
-export type AMCProfitReport = {
-  id: string;
-  contractId: string;
-  machineId: string;
-  customerId: string;
-  customerName: string;
-  machineModel: string;
-  serialNumber: string;
-  month: string;
-  rentReceived: number;
-  extraCopyIncome: number;
-  totalIncome: number;
-  consumablesCost: number;
-  engineerVisitCost: number;
-  totalExpense: number;
-  profit: number;
-  profitMargin: number;
-  createdAt?: string;
 };
 
 export type ProfitableMachine = {

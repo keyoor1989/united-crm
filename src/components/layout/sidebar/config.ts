@@ -1,11 +1,12 @@
+
 import {
   BarChart3,
   Building2,
   Calendar,
   CheckCircle2,
   ClipboardList,
-  Cog6Tooth,
-  FilePie,
+  Settings as CogIcon,
+  PieChart as FilePieIcon,
   GaugeCircle,
   Home,
   ListChecks,
@@ -23,7 +24,7 @@ import {
   ShoppingCart,
   ExternalLink,
   Repeat,
-  Tool,
+  Wrench as ToolIcon,
   Cpu,
   Layers,
   Box,
@@ -49,10 +50,10 @@ import {
   FileJson2,
   FileKey2,
   FileLock2,
-  FileTerminal2,
+  FileTerminal,
   FileUp,
-  FileWarning2,
-  FileZip2,
+  FileWarning,
+  Archive as FileZipIcon,
   FileSearch,
   FileSignature as FileSignatureIcon,
   ScrollText as ScrollTextIcon,
@@ -69,10 +70,10 @@ import {
   FileJson2 as FileJson2Icon,
   FileKey2 as FileKey2Icon,
   FileLock2 as FileLock2Icon,
-  FileTerminal2 as FileTerminal2Icon,
+  FileTerminal as FileTerminalIcon,
   FileUp as FileUpIcon,
-  FileWarning2 as FileWarning2Icon,
-  FileZip2 as FileZip2Icon,
+  FileWarning as FileWarningIcon,
+  Archive as FileZipIcon2,
   FileSearch as FileSearchIcon,
   Contact2 as Contact2Icon,
   ListOrdered as ListOrderedIcon,
@@ -113,7 +114,7 @@ export const mainNavItems: NavItem[] = [
   },
   {
     to: "/service",
-    icon: Cog6Tooth,
+    icon: CogIcon,
     label: "Service",
   },
   {
@@ -123,7 +124,7 @@ export const mainNavItems: NavItem[] = [
   },
   {
     to: "/reports",
-    icon: FilePie,
+    icon: FilePieIcon,
     label: "Reports",
   },
   {
@@ -302,7 +303,7 @@ export const inventorySection = {
     },
     {
       to: "/inventory/engineer-inventory",
-      icon: Tool,
+      icon: ToolIcon,
       label: "Engineer Inventory"
     },
     {

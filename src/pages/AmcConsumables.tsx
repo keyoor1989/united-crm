@@ -18,7 +18,7 @@ const AmcConsumables = () => {
         </div>
       </div>
 
-      <Alert variant="info" className="bg-blue-50 border-blue-200">
+      <Alert className="bg-blue-50 border-blue-200">
         <InfoIcon className="h-4 w-4" />
         <AlertTitle>New Feature Available</AlertTitle>
         <AlertDescription>
