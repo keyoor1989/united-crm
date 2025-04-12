@@ -3,6 +3,7 @@ export type ExpenseCategory = 'Travel' | 'Food' | 'Accommodation' | 'Fuel' | 'Ot
 
 export interface ServiceCallInfo {
   customerName: string;
+  customerId?: string;
   location?: string;
   machineModel?: string;
 }
@@ -12,6 +13,8 @@ export interface ServiceExpense {
   serviceCallId: string;
   engineerId: string;
   engineerName: string;
+  customerId?: string | null;
+  customerName?: string | null;
   category: ExpenseCategory;
   amount: number;
   description: string;

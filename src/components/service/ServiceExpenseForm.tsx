@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +15,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ExpenseCategory, ServiceExpense } from "@/types/serviceExpense";
 import { ServiceCall } from "@/types/service";
 import { v4 as uuidv4 } from "uuid";
-import { CalendarIcon, Receipt, User, Wrench } from "lucide-react";
+import { CalendarIcon, Receipt, User, Wrench, Building } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useServiceData } from "@/hooks/useServiceData";
+import { useCustomers } from "@/hooks/useCustomers";
 
 interface ServiceExpenseFormProps {
   serviceCallId: string;
@@ -40,8 +42,11 @@ const ServiceExpenseForm = ({
   const [description, setDescription] = useState<string>("");
   const [date, setDate] = useState<Date>(new Date());
   const [selectedServiceCallId, setSelectedServiceCallId] = useState<string>(serviceCallId);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null);
   
   const { allCalls, isLoading } = useServiceData();
+  const { customers, isLoading: customersLoading } = useCustomers();
   
   const activeServiceCalls = allCalls.filter(
     call => call.status !== "Completed" && call.status !== "Cancelled"
@@ -50,6 +55,28 @@ const ServiceExpenseForm = ({
   useEffect(() => {
     setSelectedServiceCallId(serviceCallId);
   }, [serviceCallId]);
+  
+  useEffect(() => {
+    // When service call changes, update the customer information
+    if (selectedServiceCallId !== "general") {
+      const selectedCall = allCalls.find(call => call.id === selectedServiceCallId);
+      if (selectedCall) {
+        setSelectedCustomerId(selectedCall.customerId);
+        setSelectedCustomerName(selectedCall.customerName);
+      }
+    } else {
+      setSelectedCustomerId(null);
+      setSelectedCustomerName(null);
+    }
+  }, [selectedServiceCallId, allCalls]);
+  
+  const handleCustomerChange = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    const customer = customers.find(c => c.id === customerId);
+    if (customer) {
+      setSelectedCustomerName(customer.name);
+    }
+  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +90,8 @@ const ServiceExpenseForm = ({
       serviceCallId: selectedServiceCallId,
       engineerId,
       engineerName,
+      customerId: selectedCustomerId,
+      customerName: selectedCustomerName,
       category,
       amount: parseFloat(amount),
       description,
@@ -120,6 +149,37 @@ const ServiceExpenseForm = ({
               </SelectContent>
             </Select>
           </div>
+          
+          {selectedServiceCallId === "general" && (
+            <div className="space-y-2">
+              <Label htmlFor="customer">Customer (Optional)</Label>
+              <Select
+                value={selectedCustomerId || ""}
+                onValueChange={handleCustomerChange}
+              >
+                <SelectTrigger id="customer">
+                  <SelectValue placeholder="Select customer (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    <div className="flex items-center">
+                      <Building className="h-4 w-4 mr-2" />
+                      No specific customer
+                    </div>
+                  </SelectItem>
+                  
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      <div className="flex flex-col">
+                        <span>{customer.name}</span>
+                        <span className="text-xs text-muted-foreground">{customer.location}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

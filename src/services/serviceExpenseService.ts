@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceExpense, ExpenseCategory } from "@/types/serviceExpense";
 import { toast } from "@/hooks/use-toast";
@@ -25,14 +26,14 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
     
     // Get unique service call IDs that are not 'general'
     const serviceCallIds = [...new Set(data
-      .filter(expense => expense.service_call_id !== 'general' && !uuidv4.validate)
+      .filter(expense => expense.service_call_id !== 'general' && expense.service_call_id.length > 10)
       .map(expense => expense.service_call_id))];
     
     // Fetch service call information if there are any valid IDs
     if (serviceCallIds.length > 0) {
       const { data: serviceCallsData, error: serviceCallsError } = await supabase
         .from('service_calls')
-        .select('id, customer_name, location, machine_model')
+        .select('id, customer_name, customer_id, location, machine_model')
         .in('id', serviceCallIds);
       
       if (!serviceCallsError && serviceCallsData) {
@@ -40,6 +41,7 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
         serviceCallsData.forEach(call => {
           serviceCallMap.set(call.id, {
             customerName: call.customer_name,
+            customerId: call.customer_id,
             location: call.location,
             machineModel: call.machine_model
           });
@@ -56,7 +58,9 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
         serviceCallId: expense.service_call_id,
         engineerId: expense.engineer_id,
         engineerName: expense.engineer_name,
-        category: expense.category as ExpenseCategory, // Cast to ExpenseCategory type
+        customerId: serviceCallInfo ? serviceCallInfo.customerId : null,
+        customerName: serviceCallInfo ? serviceCallInfo.customerName : null,
+        category: expense.category as ExpenseCategory,
         amount: expense.amount,
         description: expense.description,
         date: expense.date,
@@ -94,7 +98,9 @@ export const addServiceExpense = async (expense: ServiceExpense): Promise<boolea
         description: expense.description,
         date: expense.date,
         is_reimbursed: expense.isReimbursed,
-        receipt_image_url: expense.receiptImageUrl
+        receipt_image_url: expense.receiptImageUrl,
+        customer_id: expense.customerId,
+        customer_name: expense.customerName
       });
     
     if (error) {
