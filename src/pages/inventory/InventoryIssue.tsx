@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +25,8 @@ import { toast } from "sonner";
 import { Package, Scan, Send, CheckCircle2, ShoppingBag, Building, User } from "lucide-react";
 import { IssueType, Brand, Model, InventoryItem } from "@/types/inventory";
 import ItemSelector from "@/components/inventory/ItemSelector";
+import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
+import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
 
 // Sample data for issued items
 const recentIssues = [
@@ -172,6 +175,8 @@ const InventoryIssue = () => {
   const [receiverName, setReceiverName] = useState("");
   const [billType, setBillType] = useState("Non-GST");
   const [activeTab, setActiveTab] = useState("form");
+  const { warehouses, isLoadingWarehouses } = useWarehouses();
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   
   // State for selected item using our reusable component
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
@@ -200,8 +205,15 @@ const InventoryIssue = () => {
       return;
     }
 
+    if (!selectedWarehouse) {
+      toast.warning("Please select a warehouse");
+      return;
+    }
+
     // In a real app, you would send this data to your API
-    toast.success(`${quantity} × ${selectedItem.name} issued successfully to ${receiverName}`);
+    toast.success(`${quantity} × ${selectedItem.name} issued from ${
+      warehouses.find(w => w.id === selectedWarehouse)?.name || 'warehouse'
+    } to ${receiverName}`);
     
     // Reset form
     setSelectedItem(null);
@@ -234,6 +246,17 @@ const InventoryIssue = () => {
           <Card>
             <CardContent className="pt-6">
               <form onSubmit={handleIssueSubmit} className="space-y-4">
+                {/* Warehouse Selector */}
+                <div className="mb-6">
+                  <Label className="text-base font-medium">Select Warehouse</Label>
+                  <WarehouseSelector 
+                    warehouses={warehouses}
+                    selectedWarehouse={selectedWarehouse}
+                    onSelectWarehouse={setSelectedWarehouse}
+                    isLoading={isLoadingWarehouses}
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Issue Type Selection */}
                   <div className="space-y-2">
@@ -321,6 +344,7 @@ const InventoryIssue = () => {
                     models={mockModels}
                     items={inventoryItems}
                     onItemSelect={handleItemSelected}
+                    warehouseId={selectedWarehouse}
                   />
                   
                   {/* Quantity */}
@@ -350,7 +374,11 @@ const InventoryIssue = () => {
                     </div>
                   )}
                   
-                  <Button type="submit" className="w-full mt-6" disabled={!selectedItem}>
+                  <Button 
+                    type="submit" 
+                    className="w-full mt-6" 
+                    disabled={!selectedItem || !selectedWarehouse}
+                  >
                     <Package className="mr-2 h-4 w-4" />
                     Issue Item
                   </Button>

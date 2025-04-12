@@ -10,13 +10,18 @@ import InventoryHeader from "@/components/service/inventory/InventoryHeader";
 import EngineerInventoryTab from "@/components/service/inventory/EngineerInventoryTab";
 import PartsReconciliationTab from "@/components/service/inventory/PartsReconciliationTab";
 import ServiceExpensesTab from "@/components/service/inventory/ServiceExpensesTab";
+import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
+import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
 
 const ServiceInventoryManagement = () => {
   const { toast } = useToast();
   const { allCalls, engineers, isLoading } = useServiceData();
+  const { warehouses, isLoadingWarehouses } = useWarehouses();
+  
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>(allCalls);
   const [activeTab, setActiveTab] = useState("engineer-inventory");
   const [expenses, setExpenses] = useState<ServiceExpense[]>([]);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   
   // Handle expense added
   const handleExpenseAdded = (expense: ServiceExpense) => {
@@ -79,9 +84,20 @@ const ServiceInventoryManagement = () => {
     );
   };
 
+  // Log the warehouse data to help with debugging
+  console.log("Warehouse data in component:", warehouses);
+
   return (
     <div className="container mx-auto space-y-6">
       <InventoryHeader activeTab={activeTab} onTabChange={setActiveTab} />
+      
+      {/* Add Warehouse Selector */}
+      <WarehouseSelector 
+        warehouses={warehouses}
+        selectedWarehouse={selectedWarehouse}
+        onSelectWarehouse={setSelectedWarehouse}
+        isLoading={isLoadingWarehouses}
+      />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsContent value="engineer-inventory">

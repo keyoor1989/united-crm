@@ -22,6 +22,7 @@ interface ItemSelectorProps {
   onItemSelect: (item: InventoryItem) => void;
   showBarcodeScan?: boolean;
   showQuantityInSelector?: boolean;
+  warehouseId?: string | null;
 }
 
 const ItemSelector = ({
@@ -30,7 +31,8 @@ const ItemSelector = ({
   items,
   onItemSelect,
   showBarcodeScan = true,
-  showQuantityInSelector = true
+  showQuantityInSelector = true,
+  warehouseId = null
 }: ItemSelectorProps) => {
   const [selectedBrandId, setSelectedBrandId] = useState<string>("");
   const [selectedModelId, setSelectedModelId] = useState<string>("");
@@ -56,9 +58,19 @@ const ItemSelector = ({
     model => selectedBrandId && model.brandId === selectedBrandId
   );
   
-  // Filter items based on selected model
+  // Filter items based on selected model and warehouse if specified
   const filteredItems = items.filter(
-    item => selectedModelId && item.modelId === selectedModelId
+    item => {
+      // First filter by model if selected
+      const matchesModel = selectedModelId ? item.modelId === selectedModelId : true;
+      
+      // Then filter by warehouse if specified (this is a placeholder - in a real app you would 
+      // filter based on warehouse stock records)
+      // This assumes items have a warehouseId property or similar
+      const matchesWarehouse = warehouseId ? true : true; // Placeholder logic
+      
+      return matchesModel && matchesWarehouse;
+    }
   );
   
   // Handle barcode scan
