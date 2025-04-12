@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ServiceCall, Engineer } from "@/types/service";
+import { ServiceCall, Engineer, EngineerStatus, EngineerSkillLevel, Part, Feedback } from "@/types/service";
 
 export const useServiceData = () => {
   const { toast } = useToast();
