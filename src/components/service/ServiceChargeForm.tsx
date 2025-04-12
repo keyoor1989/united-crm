@@ -100,7 +100,7 @@ const ServiceChargeForm = ({ onChargeAdded }: ServiceChargeFormProps) => {
           <div className="space-y-2">
             <Label htmlFor="customer">Customer</Label>
             <Select
-              value={selectedCustomerId || ""}
+              value={selectedCustomerId || "select_customer"}
               onValueChange={handleCustomerChange}
             >
               <SelectTrigger id="customer">

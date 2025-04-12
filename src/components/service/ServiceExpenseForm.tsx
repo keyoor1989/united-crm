@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,14 +153,14 @@ const ServiceExpenseForm = ({
             <div className="space-y-2">
               <Label htmlFor="customer">Customer (Optional)</Label>
               <Select
-                value={selectedCustomerId || ""}
+                value={selectedCustomerId || "no_customer"}
                 onValueChange={handleCustomerChange}
               >
                 <SelectTrigger id="customer">
                   <SelectValue placeholder="Select customer (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">
+                  <SelectItem value="no_customer">
                     <div className="flex items-center">
                       <Building className="h-4 w-4 mr-2" />
                       No specific customer

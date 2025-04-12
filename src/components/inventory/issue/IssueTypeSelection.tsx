@@ -29,7 +29,7 @@ const IssueTypeSelection = ({ form, engineers, isLoadingEngineers }: IssueTypeSe
             <FormItem>
               <Select
                 onValueChange={field.onChange}
-                defaultValue={field.value}
+                defaultValue={field.value || "default_issue_type"}
               >
                 <FormControl>
                   <SelectTrigger className="w-full h-11 rounded-md">
@@ -58,7 +58,7 @@ const IssueTypeSelection = ({ form, engineers, isLoadingEngineers }: IssueTypeSe
             <FormItem>
               <Select
                 onValueChange={field.onChange}
-                defaultValue={field.value}
+                defaultValue={field.value || "select_engineer"}
               >
                 <FormControl>
                   <SelectTrigger className="w-full h-11 rounded-md">

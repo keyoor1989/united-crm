@@ -47,12 +47,12 @@ const FollowUpFilters: React.FC<FollowUpFiltersProps> = ({
               className="w-full"
             />
           </div>
-          <Select value={typeFilter || ""} onValueChange={(value) => setTypeFilter(value || null)}>
+          <Select value={typeFilter || "all_types"} onValueChange={(value) => setTypeFilter(value === "all_types" ? null : value)}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Filter by type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all_types">All Types</SelectItem>
               <SelectItem value="quotation">Quotation</SelectItem>
               <SelectItem value="demo">Demo</SelectItem>
               <SelectItem value="negotiation">Negotiation</SelectItem>
