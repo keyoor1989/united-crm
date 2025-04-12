@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -288,7 +289,7 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
       console.log("Falling back to mock warehouse data");
       return [
         { 
-          id: "default", 
+          id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", // Using a valid UUID instead of "default"
           name: "Main Warehouse", 
           code: "MAIN", 
           location: "Chennai",
@@ -299,7 +300,7 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
           createdAt: new Date().toISOString()
         },
         { 
-          id: "branch1", 
+          id: "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b", // Using a valid UUID instead of "branch1"
           name: "Branch Warehouse 1", 
           code: "BR1", 
           location: "Mumbai",
@@ -330,7 +331,7 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
       console.log("No warehouse data from Supabase, using mock data");
       return [
         { 
-          id: "default", 
+          id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", // Using a valid UUID instead of "default"
           name: "Main Warehouse", 
           code: "MAIN", 
           location: "Chennai",
@@ -341,7 +342,7 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
           createdAt: new Date().toISOString()
         },
         { 
-          id: "branch1", 
+          id: "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b", // Using a valid UUID instead of "branch1"
           name: "Branch Warehouse 1", 
           code: "BR1", 
           location: "Mumbai",
@@ -358,7 +359,7 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
     console.log("Falling back to mock warehouse data due to exception");
     return [
       { 
-        id: "default", 
+        id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", // Using a valid UUID instead of "default"
         name: "Main Warehouse", 
         code: "MAIN", 
         location: "Chennai",
@@ -369,7 +370,7 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
         createdAt: new Date().toISOString()
       },
       { 
-        id: "branch1", 
+        id: "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b", // Using a valid UUID instead of "branch1"
         name: "Branch Warehouse 1", 
         code: "BR1", 
         location: "Mumbai",
@@ -409,6 +410,11 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     mutationFn: async (newPart: any) => {
       try {
         console.log("Saving opening stock entry to Supabase:", newPart);
+        
+        // Validate the warehouse UUID before sending to the database
+        if (!newPart.warehouseId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newPart.warehouseId)) {
+          throw new Error("Invalid warehouse ID format. Must be a valid UUID.");
+        }
         
         const { data, error } = await supabase
           .from('opening_stock_entries')
@@ -469,6 +475,11 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
       const warehouseInfo = warehouses.find(w => w.id === values.warehouseId);
       console.log("Selected warehouse:", warehouseInfo);
       
+      if (!warehouseInfo) {
+        toast.error("Invalid warehouse selected");
+        return;
+      }
+      
       const newPart = {
         id: `MP${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
         partNumber: values.partNumber || `${values.brand.substring(0, 2)}-${Math.floor(Math.random() * 10000)}`,
@@ -480,7 +491,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
         minStock: values.minStock,
         purchasePrice: values.purchasePrice,
         warehouseId: values.warehouseId,
-        warehouseName: warehouseInfo?.name || "Unknown Warehouse",
+        warehouseName: warehouseInfo.name,
       };
 
       console.log("Submitting new part:", newPart);
@@ -488,23 +499,18 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
       try {
         await saveStockEntryMutation.mutateAsync(newPart);
         
-        onAddPart(newPart);
-        
         toast.success("Opening stock entry added successfully!");
         
+        // Notify parent component
+        onAddPart(newPart);
+        
+        // Reset form and close dialog
         form.reset();
         setSelectedModels([]);
         onOpenChange(false);
       } catch (error) {
         console.error("Error saving to database:", error);
-        
-        onAddPart(newPart);
-        
-        toast.success("Opening stock entry added to UI (database save failed)");
-        
-        form.reset();
-        setSelectedModels([]);
-        onOpenChange(false);
+        toast.error("Failed to save to database: " + (error instanceof Error ? error.message : "Unknown error"));
       }
     } catch (error) {
       console.error("Form submission error:", error);
@@ -763,7 +769,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="default">Main Warehouse (Default)</SelectItem>
+                        <SelectItem value="" disabled>No warehouses available</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
