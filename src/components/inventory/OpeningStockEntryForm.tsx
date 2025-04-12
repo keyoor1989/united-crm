@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -33,8 +32,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
 import { Brand, Model } from "@/types/inventory";
+import { mockWarehouses } from "@/pages/inventory/InventoryWarehouses";
 
-// Define the form schema
+// Define the form schema with warehouse field
 const formSchema = z.object({
   brand: z.string().min(1, { message: "Brand is required" }),
   compatibleModels: z.array(z.string()).min(1, { message: "At least one compatible model is required" }),
@@ -44,6 +44,7 @@ const formSchema = z.object({
   quantity: z.coerce.number().int().min(1, { message: "Quantity must be at least 1" }),
   purchasePrice: z.coerce.number().min(1, { message: "Purchase price is required" }),
   minStock: z.coerce.number().int().min(0).default(5),
+  warehouseId: z.string().min(1, { message: "Warehouse is required" }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -146,10 +147,13 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
       quantity: 1,
       purchasePrice: 0,
       minStock: 5,
+      warehouseId: "",
     },
   });
 
   const handleSubmit = (values: FormValues) => {
+    const warehouseInfo = mockWarehouses.find(w => w.id === values.warehouseId);
+    
     const newPart = {
       id: `MP${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
       partNumber: values.partNumber || `${values.brand.substring(0, 2)}-${Math.floor(Math.random() * 10000)}`,
@@ -160,6 +164,8 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
       currentStock: values.quantity,
       minStock: values.minStock,
       purchasePrice: values.purchasePrice,
+      warehouseId: values.warehouseId,
+      warehouseName: warehouseInfo?.name || "Unknown Warehouse",
     };
 
     onAddPart(newPart);
@@ -374,6 +380,35 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                 )}
               />
             </div>
+            
+            {/* New Warehouse Selection Field */}
+            <FormField
+              control={form.control}
+              name="warehouseId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Warehouse Location</FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select warehouse" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {mockWarehouses.filter(w => w.isActive).map((warehouse) => (
+                        <SelectItem key={warehouse.id} value={warehouse.id}>
+                          {warehouse.name} ({warehouse.location})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             {selectedModels.length > 0 && (
               <div className="border p-2 rounded-md bg-slate-50">

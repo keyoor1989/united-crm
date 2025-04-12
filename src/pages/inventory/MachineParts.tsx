@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,17 +36,19 @@ const MachineParts = () => {
     mockInventoryItems.push(...machineParts);
   }, [machineParts]);
   
+  // Update filtered parts to include warehouse information
   const filteredParts = machineParts.filter(part => {
     // Filter by search query
     const matchesSearch = searchQuery ? 
-      part.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      part.partNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      part.brand.toLowerCase().includes(searchQuery.toLowerCase())
+      part.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      part.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      part.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      part.warehouseName?.toLowerCase().includes(searchQuery.toLowerCase())
     : true;
     
     // Filter by tab/category
     const matchesCategory = activeTab === "all" || 
-      part.category.toLowerCase().includes(activeTab.toLowerCase());
+      part.category?.toLowerCase().includes(activeTab.toLowerCase());
     
     return matchesSearch && matchesCategory;
   });
@@ -131,6 +132,7 @@ const MachineParts = () => {
                     <TableHead>Compatible Models</TableHead>
                     <TableHead>Stock</TableHead>
                     <TableHead>Price (₹)</TableHead>
+                    <TableHead>Warehouse</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -147,11 +149,14 @@ const MachineParts = () => {
                           <TableCell>{part.category}</TableCell>
                           <TableCell>
                             <div className="text-xs max-w-[200px] truncate">
-                              {part.compatibleModels.join(", ")}
+                              Array.isArray(part.compatibleModels) 
+                                ? part.compatibleModels.join(", ") 
+                                : "N/A"
                             </div>
                           </TableCell>
                           <TableCell>{part.currentStock}</TableCell>
-                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
+                          <TableCell>{part.purchasePrice?.toLocaleString() || "N/A"}</TableCell>
+                          <TableCell>{part.warehouseName || "Main Warehouse"}</TableCell>
                           <TableCell>
                             <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
                           </TableCell>
@@ -173,7 +178,7 @@ const MachineParts = () => {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-24 text-center">
+                      <TableCell colSpan={10} className="h-24 text-center">
                         No parts found. Add your first part by clicking "Add New Part" above.
                       </TableCell>
                     </TableRow>
