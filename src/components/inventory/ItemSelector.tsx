@@ -113,11 +113,15 @@ const ItemSelector = ({
               <SelectValue placeholder="Select Brand" />
             </SelectTrigger>
             <SelectContent>
-              {validBrands.map(brand => (
-                <SelectItem key={brand.id} value={brand.id}>
-                  {brand.name || 'Unnamed Brand'}
-                </SelectItem>
-              ))}
+              {validBrands.length > 0 ? (
+                validBrands.map(brand => (
+                  <SelectItem key={brand.id} value={brand.id}>
+                    {brand.name || 'Unnamed Brand'}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no_brands" disabled>No brands available</SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -133,11 +137,17 @@ const ItemSelector = ({
               <SelectValue placeholder={selectedBrandId ? "Select Model" : "Select Brand first"} />
             </SelectTrigger>
             <SelectContent>
-              {filteredModels.map(model => (
-                <SelectItem key={model.id} value={model.id}>
-                  {model.name || 'Unnamed Model'}
+              {filteredModels.length > 0 ? (
+                filteredModels.map(model => (
+                  <SelectItem key={model.id} value={model.id}>
+                    {model.name || 'Unnamed Model'}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no_models" disabled>
+                  {selectedBrandId ? "No models available for this brand" : "Select a brand first"}
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -153,18 +163,24 @@ const ItemSelector = ({
               <SelectValue placeholder={selectedModelId ? "Select Item" : "Select Model first"} />
             </SelectTrigger>
             <SelectContent>
-              {filteredItems.map(item => (
-                <SelectItem key={item.id} value={item.id}>
-                  <div className="flex justify-between w-full items-center">
-                    <span>{item.name || 'Unnamed Item'}</span>
-                    {showQuantityInSelector && (
-                      <Badge variant={item.currentQuantity < item.minQuantity ? "destructive" : "outline"}>
-                        {item.currentQuantity} in stock
-                      </Badge>
-                    )}
-                  </div>
+              {filteredItems.length > 0 ? (
+                filteredItems.map(item => (
+                  <SelectItem key={item.id} value={item.id}>
+                    <div className="flex justify-between w-full items-center">
+                      <span>{item.name || 'Unnamed Item'}</span>
+                      {showQuantityInSelector && (
+                        <Badge variant={item.currentQuantity < item.minQuantity ? "destructive" : "outline"}>
+                          {item.currentQuantity} in stock
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no_items" disabled>
+                  {selectedModelId ? "No items available for this model" : "Select a model first"}
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
         </div>

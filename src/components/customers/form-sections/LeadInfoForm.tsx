@@ -66,7 +66,7 @@ const LeadInfoForm = () => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Machine Type</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value || "printer"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select machine type" />
@@ -93,7 +93,7 @@ const LeadInfoForm = () => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Lead Source</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value || "website"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select lead source" />
@@ -120,7 +120,7 @@ const LeadInfoForm = () => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Lead Status</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value || "New"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select lead status" />

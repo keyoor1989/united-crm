@@ -505,7 +505,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="none" disabled>No brands available</SelectItem>
+                          <SelectItem value="no_brands" disabled>No brands available</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
@@ -690,7 +690,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                     </FormControl>
                     <SelectContent>
                       {isLoadingWarehouses ? (
-                        <SelectItem value="loading" disabled>Loading warehouses...</SelectItem>
+                        <SelectItem value="loading_warehouses" disabled>Loading warehouses...</SelectItem>
                       ) : warehouses.length > 0 ? (
                         warehouses.map((warehouse) => (
                           <SelectItem key={warehouse.id} value={warehouse.id}>
@@ -698,7 +698,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>No warehouses available</SelectItem>
+                        <SelectItem value="no_warehouses" disabled>No warehouses available</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
