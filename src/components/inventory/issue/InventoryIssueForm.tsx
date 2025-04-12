@@ -5,33 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Search, Box } from "lucide-react";
-
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Table, 
-  TableHeader, 
-  TableBody, 
-  TableRow, 
-  TableHead, 
-  TableCell 
-} from "@/components/ui/table";
-import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
+import WarehouseSelector from "./WarehouseSelector";
+import IssueTypeSelection from "./IssueTypeSelection";
+import ItemFilters from "./ItemFilters";
+import ItemsTable from "./ItemsTable";
+import IssueButton from "./IssueButton";
 
 // Form schema
 const formSchema = z.object({
@@ -64,8 +44,6 @@ const InventoryIssueForm = () => {
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("");
-  
-  const { warehouses, isLoadingWarehouses } = useWarehouses();
   
   // Form setup
   const form = useForm<FormValues>({
@@ -189,7 +167,7 @@ const InventoryIssueForm = () => {
         assigned_date: new Date().toISOString(),
         warehouse_id: selectedWarehouse,
         warehouse_source: selectedWarehouse 
-          ? warehouses.find(w => w.id === selectedWarehouse)?.name 
+          ? form.getValues().warehouses?.find(w => w.id === selectedWarehouse)?.name 
           : null
       };
       
@@ -230,206 +208,43 @@ const InventoryIssueForm = () => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="p-6">
         {/* Warehouse Selection */}
-        <div className="mb-6">
-          <h3 className="text-lg font-medium mb-3">Select Warehouse</h3>
-          <div className="flex gap-2">
-            <Button 
-              type="button"
-              variant="outline"
-              className={`rounded-md py-2 px-6 ${!selectedWarehouse ? 'bg-black text-white hover:bg-black hover:text-white' : ''}`}
-              onClick={() => setSelectedWarehouse(null)}
-            >
-              All Warehouses
-            </Button>
-            {warehouses.map(warehouse => (
-              <Button
-                key={warehouse.id}
-                type="button"
-                variant="outline"
-                className={`rounded-md py-2 px-6 ${selectedWarehouse === warehouse.id ? 'bg-black text-white hover:bg-black hover:text-white' : ''}`}
-                onClick={() => setSelectedWarehouse(warehouse.id)}
-              >
-                {warehouse.name} ({warehouse.location})
-              </Button>
-            ))}
-          </div>
-        </div>
+        <WarehouseSelector 
+          selectedWarehouse={selectedWarehouse}
+          setSelectedWarehouse={setSelectedWarehouse}
+        />
 
-        <div className="grid grid-cols-2 gap-6 mb-8">
-          {/* Issue Type */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Issue Type</label>
-            <FormField
-              control={form.control}
-              name="issueType"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full h-11 rounded-md">
-                        <User className="h-4 w-4 mr-2 text-gray-500" />
-                        <SelectValue placeholder="Select issue type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Engineer">Engineer</SelectItem>
-                      <SelectItem value="Customer">Customer</SelectItem>
-                      <SelectItem value="Branch">Branch</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* Engineer Selection */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Engineer Name</label>
-            <FormField
-              control={form.control}
-              name="engineerId"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full h-11 rounded-md">
-                        <SelectValue placeholder="Select engineer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {engineers.map((engineer) => (
-                        <SelectItem key={engineer.id} value={engineer.id}>
-                          {engineer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+        {/* Issue Type and Engineer Selection */}
+        <IssueTypeSelection 
+          form={form}
+          engineers={engineers}
+          isLoadingEngineers={isLoadingEngineers}
+        />
 
         <div className="border-t pt-6">
           <h3 className="text-lg font-medium mb-4">Item Details</h3>
           
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            {/* Search */}
-            <div>
-              <div className="relative">
-                <Search className="h-4 w-4 absolute top-3 left-3 text-gray-500" />
-                <Input 
-                  placeholder="Search items..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-11 rounded-md"
-                />
-              </div>
-            </div>
-            
-            {/* Brand Selection */}
-            <div>
-              <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-                <SelectTrigger className="h-11 rounded-md">
-                  <SelectValue placeholder="Select Brand" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Brands</SelectItem>
-                  {brands.map(brand => (
-                    <SelectItem key={brand} value={brand}>
-                      {brand}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Model Selection */}
-            <div>
-              <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="h-11 rounded-md">
-                  <SelectValue placeholder="Select Model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Models</SelectItem>
-                  {models.map(model => (
-                    <SelectItem key={model} value={model}>
-                      {model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          {/* Search and Filter Controls */}
+          <ItemFilters 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedBrand={selectedBrand}
+            setSelectedBrand={setSelectedBrand}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            brands={brands}
+            models={models}
+          />
 
           {/* Items Table */}
-          <div className="border rounded-md overflow-hidden mb-8">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-24">Select</TableHead>
-                  <TableHead>Item Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Price</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredItems.length > 0 ? (
-                  filteredItems.map((item) => (
-                    <TableRow key={item.id} className={selectedItemId === item.id ? "bg-muted" : ""}>
-                      <TableCell>
-                        <div className="flex justify-center">
-                          <input
-                            type="radio"
-                            name="selectedItem"
-                            checked={selectedItemId === item.id}
-                            onChange={() => handleSelectItem(item.id)}
-                            className="h-4 w-4 rounded-full border-gray-300"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>{item.part_name}</TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>
-                        <span className={item.quantity < item.min_stock ? "text-destructive" : "text-green-600"}>
-                          {item.quantity}
-                        </span>{" "}
-                        <span className="text-muted-foreground">
-                          (Min: {item.min_stock})
-                        </span>
-                      </TableCell>
-                      <TableCell>₹{item.purchase_price}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      No items found. Try adjusting your search or filters.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <ItemsTable 
+            filteredItems={filteredItems}
+            selectedItemId={selectedItemId}
+            handleSelectItem={handleSelectItem}
+          />
         </div>
 
-        <div className="flex justify-center">
-          <Button 
-            type="submit" 
-            className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700"
-            disabled={!selectedItemId}
-          >
-            <Box className="mr-2 h-5 w-5" />
-            Issue Item
-          </Button>
-        </div>
+        {/* Issue Button */}
+        <IssueButton selectedItemId={selectedItemId} />
       </form>
     </Form>
   );
