@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceCall, Part } from "@/types/service";
 import { toast } from "@/hooks/use-toast";
@@ -121,6 +120,11 @@ export const updatePartReconciliation = async (
             console.error("Error removing item from engineer inventory:", deleteError);
           } else {
             console.log(`Removed item ${matchingItem.item_name} from engineer inventory`);
+            toast({
+              title: "Inventory Updated",
+              description: `Removed ${matchingItem.item_name} from ${serviceCall.engineer_id}'s inventory`,
+              variant: "default",
+            });
           }
         } else {
           const { error: updateError } = await supabase
@@ -132,6 +136,11 @@ export const updatePartReconciliation = async (
             console.error("Error updating engineer inventory:", updateError);
           } else {
             console.log(`Updated item ${matchingItem.item_name} quantity to ${newQuantity}`);
+            toast({
+              title: "Inventory Updated",
+              description: `Updated ${matchingItem.item_name} quantity to ${newQuantity}`,
+              variant: "default",
+            });
           }
         }
       } else {
@@ -220,6 +229,11 @@ export const updateServiceCallReconciliation = async (
                 console.error("Error removing item from engineer inventory:", deleteError);
               } else {
                 console.log(`Removed item ${matchingItem.item_name} from engineer inventory`);
+                toast({
+                  title: "Inventory Updated",
+                  description: `Removed ${matchingItem.item_name} from engineer's inventory`,
+                  variant: "default",
+                });
               }
             } else {
               const { error: updateError } = await supabase
@@ -231,6 +245,11 @@ export const updateServiceCallReconciliation = async (
                 console.error("Error updating engineer inventory:", updateError);
               } else {
                 console.log(`Updated item ${matchingItem.item_name} quantity to ${newQuantity}`);
+                toast({
+                  title: "Inventory Updated",
+                  description: `Updated ${matchingItem.item_name} quantity to ${newQuantity}`,
+                  variant: "default",
+                });
               }
             }
           } else {
