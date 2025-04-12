@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import Layout from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -107,203 +106,201 @@ const Service = () => {
   };
 
   return (
-    <Layout>
-      <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Service Management</h1>
+          <p className="text-muted-foreground">
+            Track and manage service calls and engineer activities
+          </p>
+        </div>
+        <Link to="/service-call-form">
+          <Button className="gap-1 bg-brand-500 hover:bg-brand-600">
+            <CalendarCheck className="h-4 w-4" />
+            Create Service Call
+          </Button>
+        </Link>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative grow">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search by customer, serial number or location..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Button variant="outline" size="icon">
+          <Filter className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={() => {
+            setSearchTerm("");
+            toast({
+              title: "Refreshed",
+              description: "Service calls have been refreshed",
+            });
+          }}
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Tabs defaultValue="pending">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Service Management</h1>
-            <p className="text-muted-foreground">
-              Track and manage service calls and engineer activities
-            </p>
+          <TabsList>
+            <TabsTrigger value="pending">
+              Pending
+              <Badge className="ml-1 bg-amber-500">{pendingCalls.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="inProgress">
+              In Progress
+              <Badge className="ml-1 bg-blue-500">{inProgressCalls.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              Completed
+              <Badge className="ml-1 bg-green-500">{completedCalls.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              Today
+            </Button>
+            <Button variant="outline" size="sm">
+              This Week
+            </Button>
+            <Button variant="outline" size="sm">
+              This Month
+            </Button>
           </div>
-          <Link to="/service-call-form">
-            <Button className="gap-1 bg-brand-500 hover:bg-brand-600">
-              <CalendarCheck className="h-4 w-4" />
-              Create Service Call
+        </div>
+
+        <TabsContent value="pending" className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pendingCalls.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No pending service calls found
+              </div>
+            ) : (
+              pendingCalls.map((call) => (
+                <ServiceCallCard
+                  key={call.id}
+                  serviceCall={call}
+                  engineers={engineers}
+                  onShowDetails={() => handleShowDetails(call)}
+                  onAssign={handleAssignEngineer}
+                  onReassign={() => handleReassignCall(call.id)}
+                />
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="inProgress" className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {inProgressCalls.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No in-progress service calls found
+              </div>
+            ) : (
+              inProgressCalls.map((call) => (
+                <ServiceCallCard
+                  key={call.id}
+                  serviceCall={call}
+                  engineers={engineers}
+                  onShowDetails={() => handleShowDetails(call)}
+                  onAssign={handleAssignEngineer}
+                  onReassign={() => handleReassignCall(call.id)}
+                />
+              ))
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="completed" className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {completedCalls.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No completed service calls found
+              </div>
+            ) : (
+              completedCalls.map((call) => (
+                <ServiceCallCard
+                  key={call.id}
+                  serviceCall={call}
+                  engineers={engineers}
+                  onShowDetails={() => handleShowDetails(call)}
+                  onAssign={handleAssignEngineer}
+                  onReassign={() => handleReassignCall(call.id)}
+                />
+              ))
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="all" className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allCalls.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">
+                No service calls found
+              </div>
+            ) : (
+              allCalls.map((call) => (
+                <ServiceCallCard
+                  key={call.id}
+                  serviceCall={call}
+                  engineers={engineers}
+                  onShowDetails={() => handleShowDetails(call)}
+                  onAssign={handleAssignEngineer}
+                  onReassign={() => handleReassignCall(call.id)}
+                />
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+      
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Engineer Locations</h2>
+          <Link to="/engineer/new">
+            <Button variant="outline" size="sm" className="gap-1">
+              <UserPlus className="h-4 w-4" />
+              Add Engineer
             </Button>
           </Link>
         </div>
-
-        <div className="flex items-center gap-4">
-          <div className="relative grow">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search by customer, serial number or location..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => {
-              setSearchTerm("");
-              toast({
-                title: "Refreshed",
-                description: "Service calls have been refreshed",
-              });
-            }}
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <Tabs defaultValue="pending">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="pending">
-                Pending
-                <Badge className="ml-1 bg-amber-500">{pendingCalls.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="inProgress">
-                In Progress
-                <Badge className="ml-1 bg-blue-500">{inProgressCalls.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="completed">
-                Completed
-                <Badge className="ml-1 bg-green-500">{completedCalls.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
-            </TabsList>
-
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                Today
-              </Button>
-              <Button variant="outline" size="sm">
-                This Week
-              </Button>
-              <Button variant="outline" size="sm">
-                This Month
-              </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {engineers.map((engineer) => (
+            <div 
+              key={engineer.id} 
+              className="cursor-pointer hover:scale-[1.01] transition-transform"
+              onClick={() => handleEngineerCardClick(engineer.id)}
+            >
+              <EngineerCard engineer={engineer} />
             </div>
-          </div>
-
-          <TabsContent value="pending" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {pendingCalls.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  No pending service calls found
-                </div>
-              ) : (
-                pendingCalls.map((call) => (
-                  <ServiceCallCard
-                    key={call.id}
-                    serviceCall={call}
-                    engineers={engineers}
-                    onShowDetails={() => handleShowDetails(call)}
-                    onAssign={handleAssignEngineer}
-                    onReassign={() => handleReassignCall(call.id)}
-                  />
-                ))
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="inProgress" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {inProgressCalls.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  No in-progress service calls found
-                </div>
-              ) : (
-                inProgressCalls.map((call) => (
-                  <ServiceCallCard
-                    key={call.id}
-                    serviceCall={call}
-                    engineers={engineers}
-                    onShowDetails={() => handleShowDetails(call)}
-                    onAssign={handleAssignEngineer}
-                    onReassign={() => handleReassignCall(call.id)}
-                  />
-                ))
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="completed" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {completedCalls.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  No completed service calls found
-                </div>
-              ) : (
-                completedCalls.map((call) => (
-                  <ServiceCallCard
-                    key={call.id}
-                    serviceCall={call}
-                    engineers={engineers}
-                    onShowDetails={() => handleShowDetails(call)}
-                    onAssign={handleAssignEngineer}
-                    onReassign={() => handleReassignCall(call.id)}
-                  />
-                ))
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="all" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allCalls.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-muted-foreground">
-                  No service calls found
-                </div>
-              ) : (
-                allCalls.map((call) => (
-                  <ServiceCallCard
-                    key={call.id}
-                    serviceCall={call}
-                    engineers={engineers}
-                    onShowDetails={() => handleShowDetails(call)}
-                    onAssign={handleAssignEngineer}
-                    onReassign={() => handleReassignCall(call.id)}
-                  />
-                ))
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-        
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Engineer Locations</h2>
-            <Link to="/engineer/new">
-              <Button variant="outline" size="sm" className="gap-1">
-                <UserPlus className="h-4 w-4" />
-                Add Engineer
-              </Button>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {engineers.map((engineer) => (
-              <div 
-                key={engineer.id} 
-                className="cursor-pointer hover:scale-[1.01] transition-transform"
-                onClick={() => handleEngineerCardClick(engineer.id)}
-              >
-                <EngineerCard engineer={engineer} />
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
+    </div>
 
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-3xl">
-          {selectedServiceCall && (
-            <ServiceCallDetail 
-              serviceCall={selectedServiceCall} 
-              onClose={() => setShowDetailDialog(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </Layout>
+    <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+      <DialogContent className="max-w-3xl">
+        {selectedServiceCall && (
+          <ServiceCallDetail 
+            serviceCall={selectedServiceCall} 
+            onClose={() => setShowDetailDialog(false)}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 
