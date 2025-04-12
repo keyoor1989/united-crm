@@ -1,5 +1,5 @@
 
 import { InventoryItem } from "@/types/inventory";
 
-// Mock data array to be filled when parts are added
+// Empty array for inventory items
 export const mockInventoryItems: InventoryItem[] = [];

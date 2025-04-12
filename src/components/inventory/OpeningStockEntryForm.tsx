@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -52,11 +51,11 @@ interface OpeningStockEntryFormProps {
   onAddPart: (part: any) => void;
 }
 
-// Sample data for dropdowns
+// Sample data for form dropdowns - these are needed for the form to work
 const brands = ["Kyocera", "Canon", "HP", "Konica Minolta", "Ricoh", "Sharp"];
 const categories = ["Toner", "Drum", "Maintenance Kit", "Fuser", "Developer", "Other"];
 
-// Models by brand - in a real app this would come from an API or database
+// Models by brand mapping - this is needed for the form to function properly
 const modelsByBrand: Record<string, string[]> = {
   "Kyocera": ["ECOSYS M2040dn", "ECOSYS M2540dn", "ECOSYS M2640idw", "TASKalfa 2554ci", "TASKalfa 2553ci", "TASKalfa 2552ci"],
   "Canon": ["IR 2002", "IR 2004", "IR 2006", "IR ADV 4025", "IR ADV 4035", "IR ADV 4045"],
@@ -85,7 +84,6 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
   });
 
   const handleSubmit = (values: FormValues) => {
-    // Create a new part entry with form values
     const newPart = {
       id: `MP${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
       partNumber: values.partNumber || `${values.brand.substring(0, 2)}-${Math.floor(Math.random() * 10000)}`,
@@ -98,19 +96,15 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
       purchasePrice: values.purchasePrice,
     };
 
-    // Add the part to the catalog
     onAddPart(newPart);
     
-    // Show success message
     toast.success("Opening stock entry added successfully!");
     
-    // Reset form and close dialog
     form.reset();
     setSelectedModels([]);
     onOpenChange(false);
   };
 
-  // Handle brand change to update model options
   const handleBrandChange = (value: string) => {
     setSelectedBrand(value);
     form.setValue("brand", value);
@@ -118,7 +112,6 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     setSelectedModels([]);
   };
 
-  // Handle model selection
   const handleModelChange = (model: string, checked: boolean) => {
     const updatedModels = checked
       ? [...selectedModels, model]
