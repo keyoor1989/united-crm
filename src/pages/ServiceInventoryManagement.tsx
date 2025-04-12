@@ -1,17 +1,15 @@
-
 import React, { useState } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useServiceData } from "@/hooks/useServiceData";
 import { useToast } from "@/hooks/use-toast";
 import { ServiceCall } from "@/types/service";
 import { ServiceExpense } from "@/types/serviceExpense";
-import { mockInventoryItems } from "@/components/service/inventory/mockData";
+import { useInventoryItems } from "@/hooks/inventory/useInventoryItems";
 import InventoryHeader from "@/components/service/inventory/InventoryHeader";
 import EngineerInventoryTab from "@/components/service/inventory/EngineerInventoryTab";
 import PartsReconciliationTab from "@/components/service/inventory/PartsReconciliationTab";
 import ServiceExpensesTab from "@/components/service/inventory/ServiceExpensesTab";
 import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
-import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -26,7 +24,8 @@ const ServiceInventoryManagement = () => {
   const [expenses, setExpenses] = useState<ServiceExpense[]>([]);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   
-  // Handle expense added
+  const { items: inventoryItems, isLoading: isLoadingItems } = useInventoryItems(selectedWarehouse);
+  
   const handleExpenseAdded = (expense: ServiceExpense) => {
     setExpenses(prev => [...prev, expense]);
     toast({
@@ -35,12 +34,10 @@ const ServiceInventoryManagement = () => {
     });
   };
   
-  // Handle reconcile service call parts
   const handleReconcile = (serviceCallId: string, reconciled: boolean) => {
     setServiceCalls(prev =>
       prev.map(call => {
         if (call.id === serviceCallId) {
-          // Mark all parts as reconciled or unreconciled
           const updatedParts = call.partsUsed.map(part => ({
             ...part,
             isReconciled: reconciled
@@ -57,12 +54,10 @@ const ServiceInventoryManagement = () => {
     );
   };
   
-  // Handle reconcile individual part
   const handlePartReconcile = (serviceCallId: string, partId: string, reconciled: boolean) => {
     setServiceCalls(prev =>
       prev.map(call => {
         if (call.id === serviceCallId) {
-          // Update the specific part
           const updatedParts = call.partsUsed.map(part => {
             if (part.id === partId) {
               return {
@@ -73,7 +68,6 @@ const ServiceInventoryManagement = () => {
             return part;
           });
           
-          // Check if all parts are reconciled
           const allReconciled = updatedParts.every(part => part.isReconciled);
           
           return {
@@ -102,21 +96,13 @@ const ServiceInventoryManagement = () => {
         </AlertDescription>
       </Alert>
       
-      {/* Add Warehouse Selector */}
-      <WarehouseSelector 
-        warehouses={warehouses}
-        selectedWarehouse={selectedWarehouse}
-        onSelectWarehouse={setSelectedWarehouse}
-        isLoading={isLoadingWarehouses}
-      />
-      
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsContent value="engineer-inventory">
           <EngineerInventoryTab 
             engineers={engineers} 
-            inventoryItems={mockInventoryItems}
+            inventoryItems={inventoryItems}
             selectedWarehouse={selectedWarehouse}
-            isLoading={isLoading}
+            isLoading={isLoading || isLoadingItems}
           />
         </TabsContent>
         

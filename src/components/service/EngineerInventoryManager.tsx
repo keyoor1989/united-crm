@@ -11,61 +11,30 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Engineer } from "@/types/service";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { InventoryItem, EngineerInventory } from "@/types/inventory";
-import { CornerRightDown, Package, ReplyAll, Truck, Check, X } from "lucide-react";
+import { Package, ReplyAll, Truck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
-
-// Mock engineer inventory data
-const mockEngineerInventory: EngineerInventory[] = [
-  {
-    id: "1",
-    engineerId: "eng1",
-    engineerName: "Rahul Verma",
-    itemId: "item1",
-    itemName: "Kyocera TK-1175 Toner",
-    assignedQuantity: 3,
-    remainingQuantity: 2,
-    lastUpdated: "2025-04-10T10:00:00Z",
-    createdAt: "2025-04-10T10:00:00Z"
-  },
-  {
-    id: "2",
-    engineerId: "eng1",
-    engineerName: "Rahul Verma",
-    itemId: "item2",
-    itemName: "Canon NPG-59 Drum Unit",
-    assignedQuantity: 1,
-    remainingQuantity: 1,
-    lastUpdated: "2025-04-10T10:00:00Z",
-    createdAt: "2025-04-10T10:00:00Z"
-  },
-  {
-    id: "3",
-    engineerId: "eng2",
-    engineerName: "Deepak Kumar",
-    itemId: "item1",
-    itemName: "Kyocera TK-1175 Toner",
-    assignedQuantity: 2,
-    remainingQuantity: 1,
-    lastUpdated: "2025-04-10T10:00:00Z",
-    createdAt: "2025-04-10T10:00:00Z"
-  }
-];
+import { EngineerInventoryItem } from "@/hooks/inventory/useEngineerInventory";
 
 interface EngineerInventoryManagerProps {
   engineers: Engineer[];
-  inventoryItems: InventoryItem[];
+  inventoryItems: any[];
+  engineerInventory: EngineerInventoryItem[];
+  selectedWarehouse: string | null;
 }
 
-const EngineerInventoryManager = ({ engineers, inventoryItems }: EngineerInventoryManagerProps) => {
+const EngineerInventoryManager = ({ 
+  engineers, 
+  inventoryItems, 
+  engineerInventory,
+  selectedWarehouse 
+}: EngineerInventoryManagerProps) => {
   const { toast } = useToast();
-  const [engineerInventory, setEngineerInventory] = useState<EngineerInventory[]>(mockEngineerInventory);
   const [showIssueDialog, setShowIssueDialog] = useState(false);
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [selectedEngineerId, setSelectedEngineerId] = useState<string>("");
@@ -74,150 +43,164 @@ const EngineerInventoryManager = ({ engineers, inventoryItems }: EngineerInvento
   const [returnItemId, setReturnItemId] = useState<string>("");
   const [returnQuantity, setReturnQuantity] = useState<number>(1);
   const [returnReason, setReturnReason] = useState<string>("Unused");
+  const [returnCondition, setReturnCondition] = useState<string>("Good");
+  const [returnNotes, setReturnNotes] = useState<string>("");
   
-  const handleIssueItem = () => {
-    if (!selectedEngineerId || !selectedItemId || quantity <= 0) {
-      toast({
-        title: "Error",
-        description: "Please fill all the required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const engineer = engineers.find(e => e.id === selectedEngineerId);
-    const item = inventoryItems.find(i => i.id === selectedItemId);
-    
-    if (!engineer || !item) {
-      toast({
-        title: "Error",
-        description: "Invalid engineer or item selection",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Check if the item already exists in the engineer's inventory
-    const existingInventory = engineerInventory.find(
-      inv => inv.engineerId === selectedEngineerId && inv.itemId === selectedItemId
-    );
-    
-    if (existingInventory) {
-      // Update existing entry
-      setEngineerInventory(prev =>
-        prev.map(inv => {
-          if (inv.id === existingInventory.id) {
-            return {
-              ...inv,
-              assignedQuantity: inv.assignedQuantity + quantity,
-              remainingQuantity: inv.remainingQuantity + quantity,
-              lastUpdated: new Date().toISOString()
-            };
-          }
-          return inv;
-        })
-      );
-    } else {
-      // Create new entry
-      const newInventoryItem: EngineerInventory = {
-        id: uuidv4(),
-        engineerId: selectedEngineerId,
-        engineerName: engineer.name,
-        itemId: selectedItemId,
-        itemName: item.name,
-        assignedQuantity: quantity,
-        remainingQuantity: quantity,
-        lastUpdated: new Date().toISOString(),
-        createdAt: new Date().toISOString()
+  // Handle issuing an item to an engineer
+  const handleIssueItem = async () => {
+    try {
+      if (!selectedEngineerId || !selectedItemId || quantity <= 0) {
+        toast({
+          title: "Error",
+          description: "Please fill all the required fields",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const engineer = engineers.find(e => e.id === selectedEngineerId);
+      const item = inventoryItems.find(i => i.id === selectedItemId);
+      
+      if (!engineer || !item) {
+        toast({
+          title: "Error",
+          description: "Invalid engineer or item selection",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Prepare the data for insertion
+      const issueData = {
+        engineer_id: selectedEngineerId,
+        engineer_name: engineer.name,
+        item_id: selectedItemId,
+        item_name: item.part_name,
+        quantity: quantity,
+        assigned_date: new Date().toISOString(),
+        warehouse_id: selectedWarehouse,
+        warehouse_source: selectedWarehouse ? 
+          (await supabase.from('warehouses').select('name').eq('id', selectedWarehouse).single()).data?.name 
+          : "Main Warehouse"
       };
       
-      setEngineerInventory(prev => [...prev, newInventoryItem]);
+      // Insert into database
+      const { error } = await supabase
+        .from('engineer_inventory')
+        .insert(issueData);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: `${quantity} ${item.part_name} issued to ${engineer.name}`,
+      });
+      
+      // Reset form
+      setSelectedEngineerId("");
+      setSelectedItemId("");
+      setQuantity(1);
+      setShowIssueDialog(false);
+      
+    } catch (error) {
+      console.error("Error issuing item:", error);
+      toast({
+        title: "Error",
+        description: "Failed to issue item. Please try again.",
+        variant: "destructive",
+      });
     }
-    
-    toast({
-      title: "Item Issued",
-      description: `${quantity} ${item.name} issued to ${engineer.name}`,
-    });
-    
-    // Reset form
-    setSelectedEngineerId("");
-    setSelectedItemId("");
-    setQuantity(1);
-    setShowIssueDialog(false);
   };
   
-  const handleReturnItem = () => {
-    if (!returnItemId || returnQuantity <= 0) {
+  // Handle returning an item to warehouse
+  const handleReturnItem = async () => {
+    try {
+      if (!returnItemId || returnQuantity <= 0) {
+        toast({
+          title: "Error",
+          description: "Please fill all the required fields",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const inventoryItem = engineerInventory.find(item => item.id === returnItemId);
+      
+      if (!inventoryItem) {
+        toast({
+          title: "Error",
+          description: "Invalid item selection",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (returnQuantity > inventoryItem.remainingQuantity) {
+        toast({
+          title: "Error",
+          description: `Cannot return more than the remaining quantity (${inventoryItem.remainingQuantity})`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Prepare return data
+      const returnData = {
+        engineer_id: inventoryItem.engineerId,
+        engineer_name: inventoryItem.engineerName,
+        item_id: inventoryItem.itemId,
+        item_name: inventoryItem.itemName,
+        quantity: returnQuantity,
+        return_date: new Date().toISOString(),
+        reason: returnReason,
+        condition: returnCondition,
+        notes: returnNotes,
+        warehouse_id: selectedWarehouse,
+        warehouse_name: selectedWarehouse ? 
+          (await supabase.from('warehouses').select('name').eq('id', selectedWarehouse).single()).data?.name 
+          : "Main Warehouse"
+      };
+      
+      // Insert return record
+      const { error: returnError } = await supabase
+        .from('inventory_returns')
+        .insert(returnData);
+      
+      if (returnError) throw returnError;
+      
+      toast({
+        title: "Item Returned",
+        description: `${returnQuantity} ${inventoryItem.itemName} returned to warehouse`,
+      });
+      
+      // Reset form
+      setReturnItemId("");
+      setReturnQuantity(1);
+      setReturnReason("Unused");
+      setReturnCondition("Good");
+      setReturnNotes("");
+      setShowReturnDialog(false);
+      
+    } catch (error) {
+      console.error("Error returning item:", error);
       toast({
         title: "Error",
-        description: "Please fill all the required fields",
-        variant: "destructive"
+        description: "Failed to return item. Please try again.",
+        variant: "destructive",
       });
-      return;
     }
-    
-    const inventoryItem = engineerInventory.find(item => item.id === returnItemId);
-    
-    if (!inventoryItem) {
-      toast({
-        title: "Error",
-        description: "Invalid item selection",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (returnQuantity > inventoryItem.remainingQuantity) {
-      toast({
-        title: "Error",
-        description: `Cannot return more than the remaining quantity (${inventoryItem.remainingQuantity})`,
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Update the inventory
-    setEngineerInventory(prev =>
-      prev.map(inv => {
-        if (inv.id === returnItemId) {
-          const newRemainingQuantity = inv.remainingQuantity - returnQuantity;
-          
-          // If remaining quantity is 0, remove the entry
-          if (newRemainingQuantity <= 0 && inv.assignedQuantity === returnQuantity) {
-            return null;
-          }
-          
-          return {
-            ...inv,
-            remainingQuantity: newRemainingQuantity,
-            assignedQuantity: inv.assignedQuantity - returnQuantity,
-            lastUpdated: new Date().toISOString()
-          };
-        }
-        return inv;
-      }).filter(Boolean) as EngineerInventory[]
-    );
-    
-    toast({
-      title: "Item Returned",
-      description: `${returnQuantity} ${inventoryItem.itemName} returned to warehouse`,
-    });
-    
-    // Reset form
-    setReturnItemId("");
-    setReturnQuantity(1);
-    setReturnReason("Unused");
-    setShowReturnDialog(false);
   };
   
   // Group inventory items by engineer
-  const groupedInventory = engineers.map(engineer => {
-    const items = engineerInventory.filter(item => item.engineerId === engineer.id);
-    return {
-      engineer,
-      items
-    };
-  }).filter(group => group.items.length > 0);
+  const groupedInventory = engineers
+    .filter(engineer => engineerInventory.some(item => item.engineerId === engineer.id))
+    .map(engineer => {
+      const items = engineerInventory.filter(item => item.engineerId === engineer.id);
+      return {
+        engineer,
+        items
+      };
+    });
   
   return (
     <Card className="w-full">
@@ -273,7 +256,6 @@ const EngineerInventoryManager = ({ engineers, inventoryItems }: EngineerInvento
                       <TableHead>Item</TableHead>
                       <TableHead className="text-right">Assigned</TableHead>
                       <TableHead className="text-right">Remaining</TableHead>
-                      <TableHead className="text-right">Used</TableHead>
                       <TableHead>Last Updated</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -284,12 +266,9 @@ const EngineerInventoryManager = ({ engineers, inventoryItems }: EngineerInvento
                         <TableCell className="font-medium">{item.itemName}</TableCell>
                         <TableCell className="text-right">{item.assignedQuantity}</TableCell>
                         <TableCell className="text-right">
-                          <Badge variant={item.remainingQuantity > 0 ? "outline" : "destructive"}>
+                          <Badge variant="outline">
                             {item.remainingQuantity}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.assignedQuantity - item.remainingQuantity}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {new Date(item.lastUpdated).toLocaleDateString()}
@@ -360,7 +339,7 @@ const EngineerInventoryManager = ({ engineers, inventoryItems }: EngineerInvento
                 <SelectContent>
                   {inventoryItems.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} (Stock: {item.currentQuantity})
+                      {item.part_name} (Stock: {item.quantity})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -448,6 +427,33 @@ const EngineerInventoryManager = ({ engineers, inventoryItems }: EngineerInvento
                   <SelectItem value="Wrong Item">Wrong Item</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="returnCondition">Item Condition</Label>
+              <Select
+                value={returnCondition}
+                onValueChange={setReturnCondition}
+              >
+                <SelectTrigger id="returnCondition">
+                  <SelectValue placeholder="Select condition" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Good">Good</SelectItem>
+                  <SelectItem value="Damaged">Damaged</SelectItem>
+                  <SelectItem value="Needs Repair">Needs Repair</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="returnNotes">Notes (Optional)</Label>
+              <Input
+                id="returnNotes"
+                value={returnNotes}
+                onChange={(e) => setReturnNotes(e.target.value)}
+                placeholder="Additional notes about the return"
+              />
             </div>
           </div>
           
