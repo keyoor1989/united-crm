@@ -300,7 +300,7 @@ const ServiceCallForm = () => {
         data.engineerId = null;
       }
 
-      const initialStatus = data.engineerId ? "Pending" : "New";
+      const initialStatus = data.engineerId ? "Pending" : "Pending";
       
       const { data: serviceCallData, error: serviceCallError } = await supabase
         .from('service_calls')
