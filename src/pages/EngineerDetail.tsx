@@ -1,38 +1,14 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback } from "@/types/service";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import {
-  ArrowLeft,
-  Phone,
-  Mail,
-  MapPin,
-  Edit,
-  Calendar,
-  CheckCircle,
-  Clock,
-  User,
-  Briefcase,
-} from "lucide-react";
+import { ArrowLeft, Edit } from "lucide-react";
 import EngineerForm from "@/components/service/EngineerForm";
-import { format, parseISO } from "date-fns";
-import { Badge } from "@/components/ui/badge";
+import { EngineerProfile } from "@/components/service/EngineerProfile";
+import { EngineerServiceCallTabs } from "@/components/service/EngineerServiceCallTabs";
 
 const EngineerDetail = () => {
   const { engineerId } = useParams();
@@ -349,165 +325,11 @@ const EngineerDetail = () => {
         />
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-2xl font-bold">{engineer?.name}</CardTitle>
-                  <CardDescription>{engineer?.skillLevel} Engineer</CardDescription>
-                </div>
-                <Badge
-                  className={
-                    engineer?.status === "Available"
-                      ? "bg-green-100 text-green-800 hover:bg-green-100"
-                      : engineer?.status === "On Call"
-                      ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                      : engineer?.status === "Break"
-                      ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
-                      : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-                  }
-                >
-                  {engineer?.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{engineer?.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{engineer?.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>Base Location: {engineer?.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>Current Location: {engineer?.currentLocation}</span>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    <span>Current Job: {engineer?.currentJob || "None assigned"}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>Skill Level: {engineer?.skillLevel}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="active">Active Calls</TabsTrigger>
-              <TabsTrigger value="completed">Completed Calls</TabsTrigger>
-              <TabsTrigger value="all">All Calls</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="active" className="space-y-4 mt-4">
-              {serviceCalls.filter(call => call.status !== "Completed").length === 0 ? (
-                <p className="text-center py-6 text-muted-foreground">
-                  No active service calls found for this engineer.
-                </p>
-              ) : (
-                serviceCalls
-                  .filter(call => call.status !== "Completed")
-                  .map(call => (
-                    <ServiceCallCard key={call.id} call={call} />
-                  ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="completed" className="space-y-4 mt-4">
-              {serviceCalls.filter(call => call.status === "Completed").length === 0 ? (
-                <p className="text-center py-6 text-muted-foreground">
-                  No completed service calls found for this engineer.
-                </p>
-              ) : (
-                serviceCalls
-                  .filter(call => call.status === "Completed")
-                  .map(call => (
-                    <ServiceCallCard key={call.id} call={call} />
-                  ))
-              )}
-            </TabsContent>
-
-            <TabsContent value="all" className="space-y-4 mt-4">
-              {serviceCalls.length === 0 ? (
-                <p className="text-center py-6 text-muted-foreground">
-                  No service calls found for this engineer.
-                </p>
-              ) : (
-                serviceCalls.map(call => <ServiceCallCard key={call.id} call={call} />)
-              )}
-            </TabsContent>
-          </Tabs>
+          {engineer && <EngineerProfile engineer={engineer} />}
+          <EngineerServiceCallTabs serviceCalls={serviceCalls} />
         </>
       )}
     </div>
-  );
-};
-
-const ServiceCallCard = ({ call }: { call: ServiceCall }) => {
-  return (
-    <Card className="hover:bg-accent/10 transition-colors">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{call.customerName}</CardTitle>
-            <CardDescription>{call.machineModel} - {call.serialNumber}</CardDescription>
-          </div>
-          <Badge
-            className={
-              call.status === "Completed"
-                ? "bg-green-100 text-green-800"
-                : call.status === "In Progress"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-amber-100 text-amber-800"
-            }
-          >
-            {call.status}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{format(parseISO(call.createdAt), "MMM d, yyyy")}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{call.location}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>SLA: {format(parseISO(call.slaDeadline), "MMM d, h:mm a")}</span>
-          </div>
-          {call.completionTime && (
-            <div className="flex items-center gap-1">
-              <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-              <span>{format(parseISO(call.completionTime), "MMM d, h:mm a")}</span>
-            </div>
-          )}
-        </div>
-        <Separator />
-        <div>
-          <p className="text-sm font-medium">Issue: {call.issueType}</p>
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {call.issueDescription}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
   );
 };
 

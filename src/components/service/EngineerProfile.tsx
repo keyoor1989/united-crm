@@ -1,0 +1,70 @@
+
+import React from "react";
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Engineer } from "@/types/service";
+import { Phone, Mail, MapPin, Briefcase, User } from "lucide-react";
+
+interface EngineerProfileProps {
+  engineer: Engineer;
+}
+
+export const EngineerProfile: React.FC<EngineerProfileProps> = ({ engineer }) => {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-2xl font-bold">{engineer.name}</CardTitle>
+            <CardDescription>{engineer.skillLevel} Engineer</CardDescription>
+          </div>
+          <Badge
+            className={
+              engineer.status === "Available"
+                ? "bg-green-100 text-green-800 hover:bg-green-100"
+                : engineer.status === "On Call"
+                ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
+                : engineer.status === "Break"
+                ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+            }
+          >
+            {engineer.status}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span>{engineer.phone}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span>{engineer.email}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span>Base Location: {engineer.location}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span>Current Location: {engineer.currentLocation}</span>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+              <span>Current Job: {engineer.currentJob || "None assigned"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span>Skill Level: {engineer.skillLevel}</span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
