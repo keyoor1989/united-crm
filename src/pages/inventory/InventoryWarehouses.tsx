@@ -116,10 +116,7 @@ const fetchWarehouseStock = async (warehouseId: string | null): Promise<Warehous
     warehouseId: stock.warehouse_id,
     itemId: stock.item_id,
     quantity: stock.quantity,
-    lastUpdated: stock.last_updated,
-    itemName: 'Unknown', // We'll need to join with items table later
-    brand: 'Unknown',
-    model: 'Unknown'
+    lastUpdated: stock.last_updated
   }));
 };
 
@@ -470,9 +467,7 @@ const InventoryWarehouses = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Brand</TableHead>
-                      <TableHead>Model</TableHead>
+                      <TableHead>Item ID</TableHead>
                       <TableHead>Warehouse</TableHead>
                       <TableHead>Quantity</TableHead>
                       <TableHead>Last Updated</TableHead>
@@ -483,9 +478,7 @@ const InventoryWarehouses = () => {
                       const warehouse = warehouses.find(w => w.id === stock.warehouseId);
                       return (
                         <TableRow key={stock.id}>
-                          <TableCell className="font-medium">{stock.itemName}</TableCell>
-                          <TableCell>{stock.brand}</TableCell>
-                          <TableCell>{stock.model}</TableCell>
+                          <TableCell className="font-medium">{stock.itemId}</TableCell>
                           <TableCell>{warehouse?.name || "Unknown"}</TableCell>
                           <TableCell>{stock.quantity}</TableCell>
                           <TableCell>{new Date(stock.lastUpdated).toLocaleDateString()}</TableCell>
@@ -495,7 +488,7 @@ const InventoryWarehouses = () => {
 
                     {filteredStock.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
+                        <TableCell colSpan={4} className="h-24 text-center">
                           No stock found
                         </TableCell>
                       </TableRow>
