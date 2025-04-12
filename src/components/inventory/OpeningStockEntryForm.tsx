@@ -29,11 +29,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Define the form schema
 const formSchema = z.object({
   brand: z.string().min(1, { message: "Brand is required" }),
-  model: z.string().min(1, { message: "Model is required" }),
+  compatibleModels: z.array(z.string()).min(1, { message: "At least one compatible model is required" }),
   partName: z.string().min(1, { message: "Part name is required" }),
   partNumber: z.string().optional(),
   category: z.string().min(1, { message: "Category is required" }),
@@ -56,22 +58,23 @@ const categories = ["Toner", "Drum", "Maintenance Kit", "Fuser", "Developer", "O
 
 // Models by brand - in a real app this would come from an API or database
 const modelsByBrand: Record<string, string[]> = {
-  "Kyocera": ["ECOSYS M2040dn", "ECOSYS M2540dn", "ECOSYS M2640idw", "TASKalfa 2554ci"],
-  "Canon": ["IR 2002", "IR 2004", "IR 2006", "IR ADV 4025"],
-  "HP": ["LaserJet Pro M402", "LaserJet Pro M426", "LaserJet Enterprise M507"],
-  "Konica Minolta": ["Bizhub C224e", "Bizhub C284e", "Bizhub 367"],
-  "Ricoh": ["MP 2014", "MP 301", "Aficio MP 2501L"],
-  "Sharp": ["AR-6020", "MX-M264N", "MX-3050N"],
+  "Kyocera": ["ECOSYS M2040dn", "ECOSYS M2540dn", "ECOSYS M2640idw", "TASKalfa 2554ci", "TASKalfa 2553ci", "TASKalfa 2552ci"],
+  "Canon": ["IR 2002", "IR 2004", "IR 2006", "IR ADV 4025", "IR ADV 4035", "IR ADV 4045"],
+  "HP": ["LaserJet Pro M402", "LaserJet Pro M426", "LaserJet Enterprise M507", "LaserJet Enterprise M607"],
+  "Konica Minolta": ["Bizhub C224e", "Bizhub C284e", "Bizhub 367", "Bizhub 458"],
+  "Ricoh": ["MP 2014", "MP 301", "Aficio MP 2501L", "MP C2004"],
+  "Sharp": ["AR-6020", "MX-M264N", "MX-3050N", "MX-3070N"],
 };
 
 const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEntryFormProps) => {
   const [selectedBrand, setSelectedBrand] = useState<string>("");
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       brand: "",
-      model: "",
+      compatibleModels: [],
       partName: "",
       partNumber: "",
       category: "",
@@ -88,7 +91,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
       partNumber: values.partNumber || `${values.brand.substring(0, 2)}-${Math.floor(Math.random() * 10000)}`,
       name: values.partName,
       brand: values.brand,
-      compatibleModels: [values.model],
+      compatibleModels: values.compatibleModels,
       category: values.category,
       currentStock: values.quantity,
       minStock: values.minStock,
@@ -103,6 +106,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     
     // Reset form and close dialog
     form.reset();
+    setSelectedModels([]);
     onOpenChange(false);
   };
 
@@ -110,7 +114,18 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
   const handleBrandChange = (value: string) => {
     setSelectedBrand(value);
     form.setValue("brand", value);
-    form.setValue("model", "");
+    form.setValue("compatibleModels", []);
+    setSelectedModels([]);
+  };
+
+  // Handle model selection
+  const handleModelChange = (model: string, checked: boolean) => {
+    const updatedModels = checked
+      ? [...selectedModels, model]
+      : selectedModels.filter(m => m !== model);
+    
+    setSelectedModels(updatedModels);
+    form.setValue("compatibleModels", updatedModels);
   };
 
   return (
@@ -156,28 +171,41 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
               
               <FormField
                 control={form.control}
-                name="model"
+                name="compatibleModels"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Compatible Model</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                      disabled={!selectedBrand}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select model" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {selectedBrand && modelsByBrand[selectedBrand]?.map((model) => (
-                          <SelectItem key={model} value={model}>
-                            {model}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Compatible Models</FormLabel>
+                    <FormControl>
+                      <div className="border rounded-md overflow-hidden">
+                        {selectedBrand ? (
+                          <ScrollArea className="h-[100px] p-2">
+                            <div className="space-y-2">
+                              {modelsByBrand[selectedBrand]?.map((model) => (
+                                <div key={model} className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id={`model-${model}`} 
+                                    checked={selectedModels.includes(model)}
+                                    onCheckedChange={(checked) => 
+                                      handleModelChange(model, checked as boolean)
+                                    }
+                                  />
+                                  <label
+                                    htmlFor={`model-${model}`}
+                                    className="text-sm cursor-pointer"
+                                  >
+                                    {model}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                        ) : (
+                          <div className="h-[100px] flex items-center justify-center text-sm text-muted-foreground">
+                            Select a brand first
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -288,11 +316,29 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
               />
             </div>
             
+            {selectedModels.length > 0 && (
+              <div className="border p-2 rounded-md bg-slate-50">
+                <p className="text-sm font-medium mb-1">Selected Models:</p>
+                <div className="flex flex-wrap gap-1">
+                  {selectedModels.map(model => (
+                    <span key={model} className="bg-slate-200 px-2 py-1 rounded text-xs">
+                      {model}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Add Opening Stock</Button>
+              <Button 
+                type="submit" 
+                disabled={selectedModels.length === 0}
+              >
+                Add Opening Stock
+              </Button>
             </DialogFooter>
           </form>
         </Form>
