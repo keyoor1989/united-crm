@@ -197,12 +197,12 @@ const EngineerDetail = () => {
           completionTime: call.completion_time,
           partsUsed: parsedPartsUsed,
           feedback: parsedFeedback,
-          // Add missing properties from ServiceCall type
-          serviceCharge: 'service_charge' in call ? call.service_charge : 0,
-          isPaid: 'is_paid' in call ? call.is_paid : false,
-          partsReconciled: 'parts_reconciled' in call ? call.parts_reconciled : false,
-          paymentDate: 'payment_date' in call ? call.payment_date : undefined,
-          paymentMethod: 'payment_method' in call ? call.payment_method : undefined
+          // Add missing properties with proper type casting
+          serviceCharge: typeof call.service_charge === 'number' ? call.service_charge : 0,
+          isPaid: Boolean(call.is_paid),
+          partsReconciled: Boolean(call.parts_reconciled),
+          paymentDate: call.payment_date as string | undefined,
+          paymentMethod: call.payment_method as string | undefined
         };
       });
 

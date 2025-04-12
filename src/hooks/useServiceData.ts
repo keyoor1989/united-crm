@@ -67,8 +67,8 @@ export const useServiceData = () => {
           skillLevel: eng.skill_level as EngineerSkillLevel,
           currentJob: eng.current_job,
           currentLocation: eng.current_location,
-          // Fix for leave_end_date not existing - check if property exists
-          leaveEndDate: 'leave_end_date' in eng ? eng.leave_end_date : undefined
+          // Fix for leave_end_date not existing - explicitly cast to string or undefined
+          leaveEndDate: eng.leave_end_date as string | undefined
         };
       });
       
@@ -141,12 +141,12 @@ export const useServiceData = () => {
           completionTime: call.completion_time,
           partsUsed: parsedPartsUsed,
           feedback: parsedFeedback,
-          // Fix missing fields with safe property access
-          serviceCharge: 'service_charge' in call ? call.service_charge : 0,
-          isPaid: 'is_paid' in call ? call.is_paid : false,
-          paymentDate: 'payment_date' in call ? call.payment_date : undefined,
-          paymentMethod: 'payment_method' in call ? call.payment_method : undefined, 
-          partsReconciled: 'parts_reconciled' in call ? call.parts_reconciled : false
+          // Fix missing fields with proper type casting
+          serviceCharge: typeof call.service_charge === 'number' ? call.service_charge : 0,
+          isPaid: Boolean(call.is_paid),
+          paymentDate: call.payment_date as string | undefined,
+          paymentMethod: call.payment_method as string | undefined, 
+          partsReconciled: Boolean(call.parts_reconciled)
         };
       });
       
