@@ -1,4 +1,6 @@
 
+import { ServiceExpense } from "@/types/serviceExpense";
+
 export interface ServiceCall {
   id: string;
   customerId: string;
