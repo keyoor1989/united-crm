@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,12 +23,18 @@ const MachineParts = () => {
   const [machineParts, setMachineParts] = useState([]);
   const [openStockEntryForm, setOpenStockEntryForm] = useState(false);
   
-  // Save inventory items to mock data
+  // Load any existing items from mock data on initial render
   useEffect(() => {
-    if (mockInventoryItems.length === 0) {
-      // Convert machine parts to inventory items format for global use
-      // This would typically be synced with a database in a real app
-    }
+    // This would be replaced with an API call in a real app
+    setMachineParts(mockInventoryItems);
+  }, []);
+  
+  // Save inventory items to mock data when they change
+  useEffect(() => {
+    // Update mock data with current machine parts
+    // This would be replaced with an API call in a real app
+    mockInventoryItems.length = 0;
+    mockInventoryItems.push(...machineParts);
   }, [machineParts]);
   
   const filteredParts = machineParts.filter(part => {
@@ -129,45 +136,45 @@ const MachineParts = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredParts.map((part) => {
-                    const stockStatus = getStockStatus(part.currentStock, part.minStock);
-                    return (
-                      <TableRow key={part.id}>
-                        <TableCell className="font-medium">{part.partNumber}</TableCell>
-                        <TableCell>{part.name}</TableCell>
-                        <TableCell>{part.brand}</TableCell>
-                        <TableCell>{part.category}</TableCell>
-                        <TableCell>
-                          <div className="text-xs max-w-[200px] truncate">
-                            {part.compatibleModels.join(", ")}
-                          </div>
-                        </TableCell>
-                        <TableCell>{part.currentStock}</TableCell>
-                        <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon">
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  
-                  {filteredParts.length === 0 && (
+                  {filteredParts.length > 0 ? (
+                    filteredParts.map((part) => {
+                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
+                      return (
+                        <TableRow key={part.id}>
+                          <TableCell className="font-medium">{part.partNumber}</TableCell>
+                          <TableCell>{part.name}</TableCell>
+                          <TableCell>{part.brand}</TableCell>
+                          <TableCell>{part.category}</TableCell>
+                          <TableCell>
+                            <div className="text-xs max-w-[200px] truncate">
+                              {part.compatibleModels.join(", ")}
+                            </div>
+                          </TableCell>
+                          <TableCell>{part.currentStock}</TableCell>
+                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="icon">
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon">
+                                <Settings className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon">
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
                     <TableRow>
                       <TableCell colSpan={9} className="h-24 text-center">
-                        No parts found
+                        No parts found. Add your first part by clicking "Add New Part" above.
                       </TableCell>
                     </TableRow>
                   )}
@@ -186,9 +193,47 @@ const MachineParts = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px] flex items-center justify-center">
-                <p className="text-muted-foreground">Toner cartridges would appear here</p>
-              </div>
+              {filteredParts.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Part Number</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Compatible Models</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Price (₹)</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredParts.map(part => {
+                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
+                      return (
+                        <TableRow key={part.id}>
+                          <TableCell className="font-medium">{part.partNumber}</TableCell>
+                          <TableCell>{part.name}</TableCell>
+                          <TableCell>{part.brand}</TableCell>
+                          <TableCell>
+                            <div className="text-xs max-w-[200px] truncate">
+                              {part.compatibleModels.join(", ")}
+                            </div>
+                          </TableCell>
+                          <TableCell>{part.currentStock}</TableCell>
+                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-muted-foreground">No toner cartridges found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -202,9 +247,47 @@ const MachineParts = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px] flex items-center justify-center">
-                <p className="text-muted-foreground">Drum units would appear here</p>
-              </div>
+              {filteredParts.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Part Number</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Compatible Models</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Price (₹)</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredParts.map(part => {
+                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
+                      return (
+                        <TableRow key={part.id}>
+                          <TableCell className="font-medium">{part.partNumber}</TableCell>
+                          <TableCell>{part.name}</TableCell>
+                          <TableCell>{part.brand}</TableCell>
+                          <TableCell>
+                            <div className="text-xs max-w-[200px] truncate">
+                              {part.compatibleModels.join(", ")}
+                            </div>
+                          </TableCell>
+                          <TableCell>{part.currentStock}</TableCell>
+                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-muted-foreground">No drum units found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -218,9 +301,47 @@ const MachineParts = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px] flex items-center justify-center">
-                <p className="text-muted-foreground">Maintenance kits would appear here</p>
-              </div>
+              {filteredParts.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Part Number</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Compatible Models</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Price (₹)</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredParts.map(part => {
+                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
+                      return (
+                        <TableRow key={part.id}>
+                          <TableCell className="font-medium">{part.partNumber}</TableCell>
+                          <TableCell>{part.name}</TableCell>
+                          <TableCell>{part.brand}</TableCell>
+                          <TableCell>
+                            <div className="text-xs max-w-[200px] truncate">
+                              {part.compatibleModels.join(", ")}
+                            </div>
+                          </TableCell>
+                          <TableCell>{part.currentStock}</TableCell>
+                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-muted-foreground">No maintenance kits found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -234,9 +355,47 @@ const MachineParts = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px] flex items-center justify-center">
-                <p className="text-muted-foreground">Fuser units would appear here</p>
-              </div>
+              {filteredParts.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Part Number</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Compatible Models</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Price (₹)</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredParts.map(part => {
+                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
+                      return (
+                        <TableRow key={part.id}>
+                          <TableCell className="font-medium">{part.partNumber}</TableCell>
+                          <TableCell>{part.name}</TableCell>
+                          <TableCell>{part.brand}</TableCell>
+                          <TableCell>
+                            <div className="text-xs max-w-[200px] truncate">
+                              {part.compatibleModels.join(", ")}
+                            </div>
+                          </TableCell>
+                          <TableCell>{part.currentStock}</TableCell>
+                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="h-[200px] flex items-center justify-center">
+                  <p className="text-muted-foreground">No fuser units found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

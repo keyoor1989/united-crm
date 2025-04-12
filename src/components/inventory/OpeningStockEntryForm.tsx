@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +31,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useQuery } from "@tanstack/react-query";
+import { Brand, Model } from "@/types/inventory";
 
 // Define the form schema
 const formSchema = z.object({
@@ -51,23 +54,86 @@ interface OpeningStockEntryFormProps {
   onAddPart: (part: any) => void;
 }
 
-// Sample data for form dropdowns - these are needed for the form to work
-const brands = ["Kyocera", "Canon", "HP", "Konica Minolta", "Ricoh", "Sharp"];
+// Category options - this is static data
 const categories = ["Toner", "Drum", "Maintenance Kit", "Fuser", "Developer", "Other"];
 
-// Models by brand mapping - this is needed for the form to function properly
-const modelsByBrand: Record<string, string[]> = {
-  "Kyocera": ["ECOSYS M2040dn", "ECOSYS M2540dn", "ECOSYS M2640idw", "TASKalfa 2554ci", "TASKalfa 2553ci", "TASKalfa 2552ci"],
-  "Canon": ["IR 2002", "IR 2004", "IR 2006", "IR ADV 4025", "IR ADV 4035", "IR ADV 4045"],
-  "HP": ["LaserJet Pro M402", "LaserJet Pro M426", "LaserJet Enterprise M507", "LaserJet Enterprise M607"],
-  "Konica Minolta": ["Bizhub C224e", "Bizhub C284e", "Bizhub 367", "Bizhub 458"],
-  "Ricoh": ["MP 2014", "MP 301", "Aficio MP 2501L", "MP C2004"],
-  "Sharp": ["AR-6020", "MX-M264N", "MX-3050N", "MX-3070N"],
+// Mock fetch functions - in a real app, these would be API calls to your backend
+const fetchBrands = async (): Promise<Brand[]> => {
+  // This would be a real API call in production
+  return [
+    { id: "1", name: "Kyocera", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "2", name: "Canon", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "3", name: "HP", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "4", name: "Konica Minolta", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "5", name: "Ricoh", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "6", name: "Sharp", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+  ];
+};
+
+const fetchModelsByBrand = async (brandId: string): Promise<Model[]> => {
+  // This would be a real API call in production
+  const allModels: Record<string, Model[]> = {
+    "1": [
+      { id: "k1", brandId: "1", name: "ECOSYS M2040dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "k2", brandId: "1", name: "ECOSYS M2540dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "k3", brandId: "1", name: "ECOSYS M2640idw", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "k4", brandId: "1", name: "TASKalfa 2554ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "k5", brandId: "1", name: "TASKalfa 2553ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "k6", brandId: "1", name: "TASKalfa 2552ci", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ],
+    "2": [
+      { id: "c1", brandId: "2", name: "IR 2002", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "c2", brandId: "2", name: "IR 2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "c3", brandId: "2", name: "IR 2006", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "c4", brandId: "2", name: "IR ADV 4025", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "c5", brandId: "2", name: "IR ADV 4035", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "c6", brandId: "2", name: "IR ADV 4045", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ],
+    "3": [
+      { id: "h1", brandId: "3", name: "LaserJet Pro M402", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "h2", brandId: "3", name: "LaserJet Pro M426", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "h3", brandId: "3", name: "LaserJet Enterprise M507", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "h4", brandId: "3", name: "LaserJet Enterprise M607", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ],
+    "4": [
+      { id: "km1", brandId: "4", name: "Bizhub C224e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "km2", brandId: "4", name: "Bizhub C284e", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "km3", brandId: "4", name: "Bizhub 367", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "km4", brandId: "4", name: "Bizhub 458", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ],
+    "5": [
+      { id: "r1", brandId: "5", name: "MP 2014", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "r2", brandId: "5", name: "MP 301", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "r3", brandId: "5", name: "Aficio MP 2501L", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "r4", brandId: "5", name: "MP C2004", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ],
+    "6": [
+      { id: "s1", brandId: "6", name: "AR-6020", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "s2", brandId: "6", name: "MX-M264N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "s3", brandId: "6", name: "MX-3050N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: "s4", brandId: "6", name: "MX-3070N", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ]
+  };
+  
+  return allModels[brandId] || [];
 };
 
 const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEntryFormProps) => {
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  
+  // Fetch brands data
+  const { data: brands = [] } = useQuery({
+    queryKey: ['brands'],
+    queryFn: fetchBrands
+  });
+  
+  // Fetch models data for the selected brand
+  const { data: models = [] } = useQuery({
+    queryKey: ['models', selectedBrand],
+    queryFn: () => selectedBrand ? fetchModelsByBrand(selectedBrand) : Promise.resolve([]),
+    enabled: !!selectedBrand
+  });
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -88,7 +154,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
       id: `MP${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
       partNumber: values.partNumber || `${values.brand.substring(0, 2)}-${Math.floor(Math.random() * 10000)}`,
       name: values.partName,
-      brand: values.brand,
+      brand: brands.find(b => b.id === values.brand)?.name || values.brand,
       compatibleModels: values.compatibleModels,
       category: values.category,
       currentStock: values.quantity,
@@ -151,8 +217,8 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                       </FormControl>
                       <SelectContent>
                         {brands.map((brand) => (
-                          <SelectItem key={brand} value={brand}>
-                            {brand}
+                          <SelectItem key={brand.id} value={brand.id}>
+                            {brand.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -173,20 +239,20 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
                         {selectedBrand ? (
                           <ScrollArea className="h-[100px] p-2">
                             <div className="space-y-2">
-                              {modelsByBrand[selectedBrand]?.map((model) => (
-                                <div key={model} className="flex items-center space-x-2">
+                              {models.map((model) => (
+                                <div key={model.id} className="flex items-center space-x-2">
                                   <Checkbox 
-                                    id={`model-${model}`} 
-                                    checked={selectedModels.includes(model)}
+                                    id={`model-${model.id}`} 
+                                    checked={selectedModels.includes(model.name)}
                                     onCheckedChange={(checked) => 
-                                      handleModelChange(model, checked as boolean)
+                                      handleModelChange(model.name, checked as boolean)
                                     }
                                   />
                                   <label
-                                    htmlFor={`model-${model}`}
+                                    htmlFor={`model-${model.id}`}
                                     className="text-sm cursor-pointer"
                                   >
-                                    {model}
+                                    {model.name}
                                   </label>
                                 </div>
                               ))}
