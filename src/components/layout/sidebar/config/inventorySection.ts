@@ -10,7 +10,8 @@ import {
   Receipt,
   CheckSquare,
   BarChart2,
-  Clipboard
+  Clipboard,
+  ShoppingCart
 } from "lucide-react";
 import { SidebarSectionConfig } from "../types/navTypes";
 
@@ -55,7 +56,7 @@ export const inventorySection: SidebarSectionConfig = {
     },
     {
       to: "/inventory/purchase-entry",
-      icon: Receipt,
+      icon: ShoppingCart,
       label: "Purchase Entry"
     },
     {

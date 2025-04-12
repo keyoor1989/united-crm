@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -30,6 +29,8 @@ import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
 import ProfitReport from "@/pages/inventory/ProfitReport";
 import InventoryItems from "@/pages/inventory/InventoryItems";
 import InventoryBrands from "@/pages/inventory/InventoryBrands";
+import InventoryPurchase from "@/pages/inventory/InventoryPurchase";
+import InventoryIssue from "@/pages/inventory/InventoryIssue";
 
 const AppRoutes = () => {
   return (
@@ -60,6 +61,8 @@ const AppRoutes = () => {
         <Route path="/inventory/vendor-performance" element={<ProtectedRoute><VendorPerformanceDemo /></ProtectedRoute>} />
         <Route path="/inventory/profit-report" element={<ProtectedRoute><ProfitReport /></ProtectedRoute>} />
         <Route path="/inventory/brands" element={<ProtectedRoute><InventoryBrands /></ProtectedRoute>} />
+        <Route path="/inventory/purchase-entry" element={<ProtectedRoute><InventoryPurchase /></ProtectedRoute>} />
+        <Route path="/inventory/issue" element={<ProtectedRoute><InventoryIssue /></ProtectedRoute>} />
         
         <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
         <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />
