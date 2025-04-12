@@ -20,6 +20,7 @@ import EngineerDetail from "@/pages/EngineerDetail";
 import Customers from "@/pages/Customers";
 import AccessDenied from "@/pages/AccessDenied";
 import CustomerFollowUps from "@/pages/customers/CustomerFollowUps";
+import EngineerPerformanceDashboard from "@/pages/EngineerPerformanceDashboard";
 
 const AppRoutes = () => {
   return (
@@ -48,6 +49,7 @@ const AppRoutes = () => {
         <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />
         <Route path="/service-billing" element={<ProtectedRoute><ServiceBilling /></ProtectedRoute>} />
         <Route path="/engineer/:id" element={<ProtectedRoute><EngineerDetail /></ProtectedRoute>} />
+        <Route path="/engineer-performance" element={<ProtectedRoute><EngineerPerformanceDashboard /></ProtectedRoute>} />
       </Route>
     </Routes>
   );

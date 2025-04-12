@@ -1,36 +1,31 @@
+import { BarChart3, HelpingHand, PhoneCall, Settings, Wrench } from "lucide-react";
+import { SidebarSectionConfig } from "../types/navTypes";
 
-import { Wrench, LineChart, User, FileCheck, DollarSign } from "lucide-react";
-import { NavSection } from "../types/navTypes";
-
-export const serviceSection: NavSection = {
-  key: "service",
-  icon: Wrench,
-  label: "Service",
+const serviceSection: SidebarSectionConfig = {
+  title: "Service",
+  icon: <Settings className="h-5 w-5" />,
   items: [
     {
       to: "/service",
-      icon: Wrench,
+      icon: <PhoneCall className="h-5 w-5" />,
       label: "Service Calls"
     },
     {
+      to: "/service-call-form",
+      icon: <HelpingHand className="h-5 w-5" />,
+      label: "New Service Call"
+    },
+    {
       to: "/service-billing",
-      icon: DollarSign,
+      icon: <Wrench className="h-5 w-5" />,
       label: "Service Billing"
     },
     {
       to: "/engineer-performance",
-      icon: LineChart,
+      icon: <BarChart3 className="h-5 w-5" />,
       label: "Engineer Performance"
-    },
-    {
-      to: "/inventory/engineer-inventory",
-      icon: User,
-      label: "Engineer Inventory"
-    },
-    {
-      to: "/inventory/amc-tracker",
-      icon: FileCheck,
-      label: "AMC Consumables"
     }
   ]
 };
+
+export default serviceSection;
