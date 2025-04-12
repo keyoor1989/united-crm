@@ -37,6 +37,17 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   const [serviceExpenses, setServiceExpenses] = useState<ServiceExpense[]>([]);
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   
+  // Function to handle sorting
+  const requestSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    
+    setSortConfig({ key, direction });
+  };
+  
   // Fetch service expenses
   useEffect(() => {
     const getServiceExpenses = async () => {
