@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,11 +11,25 @@ import {
   User,
   Wrench,
   Calendar,
+  DollarSign,
+  FileCheck,
+  ReceiptText,
 } from "lucide-react";
-import { ServiceCall } from "@/types/service";
+import { ServiceCall, Part } from "@/types/service";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 
 interface ServiceCallDetailProps {
   serviceCall: ServiceCall;
@@ -30,6 +43,12 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
   onUpdate,
 }) => {
   const { toast } = useToast();
+  const [showBillingInfo, setShowBillingInfo] = useState(false);
+  const [serviceCharge, setServiceCharge] = useState(serviceCall.serviceCharge || 0);
+  const [isPaid, setIsPaid] = useState(serviceCall.isPaid || false);
+  const [paymentMethod, setPaymentMethod] = useState(serviceCall.paymentMethod || "");
+  const [partsReconciled, setPartsReconciled] = useState(serviceCall.partsReconciled || false);
+  const [isEditing, setIsEditing] = useState(false);
   
   const {
     id,
@@ -46,7 +65,10 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
     createdAt,
     slaDeadline,
     engineerName,
+    partsUsed,
   } = serviceCall;
+  
+  const totalPartsValue = partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
   
   const handleUpdateStatus = async (newStatus: string) => {
     try {
@@ -90,6 +112,49 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
       toast({
         title: "Error",
         description: "An error occurred while updating the status",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleSaveBillingInfo = async () => {
+    try {
+      const { error } = await supabase
+        .from('service_calls')
+        .update({
+          service_charge: serviceCharge,
+          is_paid: isPaid,
+          payment_method: paymentMethod || null,
+          payment_date: isPaid ? new Date().toISOString() : null,
+          parts_reconciled: partsReconciled
+        })
+        .eq('id', id);
+        
+      if (error) {
+        console.error("Error updating billing info:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update billing information",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Billing Updated",
+        description: "Service call billing information has been updated",
+      });
+      
+      setIsEditing(false);
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error("Error in billing update:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while updating the billing information",
         variant: "destructive",
       });
     }
@@ -186,6 +251,28 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
               <span>Call Type: {callType}</span>
             </div>
           </div>
+          
+          {partsUsed && partsUsed.length > 0 && (
+            <div className="border rounded-md p-4 space-y-2">
+              <h3 className="font-semibold text-sm text-muted-foreground">Parts Used</h3>
+              <ul className="space-y-2">
+                {partsUsed.map((part, index) => (
+                  <li key={index} className="text-sm">
+                    <div className="flex justify-between">
+                      <span>{part.name} (x{part.quantity})</span>
+                      <span>₹{part.price * part.quantity}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">Part #: {part.partNumber}</div>
+                  </li>
+                ))}
+              </ul>
+              <Separator className="my-2" />
+              <div className="flex justify-between font-medium">
+                <span>Total Parts Value:</span>
+                <span>₹{totalPartsValue}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -221,6 +308,135 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
               </div>
             ) : (
               <div className="text-sm text-muted-foreground">No engineer assigned</div>
+            )}
+          </div>
+          
+          <div className="border rounded-md p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm text-muted-foreground">Billing Information</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowBillingInfo(!showBillingInfo)}
+              >
+                {showBillingInfo ? "Hide" : "Show"}
+              </Button>
+            </div>
+            
+            {showBillingInfo && (
+              <div className="space-y-4 pt-2">
+                {!isEditing ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="text-muted-foreground">Service Charge:</div>
+                      <div className="font-medium">₹{serviceCall.serviceCharge || 0}</div>
+                      
+                      <div className="text-muted-foreground">Parts Value:</div>
+                      <div className="font-medium">₹{totalPartsValue}</div>
+                      
+                      <div className="text-muted-foreground">Total Value:</div>
+                      <div className="font-medium">₹{(serviceCall.serviceCharge || 0) + totalPartsValue}</div>
+                      
+                      <div className="text-muted-foreground">Payment Status:</div>
+                      <div>
+                        <Badge variant={serviceCall.isPaid ? "success" : "outline"}>
+                          {serviceCall.isPaid ? "Paid" : "Unpaid"}
+                        </Badge>
+                      </div>
+                      
+                      {serviceCall.isPaid && serviceCall.paymentMethod && (
+                        <>
+                          <div className="text-muted-foreground">Payment Method:</div>
+                          <div>{serviceCall.paymentMethod}</div>
+                          
+                          <div className="text-muted-foreground">Payment Date:</div>
+                          <div>{serviceCall.paymentDate ? new Date(serviceCall.paymentDate).toLocaleDateString() : "-"}</div>
+                        </>
+                      )}
+                      
+                      <div className="text-muted-foreground">Parts Reconciled:</div>
+                      <div>
+                        <Badge variant={serviceCall.partsReconciled ? "success" : "destructive"}>
+                          {serviceCall.partsReconciled ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => setIsEditing(true)}>
+                      Edit Billing Info
+                    </Button>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="serviceCharge">Service Charge (₹)</Label>
+                      <Input
+                        id="serviceCharge"
+                        type="number"
+                        value={serviceCharge}
+                        onChange={(e) => setServiceCharge(Number(e.target.value))}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="isPaid"
+                        checked={isPaid}
+                        onCheckedChange={setIsPaid}
+                      />
+                      <Label htmlFor="isPaid">Mark as Paid</Label>
+                    </div>
+                    
+                    {isPaid && (
+                      <div className="space-y-2">
+                        <Label htmlFor="paymentMethod">Payment Method</Label>
+                        <Select
+                          value={paymentMethod}
+                          onValueChange={setPaymentMethod}
+                        >
+                          <SelectTrigger id="paymentMethod">
+                            <SelectValue placeholder="Select payment method" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Cash">Cash</SelectItem>
+                            <SelectItem value="UPI">UPI</SelectItem>
+                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                            <SelectItem value="Cheque">Cheque</SelectItem>
+                            <SelectItem value="Credit Card">Credit Card</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="partsReconciled"
+                        checked={partsReconciled}
+                        onCheckedChange={setPartsReconciled}
+                      />
+                      <Label htmlFor="partsReconciled">Parts Reconciled with Engineer</Label>
+                    </div>
+                    
+                    <div className="flex space-x-2 pt-2">
+                      <Button size="sm" onClick={handleSaveBillingInfo}>
+                        Save
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => {
+                          setServiceCharge(serviceCall.serviceCharge || 0);
+                          setIsPaid(serviceCall.isPaid || false);
+                          setPaymentMethod(serviceCall.paymentMethod || "");
+                          setPartsReconciled(serviceCall.partsReconciled || false);
+                          setIsEditing(false);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

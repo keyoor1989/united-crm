@@ -1,5 +1,5 @@
 
-import { Wrench, LineChart, User, FileCheck } from "lucide-react";
+import { Wrench, LineChart, User, FileCheck, DollarSign } from "lucide-react";
 import { NavSection } from "../types/navTypes";
 
 export const serviceSection: NavSection = {
@@ -11,6 +11,11 @@ export const serviceSection: NavSection = {
       to: "/service",
       icon: Wrench,
       label: "Service Calls"
+    },
+    {
+      to: "/service-billing",
+      icon: DollarSign,
+      label: "Service Billing"
     },
     {
       to: "/engineer-performance",

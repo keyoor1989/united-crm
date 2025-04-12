@@ -103,7 +103,8 @@ export const useServiceData = () => {
             name: part.name || "",
             partNumber: part.partNumber || "",
             quantity: part.quantity || 0,
-            price: part.price || 0
+            price: part.price || 0,
+            isReconciled: part.isReconciled || false
           }));
         }
         
@@ -139,6 +140,12 @@ export const useServiceData = () => {
           completionTime: call.completion_time,
           partsUsed: parsedPartsUsed,
           feedback: parsedFeedback,
+          // Add new financial fields with defaults
+          serviceCharge: call.service_charge || 0,
+          isPaid: call.is_paid || false,
+          paymentDate: call.payment_date,
+          paymentMethod: call.payment_method,
+          partsReconciled: call.parts_reconciled || false
         };
       });
       
