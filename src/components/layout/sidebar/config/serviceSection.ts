@@ -1,28 +1,29 @@
+
 import { BarChart3, HelpingHand, PhoneCall, Settings, Wrench } from "lucide-react";
 import { SidebarSectionConfig } from "../types/navTypes";
 
 const serviceSection: SidebarSectionConfig = {
   title: "Service",
-  icon: <Settings className="h-5 w-5" />,
+  icon: Settings,
   items: [
     {
       to: "/service",
-      icon: <PhoneCall className="h-5 w-5" />,
+      icon: PhoneCall,
       label: "Service Calls"
     },
     {
       to: "/service-call-form",
-      icon: <HelpingHand className="h-5 w-5" />,
+      icon: HelpingHand,
       label: "New Service Call"
     },
     {
       to: "/service-billing",
-      icon: <Wrench className="h-5 w-5" />,
+      icon: Wrench,
       label: "Service Billing"
     },
     {
       to: "/engineer-performance",
-      icon: <BarChart3 className="h-5 w-5" />,
+      icon: BarChart3,
       label: "Engineer Performance"
     }
   ]
