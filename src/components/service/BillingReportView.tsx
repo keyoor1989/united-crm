@@ -129,7 +129,8 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     
     const callExpenses = serviceExpenses.filter(expense => 
       expense.serviceCallId === call.id && 
-      expense.engineerId !== "system"
+      expense.engineerId !== "system" &&
+      !expense.isReimbursed
     );
     
     const partsCost = call.partsUsed?.reduce((total, part) => {
@@ -142,7 +143,7 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     }, 0) || 0;
     
     const serviceExpensesTotal = callExpenses.reduce((total, expense) => 
-      total + (expense.isReimbursed ? 0 : expense.amount), 0) || 0;
+      total + expense.amount, 0) || 0;
     
     const totalExpenses = serviceExpensesTotal + partsCost;
     

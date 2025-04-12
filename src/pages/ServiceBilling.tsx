@@ -52,6 +52,7 @@ const ServiceBilling = () => {
         total + ((part.cost || part.price * 0.6) * part.quantity), 0) || 0;
       
       // Find all expenses for this service call (excluding system-generated income)
+      // Only including expenses that are not reimbursed (unpaid expenses)
       const callExpenses = serviceExpenses.filter(expense => 
         expense.serviceCallId === call.id && 
         expense.engineerId !== "system" && 
