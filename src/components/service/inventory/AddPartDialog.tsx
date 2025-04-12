@@ -121,7 +121,7 @@ const AddPartDialog: React.FC<AddPartDialogProps> = ({ open, onClose, onSave, se
                   <SelectContent>
                     <SelectGroup>
                       {items.map(item => (
-                        <SelectItem key={item.id} value={item.id}>
+                        <SelectItem key={item.id} value={item.id || "part_id_missing"}>
                           {item.item_name} ({item.quantity} available)
                         </SelectItem>
                       ))}

@@ -77,12 +77,13 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-md">
           <div>
             <label className="text-sm font-medium mb-1 block">Status</label>
-            <Select value={statusFilter || "all"} onValueChange={(value) => onStatusFilterChange(value === "all" ? null : value)}>
+            <Select value={statusFilter || "all_statuses"} onValueChange={(value) => onStatusFilterChange(value === "all_statuses" ? null : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
+                {/* Changed "all" to "all_statuses" to avoid empty string */}
+                <SelectItem value="all_statuses">All Statuses</SelectItem>
                 {uniqueStatuses.map((status) => (
                   <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}
@@ -91,12 +92,13 @@ const CustomerFilters: React.FC<CustomerFiltersProps> = ({
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">Location</label>
-            <Select value={locationFilter || "all"} onValueChange={(value) => onLocationFilterChange(value === "all" ? null : value)}>
+            <Select value={locationFilter || "all_locations"} onValueChange={(value) => onLocationFilterChange(value === "all_locations" ? null : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select location" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
+                {/* Changed "all" to "all_locations" to avoid empty string */}
+                <SelectItem value="all_locations">All Locations</SelectItem>
                 {uniqueLocations.map((location) => (
                   <SelectItem key={location} value={location}>{location}</SelectItem>
                 ))}

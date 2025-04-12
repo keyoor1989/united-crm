@@ -195,7 +195,8 @@ const ItemSelector = ({
                   <SelectValue placeholder="Item Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
+                  {/* Changed the value from "all" to "all_types" to avoid empty string */}
+                  <SelectItem value="all_types">All Types</SelectItem>
                   {itemTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}
