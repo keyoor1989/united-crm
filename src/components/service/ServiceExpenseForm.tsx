@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ExpenseCategory, ServiceExpense } from "@/types/serviceExpense";
 import { ServiceCall } from "@/types/service";
 import { v4 as uuidv4 } from "uuid";
-import { CalendarIcon, Receipt, User, Wrench, Building, AlertCircle } from "lucide-react";
+import { CalendarIcon, Receipt, User, Wrench, Building, AlertCircle, CheckCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -29,7 +29,7 @@ interface ServiceExpenseFormProps {
   engineerId: string;
   engineerName: string;
   onExpenseAdded: (expense: ServiceExpense) => void;
-  activeServiceCalls: ServiceCall[];
+  completedServiceCalls: ServiceCall[];
 }
 
 const ServiceExpenseForm = ({
@@ -37,7 +37,7 @@ const ServiceExpenseForm = ({
   engineerId,
   engineerName,
   onExpenseAdded,
-  activeServiceCalls,
+  completedServiceCalls,
 }: ServiceExpenseFormProps) => {
   const [category, setCategory] = useState<ExpenseCategory>("Travel");
   const [amount, setAmount] = useState<string>("0");
@@ -59,7 +59,7 @@ const ServiceExpenseForm = ({
   useEffect(() => {
     // When service call changes, update the customer information
     if (selectedServiceCallId && selectedServiceCallId !== "general") {
-      const selectedCall = activeServiceCalls.find(call => call.id === selectedServiceCallId);
+      const selectedCall = completedServiceCalls.find(call => call.id === selectedServiceCallId);
       if (selectedCall) {
         setSelectedCustomerId(selectedCall.customerId);
         setSelectedCustomerName(selectedCall.customerName);
@@ -72,7 +72,7 @@ const ServiceExpenseForm = ({
       // Show alert when "general" is selected
       setShowAttentionAlert(true);
     }
-  }, [selectedServiceCallId, activeServiceCalls]);
+  }, [selectedServiceCallId, completedServiceCalls]);
   
   const handleCustomerChange = (customerId: string) => {
     setSelectedCustomerId(customerId === "no_customer" ? null : customerId);
@@ -133,14 +133,14 @@ const ServiceExpenseForm = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="service-call" className="flex items-center">
-              Service Call <span className="text-red-500 ml-1">*</span>
+              Completed Service Call <span className="text-red-500 ml-1">*</span>
             </Label>
             <Select
               value={selectedServiceCallId || ""}
               onValueChange={setSelectedServiceCallId}
             >
               <SelectTrigger id="service-call">
-                <SelectValue placeholder="Select service call" />
+                <SelectValue placeholder="Select completed service call" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="general">
@@ -150,14 +150,23 @@ const ServiceExpenseForm = ({
                   </div>
                 </SelectItem>
                 
-                {activeServiceCalls.map((call) => (
-                  <SelectItem key={call.id} value={call.id}>
-                    <div className="flex flex-col">
-                      <span>{call.customerName} - {call.machineModel}</span>
-                      <span className="text-xs text-muted-foreground">{call.location}</span>
-                    </div>
+                {completedServiceCalls.length > 0 ? (
+                  completedServiceCalls.map((call) => (
+                    <SelectItem key={call.id} value={call.id}>
+                      <div className="flex flex-col">
+                        <span className="flex items-center">
+                          {call.customerName} - {call.machineModel}
+                          <CheckCircle className="h-3 w-3 ml-1 text-green-600" />
+                        </span>
+                        <span className="text-xs text-muted-foreground">{call.location}</span>
+                      </div>
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-completed-calls" disabled>
+                    <span className="text-muted-foreground">No completed service calls available</span>
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>

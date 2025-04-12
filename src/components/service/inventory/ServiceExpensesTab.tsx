@@ -33,7 +33,7 @@ const ServiceExpensesTab = ({
   const [loadingExpenses, setLoadingExpenses] = useState(true);
   const [selectedEngineer, setSelectedEngineer] = useState<Engineer | null>(null);
   
-  // Get active service calls
+  // Get completed service calls
   const { allCalls, isLoading: isLoadingCalls } = useServiceData();
   
   useEffect(() => {
@@ -112,9 +112,9 @@ const ServiceExpensesTab = ({
     );
   }
   
-  // Filter out completed or cancelled service calls
-  const activeServiceCalls = allCalls.filter(
-    call => call.status !== "Completed" && call.status !== "Cancelled"
+  // Filter for completed service calls only - these are the ones we need for expense reports
+  const completedServiceCalls = allCalls.filter(
+    call => call.status === "Completed"
   );
   
   return (
@@ -149,7 +149,7 @@ const ServiceExpensesTab = ({
             engineerId={selectedEngineer.id}
             engineerName={selectedEngineer.name}
             onExpenseAdded={handleExpenseAdded}
-            activeServiceCalls={activeServiceCalls}
+            completedServiceCalls={completedServiceCalls}
           />
         )}
       </div>
