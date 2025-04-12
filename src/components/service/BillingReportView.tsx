@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -18,7 +18,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ServiceCall } from "@/types/service";
 import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
-import { ArrowUpDown, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { ArrowUpDown, TrendingUp, TrendingDown, DollarSign, FileText } from "lucide-react";
+import { fetchServiceExpenses } from "@/services/serviceExpenseService";
+import { ServiceExpense } from "@/types/serviceExpense";
 
 interface BillingReportViewProps {
   serviceCalls: ServiceCall[];
@@ -32,6 +34,30 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     key: string;
     direction: 'ascending' | 'descending';
   } | null>(null);
+  const [serviceExpenses, setServiceExpenses] = useState<ServiceExpense[]>([]);
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
+  
+  // Fetch service expenses
+  useEffect(() => {
+    const getServiceExpenses = async () => {
+      setIsLoadingExpenses(true);
+      try {
+        const expenses = await fetchServiceExpenses();
+        // Filter to only include reimbursed expenses (service charges)
+        const serviceCharges = expenses.filter(expense => 
+          expense.isReimbursed && 
+          expense.customerName // Only include expenses with customer names (service charges)
+        );
+        setServiceExpenses(serviceCharges);
+      } catch (error) {
+        console.error("Error fetching service expenses:", error);
+      } finally {
+        setIsLoadingExpenses(false);
+      }
+    };
+    
+    getServiceExpenses();
+  }, []);
   
   // Pre-process the calls to calculate profits
   const processedCalls = serviceCalls.map(call => {
@@ -56,11 +82,33 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
       partsCost,
       totalExpenses,
       totalRevenue,
-      profit
+      profit,
+      type: "service_call"
     };
   });
   
-  const filteredCalls = processedCalls.filter(call => {
+  // Convert service expenses to billing format
+  const serviceChargeItems = serviceExpenses.map(expense => {
+    return {
+      id: expense.id,
+      createdAt: expense.date,
+      customerName: expense.customerName || "Unknown Customer",
+      issueType: "Service Charge",
+      serviceCharge: expense.amount,
+      partsUsed: [],
+      totalExpenses: 0,
+      totalRevenue: expense.amount,
+      profit: expense.amount,
+      isPaid: true,
+      partsReconciled: true,
+      type: "service_charge"
+    };
+  });
+  
+  // Combine service calls and service charges
+  const allBillingItems = [...processedCalls, ...serviceChargeItems];
+  
+  const filteredCalls = allBillingItems.filter(call => {
     const callDate = new Date(call.createdAt);
     
     if (dateRange.from && dateRange.to) {
@@ -109,12 +157,20 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
         bValue = b.serviceCharge || 0;
         break;
       case 'partsValue':
-        aValue = a.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
-        bValue = b.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
+        if (a.type === "service_charge") {
+          aValue = 0;
+        } else {
+          aValue = a.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
+        }
+        if (b.type === "service_charge") {
+          bValue = 0;
+        } else {
+          bValue = b.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
+        }
         break;
       case 'total':
-        aValue = (a.serviceCharge || 0) + (a.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0);
-        bValue = (b.serviceCharge || 0) + (b.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0);
+        aValue = a.totalRevenue || 0;
+        bValue = b.totalRevenue || 0;
         break;
       case 'profit':
         aValue = a.profit || 0;
@@ -131,17 +187,10 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     }
   });
   
-  const requestSort = (key: string) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
-  
   // Calculate totals
   const totalServiceCharges = sortedCalls.reduce((sum, call) => sum + (call.serviceCharge || 0), 0);
   const totalPartsValue = sortedCalls.reduce((sum, call) => {
+    if (call.type === "service_charge") return sum;
     return sum + (call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0);
   }, 0);
   const totalExpenses = sortedCalls.reduce((sum, call) => sum + (call.totalExpenses || 0), 0);
@@ -149,6 +198,7 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   
   // Unpaid value
   const unpaidAmount = sortedCalls.filter(call => !call.isPaid).reduce((sum, call) => {
+    if (call.type === "service_charge") return sum; // Service charges are always paid
     const partsValue = call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
     return sum + (call.serviceCharge || 0) + partsValue;
   }, 0);
@@ -301,7 +351,7 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
 };
 
 interface BillingTableProps {
-  calls: ServiceCall[];
+  calls: any[];
   requestSort: (key: string) => void;
   sortConfig: {
     key: string;
@@ -368,15 +418,24 @@ const BillingTable = ({ calls, requestSort, sortConfig }: BillingTableProps) => 
           </TableRow>
         ) : (
           calls.map(call => {
-            const partsValue = call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
-            const totalRevenue = (call.serviceCharge || 0) + partsValue;
+            const isServiceCharge = call.type === "service_charge";
+            const partsValue = isServiceCharge ? 0 : 
+              (call.partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0);
+            const totalRevenue = isServiceCharge ? call.totalRevenue : 
+              ((call.serviceCharge || 0) + partsValue);
             const profit = call.profit || 0;
             
             return (
               <TableRow key={call.id}>
                 <TableCell>{format(new Date(call.createdAt), "dd/MM/yyyy")}</TableCell>
                 <TableCell>{call.customerName}</TableCell>
-                <TableCell>{call.issueType}</TableCell>
+                <TableCell>
+                  {isServiceCharge ? (
+                    <Badge variant="outline" className="bg-blue-50">Service Charge</Badge>
+                  ) : (
+                    call.issueType
+                  )}
+                </TableCell>
                 <TableCell className="text-right">{(call.serviceCharge || 0).toFixed(2)}</TableCell>
                 <TableCell className="text-right">{partsValue.toFixed(2)}</TableCell>
                 <TableCell className="text-right text-red-500">{(call.totalExpenses || 0).toFixed(2)}</TableCell>
@@ -392,9 +451,13 @@ const BillingTable = ({ calls, requestSort, sortConfig }: BillingTableProps) => 
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={call.partsReconciled ? "success" : "destructive"}>
-                    {call.partsReconciled ? "Yes" : "No"}
-                  </Badge>
+                  {isServiceCharge ? (
+                    <Badge variant="success">N/A</Badge>
+                  ) : (
+                    <Badge variant={call.partsReconciled ? "success" : "destructive"}>
+                      {call.partsReconciled ? "Yes" : "No"}
+                    </Badge>
+                  )}
                 </TableCell>
               </TableRow>
             );

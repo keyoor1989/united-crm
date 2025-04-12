@@ -4,11 +4,12 @@ import { ServiceExpense } from "@/types/serviceExpense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, CalendarDays, User, DollarSign, Wrench, Building } from "lucide-react";
+import { Receipt, CalendarDays, User, DollarSign, Wrench, Building, Search } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { updateExpenseReimbursementStatus } from "@/services/serviceExpenseService";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface ServiceExpenseListProps {
   expenses: ServiceExpense[];
@@ -21,9 +22,16 @@ const ServiceExpenseList = ({
 }: ServiceExpenseListProps) => {
   const { toast } = useToast();
   const [updating, setUpdating] = useState<string | null>(null);
+  const [customerFilter, setCustomerFilter] = useState<string>("");
   
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalReimbursed = expenses
+  const filteredExpenses = expenses.filter(expense => {
+    if (!customerFilter) return true;
+    const customerName = expense.customerName || expense.serviceCallInfo?.customerName || "";
+    return customerName.toLowerCase().includes(customerFilter.toLowerCase());
+  });
+  
+  const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalReimbursed = filteredExpenses
     .filter(expense => expense.isReimbursed)
     .reduce((sum, expense) => sum + expense.amount, 0);
   const totalPending = totalExpenses - totalReimbursed;
@@ -73,10 +81,28 @@ const ServiceExpenseList = ({
             </span>
           </div>
         </CardTitle>
+        <div className="flex w-full max-w-sm items-center space-x-2 mt-2">
+          <Input
+            placeholder="Filter by customer name"
+            value={customerFilter}
+            onChange={e => setCustomerFilter(e.target.value)}
+            className="h-9"
+          />
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setCustomerFilter("")}
+            disabled={!customerFilter}
+          >
+            Clear
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        {expenses.length === 0 ? (
-          <p className="text-center text-muted-foreground py-4">No expenses recorded</p>
+        {filteredExpenses.length === 0 ? (
+          <p className="text-center text-muted-foreground py-4">
+            {expenses.length === 0 ? "No expenses recorded" : "No expenses match your filter"}
+          </p>
         ) : (
           <Table>
             <TableHeader>
@@ -93,7 +119,7 @@ const ServiceExpenseList = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expenses.map((expense) => (
+              {filteredExpenses.map((expense) => (
                 <TableRow key={expense.id}>
                   <TableCell>
                     <div className="flex items-center">
