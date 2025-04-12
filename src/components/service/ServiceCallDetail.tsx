@@ -30,7 +30,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [engineerId, setEngineerId] = useState(serviceCall.engineerId || "");
   const [status, setStatus] = useState(serviceCall.status || "");
-  const [resolutionNotes, setResolutionNotes] = useState(serviceCall.issue_description || ""); // Changed from resolutionNotes to issue_description
+  const [resolutionNotes, setResolutionNotes] = useState(serviceCall.issueDescription || ""); 
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleSaveChanges = async () => {
@@ -49,7 +49,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
         ...serviceCall,
         engineerId,
         status,
-        issue_description: resolutionNotes, // Changed from resolutionNotes to issue_description
+        issueDescription: resolutionNotes,
         updatedAt: new Date().toISOString()
       };
       
