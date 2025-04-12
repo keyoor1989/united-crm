@@ -24,7 +24,7 @@ export const EngineerProfile: React.FC<EngineerProfileProps> = ({ engineer }) =>
       const serviceCallId = currentJob.replace("Service Call #", "");
       return (
         <span>
-          Service Call - <Link to={`/service?call=${serviceCallId}`} className="text-blue-600 hover:underline">
+          Service Call - <Link to={`/service?id=${serviceCallId}`} className="text-blue-600 hover:underline">
             View Details
           </Link>
         </span>

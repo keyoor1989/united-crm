@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -14,6 +14,9 @@ import { supabase } from "@/integrations/supabase/client";
 const Service = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const serviceCallIdParam = searchParams.get('id');
+  
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [engineers, setEngineers] = useState<Engineer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,6 +28,22 @@ const Service = () => {
     fetchServiceCalls();
     fetchEngineers();
   }, []);
+  
+  useEffect(() => {
+    if (serviceCallIdParam && serviceCalls.length > 0) {
+      const serviceCall = serviceCalls.find(call => call.id === serviceCallIdParam);
+      if (serviceCall) {
+        setSelectedServiceCall(serviceCall);
+        setShowDetailDialog(true);
+      } else {
+        toast({
+          title: "Service Call Not Found",
+          description: `Service call with ID ${serviceCallIdParam} was not found`,
+          variant: "destructive",
+        });
+      }
+    }
+  }, [serviceCallIdParam, serviceCalls]);
   
   const fetchEngineers = async () => {
     try {
@@ -277,6 +296,13 @@ const Service = () => {
     });
   };
 
+  const handleDialogClose = () => {
+    setShowDetailDialog(false);
+    if (serviceCallIdParam) {
+      navigate('/service', { replace: true });
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -316,12 +342,13 @@ const Service = () => {
         onEngineerClick={handleEngineerCardClick}
       />
 
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+      <Dialog open={showDetailDialog} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-3xl">
           {selectedServiceCall && (
             <ServiceCallDetail 
               serviceCall={selectedServiceCall} 
-              onClose={() => setShowDetailDialog(false)}
+              onClose={handleDialogClose}
+              onUpdate={fetchServiceCalls}
             />
           )}
         </DialogContent>
