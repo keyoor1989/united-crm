@@ -12,6 +12,9 @@ import PartsReconciliationTab from "@/components/service/inventory/PartsReconcil
 import ServiceExpensesTab from "@/components/service/inventory/ServiceExpensesTab";
 import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
 import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ServiceInventoryManagement = () => {
   const { toast } = useToast();
@@ -88,6 +91,17 @@ const ServiceInventoryManagement = () => {
     <div className="container mx-auto space-y-6">
       <InventoryHeader activeTab={activeTab} onTabChange={setActiveTab} />
       
+      <Alert className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Inventory Flow</AlertTitle>
+        <AlertDescription>
+          This page helps you manage inventory for field engineers. The flow is:
+          <strong> Warehouse → Engineer → Service Call → Reconciliation</strong>.
+          First, assign items to engineers from a warehouse, then track their usage on service calls, 
+          and finally reconcile the parts used.
+        </AlertDescription>
+      </Alert>
+      
       {/* Add Warehouse Selector */}
       <WarehouseSelector 
         warehouses={warehouses}
@@ -101,6 +115,7 @@ const ServiceInventoryManagement = () => {
           <EngineerInventoryTab 
             engineers={engineers} 
             inventoryItems={mockInventoryItems}
+            selectedWarehouse={selectedWarehouse}
             isLoading={isLoading}
           />
         </TabsContent>

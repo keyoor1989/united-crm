@@ -9,34 +9,38 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, FileText, Receipt } from "lucide-react";
+import { Search, Plus, FileText, Receipt, ArrowRight, ArrowLeft, PackageCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Engineer } from "@/types/service";
 import { InventoryItem } from "@/types/inventory";
-import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
-import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface EngineerInventoryTabProps {
   engineers: Engineer[];
   inventoryItems: InventoryItem[];
+  selectedWarehouse: string | null;
   isLoading: boolean;
 }
 
-const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: EngineerInventoryTabProps) => {
+const EngineerInventoryTab = ({ engineers, inventoryItems, selectedWarehouse, isLoading }: EngineerInventoryTabProps) => {
   const { toast } = useToast();
-  const { warehouses, isLoadingWarehouses } = useWarehouses();
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [selectedEngineer, setSelectedEngineer] = useState<Engineer | null>(null);
   
   // Mock data for engineer inventory - in a real app, this would come from the database
   const [engineerInventory, setEngineerInventory] = useState([
-    { id: "1", engineerId: "eng-1", engineerName: "Rajesh Kumar", itemId: "1", itemName: "Kyocera TK-1175 Toner", quantity: 2, assignedDate: "2025-03-15" },
-    { id: "2", engineerId: "eng-2", engineerName: "Deepak Sharma", itemId: "2", itemName: "Ricoh MP2014 Drum Unit", quantity: 1, assignedDate: "2025-03-10" },
-    { id: "3", engineerId: "eng-1", engineerName: "Rajesh Kumar", itemId: "3", itemName: "Kyocera 2554ci Fuser", quantity: 1, assignedDate: "2025-02-28" },
+    { id: "1", engineerId: "eng-1", engineerName: "Rajesh Kumar", itemId: "1", itemName: "Kyocera TK-1175 Toner", quantity: 2, assignedDate: "2025-03-15", warehouseSource: "Joshiji" },
+    { id: "2", engineerId: "eng-2", engineerName: "Deepak Sharma", itemId: "2", itemName: "Ricoh MP2014 Drum Unit", quantity: 1, assignedDate: "2025-03-10", warehouseSource: "Joshiji" },
+    { id: "3", engineerId: "eng-1", engineerName: "Rajesh Kumar", itemId: "3", itemName: "Kyocera 2554ci Fuser", quantity: 1, assignedDate: "2025-02-28", warehouseSource: "Joshiji" },
+  ]);
+  
+  // Mock data for usage history
+  const [usageHistory, setUsageHistory] = useState([
+    { id: "1", engineerId: "eng-1", engineerName: "Rajesh Kumar", itemId: "1", itemName: "Kyocera TK-1175 Toner", quantity: 1, date: "2025-03-20", serviceCallId: "SC001", customerName: "ABC Corp" },
+    { id: "2", engineerId: "eng-2", engineerName: "Deepak Sharma", itemId: "2", itemName: "Ricoh MP2014 Drum Unit", quantity: 1, date: "2025-03-15", serviceCallId: "SC002", customerName: "XYZ Ltd" },
   ]);
   
   // Form state for assigning items
@@ -118,17 +122,23 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
       itemId: assignForm.itemId,
       itemName: item.name,
       quantity: assignForm.quantity,
-      assignedDate: new Date().toISOString().split('T')[0]
+      assignedDate: new Date().toISOString().split('T')[0],
+      warehouseSource: "Joshiji" // Using a hardcoded name for demo
     };
     
     setEngineerInventory(prev => [...prev, newInventoryItem]);
     
     toast({
       title: "Item Assigned",
-      description: `${assignForm.quantity} ${item.name} assigned to ${engineer.name}`,
+      description: `${assignForm.quantity} ${item.name} assigned to ${engineer.name} from warehouse`,
     });
     
     setIsAssignDialogOpen(false);
+  };
+  
+  // Filter usage history by engineer when viewing history
+  const getEngineerUsageHistory = (engineerId: string) => {
+    return usageHistory.filter(item => item.engineerId === engineerId);
   };
   
   if (isLoading) {
@@ -144,15 +154,23 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Engineer Inventory</CardTitle>
-          <CardDescription>Manage inventory assigned to service engineers</CardDescription>
+          <CardDescription>Manage inventory items assigned to service engineers from warehouses</CardDescription>
         </div>
-        <Button onClick={handleOpenAssignDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          Assign Items
+        <Button onClick={handleOpenAssignDialog} disabled={!selectedWarehouse}>
+          <ArrowRight className="mr-2 h-4 w-4" />
+          Assign Items to Engineer
         </Button>
       </CardHeader>
       
       <CardContent>
+        {!selectedWarehouse && (
+          <Alert className="mb-4">
+            <AlertDescription>
+              Please select a warehouse above to assign items to engineers.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="relative w-[300px]">
@@ -165,19 +183,18 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
-            <WarehouseSelector 
-              warehouses={warehouses}
-              selectedWarehouse={selectedWarehouse}
-              onSelectWarehouse={setSelectedWarehouse}
-              isLoading={isLoadingWarehouses}
-            />
           </div>
           
           <Tabs defaultValue="assigned" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="assigned">Assigned Items</TabsTrigger>
-              <TabsTrigger value="usage">Usage History</TabsTrigger>
+              <TabsTrigger value="assigned" className="flex items-center gap-2">
+                <PackageCheck className="h-4 w-4" />
+                Assigned Items
+              </TabsTrigger>
+              <TabsTrigger value="usage" className="flex items-center gap-2">
+                <Receipt className="h-4 w-4" />
+                Usage History
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="assigned">
@@ -188,13 +205,14 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
                     <TableHead>Item</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Assigned Date</TableHead>
+                    <TableHead>Source Warehouse</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredInventory.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No inventory items found for engineers. Assign items to get started.
                       </TableCell>
                     </TableRow>
@@ -205,6 +223,9 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
                         <TableCell>{item.itemName}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
                         <TableCell>{item.assignedDate}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{item.warehouseSource}</Badge>
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button variant="outline" size="sm" onClick={() => {
@@ -236,11 +257,26 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Item usage history will be displayed here when engineers use items on service calls.
-                    </TableCell>
-                  </TableRow>
+                  {usageHistory.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        Item usage history will be displayed here when engineers use items on service calls.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    usageHistory.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.engineerName}</TableCell>
+                        <TableCell>{item.itemName}</TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{item.serviceCallId}</Badge>
+                        </TableCell>
+                        <TableCell>{item.customerName}</TableCell>
+                        <TableCell>{item.date}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TabsContent>
@@ -254,7 +290,7 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
           <DialogHeader>
             <DialogTitle>Assign Items to Engineer</DialogTitle>
             <DialogDescription>
-              Select an engineer, item, and quantity to assign from the selected warehouse.
+              Select an engineer, item, and quantity to assign from the warehouse to an engineer.
             </DialogDescription>
           </DialogHeader>
           
@@ -279,13 +315,13 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="warehouse-select">Source Warehouse</Label>
-              <WarehouseSelector 
-                warehouses={warehouses}
-                selectedWarehouse={selectedWarehouse}
-                onSelectWarehouse={setSelectedWarehouse}
-                isLoading={isLoadingWarehouses}
+              <Label htmlFor="warehouse-info">Source Warehouse</Label>
+              <Input 
+                id="warehouse-info" 
+                value={selectedWarehouse ? "Joshiji" : "No warehouse selected"} 
+                disabled 
               />
+              <p className="text-sm text-muted-foreground">Items will be transferred from this warehouse</p>
             </div>
             
             <div className="space-y-2">
@@ -334,6 +370,7 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
               Cancel
             </Button>
             <Button onClick={handleAssignItem}>
+              <ArrowRight className="mr-2 h-4 w-4" />
               Assign Item
             </Button>
           </DialogFooter>
@@ -364,11 +401,23 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, isLoading }: Engineer
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No usage history found for this engineer.
-                  </TableCell>
-                </TableRow>
+                {selectedEngineer && getEngineerUsageHistory(selectedEngineer.id).length > 0 ? (
+                  getEngineerUsageHistory(selectedEngineer.id).map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.date}</TableCell>
+                      <TableCell>{item.itemName}</TableCell>
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell>{item.serviceCallId}</TableCell>
+                      <TableCell>{item.customerName}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No usage history found for this engineer.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

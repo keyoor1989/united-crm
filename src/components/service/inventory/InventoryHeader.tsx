@@ -13,7 +13,7 @@ const InventoryHeader = ({ activeTab, onTabChange }: InventoryHeaderProps) => {
     <div>
       <h1 className="text-2xl font-bold tracking-tight">Service Inventory Management</h1>
       <p className="text-muted-foreground">
-        Manage inventory for service engineers and track parts reconciliation
+        Manage inventory flow from warehouses to engineers and track parts usage on service calls
       </p>
       
       <Tabs value={activeTab} onValueChange={onTabChange} className="mt-4">

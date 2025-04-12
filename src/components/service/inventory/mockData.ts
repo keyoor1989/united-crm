@@ -69,3 +69,63 @@ export const mockInventoryItems: InventoryItem[] = [
     createdAt: "2025-02-15"
   }
 ];
+
+// Mock data for engineer inventory items
+export const mockEngineerInventory = [
+  { 
+    id: "1", 
+    engineerId: "eng-1", 
+    engineerName: "Rajesh Kumar", 
+    itemId: "1", 
+    itemName: "Kyocera TK-1175 Toner", 
+    quantity: 2, 
+    assignedDate: "2025-03-15",
+    warehouseSource: "Joshiji"
+  },
+  { 
+    id: "2", 
+    engineerId: "eng-2", 
+    engineerName: "Deepak Sharma", 
+    itemId: "2", 
+    itemName: "Ricoh MP2014 Drum Unit", 
+    quantity: 1, 
+    assignedDate: "2025-03-10",
+    warehouseSource: "Joshiji"
+  },
+  { 
+    id: "3", 
+    engineerId: "eng-1", 
+    engineerName: "Rajesh Kumar", 
+    itemId: "3", 
+    itemName: "Kyocera 2554ci Fuser", 
+    quantity: 1, 
+    assignedDate: "2025-02-28",
+    warehouseSource: "Joshiji"
+  },
+];
+
+// Mock data for usage history on service calls
+export const mockUsageHistory = [
+  { 
+    id: "1", 
+    engineerId: "eng-1", 
+    engineerName: "Rajesh Kumar", 
+    itemId: "1", 
+    itemName: "Kyocera TK-1175 Toner", 
+    quantity: 1, 
+    date: "2025-03-20", 
+    serviceCallId: "SC001", 
+    customerName: "ABC Corp" 
+  },
+  { 
+    id: "2", 
+    engineerId: "eng-2", 
+    engineerName: "Deepak Sharma", 
+    itemId: "2", 
+    itemName: "Ricoh MP2014 Drum Unit", 
+    quantity: 1, 
+    date: "2025-03-15", 
+    serviceCallId: "SC002", 
+    customerName: "XYZ Ltd" 
+  },
+];
