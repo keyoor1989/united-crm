@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Search, Plus, Filter, FileText, Printer, BarChart2, CalendarClock, Edit, Trash, File, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -70,7 +69,7 @@ const AmcTracker = () => {
         .order('created_at', { ascending: false });
       
       if (contractsError) throw contractsError;
-      setContracts(contractsData || []);
+      setContracts(contractsData as AMCContract[] || []);
       
       // Fetch machines
       const { data: machinesData, error: machinesError } = await supabase
@@ -79,7 +78,7 @@ const AmcTracker = () => {
         .order('created_at', { ascending: false });
       
       if (machinesError) throw machinesError;
-      setMachines(machinesData || []);
+      setMachines(machinesData as AMCMachine[] || []);
       
       // Fetch consumable usage
       const { data: usageData, error: usageError } = await supabase
@@ -88,7 +87,7 @@ const AmcTracker = () => {
         .order('date', { ascending: false });
       
       if (usageError) throw usageError;
-      setConsumableUsage(usageData || []);
+      setConsumableUsage(usageData as AMCConsumableUsage[] || []);
       
       // Fetch billing data
       const { data: billingData, error: billingError } = await supabase
@@ -97,7 +96,7 @@ const AmcTracker = () => {
         .order('billing_month', { ascending: false });
       
       if (billingError) throw billingError;
-      setBillingData(billingData || []);
+      setBillingData(billingData as AMCBilling[] || []);
       
       // Fetch profit reports
       const { data: profitData, error: profitError } = await supabase
@@ -106,11 +105,11 @@ const AmcTracker = () => {
         .order('month', { ascending: false });
       
       if (profitError) throw profitError;
-      setProfitReports(profitData || []);
+      setProfitReports(profitData as AMCProfitReport[] || []);
       
       // Calculate and update summary metrics
-      calculateSummaryMetrics(billingData || [], usageData || []);
-      updateProfitableMachines(profitData || []);
+      calculateSummaryMetrics(billingData as AMCBilling[] || [], usageData as AMCConsumableUsage[] || []);
+      updateProfitableMachines(profitData as AMCProfitReport[] || []);
       
     } catch (error) {
       console.error('Error fetching data:', error);

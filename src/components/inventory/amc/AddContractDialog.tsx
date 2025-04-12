@@ -22,9 +22,9 @@ const formSchema = z.object({
   customerId: z.string({ required_error: "Customer is required" }),
   customerName: z.string(),
   machineModel: z.string().min(2, { message: "Machine model is required" }),
-  machineType: z.enum(["Black & White", "Color"], { required_error: "Machine type is required" }),
+  machineType: z.string({ required_error: "Machine type is required" }),
   serialNumber: z.string().min(2, { message: "Serial number is required" }),
-  contractType: z.enum(["AMC", "Rental"], { required_error: "Contract type is required" }),
+  contractType: z.string({ required_error: "Contract type is required" }),
   startDate: z.string().min(1, { message: "Start date is required" }),
   endDate: z.string().min(1, { message: "End date is required" }),
   monthlyRent: z.string().min(1, { message: "Monthly rent is required" }),
@@ -33,7 +33,7 @@ const formSchema = z.object({
   copyLimitA3: z.string().default("0"),
   extraA4CopyCharge: z.string().min(1, { message: "A4 extra copy charge is required" }),
   extraA3CopyCharge: z.string().default("0"),
-  billingCycle: z.enum(["Monthly", "Quarterly", "Yearly"], { required_error: "Billing cycle is required" }),
+  billingCycle: z.string({ required_error: "Billing cycle is required" }),
   location: z.string().optional(),
   department: z.string().optional(),
   notes: z.string().optional(),
@@ -60,21 +60,21 @@ const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }
   const onSubmit = (values: FormValues) => {
     const newContract: AMCContract = {
       id: uuidv4(),
-      customerId: values.customerId,
-      customerName: values.customerName,
-      machineModel: values.machineModel,
-      machineType: values.machineType as "Black & White" | "Color",
-      serialNumber: values.serialNumber,
-      contractType: values.contractType as "AMC" | "Rental",
-      startDate: values.startDate,
-      endDate: values.endDate,
-      monthlyRent: parseFloat(values.monthlyRent),
-      gstPercent: parseFloat(values.gstPercent),
-      copyLimitA4: parseInt(values.copyLimitA4),
-      copyLimitA3: parseInt(values.copyLimitA3 || "0"),
-      extraA4CopyCharge: parseFloat(values.extraA4CopyCharge),
-      extraA3CopyCharge: parseFloat(values.extraA3CopyCharge || "0"),
-      billingCycle: values.billingCycle as "Monthly" | "Quarterly" | "Yearly",
+      customer_id: values.customerId,
+      customer_name: values.customerName,
+      machine_model: values.machineModel,
+      machine_type: values.machineType,
+      serial_number: values.serialNumber,
+      contract_type: values.contractType,
+      start_date: values.startDate,
+      end_date: values.endDate,
+      monthly_rent: parseFloat(values.monthlyRent),
+      gst_percent: parseFloat(values.gstPercent),
+      copy_limit_a4: parseInt(values.copyLimitA4),
+      copy_limit_a3: parseInt(values.copyLimitA3 || "0"),
+      extra_a4_copy_charge: parseFloat(values.extraA4CopyCharge),
+      extra_a3_copy_charge: parseFloat(values.extraA3CopyCharge || "0"),
+      billing_cycle: values.billingCycle,
       status: "Active",
       location: values.location,
       department: values.department,
@@ -312,7 +312,7 @@ const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }
                 name="extraA4CopyCharge"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>A4 Extra Copy Charge (₹)</FormLabel>
+                    <FormLabel>Extra A4 Copy Charge (₹)</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" step="0.01" {...field} />
                     </FormControl>
@@ -325,7 +325,7 @@ const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }
                 name="extraA3CopyCharge"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>A3 Extra Copy Charge (₹)</FormLabel>
+                    <FormLabel>Extra A3 Copy Charge (₹)</FormLabel>
                     <FormControl>
                       <Input type="number" min="0" step="0.01" {...field} />
                     </FormControl>
@@ -340,7 +340,7 @@ const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }
                   <FormItem>
                     <FormLabel>Location</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Head Office" {...field} />
+                      <Input placeholder="e.g. Main Office" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -353,7 +353,7 @@ const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }
                   <FormItem>
                     <FormLabel>Department</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Admin" {...field} />
+                      <Input placeholder="e.g. Accounts" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -367,7 +367,7 @@ const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }
                 <FormItem>
                   <FormLabel>Notes</FormLabel>
                   <FormControl>
-                    <Input placeholder="Any additional notes" {...field} />
+                    <Textarea placeholder="Any additional notes about this contract" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -375,7 +375,7 @@ const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }
             />
             <div className="flex justify-end">
               <Button type="submit" className="bg-black hover:bg-gray-800">
-                Save Contract
+                Add Contract
               </Button>
             </div>
           </form>

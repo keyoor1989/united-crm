@@ -62,7 +62,8 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
         
         if (error) throw error;
         
-        setMachines(data || []);
+        // Type casting data as AMCMachine[] with explicitly converting machine_type to the expected type
+        setMachines(data as AMCMachine[] || []);
       } catch (error) {
         console.error('Error fetching machines:', error);
         toast.error('Failed to load machines');
@@ -92,12 +93,12 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
   const handleMachineChange = (machineId: string) => {
     const selectedMachine = machines.find((m) => m.id === machineId);
     if (selectedMachine) {
-      form.setValue("contractId", selectedMachine.contractId);
-      form.setValue("customerId", selectedMachine.customerId);
-      form.setValue("customerName", selectedMachine.customerName);
+      form.setValue("contractId", selectedMachine.contract_id);
+      form.setValue("customerId", selectedMachine.customer_id);
+      form.setValue("customerName", selectedMachine.customer_name);
       form.setValue("machineModel", selectedMachine.model);
-      form.setValue("machineType", selectedMachine.machineType);
-      form.setValue("serialNumber", selectedMachine.serialNumber);
+      form.setValue("machineType", selectedMachine.machine_type);
+      form.setValue("serialNumber", selectedMachine.serial_number);
     }
   };
 
@@ -111,18 +112,18 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
   const onSubmit = (values: FormValues) => {
     const newUsage: AMCConsumableUsage = {
       id: uuidv4(),
-      contractId: values.contractId,
-      machineId: values.machineId,
-      customerId: values.customerId,
-      customerName: values.customerName,
-      machineModel: values.machineModel,
-      machineType: values.machineType as "Black & White" | "Color",
-      serialNumber: values.serialNumber,
-      engineerId: values.engineerId,
-      engineerName: values.engineerName,
+      contract_id: values.contractId,
+      machine_id: values.machineId,
+      customer_id: values.customerId,
+      customer_name: values.customerName,
+      machine_model: values.machineModel,
+      machine_type: values.machineType,
+      serial_number: values.serialNumber,
+      engineer_id: values.engineerId,
+      engineer_name: values.engineerName,
       date: values.date,
-      itemId: values.itemId,
-      itemName: values.itemName,
+      item_id: values.itemId,
+      item_name: values.itemName,
       quantity: parseInt(values.quantity),
       cost: parseFloat(values.cost),
       remarks: values.remarks,
@@ -170,7 +171,7 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
                     <SelectContent>
                       {machines.map((machine) => (
                         <SelectItem key={machine.id} value={machine.id}>
-                          {machine.customerName} - {machine.model} ({machine.serialNumber})
+                          {machine.customer_name} - {machine.model} ({machine.serial_number})
                         </SelectItem>
                       ))}
                     </SelectContent>

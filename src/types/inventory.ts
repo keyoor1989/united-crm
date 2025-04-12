@@ -1,4 +1,3 @@
-
 export type Brand = {
   id: string;
   name: string;
@@ -221,16 +220,16 @@ export type PartProfitability = {
   createdAt: string;
 };
 
-// Updated AMC types to match database schema
+// Updated AMC types to match database schema and fix machine_type type issues
 export type AMCContract = {
   id: string;
   contract_id?: string; // For compatibility with DB
   customer_id: string;
   customer_name: string;
   machine_model: string;
-  machine_type: "Black & White" | "Color";
+  machine_type: string; // Changed from "Black & White" | "Color" to string
   serial_number: string;
-  contract_type: "AMC" | "Rental";
+  contract_type: string; // Changed from "AMC" | "Rental" to string
   start_date: string;
   end_date: string;
   monthly_rent: number;
@@ -239,8 +238,8 @@ export type AMCContract = {
   copy_limit_a3: number;
   extra_a4_copy_charge: number;
   extra_a3_copy_charge: number;
-  billing_cycle: "Monthly" | "Quarterly" | "Yearly";
-  status: "Active" | "Pending" | "Expired" | "Cancelled" | "Renewal Due";
+  billing_cycle: string; // Changed from "Monthly" | "Quarterly" | "Yearly" to string
+  status: string; // Changed from specific status types to string
   location?: string;
   department?: string;
   notes?: string;
@@ -253,11 +252,11 @@ export type AMCMachine = {
   customer_id: string;
   customer_name: string;
   model: string;
-  machine_type: "Black & White" | "Color";
+  machine_type: string; // Changed from "Black & White" | "Color" to string
   serial_number: string;
   location: string;
   department?: string;
-  contract_type: "AMC" | "Rental";
+  contract_type: string; // Changed from "AMC" | "Rental" to string
   start_date: string;
   end_date: string;
   current_rent: number;
@@ -276,7 +275,7 @@ export type AMCConsumableUsage = {
   customer_id: string;
   customer_name: string;
   machine_model: string;
-  machine_type: "Black & White" | "Color";
+  machine_type: string; // Changed from "Black & White" | "Color" to string
   serial_number: string;
   engineer_id?: string;
   engineer_name?: string;
@@ -298,7 +297,7 @@ export type AMCBilling = {
   customer_id: string;
   customer_name: string;
   machine_model: string;
-  machine_type: "Black & White" | "Color";
+  machine_type: string; // Changed from "Black & White" | "Color" to string
   serial_number: string;
   department?: string;
   billing_month: string;
@@ -322,7 +321,7 @@ export type AMCBilling = {
   rent_gst: number;
   total_bill: number;
   bill_date: string;
-  bill_status: "Generated" | "Pending" | "Paid";
+  bill_status: string; // Changed from specific status types to string
   invoice_no?: string;
   created_at?: string;
 };
@@ -334,7 +333,7 @@ export type AMCProfitReport = {
   customer_id: string;
   customer_name: string;
   machine_model: string;
-  machine_type: "Black & White" | "Color";
+  machine_type: string; // Changed from "Black & White" | "Color" to string
   serial_number: string;
   department?: string;
   month: string;
