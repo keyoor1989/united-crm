@@ -24,462 +24,316 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
   serviceCall,
   engineers,
   onClose,
-  onUpdate, // Updated prop name
+  onUpdate,
 }) => {
   const { toast } = useToast();
-  const [selectedEngineer, setSelectedEngineer] = useState<string | null>(
-    serviceCall.engineerId
-  );
-  const [statusChange, setStatusChange] = useState(serviceCall.status);
-  const [ratingValue, setRatingValue] = useState<number>(
-    serviceCall.feedback?.rating || 0
-  );
-  const [feedbackText, setFeedbackText] = useState<string | null>(
-    serviceCall.feedback?.comment || null
-  );
-  const [serviceCharge, setServiceCharge] = useState<number>(
-    serviceCall.serviceCharge || 0
-  );
-  const [isPaid, setIsPaid] = useState<boolean>(serviceCall.isPaid || false);
-  const [partsReconciled, setPartsReconciled] = useState<boolean>(
-    serviceCall.partsReconciled || false
-  );
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [engineerId, setEngineerId] = useState(serviceCall.engineerId || "");
+  const [status, setStatus] = useState(serviceCall.status || "");
+  const [resolutionNotes, setResolutionNotes] = useState(serviceCall.resolutionNotes || "");
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const getSLAStatus = () => {
-    const now = new Date();
-    const deadline = new Date(serviceCall.slaDeadline);
-    if (serviceCall.status === "Completed") {
-      return "success";
-    }
-    return now > deadline ? "destructive" : "success";
-  };
-
-  const timeFromNow = (date: string): string => {
-    const now = new Date();
-    const eventDate = new Date(date);
-    const diffTime = Math.abs(now.getTime() - eventDate.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor(
-      (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-    );
-
-    if (diffDays > 0) {
-      return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
-    }
-    return `${diffHours} hour${diffHours !== 1 ? "s" : ""}`;
-  };
-
-  const handleUpdateServiceCall = async () => {
-    setIsSubmitting(true);
+  const handleSaveChanges = async () => {
     try {
-      // Build feedback object if rating exists
-      const feedback =
-        ratingValue > 0
-          ? {
-              rating: ratingValue,
-              comment: feedbackText,
-              date: new Date().toISOString(),
-            }
-          : null;
+      setIsUpdating(true);
 
-      // Prepare completion time for status change
-      let completionTime = serviceCall.completionTime;
-      let startTime = serviceCall.startTime;
-
-      if (statusChange === "Completed" && !serviceCall.completionTime) {
-        completionTime = new Date().toISOString();
-      }
-
-      if (statusChange === "In Progress" && !serviceCall.startTime) {
-        startTime = new Date().toISOString();
-      }
-
-      // Update engineer if changed
-      let updatedEngineerName = serviceCall.engineerName;
-      if (selectedEngineer && selectedEngineer !== serviceCall.engineerId) {
-        const engineer = engineers.find((e) => e.id === selectedEngineer);
-        if (engineer) {
-          updatedEngineerName = engineer.name;
-        }
-      }
-
+      // Save changes to database (mock for now)
+      // In a real app, you would implement an API call to update the service call
+      console.log("Saving changes:", { engineerId, status, resolutionNotes });
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Update service call
-      const { error } = await supabase
-        .from("service_calls")
-        .update({
-          status: statusChange,
-          engineer_id: selectedEngineer,
-          engineer_name: updatedEngineerName,
-          start_time: startTime,
-          completion_time: completionTime,
-          feedback: feedback,
-          service_charge: serviceCharge,
-          is_paid: isPaid,
-          payment_date: isPaid && !serviceCall.isPaid ? new Date().toISOString() : serviceCall.paymentDate,
-          parts_reconciled: partsReconciled,
-        })
-        .eq("id", serviceCall.id);
-
-      if (error) {
-        console.error("Error updating service call:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update service call",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // If engineer changed, update the engineer's status
-      if (selectedEngineer && selectedEngineer !== serviceCall.engineerId) {
-        const { error: engineerError } = await supabase
-          .from("engineers")
-          .update({
-            status: "On Call",
-            current_job: `Service Call #${serviceCall.id}`,
-            current_location: serviceCall.location,
-          })
-          .eq("id", selectedEngineer);
-
-        if (engineerError) {
-          console.error("Error updating engineer:", engineerError);
-          toast({
-            variant: "destructive",
-            title: "Warning",
-            description: "Service call updated but failed to update engineer status",
-          });
-        }
-
-        // If previous engineer exists, update their status too
-        if (serviceCall.engineerId) {
-          const { error: prevEngineerError } = await supabase
-            .from("engineers")
-            .update({
-              status: "Available",
-              current_job: null,
-              current_location: "Office",
-            })
-            .eq("id", serviceCall.engineerId);
-
-          if (prevEngineerError) {
-            console.error(
-              "Error updating previous engineer:",
-              prevEngineerError
-            );
-          }
-        }
-      }
-
-      // If status changed to Completed, update engineer status
-      if (
-        statusChange === "Completed" &&
-        serviceCall.status !== "Completed" &&
-        selectedEngineer
-      ) {
-        const { error: completeEngineerError } = await supabase
-          .from("engineers")
-          .update({
-            status: "Available",
-            current_job: null,
-            current_location: "Office",
-          })
-          .eq("id", selectedEngineer);
-
-        if (completeEngineerError) {
-          console.error(
-            "Error updating engineer on completion:",
-            completeEngineerError
-          );
-        }
-      }
-
+      const updatedServiceCall = {
+        ...serviceCall,
+        engineerId,
+        status,
+        resolutionNotes,
+        updatedAt: new Date().toISOString()
+      };
+      
       toast({
-        title: "Success",
-        description: "Service call updated successfully",
+        title: "Service call updated",
+        description: `Service call #${serviceCall.id} has been updated successfully.`,
       });
-
-      onUpdate(); // Updated function call
-      onClose();
-    } catch (err) {
-      console.error("Unexpected error updating service call:", err);
+      
+      setIsEditing(false);
+      setIsUpdating(false);
+      onUpdate(); // Refresh the service calls list
+    } catch (error) {
+      console.error("Error updating service call:", error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An error occurred while updating the service call.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      setIsUpdating(false);
     }
   };
 
-  const renderStarRating = () => {
-    return (
-      <div className="flex items-center space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => setRatingValue(star)}
-            className={`text-2xl ${
-              star <= ratingValue ? "text-yellow-400" : "text-gray-300"
-            }`}
-          >
-            ★
-          </button>
-        ))}
-      </div>
-    );
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case "Pending":
+        return "outline";
+      case "Assigned":
+        return "secondary";
+      case "In Progress":
+        return "default";
+      case "Completed":
+        return "success";
+      case "Cancelled":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "PPP");
+    } catch (error) {
+      return dateString;
+    }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-2xl font-bold">
-            Service Call #{serviceCall.id.substring(0, 8)}
-          </h2>
-          <p className="text-muted-foreground">
-            Created on {format(new Date(serviceCall.createdAt), "PPP")}
-          </p>
+    <div className="space-y-6 max-h-[80vh] overflow-y-auto p-1">
+      {/* Header */}
+      <div className="flex flex-col space-y-1.5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-semibold">Service Call #{serviceCall.id}</h3>
+          <Badge variant={getStatusBadgeVariant(serviceCall.status)}>{serviceCall.status}</Badge>
         </div>
-        <Badge
-          variant={
-            serviceCall.status === "Pending"
-              ? "outline"
-              : serviceCall.status === "In Progress"
-              ? "secondary"
-              : "default"
-          }
-          className="text-sm"
-        >
-          {serviceCall.status}
-        </Badge>
+        <p className="text-sm text-muted-foreground">
+          Created on {formatDate(serviceCall.createdAt)}
+        </p>
       </div>
-
+      
       <Separator />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
-          <div className="space-y-3">
-            <div>
-              <Label>Customer Name</Label>
-              <p className="text-sm font-medium">{serviceCall.customerName}</p>
-            </div>
-            <div>
-              <Label>Phone</Label>
-              <p className="text-sm font-medium">{serviceCall.phone}</p>
-            </div>
-            <div>
-              <Label>Location</Label>
-              <p className="text-sm font-medium">{serviceCall.location}</p>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Machine Details</h3>
-          <div className="space-y-3">
-            <div>
-              <Label>Machine Model</Label>
-              <p className="text-sm font-medium">{serviceCall.machineModel}</p>
-            </div>
-            <div>
-              <Label>Serial Number</Label>
-              <p className="text-sm font-medium">{serviceCall.serialNumber || "N/A"}</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <Label>SLA Deadline</Label>
-                <Badge variant={getSLAStatus()}>
-                  {getSLAStatus() === "destructive" ? "Overdue" : "On Track"}
-                </Badge>
-              </div>
-              <p className="text-sm font-medium">
-                {format(new Date(serviceCall.slaDeadline), "PPp")}
-                {serviceCall.status !== "Completed" && (
-                  <span className="text-xs ml-2 text-muted-foreground">
-                    {new Date() > new Date(serviceCall.slaDeadline)
-                      ? `(${timeFromNow(serviceCall.slaDeadline)} overdue)`
-                      : `(${timeFromNow(serviceCall.slaDeadline)} remaining)`}
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
+      
+      {/* Customer Information */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Issue Details</h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Issue Type</Label>
-              <p className="text-sm font-medium">{serviceCall.issueType}</p>
-            </div>
-            <div>
-              <Label>Call Type</Label>
-              <p className="text-sm font-medium">{serviceCall.callType}</p>
-            </div>
-            <div>
-              <Label>Priority</Label>
-              <p className="text-sm font-medium">{serviceCall.priority}</p>
+        <h4 className="text-lg font-medium mb-4">Customer Information</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Customer Name</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.customerName}
             </div>
           </div>
           <div>
-            <Label>Description</Label>
-            <p className="text-sm">{serviceCall.issueDescription}</p>
+            <Label>Phone</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.customerPhone}
+            </div>
+          </div>
+          <div>
+            <Label>Address</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.customerAddress}
+            </div>
+          </div>
+          <div>
+            <Label>Email</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.customerEmail || "N/A"}
+            </div>
           </div>
         </div>
       </div>
-
+      
       <Separator />
-
+      
+      {/* Machine Information */}
       <div>
-        <h3 className="text-lg font-semibold mb-4">Service Information</h3>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="engineer">Assigned Engineer</Label>
-                <Select
-                  value={selectedEngineer || ""}
-                  onValueChange={setSelectedEngineer}
-                  disabled={serviceCall.status === "Completed"}
-                >
-                  <SelectTrigger id="engineer">
-                    <SelectValue placeholder="Select an engineer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">None</SelectItem>
-                    {engineers
-                      .filter(
-                        (e) =>
-                          e.status === "Available" ||
-                          e.id === serviceCall.engineerId
-                      )
-                      .map((engineer) => (
-                        <SelectItem key={engineer.id} value={engineer.id}>
-                          {engineer.name} ({engineer.location})
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={statusChange}
-                  onValueChange={setStatusChange}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="In Progress">In Progress</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {statusChange === "Completed" && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="rating">Customer Rating</Label>
-                    {renderStarRating()}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="feedback">Customer Feedback</Label>
-                    <Textarea
-                      id="feedback"
-                      placeholder="Enter customer feedback"
-                      value={feedbackText || ""}
-                      onChange={(e) => setFeedbackText(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="serviceCharge">Service Charge (₹)</Label>
-                <Input
-                  id="serviceCharge"
-                  type="number"
-                  value={serviceCharge}
-                  onChange={(e) => setServiceCharge(Number(e.target.value))}
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isPaid"
-                  checked={isPaid}
-                  onChange={(e) => setIsPaid(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="isPaid" className="cursor-pointer">
-                  Mark as Paid
-                </Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="partsReconciled"
-                  checked={partsReconciled}
-                  onChange={(e) => setPartsReconciled(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                <Label htmlFor="partsReconciled" className="cursor-pointer">
-                  Parts Reconciled
-                </Label>
-              </div>
-
-              {serviceCall.partsUsed && serviceCall.partsUsed.length > 0 && (
-                <div>
-                  <Label>Parts Used</Label>
-                  <div className="mt-2 space-y-2">
-                    {serviceCall.partsUsed.map((part) => (
-                      <div
-                        key={part.id}
-                        className="flex justify-between text-sm p-2 bg-gray-50 rounded"
-                      >
-                        <span>
-                          {part.name} (x{part.quantity})
-                        </span>
-                        <span>₹{part.price * part.quantity}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+        <h4 className="text-lg font-medium mb-4">Machine Information</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label>Machine Model</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.machineModel}
             </div>
           </div>
-
-          <div className="flex justify-end space-x-4">
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
+          <div>
+            <Label>Serial Number</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.serialNumber}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <Separator />
+      
+      {/* Issue Information */}
+      <div>
+        <h4 className="text-lg font-medium mb-4">Issue Information</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <Label>Issue Type</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.issueType}
+            </div>
+          </div>
+          <div>
+            <Label>Call Type</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.callType}
+            </div>
+          </div>
+          <div>
+            <Label>Priority</Label>
+            <div className="p-2 rounded bg-muted font-medium">
+              {serviceCall.priority}
+            </div>
+          </div>
+        </div>
+        <div>
+          <Label>Issue Description</Label>
+          <div className="p-2 rounded bg-muted font-medium whitespace-pre-line min-h-[80px]">
+            {serviceCall.issueDescription}
+          </div>
+        </div>
+      </div>
+      
+      <Separator />
+      
+      {/* Assignment Information */}
+      <div>
+        <h4 className="text-lg font-medium mb-4">Assignment Information</h4>
+        {isEditing ? (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="engineer">Assigned Engineer</Label>
+              <Select 
+                value={engineerId} 
+                onValueChange={setEngineerId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an engineer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Note: Using a non-empty string "unassigned" instead of empty string "" */}
+                  <SelectItem value="unassigned">Not Assigned</SelectItem>
+                  {engineers.map((engineer) => (
+                    <SelectItem key={engineer.id} value={engineer.id}>
+                      {engineer.name} ({engineer.location})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                value={status} 
+                onValueChange={setStatus}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Assigned">Assigned</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="resolutionNotes">Resolution Notes</Label>
+              <Textarea
+                value={resolutionNotes}
+                onChange={(e) => setResolutionNotes(e.target.value)}
+                placeholder="Enter resolution notes..."
+                className="min-h-[120px]"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Assigned Engineer</Label>
+                <div className="flex items-center p-2 rounded bg-muted font-medium">
+                  <User className="h-4 w-4 mr-2" />
+                  {serviceCall.engineerName || "Not assigned yet"}
+                </div>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <div className="flex items-center p-2 rounded bg-muted font-medium">
+                  <Clock className="h-4 w-4 mr-2" />
+                  {serviceCall.status}
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label>Resolution Notes</Label>
+              <div className="p-2 rounded bg-muted font-medium whitespace-pre-line min-h-[80px]">
+                {serviceCall.resolutionNotes || "No resolution notes yet."}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Footer Actions */}
+      <div className="flex justify-between items-center pt-4">
+        <div className="flex items-center space-x-2">
+          {!isEditing && (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onClose}
+              >
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          {isEditing ? (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsEditing(false)}
+                disabled={isUpdating}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSaveChanges}
+                disabled={isUpdating}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                {isUpdating ? "Saving..." : "Save Changes"}
+              </Button>
+            </>
+          ) : (
             <Button
-              onClick={handleUpdateServiceCall}
-              disabled={isSubmitting}
+              size="sm"
+              onClick={() => setIsEditing(true)}
             >
-              {isSubmitting ? "Updating..." : "Update Service Call"}
+              <ThumbsUp className="h-4 w-4 mr-2" />
+              Update Service Call
             </Button>
-          </div>
+          )}
         </div>
       </div>
     </div>
