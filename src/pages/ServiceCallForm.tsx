@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -48,7 +47,7 @@ const serviceCallSchema = z.object({
   customerId: z.string().min(1, { message: "Customer is required" }),
   phone: z.string().min(1, { message: "Phone number is required" }),
   machineId: z.string().min(1, { message: "Machine is required" }),
-  serialNumber: z.string().optional(), // Changed from required to optional
+  serialNumber: z.string().optional(),
   location: z.string().min(1, { message: "Location is required" }),
   issueType: z.string().min(1, { message: "Issue type is required" }),
   issueDescription: z
@@ -105,7 +104,6 @@ const ServiceCallForm = () => {
     const priority = determinePriority(customer.status === "Active" ? "corporate" : "individual");
     form.setValue("priority", priority);
     
-    // Fetch customer machines from database
     fetchCustomerMachines(customer.id);
     
     calculateSLA(customer.status === "Active" ? "corporate" : "individual");
@@ -128,7 +126,6 @@ const ServiceCallForm = () => {
         return;
       }
       
-      // Map the fetched machines to match our Machine type
       const mappedMachines: Machine[] = data.map(machine => ({
         id: machine.id,
         customerId: machine.customer_id,
@@ -236,7 +233,6 @@ const ServiceCallForm = () => {
     setIsSubmitting(true);
     
     try {
-      // If the machine exists and the serial number is provided, update the machine's serial number
       if (data.serialNumber && data.machineId) {
         const { error: updateError } = await supabase
           .from('customer_machines')
@@ -255,38 +251,51 @@ const ServiceCallForm = () => {
         }
       }
       
-      // Continue with creating the service call
-      const newServiceCall: ServiceCall = {
-        id: `SC-${Date.now()}`,
-        customerId: data.customerId,
-        customerName: selectedCustomer?.name || "",
-        phone: data.phone,
-        machineId: data.machineId,
-        machineModel: selectedMachine?.model || "",
-        serialNumber: data.serialNumber || "",
-        location: data.location,
-        issueType: data.issueType,
-        issueDescription: data.issueDescription,
-        callType: data.callType,
-        priority: data.priority,
-        status: "Pending",
-        engineerId: data.engineerId || null,
-        engineerName: data.engineerId 
-          ? engineers.find(e => e.id === data.engineerId)?.name || ""
-          : "",
-        createdAt: new Date().toISOString(),
-        slaDeadline: new Date(Date.now() + (slaTime || 48) * 60 * 60 * 1000).toISOString(),
-        startTime: null,
-        completionTime: null,
-        partsUsed: [],
-        feedback: null,
-      };
+      const slaHours = slaTime || 48;
+      const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000).toISOString();
       
-      console.log("New Service Call Created:", newServiceCall);
+      const { data: serviceCallData, error: serviceCallError } = await supabase
+        .from('service_calls')
+        .insert({
+          customer_id: data.customerId,
+          customer_name: selectedCustomer?.name || "",
+          phone: data.phone,
+          machine_id: data.machineId,
+          machine_model: selectedMachine?.model || "",
+          serial_number: data.serialNumber || "",
+          location: data.location,
+          issue_type: data.issueType,
+          issue_description: data.issueDescription,
+          call_type: data.callType,
+          priority: data.priority,
+          status: "Pending",
+          engineer_id: data.engineerId || null,
+          engineer_name: data.engineerId 
+            ? engineers.find(e => e.id === data.engineerId)?.name || ""
+            : "",
+          sla_deadline: slaDeadline,
+          parts_used: [],
+          feedback: null
+        })
+        .select()
+        .single();
+      
+      if (serviceCallError) {
+        console.error("Error creating service call:", serviceCallError);
+        toast({
+          title: "Error",
+          description: "Failed to create service call in database",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log("Service Call Created in Database:", serviceCallData);
       
       toast({
         title: "Service Call Created",
-        description: `Service call ${newServiceCall.id} has been created successfully`,
+        description: `Service call has been created successfully`,
       });
       
       setIsSubmitting(false);

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
@@ -10,6 +10,7 @@ import ServiceCallDetail from "@/components/service/ServiceCallDetail";
 import { ServiceSearchBar } from "@/components/service/ServiceSearchBar";
 import { ServiceCallTabs } from "@/components/service/ServiceCallTabs";
 import { EngineerLocations } from "@/components/service/EngineerLocations";
+import { supabase } from "@/integrations/supabase/client";
 
 const Service = () => {
   const { toast } = useToast();
@@ -19,6 +20,61 @@ const Service = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedServiceCall, setSelectedServiceCall] = useState<ServiceCall | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    fetchServiceCalls();
+  }, []);
+  
+  const fetchServiceCalls = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('service_calls')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching service calls:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load service calls",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const transformedCalls: ServiceCall[] = data.map(call => ({
+        id: call.id,
+        customerId: call.customer_id,
+        customerName: call.customer_name,
+        phone: call.phone,
+        machineId: call.machine_id || "",
+        machineModel: call.machine_model,
+        serialNumber: call.serial_number || "",
+        location: call.location,
+        issueType: call.issue_type,
+        issueDescription: call.issue_description,
+        callType: call.call_type,
+        priority: call.priority,
+        status: call.status,
+        engineerId: call.engineer_id,
+        engineerName: call.engineer_name || "",
+        createdAt: call.created_at,
+        slaDeadline: call.sla_deadline || new Date().toISOString(),
+        startTime: call.start_time,
+        completionTime: call.completion_time,
+        partsUsed: call.parts_used || [],
+        feedback: call.feedback,
+      }));
+      
+      setServiceCalls(transformedCalls);
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Unexpected error fetching service calls:", err);
+      setIsLoading(false);
+    }
+  };
   
   const filterCalls = (status: string) => {
     if (status === "all") {
@@ -47,40 +103,78 @@ const Service = () => {
     setShowDetailDialog(true);
   };
   
-  const handleAssignEngineer = (serviceCallId: string, engineerId: string) => {
-    const updatedCalls = serviceCalls.map(call => {
-      if (call.id === serviceCallId) {
-        const assignedEngineer = engineers.find(e => e.id === engineerId);
-        return {
-          ...call,
-          engineerId,
-          engineerName: assignedEngineer?.name || "",
+  const handleAssignEngineer = async (serviceCallId: string, engineerId: string) => {
+    try {
+      const assignedEngineer = engineers.find(e => e.id === engineerId);
+      if (!assignedEngineer) {
+        toast({
+          title: "Error",
+          description: "Engineer not found",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('service_calls')
+        .update({
+          engineer_id: engineerId,
+          engineer_name: assignedEngineer.name,
           status: "Pending"
-        };
+        })
+        .eq('id', serviceCallId);
+        
+      if (error) {
+        console.error("Error assigning engineer:", error);
+        toast({
+          title: "Error",
+          description: "Failed to assign engineer to service call",
+          variant: "destructive",
+        });
+        return;
       }
-      return call;
-    });
-    
-    const updatedEngineers = engineers.map(eng => {
-      if (eng.id === engineerId) {
-        const serviceCall = serviceCalls.find(call => call.id === serviceCallId);
-        return {
-          ...eng,
-          status: "On Call",
-          currentJob: `Service Call #${serviceCallId}`,
-          currentLocation: serviceCall?.location || eng.location
-        };
-      }
-      return eng;
-    });
-    
-    setServiceCalls(updatedCalls);
-    setEngineers(updatedEngineers);
-    
-    toast({
-      title: "Engineer Assigned",
-      description: "The service call has been assigned to the engineer",
-    });
+      
+      const updatedCalls = serviceCalls.map(call => {
+        if (call.id === serviceCallId) {
+          return {
+            ...call,
+            engineerId,
+            engineerName: assignedEngineer.name,
+            status: "Pending"
+          };
+        }
+        return call;
+      });
+      
+      const updatedEngineers = engineers.map(eng => {
+        if (eng.id === engineerId) {
+          const serviceCall = serviceCalls.find(call => call.id === serviceCallId);
+          return {
+            ...eng,
+            status: "On Call",
+            currentJob: `Service Call #${serviceCallId}`,
+            currentLocation: serviceCall?.location || eng.location
+          };
+        }
+        return eng;
+      });
+      
+      setServiceCalls(updatedCalls);
+      setEngineers(updatedEngineers);
+      
+      toast({
+        title: "Engineer Assigned",
+        description: "The service call has been assigned to the engineer",
+      });
+      
+    } catch (error) {
+      console.error("Error in engineer assignment:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while assigning the engineer",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleReassignCall = (serviceCallId: string) => {
@@ -96,6 +190,11 @@ const Service = () => {
 
   const handleRefresh = () => {
     setSearchTerm("");
+    fetchServiceCalls();
+    toast({
+      title: "Refreshed",
+      description: "Service calls have been refreshed",
+    });
   };
 
   return (

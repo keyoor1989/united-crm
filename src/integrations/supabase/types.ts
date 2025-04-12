@@ -233,6 +233,93 @@ export type Database = {
           },
         ]
       }
+      service_calls: {
+        Row: {
+          call_type: string
+          completion_time: string | null
+          created_at: string
+          customer_id: string
+          customer_name: string
+          engineer_id: string | null
+          engineer_name: string | null
+          feedback: Json | null
+          id: string
+          issue_description: string
+          issue_type: string
+          location: string
+          machine_id: string | null
+          machine_model: string
+          parts_used: Json | null
+          phone: string
+          priority: string
+          serial_number: string | null
+          sla_deadline: string | null
+          start_time: string | null
+          status: string
+        }
+        Insert: {
+          call_type: string
+          completion_time?: string | null
+          created_at?: string
+          customer_id: string
+          customer_name: string
+          engineer_id?: string | null
+          engineer_name?: string | null
+          feedback?: Json | null
+          id?: string
+          issue_description: string
+          issue_type: string
+          location: string
+          machine_id?: string | null
+          machine_model: string
+          parts_used?: Json | null
+          phone: string
+          priority: string
+          serial_number?: string | null
+          sla_deadline?: string | null
+          start_time?: string | null
+          status: string
+        }
+        Update: {
+          call_type?: string
+          completion_time?: string | null
+          created_at?: string
+          customer_id?: string
+          customer_name?: string
+          engineer_id?: string | null
+          engineer_name?: string | null
+          feedback?: Json | null
+          id?: string
+          issue_description?: string
+          issue_type?: string
+          location?: string
+          machine_id?: string | null
+          machine_model?: string
+          parts_used?: Json | null
+          phone?: string
+          priority?: string
+          serial_number?: string | null
+          sla_deadline?: string | null
+          start_time?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_calls_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_calls_machine_id_fkey"
+            columns: ["machine_id"]
+            isOneToOne: false
+            referencedRelation: "customer_machines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
