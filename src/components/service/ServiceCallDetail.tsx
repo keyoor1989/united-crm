@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { ServiceCall, Engineer } from "@/types/service";
+import { ServiceCall, Engineer, EngineerStatus } from "@/types/service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,21 +37,69 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
     try {
       setIsUpdating(true);
 
-      // Save changes to database (mock for now)
-      // In a real app, you would implement an API call to update the service call
       console.log("Saving changes:", { engineerId, status, resolutionNotes });
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // First, update the service call in the database
+      const { error: serviceCallError } = await supabase
+        .from('service_calls')
+        .update({
+          engineer_id: engineerId === "unassigned" ? null : engineerId,
+          status,
+          issue_description: resolutionNotes,
+          updated_at: new Date().toISOString(),
+          completion_time: status === "Completed" ? new Date().toISOString() : serviceCall.completionTime
+        })
+        .eq('id', serviceCall.id);
+
+      if (serviceCallError) throw serviceCallError;
       
-      // Update service call
-      const updatedServiceCall = {
-        ...serviceCall,
-        engineerId,
-        status,
-        issueDescription: resolutionNotes,
-        updatedAt: new Date().toISOString()
-      };
+      // If the status is Completed, update the engineer's status to Available
+      if (status === "Completed" && engineerId && engineerId !== "unassigned") {
+        const { error: engineerError } = await supabase
+          .from('engineers')
+          .update({
+            status: 'Available' as EngineerStatus,
+            current_job: null
+          })
+          .eq('id', engineerId);
+          
+        if (engineerError) {
+          console.error("Error updating engineer status:", engineerError);
+          // We don't throw here to avoid failing the whole operation
+        }
+      }
+      
+      // If status changed to "Assigned" and engineer is assigned, update engineer status
+      if (status === "Assigned" && engineerId && engineerId !== "unassigned" && 
+          (serviceCall.status !== "Assigned" || serviceCall.engineerId !== engineerId)) {
+        const { error: engineerError } = await supabase
+          .from('engineers')
+          .update({
+            status: 'On Call' as EngineerStatus,
+            current_job: serviceCall.id
+          })
+          .eq('id', engineerId);
+          
+        if (engineerError) {
+          console.error("Error updating engineer status:", engineerError);
+        }
+      }
+      
+      // If engineer was changed (reassigned), update previous engineer's status
+      if (serviceCall.engineerId && serviceCall.engineerId !== engineerId && 
+          serviceCall.engineerId !== "unassigned") {
+        const { error: prevEngineerError } = await supabase
+          .from('engineers')
+          .update({
+            status: 'Available' as EngineerStatus,
+            current_job: null
+          })
+          .eq('id', serviceCall.engineerId);
+          
+        if (prevEngineerError) {
+          console.error("Error updating previous engineer status:", prevEngineerError);
+        }
+      }
       
       toast({
         title: "Service call updated",
