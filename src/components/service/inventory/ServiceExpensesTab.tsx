@@ -7,6 +7,14 @@ import { ServiceExpense } from "@/types/serviceExpense";
 import { Engineer } from "@/types/service";
 import { fetchServiceExpenses, addServiceExpense } from "@/services/serviceExpenseService";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface ServiceExpensesTabProps {
   engineers: Engineer[];
@@ -62,6 +70,13 @@ const ServiceExpensesTab = ({
     }
   };
 
+  const handleEngineerChange = (engineerId: string) => {
+    const engineer = engineers.find(eng => eng.id === engineerId);
+    if (engineer) {
+      setSelectedEngineer(engineer);
+    }
+  };
+
   if (isLoading || loadingExpenses) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -73,9 +88,32 @@ const ServiceExpensesTab = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-1">
+        <Card className="mb-4">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <Label htmlFor="engineer-select">Select Engineer</Label>
+              <Select
+                value={selectedEngineer?.id}
+                onValueChange={handleEngineerChange}
+              >
+                <SelectTrigger id="engineer-select">
+                  <SelectValue placeholder="Select engineer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {engineers.map((engineer) => (
+                    <SelectItem key={engineer.id} value={engineer.id}>
+                      {engineer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+        
         {selectedEngineer && (
           <ServiceExpenseForm 
-            serviceCallId="general-expenses" // We'll use this for general expenses not tied to a specific call
+            serviceCallId="general" // Fixed value for general expenses
             engineerId={selectedEngineer.id}
             engineerName={selectedEngineer.name}
             onExpenseAdded={handleExpenseAdded}

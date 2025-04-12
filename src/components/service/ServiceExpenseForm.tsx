@@ -72,9 +72,11 @@ const ServiceExpenseForm = ({
     <Card>
       <CardHeader>
         <CardTitle>Add Expense</CardTitle>
-        <CardDescription className="flex items-center">
-          <User className="h-4 w-4 mr-2" />
-          Engineer: <Badge variant="outline" className="ml-2">{engineerName}</Badge>
+        <CardDescription>
+          <div className="flex items-center">
+            <User className="h-4 w-4 mr-2" />
+            Engineer: <span className="ml-2 font-medium">{engineerName}</span>
+          </div>
         </CardDescription>
       </CardHeader>
       <CardContent>

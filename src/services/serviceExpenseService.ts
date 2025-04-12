@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ServiceExpense } from "@/types/serviceExpense";
+import { ServiceExpense, ExpenseCategory } from "@/types/serviceExpense";
 import { toast } from "@/hooks/use-toast";
 
 export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
@@ -25,7 +25,7 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
       serviceCallId: expense.service_call_id,
       engineerId: expense.engineer_id,
       engineerName: expense.engineer_name,
-      category: expense.category,
+      category: expense.category as ExpenseCategory, // Cast to ExpenseCategory type
       amount: expense.amount,
       description: expense.description,
       date: expense.date,
@@ -43,6 +43,7 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
 
 export const addServiceExpense = async (expense: ServiceExpense): Promise<boolean> => {
   try {
+    console.log("Adding service expense:", expense);
     const { error } = await supabase
       .from('service_expenses')
       .insert({
