@@ -127,9 +127,9 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   const processedCalls = serviceCalls.map(call => {
     const reconciledParts = reconciliationDetails[call.id] || [];
     
-    const callExpenses = call.expenses || [];
-    const actualExpenses = callExpenses.filter(expense => 
-      expense.engineerId !== "system" && !expense.isReimbursed
+    const callExpenses = serviceExpenses.filter(expense => 
+      expense.serviceCallId === call.id && 
+      expense.engineerId !== "system"
     );
     
     const partsCost = call.partsUsed?.reduce((total, part) => {
@@ -141,8 +141,8 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
       return total + (costPerUnit * part.quantity);
     }, 0) || 0;
     
-    const serviceExpensesTotal = actualExpenses.reduce((total, expense) => 
-      total + expense.amount, 0) || 0;
+    const serviceExpensesTotal = callExpenses.reduce((total, expense) => 
+      total + (expense.isReimbursed ? 0 : expense.amount), 0) || 0;
     
     const totalExpenses = serviceExpensesTotal + partsCost;
     
@@ -163,22 +163,24 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     };
   });
   
-  const serviceChargeItems = serviceExpenses.map(expense => {
-    return {
-      id: expense.id,
-      createdAt: expense.date,
-      customerName: expense.customerName || "Unknown Customer",
-      issueType: "Service Charge",
-      serviceCharge: expense.amount,
-      partsUsed: [],
-      totalExpenses: 0,
-      totalRevenue: expense.amount,
-      profit: expense.amount,
-      isPaid: true,
-      partsReconciled: true,
-      type: "service_charge"
-    };
-  });
+  const serviceChargeItems = serviceExpenses
+    .filter(expense => expense.engineerId === "system" && expense.isReimbursed)
+    .map(expense => {
+      return {
+        id: expense.id,
+        createdAt: expense.date,
+        customerName: expense.customerName || "Unknown Customer",
+        issueType: "Service Charge",
+        serviceCharge: expense.amount,
+        partsUsed: [],
+        totalExpenses: 0,
+        totalRevenue: expense.amount,
+        profit: expense.amount,
+        isPaid: true,
+        partsReconciled: true,
+        type: "service_charge"
+      };
+    });
   
   const allBillingItems = [...processedCalls, ...serviceChargeItems];
   

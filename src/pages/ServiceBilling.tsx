@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import BillingReportView from "@/components/service/BillingReportView";
 import { useServiceData } from "@/hooks/useServiceData";
@@ -46,24 +47,30 @@ const ServiceBilling = () => {
     };
     
     const processedCalls = allCalls.map(call => {
+      // Calculate parts cost
       const partsCost = call.partsUsed?.reduce((total, part) => 
         total + ((part.cost || part.price * 0.6) * part.quantity), 0) || 0;
       
+      // Find all expenses for this service call (excluding system-generated income)
       const callExpenses = serviceExpenses.filter(expense => 
         expense.serviceCallId === call.id && 
         expense.engineerId !== "system" && 
         !expense.isReimbursed
       );
       
+      // Calculate service expenses
       const serviceCallExpenses = callExpenses.reduce((total, expense) => 
         total + expense.amount, 0) || 0;
       
+      // Total expenses is the sum of parts cost and service expenses
       const totalExpenses = serviceCallExpenses + partsCost;
       
+      // Calculate revenue
       const partsRevenue = call.partsUsed?.reduce((total, part) => 
         total + (part.price * part.quantity), 0) || 0;
       const totalRevenue = (call.serviceCharge || 0) + partsRevenue;
       
+      // Profit is revenue minus expenses
       const profit = totalRevenue - totalExpenses;
       
       return {
@@ -76,6 +83,7 @@ const ServiceBilling = () => {
       };
     });
     
+    // Calculate summary statistics
     const totalRevenue = processedCalls.reduce((sum, call) => sum + (call.totalRevenue || 0), 0);
     const totalExpenses = processedCalls.reduce((sum, call) => sum + (call.totalExpenses || 0), 0);
     const totalProfit = processedCalls.reduce((sum, call) => sum + (call.profit || 0), 0);
