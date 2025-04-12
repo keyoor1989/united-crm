@@ -1,14 +1,14 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus, Loader2 } from "lucide-react";
+import { Search, Filter, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Warehouse } from "@/types/inventory";
 import { WarehouseFormValues } from "@/components/inventory/warehouses/WarehouseForm";
-import { setupSupabaseAuth, useWarehouses, useWarehouseStock } from "@/hooks/warehouses/useWarehouses";
+import { useWarehouses, useWarehouseStock } from "@/hooks/warehouses/useWarehouses";
 import WarehouseTable from "@/components/inventory/warehouses/WarehouseTable";
 import StockTable from "@/components/inventory/warehouses/StockTable";
 import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
@@ -22,19 +22,8 @@ const InventoryWarehouses = () => {
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [authInitialized, setAuthInitialized] = useState(false);
 
-  // Initialize anonymous authentication
-  useEffect(() => {
-    const initAuth = async () => {
-      const success = await setupSupabaseAuth();
-      setAuthInitialized(success);
-    };
-    
-    initAuth();
-  }, []);
-
-  // Use custom hooks
+  // Use custom hooks with mock data
   const {
     warehouses,
     isLoadingWarehouses,
@@ -45,12 +34,12 @@ const InventoryWarehouses = () => {
     isCreatingWarehouse,
     isUpdatingWarehouse,
     isDeletingWarehouse
-  } = useWarehouses(authInitialized);
+  } = useWarehouses();
 
   const {
     stock,
     isLoadingStock
-  } = useWarehouseStock(selectedWarehouse, activeTab, authInitialized);
+  } = useWarehouseStock(selectedWarehouse, activeTab);
 
   // Filter warehouses based on search
   const filteredWarehouses = warehouses.filter(warehouse =>
@@ -88,6 +77,8 @@ const InventoryWarehouses = () => {
 
   // Handle delete warehouse
   const handleDeleteWarehouse = (warehouseId: string) => {
+    // Find the warehouse to get its name for the confirmation dialog
+    const warehouse = warehouses.find(w => w.id === warehouseId);
     setDeleteConfirmId(warehouseId);
   };
 
@@ -104,23 +95,16 @@ const InventoryWarehouses = () => {
   };
 
   // Handle errors with toast notifications
-  useEffect(() => {
+  React.useEffect(() => {
     if (warehousesError) {
       toast.error(`Error loading warehouses: ${warehousesError.message}`);
     }
   }, [warehousesError]);
 
-  if (!authInitialized) {
-    return (
-      <div className="container p-6 flex items-center justify-center h-96">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <h2 className="text-xl font-semibold mb-2">Initializing...</h2>
-          <p className="text-muted-foreground">Setting up secure access to warehouse data</p>
-        </div>
-      </div>
-    );
-  }
+  // Get the name of the warehouse being deleted (for the confirmation dialog)
+  const warehouseToDelete = deleteConfirmId 
+    ? warehouses.find(w => w.id === deleteConfirmId)?.name 
+    : undefined;
   
   return (
     <div className="container p-6">
@@ -194,6 +178,7 @@ const InventoryWarehouses = () => {
                 warehouses={warehouses}
                 selectedWarehouse={selectedWarehouse}
                 onSelectWarehouse={setSelectedWarehouse}
+                isLoading={isLoadingWarehouses}
               />
 
               <StockTable 
@@ -221,6 +206,7 @@ const InventoryWarehouses = () => {
         onOpenChange={(open) => !open && setDeleteConfirmId(null)}
         onConfirm={confirmDeleteWarehouse}
         isDeleting={isDeletingWarehouse}
+        warehouseName={warehouseToDelete}
       />
     </div>
   );
