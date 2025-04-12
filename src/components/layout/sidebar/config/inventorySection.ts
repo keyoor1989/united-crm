@@ -1,7 +1,7 @@
 
 import { 
   Package, Boxes, Tag, Store, ShoppingCart, Send, ArrowRightLeft, 
-  Building, RotateCcw, User, Cpu, BarChart2, FileCheck, Award, 
+  Building, RotateCcw, Cpu, BarChart2, Award, 
   History, AlertTriangle, ShoppingBag 
 } from "lucide-react";
 import { NavSection } from "../types/navTypes";
@@ -62,11 +62,6 @@ export const inventorySection: NavSection = {
       label: "Returns & Replacements"
     },
     {
-      to: "/inventory/engineer-inventory",
-      icon: User,
-      label: "Engineer Inventory"
-    },
-    {
       to: "/inventory/machine-parts",
       icon: Cpu,
       label: "Machine Parts Usage"
@@ -75,11 +70,6 @@ export const inventorySection: NavSection = {
       to: "/inventory/profit-report",
       icon: BarChart2,
       label: "Profit Report"
-    },
-    {
-      to: "/inventory/amc-tracker",
-      icon: FileCheck,
-      label: "AMC Consumables"
     },
     {
       to: "/inventory/vendor-performance-metrics",
