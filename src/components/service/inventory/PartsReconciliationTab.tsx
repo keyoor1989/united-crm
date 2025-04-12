@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -33,7 +32,7 @@ const PartsReconciliationTab = ({
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(propIsLoading || true);
+  const [isLoading, setIsLoading] = useState<boolean>(propIsLoading ?? true);
   const [showAddPartDialog, setShowAddPartDialog] = useState(false);
   const [selectedServiceCall, setSelectedServiceCall] = useState<ServiceCall | null>(null);
   
