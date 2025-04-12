@@ -67,6 +67,19 @@ export const mockInventoryItems: InventoryItem[] = [
     lastVendor: "Ravi Distributors",
     barcode: "HP88A001",
     createdAt: "2025-02-15"
+  },
+  {
+    id: "6",
+    modelId: "mdl-5",
+    brandId: "brd-1",
+    name: "Kyocera 2554ci Drum",
+    type: "Drum",
+    minQuantity: 1,
+    currentQuantity: 4,
+    lastPurchasePrice: 7500,
+    lastVendor: "Precision Equipments",
+    barcode: "K2554D001",
+    createdAt: "2025-03-01"
   }
 ];
 

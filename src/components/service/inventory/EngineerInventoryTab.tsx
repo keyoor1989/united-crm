@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, FileText, Receipt, ArrowRight, ArrowLeft, PackageCheck } from "lucide-react";
+import { Search, Plus, FileText, Receipt, ArrowRight, ArrowLeft, PackageCheck, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Engineer } from "@/types/service";
 import { InventoryItem } from "@/types/inventory";
@@ -35,12 +35,14 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, selectedWarehouse, is
     { id: "1", engineerId: "eng-1", engineerName: "Rajesh Kumar", itemId: "1", itemName: "Kyocera TK-1175 Toner", quantity: 2, assignedDate: "2025-03-15", warehouseSource: "Joshiji" },
     { id: "2", engineerId: "eng-2", engineerName: "Deepak Sharma", itemId: "2", itemName: "Ricoh MP2014 Drum Unit", quantity: 1, assignedDate: "2025-03-10", warehouseSource: "Joshiji" },
     { id: "3", engineerId: "eng-1", engineerName: "Rajesh Kumar", itemId: "3", itemName: "Kyocera 2554ci Fuser", quantity: 1, assignedDate: "2025-02-28", warehouseSource: "Joshiji" },
+    { id: "4", engineerId: "eng-3", engineerName: "Amit Singh", itemId: "3", itemName: "Kyocera 2554ci Drum", quantity: 1, assignedDate: "2025-04-12", warehouseSource: "Joshiji" },
   ]);
   
   // Mock data for usage history
   const [usageHistory, setUsageHistory] = useState([
     { id: "1", engineerId: "eng-1", engineerName: "Rajesh Kumar", itemId: "1", itemName: "Kyocera TK-1175 Toner", quantity: 1, date: "2025-03-20", serviceCallId: "SC001", customerName: "ABC Corp" },
     { id: "2", engineerId: "eng-2", engineerName: "Deepak Sharma", itemId: "2", itemName: "Ricoh MP2014 Drum Unit", quantity: 1, date: "2025-03-15", serviceCallId: "SC002", customerName: "XYZ Ltd" },
+    { id: "3", engineerId: "eng-3", engineerName: "Amit Singh", itemId: "3", itemName: "Kyocera 2554ci Drum", quantity: 1, date: "2025-04-12", serviceCallId: "SC003", customerName: "Tech Solutions" },
   ]);
   
   // Form state for assigning items
@@ -141,6 +143,38 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, selectedWarehouse, is
     return usageHistory.filter(item => item.engineerId === engineerId);
   };
   
+  // Quick issue to specific engineer - Amit in this case
+  const handleQuickIssue = (itemName: string, engineerName: string) => {
+    const targetEngineer = engineers.find(eng => eng.name === engineerName);
+    const targetItem = inventoryItems.find(item => item.name.includes(itemName));
+    
+    if (targetEngineer && targetItem) {
+      const newInventoryItem = {
+        id: `${Date.now()}`,
+        engineerId: targetEngineer.id,
+        engineerName: targetEngineer.name,
+        itemId: targetItem.id,
+        itemName: targetItem.name,
+        quantity: 1,
+        assignedDate: new Date().toISOString().split('T')[0],
+        warehouseSource: "Joshiji"
+      };
+      
+      setEngineerInventory(prev => [...prev, newInventoryItem]);
+      
+      toast({
+        title: "Item Assigned",
+        description: `1 ${targetItem.name} assigned to ${targetEngineer.name} from warehouse`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: `Could not find engineer "${engineerName}" or item "${itemName}"`,
+        variant: "destructive"
+      });
+    }
+  };
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -156,10 +190,23 @@ const EngineerInventoryTab = ({ engineers, inventoryItems, selectedWarehouse, is
           <CardTitle>Engineer Inventory</CardTitle>
           <CardDescription>Manage inventory items assigned to service engineers from warehouses</CardDescription>
         </div>
-        <Button onClick={handleOpenAssignDialog} disabled={!selectedWarehouse}>
-          <ArrowRight className="mr-2 h-4 w-4" />
-          Assign Items to Engineer
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleOpenAssignDialog} disabled={!selectedWarehouse}>
+            <ArrowRight className="mr-2 h-4 w-4" />
+            Assign Items to Engineer
+          </Button>
+          
+          {/* Quick issue button for demonstration */}
+          <Button 
+            variant="outline"
+            onClick={() => handleQuickIssue("2554ci Drum", "Amit Singh")}
+            disabled={!selectedWarehouse}
+            className="bg-green-50 hover:bg-green-100 border-green-200"
+          >
+            <Truck className="mr-2 h-4 w-4 text-green-600" />
+            Quick Issue Drum to Amit
+          </Button>
+        </div>
       </CardHeader>
       
       <CardContent>
