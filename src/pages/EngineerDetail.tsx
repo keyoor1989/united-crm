@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback, EngineerStatus, EngineerSkillLevel } from "@/types/service";
@@ -91,6 +92,7 @@ const EngineerDetail = () => {
         return;
       }
 
+      // Cast the data to include the leave_end_date property
       const engineerData: Engineer = {
         id: data.id,
         name: data.name,
