@@ -24,13 +24,30 @@ export const fetchServiceCallsWithParts = async (): Promise<ServiceCall[]> => {
     // Transform the data to match our ServiceCall type
     const serviceCalls: ServiceCall[] = data.map(call => ({
       id: call.id,
+      customerId: call.customer_id,
       customerName: call.customer_name,
-      engineerName: call.engineer_name || "Unassigned",
+      phone: call.phone || "",
+      machineId: call.machine_id || "",
       machineModel: call.machine_model,
-      serialNumber: call.serial_number,
+      serialNumber: call.serial_number || "",
+      location: call.location || "",
+      issueType: call.issue_type || "",
+      issueDescription: call.issue_description || "",
+      callType: call.call_type || "",
+      priority: call.priority || "",
       status: call.status,
+      engineerId: call.engineer_id || null,
+      engineerName: call.engineer_name || "Unassigned",
       createdAt: call.created_at,
-      partsUsed: call.parts_used || [],
+      slaDeadline: call.sla_deadline || "",
+      startTime: call.start_time || null,
+      completionTime: call.completion_time || null,
+      partsUsed: Array.isArray(call.parts_used) ? call.parts_used : [],
+      feedback: null,
+      serviceCharge: call.service_charge || 0,
+      isPaid: call.is_paid || false,
+      paymentDate: call.payment_date,
+      paymentMethod: call.payment_method,
       partsReconciled: call.parts_reconciled || false
     }));
     
@@ -57,6 +74,12 @@ export const updatePartReconciliation = async (
     
     if (fetchError) {
       console.error("Error fetching service call for reconciliation:", fetchError);
+      return false;
+    }
+    
+    // Make sure parts_used is an array before trying to use map
+    if (!Array.isArray(serviceCall.parts_used)) {
+      console.error("parts_used is not an array:", serviceCall.parts_used);
       return false;
     }
     
@@ -106,6 +129,12 @@ export const updateServiceCallReconciliation = async (
     
     if (fetchError) {
       console.error("Error fetching service call for reconciliation:", fetchError);
+      return false;
+    }
+    
+    // Make sure parts_used is an array before trying to use map
+    if (!Array.isArray(serviceCall.parts_used)) {
+      console.error("parts_used is not an array:", serviceCall.parts_used);
       return false;
     }
     
