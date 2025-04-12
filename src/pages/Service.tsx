@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -55,7 +54,7 @@ const Service = () => {
           skillLevel: eng.skill_level as EngineerSkillLevel,
           currentJob: eng.current_job,
           currentLocation: eng.current_location,
-          leaveEndDate: eng.leave_end_date || undefined
+          leaveEndDate: (eng as any).leave_end_date || undefined
         };
       });
       

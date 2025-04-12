@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback, EngineerStatus, EngineerSkillLevel } from "@/types/service";
@@ -91,8 +92,8 @@ const EngineerDetail = () => {
         return;
       }
 
-      // Cast the data to include the leave_end_date property
-      const engineerData: Engineer = {
+      // Type assertion to include leave_end_date
+      const engineerData = {
         id: data.id,
         name: data.name,
         phone: data.phone,
@@ -103,7 +104,7 @@ const EngineerDetail = () => {
         currentJob: data.current_job,
         currentLocation: data.current_location,
         leaveEndDate: data.leave_end_date || undefined
-      };
+      } as Engineer;
 
       setEngineer(engineerData);
     } catch (err) {

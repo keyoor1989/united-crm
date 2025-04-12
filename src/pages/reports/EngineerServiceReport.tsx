@@ -65,7 +65,8 @@ export default function EngineerServiceReport() {
           skillLevel: eng.skill_level as EngineerSkillLevel,
           currentJob: eng.current_job,
           currentLocation: eng.current_location,
-          leaveEndDate: eng.leave_end_date || undefined
+          // Type assertion to handle leave_end_date
+          leaveEndDate: (eng as any).leave_end_date || undefined
         };
       });
       
