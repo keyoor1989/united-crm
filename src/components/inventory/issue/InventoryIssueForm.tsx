@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Form } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +11,9 @@ import IssueTypeSelection from "./IssueTypeSelection";
 import ItemFilters from "./ItemFilters";
 import ItemsTable from "./ItemsTable";
 import IssueButton from "./IssueButton";
+import { useEngineers } from "@/hooks/inventory/useEngineers";
+import { useInventoryItems } from "@/hooks/inventory/useInventoryItems";
+import { useFilteredItems } from "@/hooks/inventory/useFilteredItems";
 
 // Form schema
 const formSchema = z.object({
@@ -21,21 +23,6 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-interface Engineer {
-  id: string;
-  name: string;
-}
-
-interface InventoryItem {
-  id: string;
-  part_name: string;
-  category: string;
-  quantity: number;
-  min_stock: number;
-  purchase_price: number;
-  brand?: string;
-}
 
 const InventoryIssueForm = () => {
   const { toast } = useToast();
@@ -55,78 +42,15 @@ const InventoryIssueForm = () => {
     },
   });
 
-  // Fetch engineers
-  const { data: engineers = [], isLoading: isLoadingEngineers } = useQuery({
-    queryKey: ['engineers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('engineers')
-        .select('id, name')
-        .order('name');
-      
-      if (error) throw error;
-      return data as Engineer[];
-    },
-  });
-
-  // Fetch inventory items
-  const { data: items = [], isLoading: isLoadingItems } = useQuery({
-    queryKey: ['inventory_items', selectedWarehouse],
-    queryFn: async () => {
-      let query = supabase
-        .from('opening_stock_entries')
-        .select('id, part_name, category, quantity, min_stock, purchase_price, brand')
-        .order('part_name');
-      
-      if (selectedWarehouse) {
-        query = query.eq('warehouse_id', selectedWarehouse);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      return data as InventoryItem[];
-    },
-  });
-
-  // Extract unique brands from items
-  const brands = React.useMemo(() => {
-    const brandSet = new Set<string>();
-    items.forEach(item => {
-      if (item.brand) {
-        brandSet.add(item.brand);
-      }
-    });
-    return Array.from(brandSet).sort();
-  }, [items]);
-
-  // Get categories (models) based on selected brand
-  const models = React.useMemo(() => {
-    const modelSet = new Set<string>();
-    items.forEach(item => {
-      if ((!selectedBrand || item.brand === selectedBrand) && item.category) {
-        modelSet.add(item.category);
-      }
-    });
-    return Array.from(modelSet).sort();
-  }, [items, selectedBrand]);
-
-  // Filter items based on search term, brand and model
-  const filteredItems = items.filter(item => {
-    const matchesSearch = searchTerm 
-      ? item.part_name.toLowerCase().includes(searchTerm.toLowerCase())
-      : true;
-    
-    const matchesBrand = selectedBrand 
-      ? item.brand === selectedBrand 
-      : true;
-    
-    const matchesModel = selectedModel 
-      ? item.category === selectedModel 
-      : true;
-    
-    return matchesSearch && matchesBrand && matchesModel;
-  });
+  // Use custom hooks for data fetching
+  const { engineers, isLoading: isLoadingEngineers } = useEngineers();
+  const { items, isLoading: isLoadingItems } = useInventoryItems(selectedWarehouse);
+  const { brands, models, filteredItems } = useFilteredItems(
+    items,
+    searchTerm,
+    selectedBrand,
+    selectedModel
+  );
 
   // Handle selecting an item from the table
   const handleSelectItem = (itemId: string) => {
