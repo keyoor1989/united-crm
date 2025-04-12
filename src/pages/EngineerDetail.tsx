@@ -92,8 +92,10 @@ const EngineerDetail = () => {
         return;
       }
 
-      // Type assertion to include leave_end_date
-      const engineerData = {
+      // Use type assertion for the raw database record
+      const rawData = data as any;
+      
+      const engineerData: Engineer = {
         id: data.id,
         name: data.name,
         phone: data.phone,
@@ -103,8 +105,8 @@ const EngineerDetail = () => {
         skillLevel: data.skill_level as EngineerSkillLevel,
         currentJob: data.current_job,
         currentLocation: data.current_location,
-        leaveEndDate: data.leave_end_date || undefined
-      } as Engineer;
+        leaveEndDate: rawData.leave_end_date || undefined
+      };
 
       setEngineer(engineerData);
     } catch (err) {
