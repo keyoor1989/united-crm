@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -36,12 +35,13 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { PerformanceSummaryCard } from "@/components/engineer/PerformanceSummaryCard";
-import { EngineerJobsChart } from "@/components/engineer/EngineerJobsChart";
-import { JobTypeDistributionChart } from "@/components/engineer/JobTypeDistributionChart";
-import { CompletionTimeChart } from "@/components/engineer/CompletionTimeChart";
-import { SlaComplianceChart } from "@/components/engineer/SlaComplianceChart";
+import EngineerJobsChart from "@/components/engineer/EngineerJobsChart";
+import JobTypeDistributionChart from "@/components/engineer/JobTypeDistributionChart";
+import CompletionTimeChart from "@/components/engineer/CompletionTimeChart";
+import SlaComplianceChart from "@/components/engineer/SlaComplianceChart";
 import { EngineerLeaderboard } from "@/components/engineer/EngineerLeaderboard";
 import { addDays } from "date-fns";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 const EngineerPerformanceDashboard = () => {
   const [dateRange, setDateRange] = useState({
@@ -54,6 +54,13 @@ const EngineerPerformanceDashboard = () => {
   const [jobPriority, setJobPriority] = useState("All Priorities");
   const [engineerFilter, setEngineerFilter] = useState("All Engineers");
   const [showFilters, setShowFilters] = useState(false);
+  
+  const handleDateRangeChange = (range: { from?: Date; to?: Date }) => {
+    setDateRange({
+      from: range.from || dateRange.from,
+      to: range.to || dateRange.to,
+    });
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -88,20 +95,7 @@ const EngineerPerformanceDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date-range">Date Range</Label>
-                <Select value={dateRange} onValueChange={setDateRange}>
-                  <SelectTrigger id="date-range">
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Today">Today</SelectItem>
-                    <SelectItem value="This Week">This Week</SelectItem>
-                    <SelectItem value="This Month">This Month</SelectItem>
-                    <SelectItem value="Last Month">Last Month</SelectItem>
-                    <SelectItem value="Last Quarter">Last Quarter</SelectItem>
-                    <SelectItem value="This Year">This Year</SelectItem>
-                    <SelectItem value="Custom">Custom...</SelectItem>
-                  </SelectContent>
-                </Select>
+                <DateRangePicker date={dateRange} onDateChange={handleDateRangeChange} />
               </div>
 
               <div className="space-y-2">
