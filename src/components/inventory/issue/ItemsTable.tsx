@@ -8,25 +8,48 @@ import {
   TableHead, 
   TableCell 
 } from "@/components/ui/table";
-
-interface InventoryItem {
-  id: string;
-  part_name: string;
-  category: string;
-  quantity: number;
-  min_stock: number;
-  purchase_price: number;
-  brand?: string;
-  compatible_models?: string[];
-}
+import { Skeleton } from "@/components/ui/skeleton";
+import { InventoryItem } from "@/hooks/inventory/useInventoryItems";
 
 interface ItemsTableProps {
   filteredItems: InventoryItem[];
   selectedItemId: string | null;
   handleSelectItem: (itemId: string) => void;
+  isLoading: boolean;
 }
 
-const ItemsTable = ({ filteredItems, selectedItemId, handleSelectItem }: ItemsTableProps) => {
+const ItemsTable = ({ filteredItems, selectedItemId, handleSelectItem, isLoading }: ItemsTableProps) => {
+  if (isLoading) {
+    return (
+      <div className="border rounded-md overflow-hidden mb-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16">Select</TableHead>
+              <TableHead>Item Name</TableHead>
+              <TableHead>Brand</TableHead>
+              <TableHead>Compatible Models</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Stock</TableHead>
+              <TableHead>Price</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={7}>
+                <div className="space-y-2 py-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
+
   return (
     <div className="border rounded-md overflow-hidden mb-8">
       <Table>
