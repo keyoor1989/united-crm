@@ -8,7 +8,8 @@ import {
   SendToBack,
   Box,
   Receipt,
-  CheckSquare
+  CheckSquare,
+  BarChart2
 } from "lucide-react";
 import { SidebarSectionConfig } from "../types/navTypes";
 
@@ -42,6 +43,11 @@ export const inventorySection: SidebarSectionConfig = {
       label: "Vendors"
     },
     {
+      to: "/inventory/vendor-performance",
+      icon: BarChart2,
+      label: "Vendor Performance"
+    },
+    {
       to: "/inventory/purchase-entry",
       icon: Receipt,
       label: "Purchase Entry"
@@ -55,6 +61,11 @@ export const inventorySection: SidebarSectionConfig = {
       to: "/inventory/transfers",
       icon: Truck,
       label: "Stock Transfers"
+    },
+    {
+      to: "/inventory/profit-report",
+      icon: BarChart2,
+      label: "Profit Report"
     },
     {
       to: "/service-inventory",

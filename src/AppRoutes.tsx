@@ -23,6 +23,11 @@ import AccessDenied from "@/pages/AccessDenied";
 import CustomerFollowUps from "@/pages/customers/CustomerFollowUps";
 import EngineerPerformanceDashboard from "@/pages/EngineerPerformanceDashboard";
 import ServiceInventoryManagement from "@/pages/ServiceInventoryManagement";
+import Inventory from "@/pages/Inventory";
+import MachineParts from "@/pages/inventory/MachineParts";
+import InventoryVendors from "@/pages/inventory/InventoryVendors";
+import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
+import ProfitReport from "@/pages/inventory/ProfitReport";
 
 const AppRoutes = () => {
   return (
@@ -44,8 +49,13 @@ const AppRoutes = () => {
         <Route path="/finance/revenue" element={<ProtectedRoute><DepartmentRevenue /></ProtectedRoute>} />
         <Route path="/finance/expenses" element={<ProtectedRoute><DepartmentExpenses /></ProtectedRoute>} />
 
-        <Route path="/inventory/vendors" element={<ProtectedRoute><Vendors /></ProtectedRoute>} />
+        {/* Inventory Routes */}
+        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+        <Route path="/inventory/vendors" element={<ProtectedRoute><InventoryVendors /></ProtectedRoute>} />
         <Route path="/inventory/engineer-inventory" element={<ProtectedRoute><EngineerInventory /></ProtectedRoute>} />
+        <Route path="/inventory/machine-parts" element={<ProtectedRoute><MachineParts /></ProtectedRoute>} />
+        <Route path="/inventory/vendor-performance" element={<ProtectedRoute><VendorPerformanceDemo /></ProtectedRoute>} />
+        <Route path="/inventory/profit-report" element={<ProtectedRoute><ProfitReport /></ProtectedRoute>} />
         
         <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
         <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />
