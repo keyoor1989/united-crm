@@ -42,76 +42,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
-// Clean mock data for warehouses
-export const mockWarehouses = [
-  {
-    id: "1",
-    name: "Main Warehouse",
-    code: "MW01",
-    location: "Indore",
-    address: "123 Industrial Area, Indore, MP",
-    contactPerson: "Rajesh Singh",
-    contactPhone: "9876543210",
-    isActive: true,
-    createdAt: "2025-01-10"
-  },
-  {
-    id: "2",
-    name: "Bhopal Branch Warehouse",
-    code: "BW01",
-    location: "Bhopal",
-    address: "456 Commerce Zone, Bhopal, MP",
-    contactPerson: "Priya Sharma",
-    contactPhone: "9876543211",
-    isActive: true,
-    createdAt: "2025-02-15"
-  },
-  {
-    id: "3",
-    name: "Jabalpur Storage Unit",
-    code: "JS01",
-    location: "Jabalpur",
-    address: "789 Warehouse Complex, Jabalpur, MP",
-    contactPerson: "Amit Kumar",
-    contactPhone: "9876543212",
-    isActive: false,
-    createdAt: "2025-03-20"
-  }
-];
+// Clean, empty array for warehouses
+export const mockWarehouses = [];
 
-// Clean mock data for warehouse stock
-const mockWarehouseStock = [
-  {
-    id: "1",
-    warehouseId: "1",
-    itemId: "1",
-    itemName: "Kyocera TK-1154 Black Toner",
-    brand: "Kyocera",
-    model: "ECOSYS P2235dn",
-    quantity: 15,
-    lastUpdated: "2025-04-01"
-  },
-  {
-    id: "2",
-    warehouseId: "1",
-    itemId: "2",
-    itemName: "Kyocera DK-1150 Drum Unit",
-    brand: "Kyocera",
-    model: "ECOSYS P2235dn",
-    quantity: 8,
-    lastUpdated: "2025-03-28"
-  },
-  {
-    id: "3",
-    warehouseId: "2",
-    itemId: "1",
-    itemName: "Kyocera TK-1154 Black Toner",
-    brand: "Kyocera",
-    model: "ECOSYS P2235dn",
-    quantity: 5,
-    lastUpdated: "2025-03-25"
-  }
-];
+// Clean, empty array for warehouse stock
+const mockWarehouseStock = [];
 
 // Form schema for adding/editing warehouses
 const warehouseFormSchema = z.object({

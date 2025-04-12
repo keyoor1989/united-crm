@@ -30,9 +30,19 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Brand, Model } from "@/types/inventory";
 import { mockWarehouses } from "@/pages/inventory/InventoryWarehouses";
+
+// Create a client
+const queryClient = new QueryClient();
+
+// Wrap the component with QueryClientProvider
+const OpeningStockEntryFormWithQueryClient = (props) => (
+  <QueryClientProvider client={queryClient}>
+    <OpeningStockEntryForm {...props} />
+  </QueryClientProvider>
+);
 
 // Define the form schema with warehouse field
 const formSchema = z.object({
@@ -192,6 +202,40 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     setSelectedModels(updatedModels);
     form.setValue("compatibleModels", updatedModels);
   };
+
+  const renderWarehouseField = () => (
+    <FormField
+      control={form.control}
+      name="warehouseId"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Warehouse Location</FormLabel>
+          <Select 
+            onValueChange={field.onChange} 
+            defaultValue={field.value}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select warehouse" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {mockWarehouses.length > 0 ? (
+                mockWarehouses.filter(w => w.isActive).map((warehouse) => (
+                  <SelectItem key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name} ({warehouse.location})
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="default">Main Warehouse (Default)</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -381,34 +425,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
               />
             </div>
             
-            {/* New Warehouse Selection Field */}
-            <FormField
-              control={form.control}
-              name="warehouseId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Warehouse Location</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select warehouse" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {mockWarehouses.filter(w => w.isActive).map((warehouse) => (
-                        <SelectItem key={warehouse.id} value={warehouse.id}>
-                          {warehouse.name} ({warehouse.location})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {renderWarehouseField()}
             
             {selectedModels.length > 0 && (
               <div className="border p-2 rounded-md bg-slate-50">
@@ -441,4 +458,4 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
   );
 };
 
-export default OpeningStockEntryForm;
+export default OpeningStockEntryFormWithQueryClient;

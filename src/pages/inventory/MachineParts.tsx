@@ -22,23 +22,16 @@ const MachineParts = () => {
   const [machineParts, setMachineParts] = useState([]);
   const [openStockEntryForm, setOpenStockEntryForm] = useState(false);
   
-  // Load any existing items from mock data on initial render
   useEffect(() => {
-    // This would be replaced with an API call in a real app
     setMachineParts(mockInventoryItems);
   }, []);
   
-  // Save inventory items to mock data when they change
   useEffect(() => {
-    // Update mock data with current machine parts
-    // This would be replaced with an API call in a real app
     mockInventoryItems.length = 0;
     mockInventoryItems.push(...machineParts);
   }, [machineParts]);
   
-  // Update filtered parts to include warehouse information
   const filteredParts = machineParts.filter(part => {
-    // Filter by search query
     const matchesSearch = searchQuery ? 
       part.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       part.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -46,7 +39,6 @@ const MachineParts = () => {
       part.warehouseName?.toLowerCase().includes(searchQuery.toLowerCase())
     : true;
     
-    // Filter by tab/category
     const matchesCategory = activeTab === "all" || 
       part.category?.toLowerCase().includes(activeTab.toLowerCase());
     
@@ -64,6 +56,10 @@ const MachineParts = () => {
   };
 
   const handleAddPart = (newPart) => {
+    if (!newPart.warehouseId || newPart.warehouseId === "default") {
+      newPart.warehouseId = "main";
+      newPart.warehouseName = "Main Warehouse";
+    }
     setMachineParts(prevParts => [...prevParts, newPart]);
   };
 
@@ -85,7 +81,6 @@ const MachineParts = () => {
         </Button>
       </div>
 
-      {/* Search and filter row */}
       <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
         <div className="relative w-full">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -103,7 +98,6 @@ const MachineParts = () => {
         </Button>
       </div>
 
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="all">All Parts</TabsTrigger>
@@ -406,7 +400,6 @@ const MachineParts = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Opening Stock Entry Form Dialog */}
       <OpeningStockEntryForm 
         open={openStockEntryForm}
         onOpenChange={setOpenStockEntryForm}
