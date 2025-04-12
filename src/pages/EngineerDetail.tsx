@@ -1,351 +1,294 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Engineer, ServiceCall, Part, Feedback, EngineerStatus, EngineerSkillLevel } from "@/types/service";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit } from "lucide-react";
-import EngineerForm from "@/components/service/EngineerForm";
-import { EngineerProfile } from "@/components/service/EngineerProfile";
+import { ArrowLeft, Phone, Mail, MapPin } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EngineerServiceCallTabs } from "@/components/service/EngineerServiceCallTabs";
-import { Skeleton } from "@/components/ui/skeleton";
+import EngineerProfile from "@/components/service/EngineerProfile";
+import { Engineer, ServiceCall } from "@/types/service";
+import { transformEngineersData, transformServiceCallsData } from "@/utils/serviceDataUtils";
+import { fetchEngineers, fetchServiceCalls } from "@/services/serviceDataService";
 
 const EngineerDetail = () => {
-  const params = useParams();
-  const engineerId = params.id;
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [engineer, setEngineer] = useState<Engineer | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
-  const [showEditForm, setShowEditForm] = useState(false);
-
-  const isNewEngineer = engineerId === "new";
-
-  const createBlankEngineer = (): Engineer => ({
-    id: "",
-    name: "",
-    phone: "",
-    email: "",
-    location: "",
-    status: "Available" as EngineerStatus,
-    skillLevel: "Intermediate" as EngineerSkillLevel,
-    currentJob: null,
-    currentLocation: "",
-    leaveEndDate: ""
-  });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("EngineerDetail mounted, engineerId:", engineerId, "isNewEngineer:", isNewEngineer);
-    
-    if (isNewEngineer) {
-      console.log("Creating new engineer form - no data to fetch");
-      setIsLoading(false);
-      setShowEditForm(true);
-      
-      setEngineer(createBlankEngineer());
-    } else if (engineerId) {
-      console.log("Fetching existing engineer with ID:", engineerId);
-      fetchEngineer(engineerId);
-      fetchServiceCalls(engineerId);
-    } else {
-      console.log("No engineerId provided, setting loading to false");
-      setIsLoading(false);
-      toast({
-        title: "Error",
-        description: "No engineer ID provided",
-        variant: "destructive",
-      });
-    }
-  }, [engineerId, isNewEngineer]);
+    const loadEngineerData = async () => {
+      setIsLoading(true);
+      if (!id) return;
 
-  const fetchEngineer = async (id: string) => {
-    setIsLoading(true);
-    try {
-      console.log("Fetching engineer with ID:", id);
-      const { data, error } = await supabase
-        .from("engineers")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching engineer:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load engineer data: " + error.message,
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      // Fetch engineer data
+      const { data: engineersData } = await fetchEngineers();
+      if (engineersData) {
+        const transformedEngineers = transformEngineersData(engineersData);
+        const foundEngineer = transformedEngineers.find(eng => eng.id === id);
+        setEngineer(foundEngineer || null);
       }
 
-      console.log("Engineer data fetched:", data);
-      if (!data) {
-        toast({
-          title: "Not Found",
-          description: "Engineer not found",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      // Fetch service calls for this engineer
+      const { data: serviceCallsData } = await fetchServiceCalls();
+      if (serviceCallsData) {
+        const transformedCalls = transformServiceCallsData(serviceCallsData);
+        const engineerCalls = transformedCalls.filter(call => call.engineerId === id);
+        setServiceCalls(engineerCalls);
       }
 
-      // Use type assertion for the raw database record
-      const rawData = data as any;
-      
-      const engineerData: Engineer = {
-        id: data.id,
-        name: data.name,
-        phone: data.phone,
-        email: data.email,
-        location: data.location,
-        status: data.status as EngineerStatus,
-        skillLevel: data.skill_level as EngineerSkillLevel,
-        currentJob: data.current_job,
-        currentLocation: data.current_location,
-        leaveEndDate: rawData.leave_end_date || undefined
-      };
-
-      setEngineer(engineerData);
-    } catch (err) {
-      console.error("Unexpected error fetching engineer:", err);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
-    } finally {
       setIsLoading(false);
+    };
+
+    loadEngineerData();
+  }, [id]);
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "available":
+        return "bg-green-100 text-green-800";
+      case "on leave":
+        return "bg-orange-100 text-orange-800";
+      case "assigned":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const fetchServiceCalls = async (engineerId: string) => {
-    try {
-      console.log("Fetching service calls for engineer:", engineerId);
-      const { data, error } = await supabase
-        .from("service_calls")
-        .select("*")
-        .eq("engineer_id", engineerId)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching service calls:", error);
-        return;
-      }
-
-      console.log("Service calls data:", data);
-      const transformedCalls: ServiceCall[] = data.map(call => {
-        let parsedPartsUsed: Part[] = [];
-        if (call.parts_used) {
-          try {
-            const partsData = Array.isArray(call.parts_used) 
-              ? call.parts_used 
-              : (typeof call.parts_used === 'string' ? JSON.parse(call.parts_used) : []);
-            
-            parsedPartsUsed = partsData.map((part: any) => ({
-              id: part.id || "",
-              name: part.name || "",
-              partNumber: part.partNumber || "",
-              quantity: part.quantity || 0,
-              price: part.price || 0
-            }));
-          } catch (e) {
-            console.error("Error parsing parts_used:", e);
-          }
-        }
-        
-        let parsedFeedback: Feedback | null = null;
-        if (call.feedback) {
-          try {
-            const feedbackData = typeof call.feedback === 'string' 
-              ? JSON.parse(call.feedback) 
-              : call.feedback;
-            
-            if (feedbackData && typeof feedbackData === 'object' && !Array.isArray(feedbackData)) {
-              parsedFeedback = {
-                rating: typeof feedbackData.rating === 'number' ? feedbackData.rating : 0,
-                comment: typeof feedbackData.comment === 'string' ? feedbackData.comment : null,
-                date: typeof feedbackData.date === 'string' ? feedbackData.date : new Date().toISOString()
-              };
-            }
-          } catch (e) {
-            console.error("Error parsing feedback:", e);
-          }
-        }
-
-        return {
-          id: call.id,
-          customerId: call.customer_id,
-          customerName: call.customer_name,
-          phone: call.phone,
-          machineId: call.machine_id || "",
-          machineModel: call.machine_model,
-          serialNumber: call.serial_number || "",
-          location: call.location,
-          issueType: call.issue_type,
-          issueDescription: call.issue_description,
-          callType: call.call_type,
-          priority: call.priority,
-          status: call.status,
-          engineerId: call.engineer_id,
-          engineerName: call.engineer_name || "",
-          createdAt: call.created_at,
-          slaDeadline: call.sla_deadline || new Date().toISOString(),
-          startTime: call.start_time,
-          completionTime: call.completion_time,
-          partsUsed: parsedPartsUsed,
-          feedback: parsedFeedback,
-          // Add missing properties with proper type casting
-          serviceCharge: typeof call.service_charge === 'number' ? call.service_charge : 0,
-          isPaid: Boolean(call.is_paid),
-          partsReconciled: Boolean(call.parts_reconciled),
-          paymentDate: call.payment_date as string | undefined,
-          paymentMethod: call.payment_method as string | undefined
-        };
-      });
-
-      setServiceCalls(transformedCalls);
-    } catch (err) {
-      console.error("Unexpected error fetching service calls:", err);
+  const getSkillLevelColor = (level: string) => {
+    switch (level.toLowerCase()) {
+      case "expert":
+        return "bg-purple-100 text-purple-800";
+      case "senior":
+        return "bg-indigo-100 text-indigo-800";
+      case "mid-level":
+        return "bg-blue-100 text-blue-800";
+      case "junior":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const handleSaveEngineer = async (updatedEngineer: Engineer) => {
-    try {
-      console.log("Saving engineer:", updatedEngineer);
-      
-      if (isNewEngineer) {
-        console.log("Creating new engineer in database");
-        const { data, error } = await supabase
-          .from("engineers")
-          .insert({
-            name: updatedEngineer.name,
-            phone: updatedEngineer.phone,
-            email: updatedEngineer.email,
-            location: updatedEngineer.location,
-            status: updatedEngineer.status,
-            skill_level: updatedEngineer.skillLevel,
-            current_location: updatedEngineer.currentLocation || updatedEngineer.location,
-            current_job: null
-          })
-          .select();
-
-        if (error) {
-          console.error("Error creating engineer:", error);
-          toast({
-            title: "Error",
-            description: "Failed to create engineer: " + error.message,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        console.log("New engineer created successfully:", data);
-        toast({
-          title: "Success",
-          description: "Engineer created successfully",
-        });
-        
-        if (data && data.length > 0) {
-          navigate(`/engineer/${data[0].id}`);
-        } else {
-          navigate('/service');
-        }
-        
-      } else {
-        console.log("Updating existing engineer in database");
-        const { error } = await supabase
-          .from("engineers")
-          .update({
-            name: updatedEngineer.name,
-            phone: updatedEngineer.phone,
-            email: updatedEngineer.email,
-            location: updatedEngineer.location,
-            status: updatedEngineer.status,
-            skill_level: updatedEngineer.skillLevel,
-            current_location: updatedEngineer.currentLocation || updatedEngineer.location,
-            current_job: updatedEngineer.currentJob || null
-          })
-          .eq("id", updatedEngineer.id);
-
-        if (error) {
-          console.error("Error updating engineer:", error);
-          toast({
-            title: "Error",
-            description: "Failed to update engineer: " + error.message,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        setEngineer(updatedEngineer);
-        setShowEditForm(false);
-        toast({
-          title: "Success",
-          description: "Engineer updated successfully",
-        });
-      }
-    } catch (err) {
-      console.error("Unexpected error saving engineer:", err);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while saving",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (isLoading && !isNewEngineer) {
+  if (isLoading) {
     return (
-      <div className="p-4 flex justify-center items-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading engineer data...</p>
-        </div>
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (!engineer && !isNewEngineer) {
+  if (!engineer) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-destructive">Engineer not found</p>
-        <Button variant="outline" onClick={() => navigate(-1)} className="mt-4">
-          Go Back
+      <div className="flex flex-col items-center justify-center gap-4 p-8">
+        <h2 className="text-2xl font-bold">Engineer Not Found</h2>
+        <p className="text-muted-foreground">The engineer you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate('/service')} className="mt-4">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Service Management
         </Button>
       </div>
     );
   }
+
+  // Service call metrics
+  const pendingCalls = serviceCalls.filter(call => call.status === "pending");
+  const completedCalls = serviceCalls.filter(call => call.status === "completed");
+  const inProgressCalls = serviceCalls.filter(call => call.status === "in progress");
+
+  // Calculate revenue metrics
+  const calculateRevenue = () => {
+    const totalRevenue = completedCalls.reduce((sum, call) => {
+      return sum + (typeof call.serviceCharge === 'number' ? call.serviceCharge : 0);
+    }, 0);
+    
+    const paidRevenue = completedCalls.reduce((sum, call) => {
+      return sum + (call.isPaid && typeof call.serviceCharge === 'number' ? call.serviceCharge : 0);
+    }, 0);
+    
+    const pendingRevenue = totalRevenue - paidRevenue;
+    
+    return { totalRevenue, paidRevenue, pendingRevenue };
+  };
+
+  const { totalRevenue, paidRevenue, pendingRevenue } = calculateRevenue();
+
+  // Calculate parts metrics
+  const partsReconciledCount = completedCalls.filter(call => call.partsReconciled).length;
+  const partsNotReconciledCount = completedCalls.length - partsReconciledCount;
+
+  const getInitials = (name: string) => {
+    return name.split(" ").map(n => n[0]).join("").toUpperCase();
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="gap-1">
-          <ArrowLeft className="h-4 w-4" />
-          Back
+        <Button variant="outline" onClick={() => navigate('/service')}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </Button>
-        {!isNewEngineer && (
-          <Button onClick={() => setShowEditForm(!showEditForm)}>
-            <Edit className="h-4 w-4 mr-2" />
-            {showEditForm ? "Cancel Edit" : "Edit Engineer"}
-          </Button>
-        )}
       </div>
 
-      {showEditForm || isNewEngineer ? (
-        <EngineerForm
-          engineer={engineer || createBlankEngineer()}
-          onSave={handleSaveEngineer}
-          onCancel={isNewEngineer ? () => navigate(-1) : () => setShowEditForm(false)}
-        />
-      ) : (
-        <>
-          {engineer && <EngineerProfile engineer={engineer} />}
-          <EngineerServiceCallTabs serviceCalls={serviceCalls} />
-        </>
-      )}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <div className="flex items-center space-x-4">
+              <Avatar className="h-16 w-16">
+                <AvatarFallback className="text-xl">{getInitials(engineer.name)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-xl">{engineer.name}</CardTitle>
+                <Badge className={`mt-2 ${getStatusColor(engineer.status)}`}>
+                  {engineer.status}
+                </Badge>
+                <Badge className={`ml-2 mt-2 ${getSkillLevelColor(engineer.skillLevel)}`}>
+                  {engineer.skillLevel}
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              <li className="flex items-center">
+                <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+                <span>{engineer.phone}</span>
+              </li>
+              <li className="flex items-center">
+                <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+                <span>{engineer.email}</span>
+              </li>
+              <li className="flex items-center">
+                <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
+                <span>{engineer.location}</span>
+              </li>
+            </ul>
+            
+            {engineer.status === "assigned" && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-md">
+                <p className="text-sm font-medium">Current Assignment</p>
+                <p className="text-sm mt-1">{engineer.currentJob || "No details available"}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Location: {engineer.currentLocation || "Not specified"}
+                </p>
+              </div>
+            )}
+            
+            {engineer.status === "on leave" && engineer.leaveEndDate && (
+              <div className="mt-4 p-3 bg-orange-50 rounded-md">
+                <p className="text-sm font-medium">On Leave Until</p>
+                <p className="text-sm">
+                  {new Date(engineer.leaveEndDate).toLocaleDateString()}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="md:col-span-2">
+          <Tabs defaultValue="overview">
+            <TabsList className="mb-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="service-calls">Service Calls</TabsTrigger>
+              <TabsTrigger value="profile">Full Profile</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview" className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Total Service Calls</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{serviceCalls.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      All time assigned service calls
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{pendingCalls.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Awaiting engineer action
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{inProgressCalls.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Currently being worked on
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Completed Calls</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{completedCalls.length}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Successfully resolved issues
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">₹{totalRevenue.toLocaleString()}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xs text-green-600">Paid: ₹{paidRevenue.toLocaleString()}</p>
+                      <p className="text-xs text-orange-600">Pending: ₹{pendingRevenue.toLocaleString()}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Parts Reconciliation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{partsReconciledCount}/{completedCalls.length}</div>
+                    <div className="mt-1 flex items-center justify-between">
+                      <p className="text-xs text-green-600">Reconciled: {partsReconciledCount}</p>
+                      <p className="text-xs text-orange-600">Pending: {partsNotReconciledCount}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="service-calls">
+              <EngineerServiceCallTabs 
+                pendingCalls={pendingCalls}
+                inProgressCalls={inProgressCalls}
+                completedCalls={completedCalls}
+                allCalls={serviceCalls}
+              />
+            </TabsContent>
+            
+            <TabsContent value="profile">
+              <EngineerProfile engineer={engineer} />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
     </div>
   );
 };
