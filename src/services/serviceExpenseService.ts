@@ -33,7 +33,7 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
   
   // For expenses tied to service calls, fetch the service call details
   const serviceCallIds = [...new Set(expenses
-    .filter(e => e.serviceCallId !== "general" && e.serviceCallId !== null)
+    .filter(e => e.serviceCallId !== null && e.serviceCallId !== undefined)
     .map(e => e.serviceCallId))];
   
   if (serviceCallIds.length > 0) {
@@ -57,7 +57,7 @@ export const fetchServiceExpenses = async (): Promise<ServiceExpense[]> => {
       });
       
       expenses.forEach(expense => {
-        if (expense.serviceCallId !== "general" && serviceCallMap.has(expense.serviceCallId)) {
+        if (expense.serviceCallId && serviceCallMap.has(expense.serviceCallId)) {
           expense.serviceCallInfo = serviceCallMap.get(expense.serviceCallId);
         }
       });
@@ -101,7 +101,7 @@ export const addServiceCharge = async (
     const { error } = await supabase
       .from('service_expenses')
       .insert({
-        service_call_id: "general", // Not tied to a specific call
+        service_call_id: null, // Using null instead of "general" to conform to UUID type
         engineer_id: "system", // System-generated charge
         engineer_name: "System",
         customer_id: customerId,
@@ -132,7 +132,7 @@ export const addServiceExpense = async (expense: ServiceExpense): Promise<boolea
     const { error } = await supabase
       .from('service_expenses')
       .insert({
-        service_call_id: expense.serviceCallId,
+        service_call_id: expense.serviceCallId === "general" ? null : expense.serviceCallId,
         engineer_id: expense.engineerId,
         engineer_name: expense.engineerName,
         customer_id: expense.customerId || null,
