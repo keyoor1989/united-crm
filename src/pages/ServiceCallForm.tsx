@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -38,7 +39,10 @@ import {
   Loader2,
 } from "lucide-react";
 import { ServiceCall, Customer, Machine, Engineer } from "@/types/service";
-import { mockCustomers, mockMachines, mockEngineers } from "@/data/mockData";
+import { mockMachines, mockEngineers } from "@/data/mockData";
+import { CustomerType } from "@/types/customer";
+import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
+import { supabase } from "@/integrations/supabase/client";
 
 const serviceCallSchema = z.object({
   customerId: z.string().min(1, { message: "Customer is required" }),
@@ -60,14 +64,14 @@ type ServiceCallFormValues = z.infer<typeof serviceCallSchema>;
 const ServiceCallForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState<Customer[]>([]);
   const [machines, setMachines] = useState<Machine[]>([]);
   const [engineers, setEngineers] = useState<Engineer[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | null>(null);
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [customerMachines, setCustomerMachines] = useState<Machine[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slaTime, setSlaTime] = useState<number | null>(null);
+  const [showCustomerSearch, setShowCustomerSearch] = useState(false);
 
   const form = useForm<ServiceCallFormValues>({
     resolver: zodResolver(serviceCallSchema),
@@ -86,32 +90,76 @@ const ServiceCallForm = () => {
   });
 
   useEffect(() => {
-    setCustomers(mockCustomers);
     setMachines(mockMachines);
     setEngineers(mockEngineers);
   }, []);
 
-  const handleCustomerChange = (customerId: string) => {
-    const customer = customers.find((c) => c.id === customerId);
-    if (customer) {
-      setSelectedCustomer(customer);
-      form.setValue("phone", customer.phone);
-      form.setValue("location", customer.location);
+  const handleCustomerSelect = (customer: CustomerType) => {
+    setSelectedCustomer(customer);
+    setShowCustomerSearch(false);
+    
+    form.setValue("customerId", customer.id);
+    form.setValue("phone", customer.phone);
+    form.setValue("location", customer.location);
+    
+    const priority = determinePriority(customer.status === "Active" ? "corporate" : "individual");
+    form.setValue("priority", priority);
+    
+    // Fetch customer machines from database
+    fetchCustomerMachines(customer.id);
+    
+    calculateSLA(customer.status === "Active" ? "corporate" : "individual");
+  };
+
+  const fetchCustomerMachines = async (customerId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_machines')
+        .select('*')
+        .eq('customer_id', customerId);
+        
+      if (error) {
+        console.error("Error fetching customer machines:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load customer machines",
+          variant: "destructive",
+        });
+        return;
+      }
       
-      const priority = determinePriority(customer.type);
-      form.setValue("priority", priority);
+      // Map the fetched machines to match our Machine type
+      const mappedMachines: Machine[] = data.map(machine => ({
+        id: machine.id,
+        customerId: machine.customer_id,
+        model: machine.machine_name,
+        serialNumber: machine.machine_serial || "",
+        installDate: machine.installation_date || new Date().toISOString(),
+        status: "Active",
+        lastService: machine.last_service || "None",
+        contractType: "Standard",
+      }));
       
-      const filteredMachines = machines.filter(
-        (machine) => machine.customerId === customerId
-      );
-      setCustomerMachines(filteredMachines);
+      setCustomerMachines(mappedMachines);
       
-      calculateSLA(customer.type);
+      if (mappedMachines.length > 0) {
+        toast({
+          title: "Machines Loaded",
+          description: `Found ${mappedMachines.length} machines for this customer`,
+        });
+      } else {
+        toast({
+          title: "No Machines",
+          description: "No machines found for this customer",
+        });
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching machines:", err);
     }
   };
 
   const handleMachineChange = (machineId: string) => {
-    const machine = machines.find((m) => m.id === machineId);
+    const machine = customerMachines.find((m) => m.id === machineId);
     if (machine) {
       setSelectedMachine(machine);
       form.setValue("serialNumber", machine.serialNumber);
@@ -246,35 +294,11 @@ const ServiceCallForm = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="customerId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          handleCustomerChange(value);
-                        }}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select customer" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {customers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              {customer.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                <CustomerSearch 
+                  onSelectCustomer={handleCustomerSelect}
+                  showSearch={showCustomerSearch}
+                  onToggleSearch={() => setShowCustomerSearch(!showCustomerSearch)}
+                  customerName={selectedCustomer?.name || ""}
                 />
 
                 <FormField
@@ -339,7 +363,7 @@ const ServiceCallForm = () => {
                           handleMachineChange(value);
                         }}
                         defaultValue={field.value}
-                        disabled={!selectedCustomer}
+                        disabled={!selectedCustomer || customerMachines.length === 0}
                       >
                         <FormControl>
                           <SelectTrigger>
