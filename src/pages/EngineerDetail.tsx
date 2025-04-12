@@ -18,13 +18,14 @@ const EngineerDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [showEditForm, setShowEditForm] = useState(false);
+  
+  // Check if this is a new engineer based on the route parameter
   const isNewEngineer = engineerId === "new";
 
   useEffect(() => {
-    if (engineerId && !isNewEngineer) {
-      fetchEngineer(engineerId);
-      fetchServiceCalls(engineerId);
-    } else if (isNewEngineer) {
+    // If we're adding a new engineer, don't fetch data
+    if (isNewEngineer) {
+      console.log("Creating new engineer - no data to fetch");
       // Create a blank engineer for the new form
       setEngineer({
         id: "",
@@ -39,6 +40,11 @@ const EngineerDetail = () => {
       });
       setIsLoading(false);
       setShowEditForm(true);
+    } else if (engineerId) {
+      // Only fetch existing engineer data if we have an ID and it's not "new"
+      console.log("Fetching existing engineer with ID:", engineerId);
+      fetchEngineer(engineerId);
+      fetchServiceCalls(engineerId);
     }
   }, [engineerId, isNewEngineer]);
 
@@ -189,8 +195,10 @@ const EngineerDetail = () => {
   const handleSaveEngineer = async (updatedEngineer: Engineer) => {
     try {
       console.log("Saving engineer:", updatedEngineer);
+      
       if (isNewEngineer) {
         // For new engineers, insert a new record
+        console.log("Creating new engineer in database");
         const { data, error } = await supabase
           .from("engineers")
           .insert({
@@ -201,7 +209,7 @@ const EngineerDetail = () => {
             status: updatedEngineer.status,
             skill_level: updatedEngineer.skillLevel,
             current_location: updatedEngineer.currentLocation,
-            current_job: updatedEngineer.currentJob
+            current_job: updatedEngineer.currentJob || null
           })
           .select();
 
@@ -215,6 +223,7 @@ const EngineerDetail = () => {
           return;
         }
 
+        console.log("New engineer created successfully:", data);
         toast({
           title: "Success",
           description: "Engineer created successfully",
@@ -229,6 +238,7 @@ const EngineerDetail = () => {
         
       } else {
         // For existing engineers, update the record
+        console.log("Updating existing engineer in database");
         const { error } = await supabase
           .from("engineers")
           .update({
@@ -239,7 +249,7 @@ const EngineerDetail = () => {
             status: updatedEngineer.status,
             skill_level: updatedEngineer.skillLevel,
             current_location: updatedEngineer.currentLocation,
-            current_job: updatedEngineer.currentJob
+            current_job: updatedEngineer.currentJob || null
           })
           .eq("id", updatedEngineer.id);
 
@@ -270,7 +280,8 @@ const EngineerDetail = () => {
     }
   };
 
-  if (isLoading) {
+  // If we're still loading data, show a spinner
+  if (isLoading && !isNewEngineer) {
     return (
       <div className="p-4 flex justify-center items-center h-full">
         <div className="text-center">
@@ -281,6 +292,7 @@ const EngineerDetail = () => {
     );
   }
 
+  // If we couldn't find an engineer with the provided ID (and we're not creating a new one)
   if (!engineer && !isNewEngineer) {
     return (
       <div className="p-4 text-center">
