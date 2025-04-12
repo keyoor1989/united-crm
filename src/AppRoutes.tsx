@@ -15,6 +15,7 @@ import EngineerInventory from "@/pages/inventory/EngineerInventory";
 import Service from "@/pages/Service";
 import ServiceCallForm from "@/pages/ServiceCallForm";
 import ServiceBilling from "@/pages/ServiceBilling";
+import AmcConsumables from "@/pages/AmcConsumables";
 import CustomerForm from "@/pages/CustomerForm";
 import EngineerDetail from "@/pages/EngineerDetail";
 import Customers from "@/pages/Customers";
@@ -48,6 +49,7 @@ const AppRoutes = () => {
         <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
         <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />
         <Route path="/service-billing" element={<ProtectedRoute><ServiceBilling /></ProtectedRoute>} />
+        <Route path="/amc-consumables" element={<ProtectedRoute><AmcConsumables /></ProtectedRoute>} />
         <Route path="/engineer/:id" element={<ProtectedRoute><EngineerDetail /></ProtectedRoute>} />
         <Route path="/engineer-performance" element={<ProtectedRoute><EngineerPerformanceDashboard /></ProtectedRoute>} />
       </Route>
