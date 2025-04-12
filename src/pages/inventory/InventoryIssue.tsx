@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,42 +27,14 @@ import ItemSelector from "@/components/inventory/ItemSelector";
 import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
 import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { EngineerInventoryItem, InventoryReturnItem } from "@/components/service/inventory/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Sample data for issued items
-const recentIssues = [
-  {
-    id: "1",
-    itemName: "Kyocera 2554ci Toner Black",
-    quantity: 1,
-    issuedTo: "Rahul Verma",
-    issueType: "Engineer" as IssueType,
-    issueDate: "2025-04-08",
-    billType: "Non-GST",
-    barcode: "KYO-TN2554-BK-001"
-  },
-  {
-    id: "2",
-    itemName: "Canon 2525 Drum Unit",
-    quantity: 2,
-    issuedTo: "Indore Office",
-    issueType: "Branch" as IssueType,
-    issueDate: "2025-04-07",
-    billType: "GST",
-    barcode: "CAN-DRM2525-001"
-  },
-  {
-    id: "3",
-    itemName: "HP M428 Toner",
-    quantity: 1,
-    issuedTo: "ABC Technologies",
-    issueType: "Customer" as IssueType,
-    issueDate: "2025-04-05",
-    billType: "GST",
-    barcode: "HP-TNM428-002"
-  }
-];
+type ReturnReason = "Unused" | "Defective" | "Wrong Item" | "Excess" | "Other";
+type ItemCondition = "Good" | "Damaged" | "Needs Inspection";
 
-// Sample inventory items for dropdown selection
 const inventoryItems: InventoryItem[] = [
   { 
     id: "1", 
@@ -131,7 +103,6 @@ const inventoryItems: InventoryItem[] = [
   }
 ];
 
-// Sample brands and models
 const mockBrands: Brand[] = [
   { id: "1", name: "Kyocera", createdAt: "2025-03-01", updatedAt: "2025-03-01" },
   { id: "2", name: "Ricoh", createdAt: "2025-03-02", updatedAt: "2025-03-02" },
@@ -148,99 +119,27 @@ const mockModels: Model[] = [
   { id: "5", brandId: "5", name: "M428", type: "Machine", createdAt: "2025-03-05", updatedAt: "2025-03-05" }
 ];
 
-// Sample engineers
-const engineers = [
-  { id: "1", name: "Rahul Verma" },
-  { id: "2", name: "Deepak Kumar" },
-  { id: "3", name: "Sanjay Mishra" },
-  { id: "4", name: "Amit Singh" }
-];
+type Engineer = {
+  id: string;
+  name: string;
+};
 
-// Sample branches
-const branches = [
-  { id: "1", name: "Indore Office" },
-  { id: "2", name: "Bhopal Office" },
-  { id: "3", name: "Jabalpur Office" }
-];
+type Branch = {
+  id: string;
+  name: string;
+};
 
-// Sample customers
-const customers = [
-  { id: "1", name: "ABC Technologies" },
-  { id: "2", name: "XYZ Solutions" },
-  { id: "3", name: "Tech Innovations" }
-];
-
-const engineerInventory = [
-  { 
-    id: "e1", 
-    engineerId: "1", 
-    engineerName: "Rahul Verma", 
-    itemId: "1", 
-    itemName: "Kyocera 2554ci Toner Black", 
-    quantity: 2,
-    assignedDate: "2025-04-02"
-  },
-  { 
-    id: "e2", 
-    engineerId: "2", 
-    engineerName: "Deepak Kumar", 
-    itemId: "2", 
-    itemName: "Ricoh MP2014 Drum Unit", 
-    quantity: 1,
-    assignedDate: "2025-04-03"
-  },
-  { 
-    id: "e3", 
-    engineerId: "4", 
-    engineerName: "Amit Singh", 
-    itemId: "4", 
-    itemName: "Canon 2525 Drum Unit", 
-    quantity: 1,
-    assignedDate: "2025-04-05"
-  },
-  { 
-    id: "e4", 
-    engineerId: "4", 
-    engineerName: "Amit Singh", 
-    itemId: "3", 
-    itemName: "Xerox 7845 Toner Cyan", 
-    quantity: 1,
-    assignedDate: "2025-04-08"
-  }
-];
-
-const recentReturns = [
-  {
-    id: "r1",
-    itemName: "Kyocera 2554ci Toner Black",
-    quantity: 1,
-    returnedBy: "Rahul Verma",
-    returnType: "Engineer" as IssueType,
-    returnDate: "2025-04-10",
-    reason: "Unused",
-    condition: "Good",
-    warehouseName: "Joshiji",
-  },
-  {
-    id: "r2",
-    itemName: "Canon 2525 Drum Unit",
-    quantity: 1,
-    returnedBy: "Amit Singh",
-    returnType: "Engineer" as IssueType,
-    returnDate: "2025-04-11",
-    reason: "Defective",
-    condition: "Damaged",
-    warehouseName: "Joshiji",
-  }
-];
-
-type ReturnReason = "Unused" | "Defective" | "Wrong Item" | "Excess" | "Other";
-type ItemCondition = "Good" | "Damaged" | "Needs Inspection";
+type Customer = {
+  id: string;
+  name: string;
+};
 
 const InventoryIssue = () => {
+  const queryClient = useQueryClient();
   const [issueType, setIssueType] = useState<IssueType>("Engineer");
   const [quantity, setQuantity] = useState(1);
   const [receiverName, setReceiverName] = useState("");
+  const [receiverId, setReceiverId] = useState("");
   const [billType, setBillType] = useState("Non-GST");
   const [activeTab, setActiveTab] = useState("form");
   const { warehouses, isLoadingWarehouses } = useWarehouses();
@@ -249,19 +148,177 @@ const InventoryIssue = () => {
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [returnTab, setReturnTab] = useState("return-form");
   const [selectedEngineer, setSelectedEngineer] = useState("");
-  const [engineerItems, setEngineerItems] = useState<typeof engineerInventory>([]);
+  const [engineerItems, setEngineerItems] = useState<EngineerInventoryItem[]>([]);
   const [selectedReturnItem, setSelectedReturnItem] = useState("");
   const [returnQuantity, setReturnQuantity] = useState(1);
   const [returnReason, setReturnReason] = useState<ReturnReason>("Unused");
   const [itemCondition, setItemCondition] = useState<ItemCondition>("Good");
   const [returnNotes, setReturnNotes] = useState("");
 
-  const handleEngineerSelection = (engineerId: string) => {
+  const { data: engineers = [], isLoading: isLoadingEngineers } = useQuery({
+    queryKey: ['engineers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('engineers')
+        .select('id, name')
+        .order('name');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data as Engineer[];
+    }
+  });
+
+  const { data: issuedItems = [], isLoading: isLoadingIssuedItems } = useQuery({
+    queryKey: ['engineerInventory'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('engineer_inventory')
+        .select('*')
+        .order('assigned_date', { ascending: false });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data as EngineerInventoryItem[];
+    }
+  });
+
+  const { data: returnedItems = [], isLoading: isLoadingReturnedItems } = useQuery({
+    queryKey: ['inventoryReturns'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inventory_returns')
+        .select('*')
+        .order('return_date', { ascending: false });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data as InventoryReturnItem[];
+    }
+  });
+
+  const issueMutation = useMutation({
+    mutationFn: async (issueData: Omit<EngineerInventoryItem, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase
+        .from('engineer_inventory')
+        .insert(issueData)
+        .select();
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['engineerInventory'] });
+      toast.success(`${quantity} × ${selectedItem?.name} issued to ${receiverName}`);
+      
+      setSelectedItem(null);
+      setQuantity(1);
+      setReceiverName("");
+      setReceiverId("");
+    },
+    onError: (error) => {
+      toast.error(`Error issuing item: ${error.message}`);
+    }
+  });
+
+  const returnMutation = useMutation({
+    mutationFn: async (returnData: Omit<InventoryReturnItem, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase
+        .from('inventory_returns')
+        .insert(returnData)
+        .select();
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventoryReturns'] });
+      
+      const item = engineerItems.find(item => item.id === selectedReturnItem);
+      if (item) {
+        const remainingQuantity = item.quantity - returnQuantity;
+        
+        if (remainingQuantity <= 0) {
+          supabase
+            .from('engineer_inventory')
+            .delete()
+            .eq('id', item.id)
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ['engineerInventory'] });
+            });
+        } else {
+          supabase
+            .from('engineer_inventory')
+            .update({ quantity: remainingQuantity })
+            .eq('id', item.id)
+            .then(() => {
+              queryClient.invalidateQueries({ queryKey: ['engineerInventory'] });
+            });
+        }
+      }
+      
+      const engineerName = engineers.find(eng => eng.id === selectedEngineer)?.name;
+      const warehouseName = warehouses.find(w => w.id === selectedWarehouse)?.name;
+      
+      toast.success(`Item returned from ${engineerName} to ${warehouseName}`);
+      
+      setSelectedEngineer("");
+      setSelectedReturnItem("");
+      setReturnQuantity(1);
+      setReturnReason("Unused");
+      setItemCondition("Good");
+      setReturnNotes("");
+      setEngineerItems([]);
+    },
+    onError: (error) => {
+      toast.error(`Error returning item: ${error.message}`);
+    }
+  });
+
+  const branches: Branch[] = [
+    { id: "1", name: "Indore Office" },
+    { id: "2", name: "Bhopal Office" },
+    { id: "3", name: "Jabalpur Office" }
+  ];
+
+  const customers: Customer[] = [
+    { id: "1", name: "ABC Technologies" },
+    { id: "2", name: "XYZ Solutions" },
+    { id: "3", name: "Tech Innovations" }
+  ];
+
+  const handleEngineerSelection = async (engineerId: string) => {
     setSelectedEngineer(engineerId);
     setSelectedReturnItem("");
     
-    const items = engineerInventory.filter(item => item.engineerId === engineerId);
-    setEngineerItems(items);
+    try {
+      const { data, error } = await supabase
+        .from('engineer_inventory')
+        .select('*')
+        .eq('engineer_id', engineerId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      setEngineerItems(data as EngineerInventoryItem[]);
+    } catch (error) {
+      console.error('Error fetching engineer items:', error);
+      toast.error('Failed to fetch engineer items');
+      setEngineerItems([]);
+    }
   };
 
   const handleItemSelected = (item: InventoryItem) => {
@@ -276,7 +333,7 @@ const InventoryIssue = () => {
       return;
     }
 
-    if (!receiverName) {
+    if (!receiverName || !receiverId) {
       toast.warning(`Please select a ${issueType.toLowerCase()} to issue to`);
       return;
     }
@@ -291,13 +348,20 @@ const InventoryIssue = () => {
       return;
     }
 
-    toast.success(`${quantity} × ${selectedItem.name} issued from ${
-      warehouses.find(w => w.id === selectedWarehouse)?.name || 'warehouse'
-    } to ${receiverName}`);
+    const warehouseInfo = warehouses.find(w => w.id === selectedWarehouse);
     
-    setSelectedItem(null);
-    setQuantity(1);
-    setReceiverName("");
+    const issueData: Omit<EngineerInventoryItem, 'id' | 'created_at'> = {
+      engineer_id: receiverId,
+      engineer_name: receiverName,
+      item_id: selectedItem.id,
+      item_name: selectedItem.name,
+      quantity: quantity,
+      assigned_date: new Date().toISOString(),
+      warehouse_id: selectedWarehouse,
+      warehouse_source: warehouseInfo?.name || 'Unknown Warehouse'
+    };
+    
+    issueMutation.mutate(issueData);
   };
 
   const handleReturnSubmit = (e: React.FormEvent) => {
@@ -323,7 +387,7 @@ const InventoryIssue = () => {
       return;
     }
 
-    const item = engineerInventory.find(item => item.id === selectedReturnItem);
+    const item = engineerItems.find(item => item.id === selectedReturnItem);
     if (!item) {
       toast.error("Item not found");
       return;
@@ -334,18 +398,29 @@ const InventoryIssue = () => {
       return;
     }
 
-    const engineerName = engineers.find(eng => eng.id === selectedEngineer)?.name;
-    const warehouseName = warehouses.find(w => w.id === selectedWarehouse)?.name;
-
-    toast.success(`${returnQuantity} × ${item.itemName} returned from ${engineerName} to ${warehouseName}`);
+    const engineerName = engineers.find(eng => eng.id === selectedEngineer)?.name || 'Unknown Engineer';
+    const warehouseInfo = warehouses.find(w => w.id === selectedWarehouse);
     
-    setSelectedEngineer("");
-    setSelectedReturnItem("");
-    setReturnQuantity(1);
-    setReturnReason("Unused");
-    setItemCondition("Good");
-    setReturnNotes("");
-    setEngineerItems([]);
+    const returnData: Omit<InventoryReturnItem, 'id' | 'created_at'> = {
+      engineer_id: selectedEngineer,
+      engineer_name: engineerName,
+      item_id: item.item_id,
+      item_name: item.item_name,
+      quantity: returnQuantity,
+      return_date: new Date().toISOString(),
+      reason: returnReason,
+      condition: itemCondition,
+      warehouse_id: selectedWarehouse,
+      warehouse_name: warehouseInfo?.name || 'Unknown Warehouse',
+      notes: returnNotes || undefined
+    };
+    
+    returnMutation.mutate(returnData);
+  };
+
+  const handleReceiverSelection = (id: string, name: string) => {
+    setReceiverId(id);
+    setReceiverName(name);
   };
 
   return (
@@ -392,7 +467,11 @@ const InventoryIssue = () => {
                     <Label htmlFor="issueType">Issue Type</Label>
                     <Select 
                       value={issueType} 
-                      onValueChange={(value) => setIssueType(value as IssueType)}
+                      onValueChange={(value) => {
+                        setIssueType(value as IssueType);
+                        setReceiverName("");
+                        setReceiverId("");
+                      }}
                     >
                       <SelectTrigger id="issueType">
                         <SelectValue placeholder="Select issue type" />
@@ -422,23 +501,30 @@ const InventoryIssue = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="receiver">{issueType} Name</Label>
-                    <Select value={receiverName} onValueChange={setReceiverName}>
+                    <Select 
+                      onValueChange={(value) => {
+                        const [id, name] = value.split('|');
+                        handleReceiverSelection(id, name);
+                      }}
+                    >
                       <SelectTrigger id="receiver">
                         <SelectValue placeholder={`Select ${issueType.toLowerCase()}`} />
                       </SelectTrigger>
                       <SelectContent>
-                        {issueType === "Engineer" && engineers.map(engineer => (
-                          <SelectItem key={engineer.id} value={engineer.name}>
+                        {isLoadingEngineers && issueType === "Engineer" ? (
+                          <SelectItem value="loading" disabled>Loading engineers...</SelectItem>
+                        ) : issueType === "Engineer" && engineers.map(engineer => (
+                          <SelectItem key={engineer.id} value={`${engineer.id}|${engineer.name}`}>
                             {engineer.name}
                           </SelectItem>
                         ))}
                         {issueType === "Customer" && customers.map(customer => (
-                          <SelectItem key={customer.id} value={customer.name}>
+                          <SelectItem key={customer.id} value={`${customer.id}|${customer.name}`}>
                             {customer.name}
                           </SelectItem>
                         ))}
                         {issueType === "Branch" && branches.map(branch => (
-                          <SelectItem key={branch.id} value={branch.name}>
+                          <SelectItem key={branch.id} value={`${branch.id}|${branch.name}`}>
                             {branch.name}
                           </SelectItem>
                         ))}
@@ -502,10 +588,16 @@ const InventoryIssue = () => {
                   <Button 
                     type="submit" 
                     className="w-full mt-6" 
-                    disabled={!selectedItem || !selectedWarehouse}
+                    disabled={!selectedItem || !selectedWarehouse || !receiverId || issueMutation.isPending}
                   >
-                    <Package className="mr-2 h-4 w-4" />
-                    Issue Item
+                    {issueMutation.isPending ? (
+                      <>Processing...</>
+                    ) : (
+                      <>
+                        <Package className="mr-2 h-4 w-4" />
+                        Issue Item
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
@@ -545,7 +637,9 @@ const InventoryIssue = () => {
                             <SelectValue placeholder="Select engineer" />
                           </SelectTrigger>
                           <SelectContent>
-                            {engineers.map(engineer => (
+                            {isLoadingEngineers ? (
+                              <SelectItem value="loading" disabled>Loading engineers...</SelectItem>
+                            ) : engineers.map(engineer => (
                               <SelectItem key={engineer.id} value={engineer.id}>
                                 {engineer.name}
                               </SelectItem>
@@ -565,11 +659,15 @@ const InventoryIssue = () => {
                             <SelectValue placeholder="Select item" />
                           </SelectTrigger>
                           <SelectContent>
-                            {engineerItems.map(item => (
-                              <SelectItem key={item.id} value={item.id}>
-                                {item.itemName} (Qty: {item.quantity})
-                              </SelectItem>
-                            ))}
+                            {engineerItems.length === 0 ? (
+                              <SelectItem value="none" disabled>No items found for this engineer</SelectItem>
+                            ) : (
+                              engineerItems.map(item => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  {item.item_name} (Qty: {item.quantity})
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -637,47 +735,69 @@ const InventoryIssue = () => {
                       type="submit" 
                       variant="outline" 
                       className="w-full mt-6" 
-                      disabled={!selectedReturnItem || !selectedWarehouse}
+                      disabled={!selectedReturnItem || !selectedWarehouse || returnMutation.isPending}
                     >
-                      <ReplyAll className="mr-2 h-4 w-4" />
-                      Return Item to Inventory
+                      {returnMutation.isPending ? (
+                        <>Processing...</>
+                      ) : (
+                        <>
+                          <ReplyAll className="mr-2 h-4 w-4" />
+                          Return Item to Inventory
+                        </>
+                      )}
                     </Button>
                   </form>
                 </TabsContent>
                 
                 <TabsContent value="return-history">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Returned By</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Reason</TableHead>
-                        <TableHead>Condition</TableHead>
-                        <TableHead>Warehouse</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {recentReturns.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.itemName}</TableCell>
-                          <TableCell>{item.quantity}</TableCell>
-                          <TableCell>{item.returnedBy}</TableCell>
-                          <TableCell>{item.returnDate}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.reason}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={item.condition === "Good" ? "outline" : "destructive"}>
-                              {item.condition}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{item.warehouseName}</TableCell>
+                  {isLoadingReturnedItems ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Returned By</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Reason</TableHead>
+                          <TableHead>Condition</TableHead>
+                          <TableHead>Warehouse</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {returnedItems.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                              No returns history found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          returnedItems.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell className="font-medium">{item.item_name}</TableCell>
+                              <TableCell>{item.quantity}</TableCell>
+                              <TableCell>{item.engineer_name}</TableCell>
+                              <TableCell>{new Date(item.return_date).toLocaleDateString()}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{item.reason}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={item.condition === "Good" ? "outline" : "destructive"}>
+                                  {item.condition}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{item.warehouse_name}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -694,82 +814,106 @@ const InventoryIssue = () => {
                 </TabsList>
                 
                 <TabsContent value="issues">
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Item</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Issued To</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Bill Type</TableHead>
-                          <TableHead>Barcode</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {recentIssues.map((issue) => (
-                          <TableRow key={issue.id}>
-                            <TableCell className="font-medium flex items-center gap-2">
-                              <Package size={16} className="text-muted-foreground" />
-                              {issue.itemName}
-                            </TableCell>
-                            <TableCell>{issue.quantity}</TableCell>
-                            <TableCell>{issue.issuedTo}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {issue.issueType}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{issue.issueDate}</TableCell>
-                            <TableCell>
-                              <Badge variant={issue.billType === "GST" ? "default" : "secondary"}>
-                                {issue.billType}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-mono text-xs">{issue.barcode}</TableCell>
+                  {isLoadingIssuedItems ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ) : (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Item</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Issued To</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Source Warehouse</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {issuedItems.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                No issues found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            issuedItems.map((issue) => (
+                              <TableRow key={issue.id}>
+                                <TableCell className="font-medium flex items-center gap-2">
+                                  <Package size={16} className="text-muted-foreground" />
+                                  {issue.item_name}
+                                </TableCell>
+                                <TableCell>{issue.quantity}</TableCell>
+                                <TableCell>{issue.engineer_name}</TableCell>
+                                <TableCell>{new Date(issue.assigned_date).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">
+                                    {issue.warehouse_source}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                 </TabsContent>
                 
                 <TabsContent value="returns">
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Item</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Returned By</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Reason</TableHead>
-                          <TableHead>Condition</TableHead>
-                          <TableHead>Warehouse</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {recentReturns.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">{item.itemName}</TableCell>
-                            <TableCell>{item.quantity}</TableCell>
-                            <TableCell>{item.returnedBy}</TableCell>
-                            <TableCell>{item.returnDate}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{item.reason}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={item.condition === "Good" ? "outline" : "destructive"}>
-                                {item.condition}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{item.warehouseName}</TableCell>
+                  {isLoadingReturnedItems ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ) : (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Item</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Returned By</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Reason</TableHead>
+                            <TableHead>Condition</TableHead>
+                            <TableHead>Warehouse</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {returnedItems.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                No returns found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            returnedItems.map((item) => (
+                              <TableRow key={item.id}>
+                                <TableCell className="font-medium">{item.item_name}</TableCell>
+                                <TableCell>{item.quantity}</TableCell>
+                                <TableCell>{item.engineer_name}</TableCell>
+                                <TableCell>{new Date(item.return_date).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{item.reason}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={item.condition === "Good" ? "outline" : "destructive"}>
+                                    {item.condition}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{item.warehouse_name}</TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </CardContent>

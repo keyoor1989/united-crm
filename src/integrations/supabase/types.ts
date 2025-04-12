@@ -133,6 +133,60 @@ export type Database = {
         }
         Relationships: []
       }
+      engineer_inventory: {
+        Row: {
+          assigned_date: string | null
+          created_at: string | null
+          engineer_id: string
+          engineer_name: string
+          id: string
+          item_id: string
+          item_name: string
+          quantity: number
+          warehouse_id: string | null
+          warehouse_source: string | null
+        }
+        Insert: {
+          assigned_date?: string | null
+          created_at?: string | null
+          engineer_id: string
+          engineer_name: string
+          id?: string
+          item_id: string
+          item_name: string
+          quantity: number
+          warehouse_id?: string | null
+          warehouse_source?: string | null
+        }
+        Update: {
+          assigned_date?: string | null
+          created_at?: string | null
+          engineer_id?: string
+          engineer_name?: string
+          id?: string
+          item_id?: string
+          item_name?: string
+          quantity?: number
+          warehouse_id?: string | null
+          warehouse_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engineer_inventory_engineer_id_fkey"
+            columns: ["engineer_id"]
+            isOneToOne: false
+            referencedRelation: "engineers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engineer_inventory_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       engineers: {
         Row: {
           created_at: string | null
@@ -224,6 +278,69 @@ export type Database = {
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "inventory_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_returns: {
+        Row: {
+          condition: string
+          created_at: string | null
+          engineer_id: string
+          engineer_name: string
+          id: string
+          item_id: string
+          item_name: string
+          notes: string | null
+          quantity: number
+          reason: string
+          return_date: string | null
+          warehouse_id: string | null
+          warehouse_name: string | null
+        }
+        Insert: {
+          condition: string
+          created_at?: string | null
+          engineer_id: string
+          engineer_name: string
+          id?: string
+          item_id: string
+          item_name: string
+          notes?: string | null
+          quantity: number
+          reason: string
+          return_date?: string | null
+          warehouse_id?: string | null
+          warehouse_name?: string | null
+        }
+        Update: {
+          condition?: string
+          created_at?: string | null
+          engineer_id?: string
+          engineer_name?: string
+          id?: string
+          item_id?: string
+          item_name?: string
+          notes?: string | null
+          quantity?: number
+          reason?: string
+          return_date?: string | null
+          warehouse_id?: string | null
+          warehouse_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_returns_engineer_id_fkey"
+            columns: ["engineer_id"]
+            isOneToOne: false
+            referencedRelation: "engineers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_returns_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]

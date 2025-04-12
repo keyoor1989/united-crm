@@ -1,4 +1,3 @@
-
 import { InventoryItem } from "@/types/inventory";
 
 // Mock inventory items for testing the engineer inventory management
@@ -193,3 +192,33 @@ export const mockReturns = [
     warehouseName: "Joshiji"
   }
 ];
+
+// Types for database integration
+export type EngineerInventoryItem = {
+  id: string;
+  engineer_id: string;
+  engineer_name: string;
+  item_id: string;
+  item_name: string;
+  quantity: number;
+  assigned_date: string;
+  warehouse_id?: string;
+  warehouse_source?: string;
+  created_at?: string;
+};
+
+export type InventoryReturnItem = {
+  id: string;
+  engineer_id: string;
+  engineer_name: string;
+  item_id: string;
+  item_name: string;
+  quantity: number;
+  return_date: string;
+  reason: string;
+  condition: string;
+  warehouse_id?: string;
+  warehouse_name?: string;
+  notes?: string;
+  created_at?: string;
+};
