@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -66,7 +67,7 @@ export const useServiceData = () => {
           skillLevel: eng.skill_level as EngineerSkillLevel,
           currentJob: eng.current_job,
           currentLocation: eng.current_location,
-          leaveEndDate: (eng as any).leave_end_date || undefined
+          leaveEndDate: eng.leave_end_date || undefined
         };
       });
       

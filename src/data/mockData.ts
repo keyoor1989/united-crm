@@ -1,4 +1,4 @@
-import { ServiceCall, Customer, Engineer, EngineerStatus, EngineerSkillLevel, Feedback } from "@/types/service";
+import { ServiceCall, Customer, Engineer, EngineerStatus, EngineerSkillLevel, Feedback, Machine, Part } from "@/types/service";
 
 // Sample service calls data
 export const serviceCalls: ServiceCall[] = [
@@ -26,7 +26,9 @@ export const serviceCalls: ServiceCall[] = [
     feedback: null,
     serviceCharge: 800,
     isPaid: false,
-    partsReconciled: false
+    partsReconciled: false,
+    paymentDate: null,
+    paymentMethod: null
   },
   {
     id: "2",
@@ -61,7 +63,9 @@ export const serviceCalls: ServiceCall[] = [
     feedback: null,
     serviceCharge: 1200,
     isPaid: false,
-    partsReconciled: false
+    partsReconciled: false,
+    paymentDate: null,
+    paymentMethod: null
   },
   {
     id: "3",
@@ -119,7 +123,9 @@ export const serviceCalls: ServiceCall[] = [
     feedback: null,
     serviceCharge: 0,
     isPaid: false,
-    partsReconciled: false
+    partsReconciled: false,
+    paymentDate: null,
+    paymentMethod: null
   },
   {
     id: "5",
@@ -266,5 +272,59 @@ export const engineers: Engineer[] = [
     skillLevel: "Expert",
     currentJob: null,
     currentLocation: "Office"
+  }
+];
+
+// Sample machines data
+export const mockMachines: Machine[] = [
+  {
+    id: "mach-001",
+    customerId: "cust-001",
+    model: "HP LaserJet Pro M404dn",
+    serialNumber: "VNB3C12345",
+    installDate: "2022-10-15T00:00:00",
+    status: "Active",
+    lastService: "2023-05-10",
+    contractType: "AMC"
+  },
+  {
+    id: "mach-002",
+    customerId: "cust-002",
+    model: "Canon imageRUNNER 2425",
+    serialNumber: "CNM2425789",
+    installDate: "2022-08-23T00:00:00",
+    status: "Active",
+    lastService: "2023-04-18",
+    contractType: "Per-Call"
+  },
+  {
+    id: "mach-003",
+    customerId: "cust-003",
+    model: "Epson WorkForce Pro WF-C579R",
+    serialNumber: "EPWFC12345",
+    installDate: "2023-01-05T00:00:00",
+    status: "Active",
+    lastService: "2023-06-13",
+    contractType: "AMC"
+  },
+  {
+    id: "mach-004",
+    customerId: "cust-004",
+    model: "Brother MFC-L8900CDW",
+    serialNumber: "BRMFC98765",
+    installDate: "2022-11-20T00:00:00",
+    status: "Active",
+    lastService: "None",
+    contractType: "Per-Call"
+  },
+  {
+    id: "mach-005",
+    customerId: "cust-005",
+    model: "Xerox WorkCentre 6515",
+    serialNumber: "XRX6515321",
+    installDate: "2022-09-10T00:00:00",
+    status: "Active",
+    lastService: "2023-06-13",
+    contractType: "AMC"
   }
 ];

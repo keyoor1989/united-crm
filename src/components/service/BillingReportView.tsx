@@ -16,6 +16,7 @@ import DateRangeFilter from "@/components/finance/DateRangeFilter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ServiceCall } from "@/types/service";
 import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
 
 interface BillingReportViewProps {
   serviceCalls: ServiceCall[];
@@ -23,7 +24,7 @@ interface BillingReportViewProps {
 
 const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
   const { toast } = useToast();
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [activeTab, setActiveTab] = useState("all");
   
   const filteredCalls = serviceCalls.filter(call => {

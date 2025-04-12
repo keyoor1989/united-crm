@@ -3,6 +3,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import FinanceDashboard from "@/pages/finance/FinanceDashboard";
 import DepartmentRevenue from "@/pages/finance/DepartmentRevenue";
@@ -13,12 +14,14 @@ import EngineerInventory from "@/pages/inventory/EngineerInventory";
 import Service from "@/pages/Service";
 import ServiceCallForm from "@/pages/ServiceCallForm";
 import ServiceBilling from "@/pages/ServiceBilling";
+import CustomerForm from "@/pages/CustomerForm";
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       
       <Route path="/finance" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />
       <Route path="/finance/cash-register" element={<ProtectedRoute><CashRegister /></ProtectedRoute>} />
@@ -31,6 +34,7 @@ const AppRoutes = () => {
       <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
       <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />
       <Route path="/service-billing" element={<ProtectedRoute><ServiceBilling /></ProtectedRoute>} />
+      <Route path="/customer-form" element={<ProtectedRoute><CustomerForm /></ProtectedRoute>} />
     </Routes>
   );
 };

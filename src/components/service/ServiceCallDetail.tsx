@@ -1,491 +1,485 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Clock,
-  MapPin,
-  Printer,
-  AlertCircle,
-  CheckCircle2,
-  Phone,
-  User,
-  Wrench,
-  Calendar,
-} from "lucide-react";
-import { ServiceCall, Part } from "@/types/service";
-import { format, formatDistanceToNow, isPast } from "date-fns";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ServiceCall, Engineer } from "@/types/service";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CheckCircle, Clock, Download, ThumbsUp, User, XCircle } from "lucide-react";
+import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ServiceCallDetailProps {
   serviceCall: ServiceCall;
+  engineers: Engineer[];
   onClose: () => void;
-  onUpdate?: () => void;
+  refreshCalls: () => void;
 }
 
 const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
   serviceCall,
+  engineers,
   onClose,
-  onUpdate,
+  refreshCalls,
 }) => {
   const { toast } = useToast();
-  const [showBillingInfo, setShowBillingInfo] = useState(false);
-  const [serviceCharge, setServiceCharge] = useState(serviceCall.serviceCharge || 0);
-  const [isPaid, setIsPaid] = useState(serviceCall.isPaid || false);
-  const [paymentMethod, setPaymentMethod] = useState(serviceCall.paymentMethod || "");
-  const [partsReconciled, setPartsReconciled] = useState(serviceCall.partsReconciled || false);
-  const [isEditing, setIsEditing] = useState(false);
-  
-  const {
-    id,
-    customerName,
-    phone,
-    machineModel,
-    serialNumber,
-    location,
-    issueType,
-    issueDescription,
-    callType,
-    priority,
-    status,
-    createdAt,
-    slaDeadline,
-    engineerName,
-    partsUsed,
-  } = serviceCall;
-  
-  const totalPartsValue = partsUsed?.reduce((total, part) => total + (part.price * part.quantity), 0) || 0;
-  
-  const handleUpdateStatus = async (newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('service_calls')
-        .update({
-          status: newStatus,
-          // If marking as in progress and startTime is not set, set it now
-          ...(newStatus === "In Progress" && !serviceCall.startTime 
-            ? { start_time: new Date().toISOString() } 
-            : {}),
-          // If marking as completed, set completionTime
-          ...(newStatus === "Completed" 
-            ? { completion_time: new Date().toISOString() } 
-            : {})
-        })
-        .eq('id', id);
-        
-      if (error) {
-        console.error("Error updating service call status:", error);
-        toast({
-          title: "Error",
-          description: "Failed to update service call status",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      toast({
-        title: "Status Updated",
-        description: `Service call status updated to ${newStatus}`,
-      });
-      
-      if (onUpdate) {
-        onUpdate();
-      }
-      
-      onClose();
-    } catch (error) {
-      console.error("Error in status update:", error);
-      toast({
-        title: "Error",
-        description: "An error occurred while updating the status",
-        variant: "destructive",
-      });
+  const [selectedEngineer, setSelectedEngineer] = useState<string | null>(
+    serviceCall.engineerId
+  );
+  const [statusChange, setStatusChange] = useState(serviceCall.status);
+  const [ratingValue, setRatingValue] = useState<number>(
+    serviceCall.feedback?.rating || 0
+  );
+  const [feedbackText, setFeedbackText] = useState<string | null>(
+    serviceCall.feedback?.comment || null
+  );
+  const [serviceCharge, setServiceCharge] = useState<number>(
+    serviceCall.serviceCharge || 0
+  );
+  const [isPaid, setIsPaid] = useState<boolean>(serviceCall.isPaid || false);
+  const [partsReconciled, setPartsReconciled] = useState<boolean>(
+    serviceCall.partsReconciled || false
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const getSLAStatus = () => {
+    const now = new Date();
+    const deadline = new Date(serviceCall.slaDeadline);
+    if (serviceCall.status === "Completed") {
+      return "success";
     }
+    return now > deadline ? "destructive" : "success";
   };
-  
-  const handleSaveBillingInfo = async () => {
+
+  const timeFromNow = (date: string): string => {
+    const now = new Date();
+    const eventDate = new Date(date);
+    const diffTime = Math.abs(now.getTime() - eventDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(
+      (diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
+
+    if (diffDays > 0) {
+      return `${diffDays} day${diffDays !== 1 ? "s" : ""}`;
+    }
+    return `${diffHours} hour${diffHours !== 1 ? "s" : ""}`;
+  };
+
+  const handleUpdateServiceCall = async () => {
+    setIsSubmitting(true);
     try {
+      // Build feedback object if rating exists
+      const feedback =
+        ratingValue > 0
+          ? {
+              rating: ratingValue,
+              comment: feedbackText,
+              date: new Date().toISOString(),
+            }
+          : null;
+
+      // Prepare completion time for status change
+      let completionTime = serviceCall.completionTime;
+      let startTime = serviceCall.startTime;
+
+      if (statusChange === "Completed" && !serviceCall.completionTime) {
+        completionTime = new Date().toISOString();
+      }
+
+      if (statusChange === "In Progress" && !serviceCall.startTime) {
+        startTime = new Date().toISOString();
+      }
+
+      // Update engineer if changed
+      let updatedEngineerName = serviceCall.engineerName;
+      if (selectedEngineer && selectedEngineer !== serviceCall.engineerId) {
+        const engineer = engineers.find((e) => e.id === selectedEngineer);
+        if (engineer) {
+          updatedEngineerName = engineer.name;
+        }
+      }
+
+      // Update service call
       const { error } = await supabase
-        .from('service_calls')
+        .from("service_calls")
         .update({
+          status: statusChange,
+          engineer_id: selectedEngineer,
+          engineer_name: updatedEngineerName,
+          start_time: startTime,
+          completion_time: completionTime,
+          feedback: feedback,
           service_charge: serviceCharge,
           is_paid: isPaid,
-          payment_method: paymentMethod || null,
-          payment_date: isPaid ? new Date().toISOString() : null,
-          parts_reconciled: partsReconciled
+          payment_date: isPaid && !serviceCall.isPaid ? new Date().toISOString() : serviceCall.paymentDate,
+          parts_reconciled: partsReconciled,
         })
-        .eq('id', id);
-        
+        .eq("id", serviceCall.id);
+
       if (error) {
-        console.error("Error updating billing info:", error);
+        console.error("Error updating service call:", error);
         toast({
           title: "Error",
-          description: "Failed to update billing information",
+          description: "Failed to update service call",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
-      
-      toast({
-        title: "Billing Updated",
-        description: "Service call billing information has been updated",
-      });
-      
-      setIsEditing(false);
-      
-      if (onUpdate) {
-        onUpdate();
+
+      // If engineer changed, update the engineer's status
+      if (selectedEngineer && selectedEngineer !== serviceCall.engineerId) {
+        const { error: engineerError } = await supabase
+          .from("engineers")
+          .update({
+            status: "On Call",
+            current_job: `Service Call #${serviceCall.id}`,
+            current_location: serviceCall.location,
+          })
+          .eq("id", selectedEngineer);
+
+        if (engineerError) {
+          console.error("Error updating engineer:", engineerError);
+          toast({
+            variant: "destructive",
+            title: "Warning",
+            description: "Service call updated but failed to update engineer status",
+          });
+        }
+
+        // If previous engineer exists, update their status too
+        if (serviceCall.engineerId) {
+          const { error: prevEngineerError } = await supabase
+            .from("engineers")
+            .update({
+              status: "Available",
+              current_job: null,
+              current_location: "Office",
+            })
+            .eq("id", serviceCall.engineerId);
+
+          if (prevEngineerError) {
+            console.error(
+              "Error updating previous engineer:",
+              prevEngineerError
+            );
+          }
+        }
       }
-    } catch (error) {
-      console.error("Error in billing update:", error);
+
+      // If status changed to Completed, update engineer status
+      if (
+        statusChange === "Completed" &&
+        serviceCall.status !== "Completed" &&
+        selectedEngineer
+      ) {
+        const { error: completeEngineerError } = await supabase
+          .from("engineers")
+          .update({
+            status: "Available",
+            current_job: null,
+            current_location: "Office",
+          })
+          .eq("id", selectedEngineer);
+
+        if (completeEngineerError) {
+          console.error(
+            "Error updating engineer on completion:",
+            completeEngineerError
+          );
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: "Service call updated successfully",
+      });
+
+      refreshCalls();
+      onClose();
+    } catch (err) {
+      console.error("Unexpected error updating service call:", err);
       toast({
         title: "Error",
-        description: "An error occurred while updating the billing information",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
-    }
-  };
-  
-  const formattedCreatedAt = new Date(createdAt).toLocaleString();
-  const timeAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
-  
-  const slaDeadlineDate = new Date(slaDeadline);
-  const isPastDeadline = isPast(slaDeadlineDate);
-  const formattedDeadline = format(slaDeadlineDate, "PPpp");
-  
-  const getPriorityBadge = () => {
-    switch (priority.toLowerCase()) {
-      case "critical":
-        return <Badge className="bg-red-600">Critical</Badge>;
-      case "high":
-        return <Badge className="bg-red-500">High</Badge>;
-      case "medium-high":
-        return <Badge className="bg-amber-600">Medium-High</Badge>;
-      case "medium":
-        return <Badge className="bg-amber-500">Medium</Badge>;
-      case "standard":
-        return <Badge className="bg-blue-500">Standard</Badge>;
-      case "low":
-        return <Badge className="bg-blue-400">Low</Badge>;
-      default:
-        return <Badge className="bg-blue-500">Standard</Badge>;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const getStatusBadge = () => {
-    switch (status.toLowerCase()) {
-      case "pending":
-        return <Badge className="bg-amber-500">Pending</Badge>;
-      case "in progress":
-        return <Badge className="bg-blue-500">In Progress</Badge>;
-      case "completed":
-        return <Badge className="bg-green-500">Completed</Badge>;
-      case "cancelled":
-        return <Badge className="bg-gray-500">Cancelled</Badge>;
-      default:
-        return <Badge className="bg-amber-500">Pending</Badge>;
-    }
+  const renderStarRating = () => {
+    return (
+      <div className="flex items-center space-x-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => setRatingValue(star)}
+            className={`text-2xl ${
+              star <= ratingValue ? "text-yellow-400" : "text-gray-300"
+            }`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+    );
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold">{customerName}</h2>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Phone className="h-4 w-4" />
-            <span>{phone}</span>
-          </div>
+          <h2 className="text-2xl font-bold">
+            Service Call #{serviceCall.id.substring(0, 8)}
+          </h2>
+          <p className="text-muted-foreground">
+            Created on {format(new Date(serviceCall.createdAt), "PPP")}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          {getStatusBadge()}
-          {getPriorityBadge()}
-        </div>
+        <Badge
+          variant={
+            serviceCall.status === "Pending"
+              ? "outline"
+              : serviceCall.status === "In Progress"
+              ? "secondary"
+              : "default"
+          }
+          className="text-sm"
+        >
+          {serviceCall.status}
+        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-4">
-          <div className="border rounded-md p-4 space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Machine Details</h3>
-            <div className="flex items-center gap-2">
-              <Printer className="h-4 w-4 text-muted-foreground" />
-              <span>{machineModel}</span>
-            </div>
-            {serialNumber && (
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                <span>S/N: {serialNumber}</span>
-              </div>
-            )}
-          </div>
+      <Separator />
 
-          <div className="border rounded-md p-4 space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Location</h3>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span>{location}</span>
-            </div>
-          </div>
-
-          <div className="border rounded-md p-4 space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Issue Details</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
+          <div className="space-y-3">
             <div>
-              <div className="font-medium">{issueType}</div>
-              <p className="text-sm mt-1">{issueDescription}</p>
+              <Label>Customer Name</Label>
+              <p className="text-sm font-medium">{serviceCall.customerName}</p>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Call Type: {callType}</span>
+            <div>
+              <Label>Phone</Label>
+              <p className="text-sm font-medium">{serviceCall.phone}</p>
+            </div>
+            <div>
+              <Label>Location</Label>
+              <p className="text-sm font-medium">{serviceCall.location}</p>
             </div>
           </div>
-          
-          {partsUsed && partsUsed.length > 0 && (
-            <div className="border rounded-md p-4 space-y-2">
-              <h3 className="font-semibold text-sm text-muted-foreground">Parts Used</h3>
-              <ul className="space-y-2">
-                {partsUsed.map((part, index) => (
-                  <li key={index} className="text-sm">
-                    <div className="flex justify-between">
-                      <span>{part.name} (x{part.quantity})</span>
-                      <span>₹{part.price * part.quantity}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">Part #: {part.partNumber}</div>
-                  </li>
-                ))}
-              </ul>
-              <Separator className="my-2" />
-              <div className="flex justify-between font-medium">
-                <span>Total Parts Value:</span>
-                <span>₹{totalPartsValue}</span>
-              </div>
-            </div>
-          )}
         </div>
 
-        <div className="space-y-4">
-          <div className="border rounded-md p-4 space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Timing</h3>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <div>Created: {formattedCreatedAt}</div>
-                <div className="text-sm text-muted-foreground">({timeAgo})</div>
-              </div>
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Machine Details</h3>
+          <div className="space-y-3">
+            <div>
+              <Label>Machine Model</Label>
+              <p className="text-sm font-medium">{serviceCall.machineModel}</p>
             </div>
-            
-            <div className={`flex items-center gap-2 p-2 rounded-md ${
-              isPastDeadline ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
-            }`}>
-              <Clock className="h-4 w-4" />
-              <div>
-                <div>SLA Deadline: {formattedDeadline}</div>
-                {isPastDeadline && (
-                  <div className="text-sm font-medium text-red-700">OVERDUE</div>
-                )}
+            <div>
+              <Label>Serial Number</Label>
+              <p className="text-sm font-medium">{serviceCall.serialNumber || "N/A"}</p>
+            </div>
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>SLA Deadline</Label>
+                <Badge variant={getSLAStatus()}>
+                  {getSLAStatus() === "destructive" ? "Overdue" : "On Track"}
+                </Badge>
               </div>
+              <p className="text-sm font-medium">
+                {format(new Date(serviceCall.slaDeadline), "PPp")}
+                {serviceCall.status !== "Completed" && (
+                  <span className="text-xs ml-2 text-muted-foreground">
+                    {new Date() > new Date(serviceCall.slaDeadline)
+                      ? `(${timeFromNow(serviceCall.slaDeadline)} overdue)`
+                      : `(${timeFromNow(serviceCall.slaDeadline)} remaining)`}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
-
-          <div className="border rounded-md p-4 space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Assigned Engineer</h3>
-            {engineerName ? (
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span>{engineerName}</span>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">No engineer assigned</div>
-            )}
-          </div>
-          
-          <div className="border rounded-md p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-muted-foreground">Billing Information</h3>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowBillingInfo(!showBillingInfo)}
-              >
-                {showBillingInfo ? "Hide" : "Show"}
-              </Button>
-            </div>
-            
-            {showBillingInfo && (
-              <div className="space-y-4 pt-2">
-                {!isEditing ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="text-muted-foreground">Service Charge:</div>
-                      <div className="font-medium">₹{serviceCall.serviceCharge || 0}</div>
-                      
-                      <div className="text-muted-foreground">Parts Value:</div>
-                      <div className="font-medium">₹{totalPartsValue}</div>
-                      
-                      <div className="text-muted-foreground">Total Value:</div>
-                      <div className="font-medium">₹{(serviceCall.serviceCharge || 0) + totalPartsValue}</div>
-                      
-                      <div className="text-muted-foreground">Payment Status:</div>
-                      <div>
-                        <Badge variant={serviceCall.isPaid ? "success" : "outline"}>
-                          {serviceCall.isPaid ? "Paid" : "Unpaid"}
-                        </Badge>
-                      </div>
-                      
-                      {serviceCall.isPaid && serviceCall.paymentMethod && (
-                        <>
-                          <div className="text-muted-foreground">Payment Method:</div>
-                          <div>{serviceCall.paymentMethod}</div>
-                          
-                          <div className="text-muted-foreground">Payment Date:</div>
-                          <div>{serviceCall.paymentDate ? new Date(serviceCall.paymentDate).toLocaleDateString() : "-"}</div>
-                        </>
-                      )}
-                      
-                      <div className="text-muted-foreground">Parts Reconciled:</div>
-                      <div>
-                        <Badge variant={serviceCall.partsReconciled ? "success" : "destructive"}>
-                          {serviceCall.partsReconciled ? "Yes" : "No"}
-                        </Badge>
-                      </div>
-                    </div>
-                    <Button size="sm" onClick={() => setIsEditing(true)}>
-                      Edit Billing Info
-                    </Button>
-                  </>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="serviceCharge">Service Charge (₹)</Label>
-                      <Input
-                        id="serviceCharge"
-                        type="number"
-                        value={serviceCharge}
-                        onChange={(e) => setServiceCharge(Number(e.target.value))}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="isPaid"
-                        checked={isPaid}
-                        onCheckedChange={setIsPaid}
-                      />
-                      <Label htmlFor="isPaid">Mark as Paid</Label>
-                    </div>
-                    
-                    {isPaid && (
-                      <div className="space-y-2">
-                        <Label htmlFor="paymentMethod">Payment Method</Label>
-                        <Select
-                          value={paymentMethod}
-                          onValueChange={setPaymentMethod}
-                        >
-                          <SelectTrigger id="paymentMethod">
-                            <SelectValue placeholder="Select payment method" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Cash">Cash</SelectItem>
-                            <SelectItem value="UPI">UPI</SelectItem>
-                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="Cheque">Cheque</SelectItem>
-                            <SelectItem value="Credit Card">Credit Card</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="partsReconciled"
-                        checked={partsReconciled}
-                        onCheckedChange={setPartsReconciled}
-                      />
-                      <Label htmlFor="partsReconciled">Parts Reconciled with Engineer</Label>
-                    </div>
-                    
-                    <div className="flex space-x-2 pt-2">
-                      <Button size="sm" onClick={handleSaveBillingInfo}>
-                        Save
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => {
-                          setServiceCharge(serviceCall.serviceCharge || 0);
-                          setIsPaid(serviceCall.isPaid || false);
-                          setPaymentMethod(serviceCall.paymentMethod || "");
-                          setPartsReconciled(serviceCall.partsReconciled || false);
-                          setIsEditing(false);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {status !== "Completed" && status !== "Cancelled" && (
-            <div className="border rounded-md p-4 space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground">Actions</h3>
-              
-              <div className="flex flex-wrap gap-2">
-                {status === "Pending" && (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="gap-1"
-                    onClick={() => handleUpdateStatus("In Progress")}
-                  >
-                    <Wrench className="h-4 w-4" />
-                    Start Work
-                  </Button>
-                )}
-                
-                {status === "In Progress" && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="gap-1 border-green-500 text-green-600 hover:bg-green-50"
-                    onClick={() => handleUpdateStatus("Completed")}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Mark Completed
-                  </Button>
-                )}
-                
-                {(status === "Pending" || status === "In Progress") && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="gap-1 border-gray-500 text-gray-600 hover:bg-gray-50"
-                    onClick={() => handleUpdateStatus("Cancelled")}
-                  >
-                    Cancel Service Call
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
-      
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={onClose}>
-          Close
-        </Button>
+
+      <Separator />
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Issue Details</h3>
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Issue Type</Label>
+              <p className="text-sm font-medium">{serviceCall.issueType}</p>
+            </div>
+            <div>
+              <Label>Call Type</Label>
+              <p className="text-sm font-medium">{serviceCall.callType}</p>
+            </div>
+            <div>
+              <Label>Priority</Label>
+              <p className="text-sm font-medium">{serviceCall.priority}</p>
+            </div>
+          </div>
+          <div>
+            <Label>Description</Label>
+            <p className="text-sm">{serviceCall.issueDescription}</p>
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Service Information</h3>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="engineer">Assigned Engineer</Label>
+                <Select
+                  value={selectedEngineer || ""}
+                  onValueChange={setSelectedEngineer}
+                  disabled={serviceCall.status === "Completed"}
+                >
+                  <SelectTrigger id="engineer">
+                    <SelectValue placeholder="Select an engineer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {engineers
+                      .filter(
+                        (e) =>
+                          e.status === "Available" ||
+                          e.id === serviceCall.engineerId
+                      )
+                      .map((engineer) => (
+                        <SelectItem key={engineer.id} value={engineer.id}>
+                          {engineer.name} ({engineer.location})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={statusChange}
+                  onValueChange={setStatusChange}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {statusChange === "Completed" && (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="rating">Customer Rating</Label>
+                    {renderStarRating()}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="feedback">Customer Feedback</Label>
+                    <Textarea
+                      id="feedback"
+                      placeholder="Enter customer feedback"
+                      value={feedbackText || ""}
+                      onChange={(e) => setFeedbackText(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="serviceCharge">Service Charge (₹)</Label>
+                <Input
+                  id="serviceCharge"
+                  type="number"
+                  value={serviceCharge}
+                  onChange={(e) => setServiceCharge(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isPaid"
+                  checked={isPaid}
+                  onChange={(e) => setIsPaid(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="isPaid" className="cursor-pointer">
+                  Mark as Paid
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="partsReconciled"
+                  checked={partsReconciled}
+                  onChange={(e) => setPartsReconciled(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <Label htmlFor="partsReconciled" className="cursor-pointer">
+                  Parts Reconciled
+                </Label>
+              </div>
+
+              {serviceCall.partsUsed && serviceCall.partsUsed.length > 0 && (
+                <div>
+                  <Label>Parts Used</Label>
+                  <div className="mt-2 space-y-2">
+                    {serviceCall.partsUsed.map((part) => (
+                      <div
+                        key={part.id}
+                        className="flex justify-between text-sm p-2 bg-gray-50 rounded"
+                      >
+                        <span>
+                          {part.name} (x{part.quantity})
+                        </span>
+                        <span>₹{part.price * part.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateServiceCall}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Updating..." : "Update Service Call"}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

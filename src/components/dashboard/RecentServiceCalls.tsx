@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockServiceCalls } from "@/data/mockData";
+import { serviceCalls } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -12,7 +12,7 @@ interface RecentServiceCallsProps {
 
 const RecentServiceCalls: React.FC<RecentServiceCallsProps> = ({ className }) => {
   // Get the 5 most recent service calls
-  const recentCalls = [...mockServiceCalls]
+  const recentCalls = [...serviceCalls]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
