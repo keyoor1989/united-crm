@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Engineer } from "@/types/service";
+import { useServiceData } from "@/hooks/useServiceData";
 
 interface ServiceExpensesTabProps {
   engineers: Engineer[];
@@ -31,6 +32,9 @@ const ServiceExpensesTab = ({
   const [expenses, setExpenses] = useState<ServiceExpense[]>([]);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
   const [selectedEngineer, setSelectedEngineer] = useState<Engineer | null>(null);
+  
+  // Get active service calls
+  const { allCalls, isLoading: isLoadingCalls } = useServiceData();
   
   useEffect(() => {
     if (!isLoading && engineers.length > 0) {
@@ -100,13 +104,18 @@ const ServiceExpensesTab = ({
     loadExpenses();
   };
 
-  if (isLoading || loadingExpenses) {
+  if (isLoading || loadingExpenses || isLoadingCalls) {
     return (
       <div className="flex items-center justify-center h-64">
         <p>Loading expense data...</p>
       </div>
     );
   }
+  
+  // Filter out completed or cancelled service calls
+  const activeServiceCalls = allCalls.filter(
+    call => call.status !== "Completed" && call.status !== "Cancelled"
+  );
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -136,10 +145,11 @@ const ServiceExpensesTab = ({
         
         {selectedEngineer && (
           <ServiceExpenseForm 
-            serviceCallId="general" // Fixed value for general expenses
+            serviceCallId=""  // Default empty value, will be selected in the form
             engineerId={selectedEngineer.id}
             engineerName={selectedEngineer.name}
             onExpenseAdded={handleExpenseAdded}
+            activeServiceCalls={activeServiceCalls}
           />
         )}
       </div>

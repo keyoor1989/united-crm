@@ -21,7 +21,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { useServiceData } from "@/hooks/useServiceData";
 import { useCustomers } from "@/hooks/useCustomers";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -30,6 +29,7 @@ interface ServiceExpenseFormProps {
   engineerId: string;
   engineerName: string;
   onExpenseAdded: (expense: ServiceExpense) => void;
+  activeServiceCalls: ServiceCall[];
 }
 
 const ServiceExpenseForm = ({
@@ -37,6 +37,7 @@ const ServiceExpenseForm = ({
   engineerId,
   engineerName,
   onExpenseAdded,
+  activeServiceCalls,
 }: ServiceExpenseFormProps) => {
   const [category, setCategory] = useState<ExpenseCategory>("Travel");
   const [amount, setAmount] = useState<string>("0");
@@ -47,22 +48,18 @@ const ServiceExpenseForm = ({
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null);
   const [showAttentionAlert, setShowAttentionAlert] = useState<boolean>(false);
   
-  const { allCalls, isLoading } = useServiceData();
   const { customers, isLoading: customersLoading } = useCustomers();
   
-  // Get all active service calls (not completed or cancelled)
-  const activeServiceCalls = allCalls.filter(
-    call => call.status !== "Completed" && call.status !== "Cancelled"
-  );
-  
   useEffect(() => {
-    setSelectedServiceCallId(serviceCallId);
+    if (serviceCallId) {
+      setSelectedServiceCallId(serviceCallId);
+    }
   }, [serviceCallId]);
   
   useEffect(() => {
     // When service call changes, update the customer information
-    if (selectedServiceCallId !== "general") {
-      const selectedCall = allCalls.find(call => call.id === selectedServiceCallId);
+    if (selectedServiceCallId && selectedServiceCallId !== "general") {
+      const selectedCall = activeServiceCalls.find(call => call.id === selectedServiceCallId);
       if (selectedCall) {
         setSelectedCustomerId(selectedCall.customerId);
         setSelectedCustomerName(selectedCall.customerName);
@@ -75,7 +72,7 @@ const ServiceExpenseForm = ({
       // Show alert when "general" is selected
       setShowAttentionAlert(true);
     }
-  }, [selectedServiceCallId, allCalls]);
+  }, [selectedServiceCallId, activeServiceCalls]);
   
   const handleCustomerChange = (customerId: string) => {
     setSelectedCustomerId(customerId === "no_customer" ? null : customerId);
@@ -99,7 +96,7 @@ const ServiceExpenseForm = ({
     
     const newExpense: ServiceExpense = {
       id: uuidv4(),
-      serviceCallId: selectedServiceCallId,
+      serviceCallId: selectedServiceCallId || "general",
       engineerId,
       engineerName,
       customerId: selectedCustomerId,
@@ -139,7 +136,7 @@ const ServiceExpenseForm = ({
               Service Call <span className="text-red-500 ml-1">*</span>
             </Label>
             <Select
-              value={selectedServiceCallId}
+              value={selectedServiceCallId || ""}
               onValueChange={setSelectedServiceCallId}
             >
               <SelectTrigger id="service-call">
