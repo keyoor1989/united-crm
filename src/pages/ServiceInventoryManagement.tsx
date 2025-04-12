@@ -65,7 +65,6 @@ const ServiceInventoryManagement = () => {
         
         <TabsContent value="service-expenses">
           <ServiceExpensesTab 
-            expenses={expenses}
             engineers={engineers}
             onExpenseAdded={handleExpenseAdded}
             isLoading={isLoading}

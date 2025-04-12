@@ -645,6 +645,48 @@ export type Database = {
           },
         ]
       }
+      service_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          date: string
+          description: string
+          engineer_id: string
+          engineer_name: string
+          id: string
+          is_reimbursed: boolean
+          receipt_image_url: string | null
+          service_call_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          date: string
+          description: string
+          engineer_id: string
+          engineer_name: string
+          id?: string
+          is_reimbursed?: boolean
+          receipt_image_url?: string | null
+          service_call_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          engineer_id?: string
+          engineer_name?: string
+          id?: string
+          is_reimbursed?: boolean
+          receipt_image_url?: string | null
+          service_call_id?: string
+        }
+        Relationships: []
+      }
       warehouse_stock: {
         Row: {
           id: string
