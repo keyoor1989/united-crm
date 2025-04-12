@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,7 +18,6 @@ import { mockInventoryItems } from "@/components/service/inventory/mockData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Define a type for machine parts based on the database structure
 interface MachinePart {
   id: string;
   partNumber: string;
@@ -51,7 +49,6 @@ const MachineParts = () => {
     queryKey: ['machine-parts'],
     queryFn: async () => {
       try {
-        // Try to fetch from Supabase first
         const { data, error } = await supabase
           .from('opening_stock_entries')
           .select('*')
@@ -59,11 +56,10 @@ const MachineParts = () => {
         
         if (error) {
           console.error("Error fetching machine parts:", error);
-          return mockInventoryItems as MachinePart[];
+          return mockInventoryItems as unknown as MachinePart[];
         }
         
         if (data && data.length > 0) {
-          // Transform Supabase data to match our MachinePart type
           return data.map(item => ({
             id: item.id,
             partNumber: item.part_number || '',
@@ -79,11 +75,11 @@ const MachineParts = () => {
           })) as MachinePart[];
         } else {
           console.log("No data from Supabase, using mock data");
-          return mockInventoryItems as MachinePart[];
+          return mockInventoryItems as unknown as MachinePart[];
         }
       } catch (error) {
         console.error("Exception fetching machine parts:", error);
-        return mockInventoryItems as MachinePart[];
+        return mockInventoryItems as unknown as MachinePart[];
       }
     }
   });
