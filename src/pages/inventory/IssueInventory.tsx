@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Helmet } from "react-helmet";
-import { ArrowDown, Box } from "lucide-react";
+import { Box } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

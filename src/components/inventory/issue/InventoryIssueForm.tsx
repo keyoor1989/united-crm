@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "lucide-react";
+import { User, Package, Search } from "lucide-react";
 
 import {
   Form,
@@ -13,7 +13,6 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
 import {
   Select,
@@ -24,27 +23,46 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Brand, InventoryItem, Model } from "@/types/inventory";
+import { 
+  Table, 
+  TableHeader, 
+  TableBody, 
+  TableRow, 
+  TableHead, 
+  TableCell 
+} from "@/components/ui/table";
 
 // Form schema
 const formSchema = z.object({
   issueType: z.string().min(1, "Issue type is required"),
   engineerId: z.string().min(1, "Engineer is required"),
-  brandId: z.string().optional(),
-  modelId: z.string().optional(),
-  itemId: z.string().min(1, "Item is required"),
+  itemId: z.string().optional(),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-  barcode: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+interface Engineer {
+  id: string;
+  name: string;
+}
+
+interface InventoryItem {
+  id: string;
+  part_name: string;
+  category: string;
+  quantity: number;
+  min_stock: number;
+  purchase_price: number;
+}
 
 const InventoryIssueForm = () => {
   const { toast } = useToast();
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   
   // Form setup
   const form = useForm<FormValues>({
@@ -52,11 +70,8 @@ const InventoryIssueForm = () => {
     defaultValues: {
       issueType: "Engineer",
       engineerId: "",
-      brandId: "",
-      modelId: "",
       itemId: "",
       quantity: 1,
-      barcode: "",
     },
   });
 
@@ -66,11 +81,11 @@ const InventoryIssueForm = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('engineers')
-        .select('*')
+        .select('id, name')
         .order('name');
       
       if (error) throw error;
-      return data || [];
+      return data as Engineer[];
     },
   });
 
@@ -80,11 +95,13 @@ const InventoryIssueForm = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('inventory_brands')
-        .select('*')
-        .order('name');
+        .select('id, name');
       
       if (error) throw error;
-      return data as Brand[];
+      return data.map(brand => ({
+        id: brand.id,
+        name: brand.name,
+      }));
     },
   });
 
@@ -94,7 +111,7 @@ const InventoryIssueForm = () => {
     queryFn: async () => {
       let query = supabase
         .from('inventory_models')
-        .select('*');
+        .select('id, name, brand_id');
       
       if (selectedBrand) {
         query = query.eq('brand_id', selectedBrand);
@@ -103,36 +120,26 @@ const InventoryIssueForm = () => {
       const { data, error } = await query.order('name');
       
       if (error) throw error;
-      return data as Model[];
+      return data.map(model => ({
+        id: model.id,
+        name: model.name,
+        brandId: model.brand_id,
+      }));
     },
     enabled: !!selectedBrand,
   });
 
-  // Fetch inventory items based on selected model
+  // Fetch inventory items
   const { data: items = [], isLoading: isLoadingItems } = useQuery({
-    queryKey: ['items', selectedModel],
+    queryKey: ['items'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('opening_stock_entries')
-        .select('*')
+        .select('id, part_name, category, quantity, min_stock, purchase_price')
         .order('part_name');
       
       if (error) throw error;
-      
-      // Transform to InventoryItem type
-      return data.map(item => ({
-        id: item.id,
-        modelId: "",  // Will be filtered based on model selection
-        brandId: "",  // Will be filtered based on brand selection
-        name: item.part_name,
-        type: item.category,
-        minQuantity: item.min_stock,
-        currentQuantity: item.quantity,
-        lastPurchasePrice: item.purchase_price,
-        lastVendor: "",
-        barcode: item.part_number || "",
-        createdAt: item.created_at
-      })) as InventoryItem[];
+      return data as InventoryItem[];
     },
   });
 
@@ -140,28 +147,39 @@ const InventoryIssueForm = () => {
   const handleBrandChange = (brandId: string) => {
     setSelectedBrand(brandId);
     setSelectedModel(null);
-    form.setValue("brandId", brandId);
-    form.setValue("modelId", "");
-    form.setValue("itemId", "");
   };
 
   // Handle model change
   const handleModelChange = (modelId: string) => {
     setSelectedModel(modelId);
-    form.setValue("modelId", modelId);
-    form.setValue("itemId", "");
   };
 
-  // Filter items based on selected model or show all if no model selected
-  const filteredItems = selectedModel
-    ? items.filter(item => item.modelId === selectedModel)
-    : items;
+  // Filter items based on search term, brand and model
+  const filteredItems = items.filter(item => {
+    const matchesSearch = item.part_name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
+
+  // Handle selecting an item from the table
+  const handleSelectItem = (itemId: string) => {
+    setSelectedItemId(itemId);
+    form.setValue("itemId", itemId);
+  };
 
   // Handle form submission
   const onSubmit = async (values: FormValues) => {
     try {
+      if (!selectedItemId) {
+        toast({
+          title: "Error",
+          description: "Please select an item to issue",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const selectedEngineer = engineers.find(e => e.id === values.engineerId);
-      const selectedItem = items.find(i => i.id === values.itemId);
+      const selectedItem = items.find(i => i.id === selectedItemId);
       
       if (!selectedEngineer || !selectedItem) {
         toast({
@@ -176,10 +194,10 @@ const InventoryIssueForm = () => {
       const issueData = {
         engineer_id: values.engineerId,
         engineer_name: selectedEngineer.name,
-        item_id: values.itemId,
-        item_name: selectedItem.name,
+        item_id: selectedItemId,
+        item_name: selectedItem.part_name,
         quantity: values.quantity,
-        issue_date: new Date().toISOString(),
+        assigned_date: new Date().toISOString(),
       };
       
       // Insert into database
@@ -191,21 +209,20 @@ const InventoryIssueForm = () => {
       
       toast({
         title: "Success",
-        description: `${values.quantity} ${selectedItem.name} issued to ${selectedEngineer.name}`,
+        description: `${values.quantity} ${selectedItem.part_name} issued to ${selectedEngineer.name}`,
       });
       
       // Reset form
       form.reset({
         issueType: "Engineer",
         engineerId: "",
-        brandId: "",
-        modelId: "",
         itemId: "",
         quantity: 1,
-        barcode: "",
       });
       setSelectedBrand(null);
       setSelectedModel(null);
+      setSelectedItemId(null);
+      setSearchTerm("");
       
     } catch (error) {
       console.error("Error issuing item:", error);
@@ -217,243 +234,196 @@ const InventoryIssueForm = () => {
     }
   };
 
-  // Handle barcode scan
-  const handleScan = () => {
-    const barcode = form.getValues("barcode");
-    if (!barcode) return;
-    
-    const item = items.find(i => i.barcode === barcode);
-    if (item) {
-      // If item found by barcode, auto-select it
-      form.setValue("itemId", item.id);
-      toast({
-        title: "Item Found",
-        description: `${item.name} selected by barcode`,
-      });
-    } else {
-      toast({
-        title: "Not Found",
-        description: "No item found with this barcode",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
-    <Card>
-      <CardContent className="p-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Issue Type */}
-              <FormField
-                control={form.control}
-                name="issueType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Issue Type</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <User className="h-4 w-4 mr-2" />
-                          <SelectValue placeholder="Select issue type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Engineer">Engineer</SelectItem>
-                        <SelectItem value="Customer">Customer</SelectItem>
-                        <SelectItem value="Branch">Branch</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Engineer Selection */}
-              <FormField
-                control={form.control}
-                name="engineerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Engineer Name</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select engineer" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {engineers.map((engineer) => (
-                          <SelectItem key={engineer.id} value={engineer.id}>
-                            {engineer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <h3 className="text-lg font-medium">Item Details</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Brand Selection */}
-              <FormField
-                control={form.control}
-                name="brandId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Brand</FormLabel>
-                    <Select
-                      onValueChange={(value) => handleBrandChange(value)}
-                      value={selectedBrand || ""}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Brand" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {brands.map((brand) => (
-                          <SelectItem key={brand.id} value={brand.id}>
-                            {brand.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Model Selection */}
-              <FormField
-                control={form.control}
-                name="modelId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Model</FormLabel>
-                    <Select
-                      onValueChange={(value) => handleModelChange(value)}
-                      value={selectedModel || ""}
-                      disabled={!selectedBrand}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={selectedBrand ? "Select Model" : "Select Brand first"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {models.map((model) => (
-                          <SelectItem key={model.id} value={model.id}>
-                            {model.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Item Selection */}
-              <FormField
-                control={form.control}
-                name="itemId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Item</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={selectedModel ? "Select Item" : "Select Model first"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredItems.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name} ({item.currentQuantity} in stock)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Barcode Scanner */}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Issue Type */}
+          <div>
+            <FormLabel>Issue Type</FormLabel>
             <FormField
               control={form.control}
-              name="barcode"
+              name="issueType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Scan Barcode</FormLabel>
-                  <div className="flex gap-2">
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="Enter or scan barcode"
-                        className="flex-1"
-                      />
+                      <SelectTrigger>
+                        <User className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Select issue type" />
+                      </SelectTrigger>
                     </FormControl>
-                    <Button type="button" onClick={handleScan} className="w-24">
-                      Scan
-                    </Button>
-                  </div>
-                  <FormMessage />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    If barcode scanner is not available, you can use the selection above.
-                  </p>
+                    <SelectContent>
+                      <SelectItem value="Engineer">Engineer</SelectItem>
+                      <SelectItem value="Customer">Customer</SelectItem>
+                      <SelectItem value="Branch">Branch</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </FormItem>
               )}
             />
+          </div>
 
-            {/* Quantity */}
+          {/* Engineer Selection */}
+          <div>
+            <FormLabel>Engineer Name</FormLabel>
             <FormField
               control={form.control}
-              name="quantity"
+              name="engineerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Quantity</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="1"
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                    />
-                  </FormControl>
-                  <FormMessage />
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select engineer" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {engineers.map((engineer) => (
+                        <SelectItem key={engineer.id} value={engineer.id}>
+                          {engineer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </FormItem>
               )}
             />
+          </div>
+        </div>
 
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-              <Button type="submit">
-                Issue Item
-              </Button>
+        <div className="border-t pt-4">
+          <h3 className="text-lg font-medium mb-4">Item Details</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="relative">
+              <Input 
+                placeholder="Search items..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+              <Search className="h-4 w-4 absolute top-3 left-3 text-gray-500" />
             </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+            
+            <Select
+              value={selectedBrand || ""}
+              onValueChange={handleBrandChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Brand" />
+              </SelectTrigger>
+              <SelectContent>
+                {brands.map((brand) => (
+                  <SelectItem key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={selectedModel || ""}
+              onValueChange={handleModelChange}
+              disabled={!selectedBrand}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={selectedBrand ? "Select Model" : "Select Brand first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((model) => (
+                  <SelectItem key={model.id} value={model.id}>
+                    {model.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Items Table */}
+          <div className="border rounded-md overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16">Select</TableHead>
+                  <TableHead>Item Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead>Price</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredItems.length > 0 ? (
+                  filteredItems.map((item) => (
+                    <TableRow key={item.id} className={selectedItemId === item.id ? "bg-muted" : ""}>
+                      <TableCell>
+                        <input
+                          type="radio"
+                          name="selectedItem"
+                          checked={selectedItemId === item.id}
+                          onChange={() => handleSelectItem(item.id)}
+                          className="h-4 w-4 rounded-full border-gray-300"
+                        />
+                      </TableCell>
+                      <TableCell>{item.part_name}</TableCell>
+                      <TableCell>{item.category}</TableCell>
+                      <TableCell>
+                        {item.quantity} (Min: {item.min_stock})
+                      </TableCell>
+                      <TableCell>₹{item.purchase_price}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-4">
+                      No items found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        {/* Quantity */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="quantity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Quantity</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    {...field}
+                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="flex justify-center mt-6">
+          <Button 
+            type="submit" 
+            className="w-full md:w-auto"
+            disabled={!selectedItemId}
+          >
+            <Package className="mr-2 h-5 w-5" />
+            Issue Item
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 };
 
