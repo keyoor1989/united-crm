@@ -8,14 +8,16 @@ interface ServiceDetailDialogProps {
   showDialog: boolean;
   serviceCall: ServiceCall | null;
   onClose: () => void;
-  onUpdate: () => void; // Match the prop name used in ServiceCallDetail
+  onUpdate: () => void;
+  engineers?: Engineer[]; // Make engineers optional
 }
 
 const ServiceDetailDialog: React.FC<ServiceDetailDialogProps> = ({
   showDialog,
   serviceCall,
   onClose,
-  onUpdate
+  onUpdate,
+  engineers = [] // Default to empty array
 }) => {
   return (
     <Dialog open={showDialog} onOpenChange={onClose}>
@@ -23,7 +25,7 @@ const ServiceDetailDialog: React.FC<ServiceDetailDialogProps> = ({
         {serviceCall && (
           <ServiceCallDetail 
             serviceCall={serviceCall} 
-            engineers={[]} // We need to pass engineers array
+            engineers={engineers}
             onClose={onClose}
             onUpdate={onUpdate}
           />

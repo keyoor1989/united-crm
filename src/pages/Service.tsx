@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -29,11 +28,9 @@ const Service = () => {
     fetchServiceCalls
   } = useServiceData();
   
-  // We need to maintain the state here to pass to useServiceActions
   const [serviceCallsState, setServiceCallsState] = useState<ServiceCall[]>([]);
   const [engineersState, setEngineersState] = useState<Engineer[]>([]);
   
-  // Update the state when the data changes
   React.useEffect(() => {
     setServiceCallsState(serviceCalls);
   }, [serviceCalls]);
@@ -97,6 +94,7 @@ const Service = () => {
         serviceCall={selectedServiceCall}
         onClose={handleDialogClose}
         onUpdate={fetchServiceCalls}
+        engineers={engineers}
       />
     </div>
   );
