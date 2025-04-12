@@ -3,7 +3,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Engineer } from "@/types/service";
+import { Engineer, EngineerStatus, EngineerSkillLevel } from "@/types/service";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -12,6 +12,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -88,8 +89,8 @@ const EngineerForm: React.FC<EngineerFormProps> = ({
       phone: data.phone,
       email: data.email,
       location: data.location,
-      status: data.status,
-      skillLevel: data.skillLevel,
+      status: data.status as EngineerStatus,
+      skillLevel: data.skillLevel as EngineerSkillLevel,
       currentJob: engineer.currentJob,
       currentLocation: data.currentLocation || data.location,
       leaveEndDate: data.leaveEndDate?.toISOString(),

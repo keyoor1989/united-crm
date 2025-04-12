@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Engineer, ServiceCall, Part, Feedback } from "@/types/service";
+import { Engineer, ServiceCall, Part, Feedback, EngineerStatus, EngineerSkillLevel } from "@/types/service";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -12,45 +12,43 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const EngineerDetail = () => {
   const params = useParams();
-  const engineerId = params.id; // Use the correct parameter name from AppRoutes.tsx - should be 'id'
+  const engineerId = params.id;
   const navigate = useNavigate();
   const { toast } = useToast();
   const [engineer, setEngineer] = useState<Engineer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [showEditForm, setShowEditForm] = useState(false);
-  
-  // Check if this is a new engineer based on the route parameter
+
   const isNewEngineer = engineerId === "new";
+
+  const createBlankEngineer = (): Engineer => ({
+    id: "",
+    name: "",
+    phone: "",
+    email: "",
+    location: "",
+    status: "Available" as EngineerStatus,
+    skillLevel: "Intermediate" as EngineerSkillLevel,
+    currentJob: null,
+    currentLocation: "",
+    leaveEndDate: ""
+  });
 
   useEffect(() => {
     console.log("EngineerDetail mounted, engineerId:", engineerId, "isNewEngineer:", isNewEngineer);
     
-    // Set loading to false immediately for new engineers
     if (isNewEngineer) {
       console.log("Creating new engineer form - no data to fetch");
       setIsLoading(false);
       setShowEditForm(true);
       
-      // Create a blank engineer for the new form
-      setEngineer({
-        id: "",
-        name: "",
-        phone: "",
-        email: "",
-        location: "",
-        status: "Available",
-        skillLevel: "Intermediate",
-        currentJob: null,
-        currentLocation: "",
-      });
+      setEngineer(createBlankEngineer());
     } else if (engineerId) {
-      // Only fetch existing engineer data if we have an ID and it's not "new"
       console.log("Fetching existing engineer with ID:", engineerId);
       fetchEngineer(engineerId);
       fetchServiceCalls(engineerId);
     } else {
-      // If no engineerId is provided, set loading to false to avoid infinite loading spinner
       console.log("No engineerId provided, setting loading to false");
       setIsLoading(false);
       toast({
@@ -99,10 +97,11 @@ const EngineerDetail = () => {
         phone: data.phone,
         email: data.email,
         location: data.location,
-        status: data.status,
-        skillLevel: data.skill_level,
+        status: data.status as EngineerStatus,
+        skillLevel: data.skill_level as EngineerSkillLevel,
         currentJob: data.current_job,
         currentLocation: data.current_location,
+        leaveEndDate: data.leave_end_date
       };
 
       setEngineer(engineerData);
@@ -137,7 +136,6 @@ const EngineerDetail = () => {
         let parsedPartsUsed: Part[] = [];
         if (call.parts_used) {
           try {
-            // Check if parts_used is already an array or needs parsing
             const partsData = Array.isArray(call.parts_used) 
               ? call.parts_used 
               : (typeof call.parts_used === 'string' ? JSON.parse(call.parts_used) : []);
@@ -157,7 +155,6 @@ const EngineerDetail = () => {
         let parsedFeedback: Feedback | null = null;
         if (call.feedback) {
           try {
-            // Check if feedback is already an object or needs parsing
             const feedbackData = typeof call.feedback === 'string' 
               ? JSON.parse(call.feedback) 
               : call.feedback;
@@ -210,7 +207,6 @@ const EngineerDetail = () => {
       console.log("Saving engineer:", updatedEngineer);
       
       if (isNewEngineer) {
-        // For new engineers, insert a new record
         console.log("Creating new engineer in database");
         const { data, error } = await supabase
           .from("engineers")
@@ -242,7 +238,6 @@ const EngineerDetail = () => {
           description: "Engineer created successfully",
         });
         
-        // Navigate to the newly created engineer's detail page
         if (data && data.length > 0) {
           navigate(`/engineer/${data[0].id}`);
         } else {
@@ -250,7 +245,6 @@ const EngineerDetail = () => {
         }
         
       } else {
-        // For existing engineers, update the record
         console.log("Updating existing engineer in database");
         const { error } = await supabase
           .from("engineers")
@@ -293,7 +287,6 @@ const EngineerDetail = () => {
     }
   };
 
-  // If we're still loading data and it's not a new engineer, show a spinner
   if (isLoading && !isNewEngineer) {
     return (
       <div className="p-4 flex justify-center items-center h-full">
@@ -305,7 +298,6 @@ const EngineerDetail = () => {
     );
   }
 
-  // If we couldn't find an engineer with the provided ID (and we're not creating a new one)
   if (!engineer && !isNewEngineer) {
     return (
       <div className="p-4 text-center">
@@ -334,17 +326,7 @@ const EngineerDetail = () => {
 
       {showEditForm || isNewEngineer ? (
         <EngineerForm
-          engineer={engineer || {
-            id: "",
-            name: "",
-            phone: "",
-            email: "",
-            location: "",
-            status: "Available",
-            skillLevel: "Intermediate",
-            currentJob: null,
-            currentLocation: "",
-          }}
+          engineer={engineer || createBlankEngineer()}
           onSave={handleSaveEngineer}
           onCancel={isNewEngineer ? () => navigate(-1) : () => setShowEditForm(false)}
         />

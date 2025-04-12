@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Engineer } from "@/types/service";
+import { Engineer, EngineerStatus } from "@/types/service";
 import { User, MapPin, Phone, Wrench, Clock } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 

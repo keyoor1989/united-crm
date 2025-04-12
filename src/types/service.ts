@@ -45,14 +45,17 @@ export interface Machine {
   contractType: string;
 }
 
+export type EngineerStatus = "Available" | "On Call" | "On Leave" | "At Warehouse" | "Busy";
+export type EngineerSkillLevel = "Beginner" | "Intermediate" | "Advanced" | "Expert";
+
 export interface Engineer {
   id: string;
   name: string;
   phone: string;
   email: string;
   location: string;
-  status: "Available" | "On Call" | "On Leave" | "At Warehouse" | "Busy";
-  skillLevel: string;
+  status: EngineerStatus;
+  skillLevel: EngineerSkillLevel;
   currentJob: string | null;
   currentLocation: string;
   leaveEndDate?: string;

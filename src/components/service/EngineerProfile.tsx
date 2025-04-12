@@ -24,7 +24,7 @@ export const EngineerProfile: React.FC<EngineerProfileProps> = ({ engineer }) =>
                 ? "bg-green-100 text-green-800 hover:bg-green-100"
                 : engineer.status === "On Call"
                 ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                : engineer.status === "Break"
+                : engineer.status === "On Leave"
                 ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
                 : "bg-gray-100 text-gray-800 hover:bg-gray-100"
             }

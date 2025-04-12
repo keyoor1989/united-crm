@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,7 +39,7 @@ import {
   Loader2,
   Users,
 } from "lucide-react";
-import { ServiceCall, Customer, Machine, Engineer } from "@/types/service";
+import { ServiceCall, Customer, Machine, Engineer, EngineerStatus } from "@/types/service";
 import { mockMachines } from "@/data/mockData";
 import { CustomerType } from "@/types/customer";
 import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
@@ -120,7 +120,7 @@ const ServiceCallForm = () => {
         phone: eng.phone,
         email: eng.email,
         location: eng.location,
-        status: eng.status,
+        status: eng.status as EngineerStatus,
         skillLevel: eng.skill_level,
         currentJob: eng.current_job,
         currentLocation: eng.current_location
@@ -293,7 +293,6 @@ const ServiceCallForm = () => {
       const slaHours = slaTime || 48;
       const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000).toISOString();
       
-      // If not assigning engineer now, clear the engineerId
       if (!assignEngineerNow) {
         data.engineerId = null;
       }
@@ -339,7 +338,6 @@ const ServiceCallForm = () => {
       
       console.log("Service Call Created in Database:", serviceCallData);
       
-      // If engineer was assigned, update their status
       if (data.engineerId) {
         const { error: engineerError } = await supabase
           .from('engineers')

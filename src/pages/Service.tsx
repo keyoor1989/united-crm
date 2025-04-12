@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ServiceCall, Engineer, Part, Feedback } from "@/types/service";
+import { ServiceCall, Engineer, Part, Feedback, EngineerStatus } from "@/types/service";
 import { useToast } from "@/hooks/use-toast";
 import ServiceCallDetail from "@/components/service/ServiceCallDetail";
 import { ServiceSearchBar } from "@/components/service/ServiceSearchBar";
@@ -50,7 +49,7 @@ const Service = () => {
         phone: eng.phone,
         email: eng.email,
         location: eng.location,
-        status: eng.status,
+        status: eng.status as EngineerStatus,
         skillLevel: eng.skill_level,
         currentJob: eng.current_job,
         currentLocation: eng.current_location
@@ -81,7 +80,6 @@ const Service = () => {
       }
       
       const transformedCalls: ServiceCall[] = data.map(call => {
-        // Parse parts_used to ensure it's an array of Part objects
         let parsedPartsUsed: Part[] = [];
         if (Array.isArray(call.parts_used)) {
           parsedPartsUsed = call.parts_used.map((part: any) => ({
@@ -93,7 +91,6 @@ const Service = () => {
           }));
         }
         
-        // Parse feedback to ensure it's a Feedback object or null
         let parsedFeedback: Feedback | null = null;
         if (call.feedback && typeof call.feedback === 'object' && !Array.isArray(call.feedback)) {
           const feedbackObj = call.feedback as Record<string, any>;
@@ -176,7 +173,6 @@ const Service = () => {
         return;
       }
       
-      // Update the service call in the database
       const { error: serviceCallError } = await supabase
         .from('service_calls')
         .update({
@@ -196,12 +192,11 @@ const Service = () => {
         return;
       }
       
-      // Update the engineer in the database
       const serviceCall = serviceCalls.find(call => call.id === serviceCallId);
       const { error: engineerError } = await supabase
         .from('engineers')
         .update({
-          status: "On Call",
+          status: "On Call" as EngineerStatus,
           current_job: `Service Call #${serviceCallId}`,
           current_location: serviceCall?.location || assignedEngineer.location
         })
@@ -216,7 +211,6 @@ const Service = () => {
         });
       }
       
-      // Update local state
       const updatedCalls = serviceCalls.map(call => {
         if (call.id === serviceCallId) {
           return {
@@ -233,7 +227,7 @@ const Service = () => {
         if (eng.id === engineerId) {
           return {
             ...eng,
-            status: "On Call",
+            status: "On Call" as EngineerStatus,
             currentJob: `Service Call #${serviceCallId}`,
             currentLocation: serviceCall?.location || eng.location
           };
