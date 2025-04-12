@@ -2,7 +2,7 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import Index from "@/pages/Index";
+import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -17,6 +17,7 @@ import ServiceCallForm from "@/pages/ServiceCallForm";
 import ServiceBilling from "@/pages/ServiceBilling";
 import CustomerForm from "@/pages/CustomerForm";
 import EngineerDetail from "@/pages/EngineerDetail";
+import Customers from "@/pages/Customers";
 
 const AppRoutes = () => {
   return (
@@ -27,7 +28,8 @@ const AppRoutes = () => {
       
       {/* Protected routes with layout */}
       <Route element={<Layout />}>
-        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
         
         <Route path="/finance" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />
         <Route path="/finance/cash-register" element={<ProtectedRoute><CashRegister /></ProtectedRoute>} />
