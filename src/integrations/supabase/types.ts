@@ -142,6 +142,8 @@ export type Database = {
           id: string
           item_id: string
           item_name: string
+          model_brand: string | null
+          model_number: string | null
           quantity: number
           warehouse_id: string | null
           warehouse_source: string | null
@@ -154,6 +156,8 @@ export type Database = {
           id?: string
           item_id: string
           item_name: string
+          model_brand?: string | null
+          model_number?: string | null
           quantity: number
           warehouse_id?: string | null
           warehouse_source?: string | null
@@ -166,6 +170,8 @@ export type Database = {
           id?: string
           item_id?: string
           item_name?: string
+          model_brand?: string | null
+          model_number?: string | null
           quantity?: number
           warehouse_id?: string | null
           warehouse_source?: string | null

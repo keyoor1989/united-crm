@@ -40,6 +40,8 @@ const EngineerInventoryManager = ({
   const [selectedEngineerId, setSelectedEngineerId] = useState<string>("");
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [quantity, setQuantity] = useState<number>(1);
+  const [modelNumber, setModelNumber] = useState<string>("");
+  const [modelBrand, setModelBrand] = useState<string>("");
   const [returnItemId, setReturnItemId] = useState<string>("");
   const [returnQuantity, setReturnQuantity] = useState<number>(1);
   const [returnReason, setReturnReason] = useState<string>("Unused");
@@ -81,7 +83,9 @@ const EngineerInventoryManager = ({
         warehouse_id: selectedWarehouse,
         warehouse_source: selectedWarehouse ? 
           (await supabase.from('warehouses').select('name').eq('id', selectedWarehouse).single()).data?.name 
-          : "Main Warehouse"
+          : "Main Warehouse",
+        model_number: modelNumber || null,
+        model_brand: modelBrand || null
       };
       
       // Insert into database
@@ -100,6 +104,8 @@ const EngineerInventoryManager = ({
       setSelectedEngineerId("");
       setSelectedItemId("");
       setQuantity(1);
+      setModelNumber("");
+      setModelBrand("");
       setShowIssueDialog(false);
       
     } catch (error) {
@@ -254,6 +260,8 @@ const EngineerInventoryManager = ({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Brand</TableHead>
                       <TableHead className="text-right">Assigned</TableHead>
                       <TableHead className="text-right">Remaining</TableHead>
                       <TableHead>Last Updated</TableHead>
@@ -264,6 +272,8 @@ const EngineerInventoryManager = ({
                     {group.items.map(item => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.itemName}</TableCell>
+                        <TableCell>{item.modelNumber || "—"}</TableCell>
+                        <TableCell>{item.modelBrand || "—"}</TableCell>
                         <TableCell className="text-right">{item.assignedQuantity}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="outline">
@@ -347,6 +357,26 @@ const EngineerInventoryManager = ({
             </div>
             
             <div className="space-y-2">
+              <Label htmlFor="modelNumber">Model Number</Label>
+              <Input
+                id="modelNumber"
+                placeholder="e.g., DK-1150"
+                value={modelNumber}
+                onChange={(e) => setModelNumber(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="modelBrand">Brand</Label>
+              <Input
+                id="modelBrand"
+                placeholder="e.g., Kyocera"
+                value={modelBrand}
+                onChange={(e) => setModelBrand(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="quantity">Quantity</Label>
               <Input
                 id="quantity"
@@ -393,7 +423,7 @@ const EngineerInventoryManager = ({
                 <SelectContent>
                   {engineerInventory.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.itemName} ({item.engineerName} - {item.remainingQuantity} remaining)
+                      {item.itemName}{item.modelNumber ? ` (${item.modelNumber})` : ''} - {item.engineerName}
                     </SelectItem>
                   ))}
                 </SelectContent>

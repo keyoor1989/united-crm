@@ -35,6 +35,8 @@ const IssuedItemsTable = ({ items, isLoading }: IssuedItemsTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead>Item</TableHead>
+            <TableHead>Model</TableHead>
+            <TableHead>Brand</TableHead>
             <TableHead>Quantity</TableHead>
             <TableHead>Issued To</TableHead>
             <TableHead>Date</TableHead>
@@ -44,7 +46,7 @@ const IssuedItemsTable = ({ items, isLoading }: IssuedItemsTableProps) => {
         <TableBody>
           {items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                 No items have been issued yet
               </TableCell>
             </TableRow>
@@ -55,6 +57,8 @@ const IssuedItemsTable = ({ items, isLoading }: IssuedItemsTableProps) => {
                   <Package size={16} className="text-muted-foreground" />
                   {issue.item_name}
                 </TableCell>
+                <TableCell>{issue.model_number || "—"}</TableCell>
+                <TableCell>{issue.model_brand || "—"}</TableCell>
                 <TableCell>{issue.quantity}</TableCell>
                 <TableCell>{issue.engineer_name}</TableCell>
                 <TableCell>{new Date(issue.assigned_date).toLocaleDateString()}</TableCell>

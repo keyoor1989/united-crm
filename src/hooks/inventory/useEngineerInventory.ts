@@ -10,6 +10,8 @@ export interface EngineerInventoryItem {
   itemName: string;
   assignedQuantity: number;
   remainingQuantity: number;
+  modelNumber: string | null;
+  modelBrand: string | null;
   lastUpdated: string;
   createdAt: string;
 }
@@ -34,6 +36,8 @@ export const useEngineerInventory = () => {
         itemName: item.item_name,
         assignedQuantity: item.quantity,
         remainingQuantity: item.quantity, // In a real app, this would be calculated from usage
+        modelNumber: item.model_number,
+        modelBrand: item.model_brand,
         lastUpdated: item.assigned_date,
         createdAt: item.created_at
       }));

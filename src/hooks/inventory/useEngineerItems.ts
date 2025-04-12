@@ -12,6 +12,8 @@ export interface EngineerInventoryItem {
   assigned_date: string;
   warehouse_id?: string;
   warehouse_source?: string;
+  model_number?: string;
+  model_brand?: string;
 }
 
 export const useEngineerItems = (engineerId: string | null) => {
