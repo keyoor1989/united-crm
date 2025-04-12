@@ -17,6 +17,7 @@ interface InventoryItem {
   min_stock: number;
   purchase_price: number;
   brand?: string;
+  compatible_models?: string[];
 }
 
 interface ItemsTableProps {
@@ -34,8 +35,8 @@ const ItemsTable = ({ filteredItems, selectedItemId, handleSelectItem }: ItemsTa
             <TableHead className="w-16">Select</TableHead>
             <TableHead>Item Name</TableHead>
             <TableHead>Brand</TableHead>
-            <TableHead>Model</TableHead>
-            <TableHead>Type</TableHead>
+            <TableHead>Compatible Models</TableHead>
+            <TableHead>Category</TableHead>
             <TableHead>Stock</TableHead>
             <TableHead>Price</TableHead>
           </TableRow>
@@ -57,7 +58,13 @@ const ItemsTable = ({ filteredItems, selectedItemId, handleSelectItem }: ItemsTa
                 </TableCell>
                 <TableCell>{item.part_name}</TableCell>
                 <TableCell>{item.brand || "-"}</TableCell>
-                <TableCell>{item.category || "-"}</TableCell>
+                <TableCell>
+                  {item.compatible_models ? 
+                    (Array.isArray(item.compatible_models) ? 
+                      item.compatible_models.join(", ") : 
+                      JSON.stringify(item.compatible_models)) : 
+                    "-"}
+                </TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>
                   <span className={item.quantity < item.min_stock ? "text-destructive" : "text-green-600"}>

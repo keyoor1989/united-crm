@@ -19,12 +19,16 @@ export const useFilteredItems = (
     return Array.from(brandSet).sort();
   }, [items]);
 
-  // Get categories (models) based on selected brand
+  // Get compatible models based on all items
   const models = useMemo(() => {
     const modelSet = new Set<string>();
     items.forEach(item => {
-      if ((!selectedBrand || item.brand === selectedBrand) && item.category) {
-        modelSet.add(item.category);
+      if (item.compatible_models && Array.isArray(item.compatible_models)) {
+        item.compatible_models.forEach(model => {
+          if ((!selectedBrand || item.brand === selectedBrand) && model) {
+            modelSet.add(model);
+          }
+        });
       }
     });
     return Array.from(modelSet).sort();
@@ -42,7 +46,9 @@ export const useFilteredItems = (
         : true;
       
       const matchesModel = selectedModel 
-        ? item.category === selectedModel 
+        ? (item.compatible_models && 
+           Array.isArray(item.compatible_models) && 
+           item.compatible_models.includes(selectedModel))
         : true;
       
       return matchesSearch && matchesBrand && matchesModel;

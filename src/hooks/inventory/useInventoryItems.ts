@@ -10,6 +10,7 @@ export interface InventoryItem {
   min_stock: number;
   purchase_price: number;
   brand?: string;
+  compatible_models?: string[];
 }
 
 export const useInventoryItems = (warehouseId: string | null) => {
@@ -18,7 +19,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
     queryFn: async () => {
       let query = supabase
         .from('opening_stock_entries')
-        .select('id, part_name, category, quantity, min_stock, purchase_price, brand')
+        .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models')
         .order('part_name');
       
       if (warehouseId) {
