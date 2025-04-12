@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ServiceCall, Part } from '@/types/service';
 import { useEngineerItems } from '@/hooks/inventory/useEngineerItems';
-import { Spinner } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
 interface AddPartDialogProps {
   open: boolean;
@@ -106,7 +107,7 @@ const AddPartDialog: React.FC<AddPartDialogProps> = ({ open, onClose, onSave, se
               <Label htmlFor="partSelect">Select Part from Engineer Inventory</Label>
               {isLoading ? (
                 <div className="flex items-center justify-center h-10">
-                  <Spinner className="h-4 w-4 animate-spin mr-2" /> Loading...
+                  <Spinner className="h-4 w-4 mr-2" /> Loading...
                 </div>
               ) : error ? (
                 <div className="text-red-500 text-sm">Failed to load engineer inventory</div>
