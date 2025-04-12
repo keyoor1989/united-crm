@@ -188,14 +188,14 @@ const ItemSelector = ({
 
             <div>
               <Select
-                value={selectedType || ""}
+                value={selectedType || undefined}
                 onValueChange={(value) => setSelectedType(value || null)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Item Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   {itemTypes.map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -694,7 +695,7 @@ const InventoryIssue = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {engineerItems.length === 0 ? (
-                              <SelectItem value="none" disabled>No items found for this engineer</SelectItem>
+                              <SelectItem value="no-items" disabled>No items found for this engineer</SelectItem>
                             ) : (
                               engineerItems.map(item => (
                                 <SelectItem key={item.id} value={item.id}>
