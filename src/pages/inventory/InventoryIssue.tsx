@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,6 +70,12 @@ const InventoryIssue = () => {
   const [returnReason, setReturnReason] = useState<ReturnReason>("Unused");
   const [itemCondition, setItemCondition] = useState<ItemCondition>("Good");
   const [returnNotes, setReturnNotes] = useState("");
+  
+  // New state for brand and model filters
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: inventoryItems = [], isLoading: isLoadingInventoryItems } = useQuery({
     queryKey: ['inventoryItems'],
@@ -100,7 +105,7 @@ const InventoryIssue = () => {
     }
   });
 
-  const { data: brandsData = [] } = useQuery({
+  const { data: brandsData = [], isLoading: isLoadingBrands } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -123,7 +128,7 @@ const InventoryIssue = () => {
     updatedAt: brand.updated_at
   }));
 
-  const { data: modelsData = [] } = useQuery({
+  const { data: modelsData = [], isLoading: isLoadingModels } = useQuery({
     queryKey: ['models'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -147,6 +152,39 @@ const InventoryIssue = () => {
     createdAt: model.created_at,
     updatedAt: model.updated_at
   }));
+
+  // Filter models based on selected brand
+  const filteredModels = selectedBrandId 
+    ? models.filter(model => model.brandId === selectedBrandId) 
+    : models;
+
+  // Filter inventory items based on search query, brand, and model
+  useEffect(() => {
+    let result = [...inventoryItems];
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.name.toLowerCase().includes(query) ||
+          item.type.toLowerCase().includes(query) ||
+          (item.barcode && item.barcode.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply brand filter
+    if (selectedBrandId) {
+      result = result.filter(item => item.brandId === selectedBrandId);
+    }
+
+    // Apply model filter
+    if (selectedModelId) {
+      result = result.filter(item => item.modelId === selectedModelId);
+    }
+
+    setFilteredItems(result);
+  }, [inventoryItems, searchQuery, selectedBrandId, selectedModelId]);
 
   const { data: engineers = [], isLoading: isLoadingEngineers } = useQuery({
     queryKey: ['engineers'],
@@ -458,6 +496,131 @@ const InventoryIssue = () => {
     setReceiverName(name);
   };
 
+  // Custom item selector component that includes brand and model filters
+  const SimpleItemSelector = () => {
+    if (isLoadingInventoryItems) {
+      return (
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <Input
+              type="search"
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          
+          {/* Brand filter */}
+          <div>
+            <Select
+              value={selectedBrandId || undefined}
+              onValueChange={value => {
+                setSelectedBrandId(value || null);
+                setSelectedModelId(null); // Reset model when brand changes
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {brands.map(brand => (
+                  <SelectItem key={brand.id} value={brand.id}>
+                    {brand.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Model filter */}
+          <div>
+            <Select
+              value={selectedModelId || undefined}
+              onValueChange={value => setSelectedModelId(value || null)}
+              disabled={!selectedBrandId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Models</SelectItem>
+                {filteredModels.map(model => (
+                  <SelectItem key={model.id} value={model.id}>
+                    {model.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        {/* Table of filtered items */}
+        <div className="border rounded-md overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Select</TableHead>
+                <TableHead>Item Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Price</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    No items found. Try adjusting your filters.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredItems.map(item => (
+                  <TableRow 
+                    key={item.id}
+                    className={selectedItem?.id === item.id ? "bg-muted" : ""}
+                    onClick={() => handleItemSelected(item)}
+                  >
+                    <TableCell>
+                      <input
+                        type="radio"
+                        checked={selectedItem?.id === item.id}
+                        onChange={() => handleItemSelected(item)}
+                        className="h-4 w-4"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell>{item.type}</TableCell>
+                    <TableCell>
+                      <span className={item.currentQuantity < item.minQuantity ? "text-destructive" : "text-green-600"}>
+                        {item.currentQuantity}
+                      </span>{" "}
+                      <span className="text-muted-foreground">
+                        (Min: {item.minQuantity})
+                      </span>
+                    </TableCell>
+                    <TableCell>₹{item.lastPurchasePrice}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="container p-6">
       <div className="flex justify-between items-center mb-6">
@@ -586,13 +749,8 @@ const InventoryIssue = () => {
                 <div className="pt-4 border-t">
                   <h3 className="text-lg font-medium mb-4">Item Details</h3>
                   
-                  <ItemSelector 
-                    brands={brands}
-                    models={models}
-                    items={inventoryItems}
-                    onItemSelect={handleItemSelected}
-                    warehouseId={selectedWarehouse}
-                  />
+                  {/* Replace ItemSelector with our new SimpleItemSelector */}
+                  <SimpleItemSelector />
                   
                   {selectedItem && (
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
