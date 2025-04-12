@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,69 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import OpeningStockEntryForm from "@/components/inventory/OpeningStockEntryForm";
 import { mockInventoryItems } from "@/components/service/inventory/mockData";
 
-// Mock machine parts data
-const initialMockMachineParts = [
-  {
-    id: "MP001",
-    partNumber: "TK-1175",
-    name: "Toner Kit",
-    brand: "Kyocera",
-    compatibleModels: ["ECOSYS M2040dn", "ECOSYS M2540dn", "ECOSYS M2640idw"],
-    category: "Toner",
-    currentStock: 15,
-    minStock: 5,
-    purchasePrice: 3500
-  },
-  {
-    id: "MP002",
-    partNumber: "DK-1150",
-    name: "Drum Unit",
-    brand: "Kyocera",
-    compatibleModels: ["ECOSYS M2040dn", "ECOSYS M2540dn"],
-    category: "Drum",
-    currentStock: 8,
-    minStock: 3,
-    purchasePrice: 4200
-  },
-  {
-    id: "MP003",
-    partNumber: "MK-1140",
-    name: "Maintenance Kit",
-    brand: "Kyocera",
-    compatibleModels: ["ECOSYS M2040dn"],
-    category: "Maintenance Kit",
-    currentStock: 4,
-    minStock: 2,
-    purchasePrice: 6800
-  },
-  {
-    id: "MP004",
-    partNumber: "NPG-59",
-    name: "Drum Unit",
-    brand: "Canon",
-    compatibleModels: ["IR 2002", "IR 2004"],
-    category: "Drum",
-    currentStock: 6,
-    minStock: 3,
-    purchasePrice: 3950
-  },
-  {
-    id: "MP005",
-    partNumber: "Fixing Film",
-    name: "Fixing Film Assembly",
-    brand: "Canon",
-    compatibleModels: ["IR 2002", "IR 2004", "IR 2006"],
-    category: "Fuser",
-    currentStock: 2,
-    minStock: 1,
-    purchasePrice: 2500
-  },
-];
-
 const MachineParts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [machineParts, setMachineParts] = useState(initialMockMachineParts);
+  const [machineParts, setMachineParts] = useState([]);
   const [openStockEntryForm, setOpenStockEntryForm] = useState(false);
   
   // Save inventory items to mock data
@@ -105,7 +45,7 @@ const MachineParts = () => {
     return matchesSearch && matchesCategory;
   });
   
-  const getStockStatus = (current: number, min: number) => {
+  const getStockStatus = (current, min) => {
     if (current <= 0) {
       return { label: "Out of Stock", variant: "destructive" as const };
     } else if (current < min) {
@@ -115,7 +55,7 @@ const MachineParts = () => {
     }
   };
 
-  const handleAddPart = (newPart: any) => {
+  const handleAddPart = (newPart) => {
     setMachineParts(prevParts => [...prevParts, newPart]);
   };
 
@@ -237,7 +177,6 @@ const MachineParts = () => {
           </Card>
         </TabsContent>
         
-        {/* Other tab content would be similar but filtered by category */}
         <TabsContent value="toner" className="mt-4">
           <Card>
             <CardHeader>
