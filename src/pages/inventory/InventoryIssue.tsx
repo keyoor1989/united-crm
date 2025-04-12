@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Package, Scan, Send, CheckCircle2, ShoppingBag, Building, User, ArrowLeft, ReplyAll } from "lucide-react";
+import { Package, Scan, Send, CheckCircle2, ShoppingBag, Building, User, ArrowLeft, ReplyAll, Search } from "lucide-react";
 import { IssueType, Brand, Model, InventoryItem } from "@/types/inventory";
 import ItemSelector from "@/components/inventory/ItemSelector";
 import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
@@ -71,12 +72,13 @@ const InventoryIssue = () => {
   const [itemCondition, setItemCondition] = useState<ItemCondition>("Good");
   const [returnNotes, setReturnNotes] = useState("");
   
-  // New state for brand and model filters
+  // State for brand, model filters and search
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
 
+  // Fetch inventory items
   const { data: inventoryItems = [], isLoading: isLoadingInventoryItems } = useQuery({
     queryKey: ['inventoryItems'],
     queryFn: async () => {
@@ -105,6 +107,7 @@ const InventoryIssue = () => {
     }
   });
 
+  // Fetch brands
   const { data: brandsData = [], isLoading: isLoadingBrands } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
@@ -121,6 +124,7 @@ const InventoryIssue = () => {
     }
   });
 
+  // Map brands to expected format
   const brands: Brand[] = brandsData.map(brand => ({
     id: brand.id,
     name: brand.name,
@@ -128,6 +132,7 @@ const InventoryIssue = () => {
     updatedAt: brand.updated_at
   }));
 
+  // Fetch models
   const { data: modelsData = [], isLoading: isLoadingModels } = useQuery({
     queryKey: ['models'],
     queryFn: async () => {
@@ -144,6 +149,7 @@ const InventoryIssue = () => {
     }
   });
 
+  // Map models to expected format
   const models: Model[] = modelsData.map(model => ({
     id: model.id,
     brandId: model.brand_id,
@@ -186,6 +192,7 @@ const InventoryIssue = () => {
     setFilteredItems(result);
   }, [inventoryItems, searchQuery, selectedBrandId, selectedModelId]);
 
+  // Fetch engineers
   const { data: engineers = [], isLoading: isLoadingEngineers } = useQuery({
     queryKey: ['engineers'],
     queryFn: async () => {
@@ -202,6 +209,7 @@ const InventoryIssue = () => {
     }
   });
 
+  // Fetch issued items
   const { data: issuedItems = [], isLoading: isLoadingIssuedItems } = useQuery({
     queryKey: ['engineerInventory'],
     queryFn: async () => {
@@ -218,6 +226,7 @@ const InventoryIssue = () => {
     }
   });
 
+  // Fetch returned items
   const { data: returnedItems = [], isLoading: isLoadingReturnedItems } = useQuery({
     queryKey: ['inventoryReturns'],
     queryFn: async () => {
@@ -234,6 +243,7 @@ const InventoryIssue = () => {
     }
   });
 
+  // Issue mutation
   const issueMutation = useMutation({
     mutationFn: async (issueData: Omit<EngineerInventoryItem, 'id' | 'created_at'>) => {
       const { data, error } = await supabase
@@ -273,6 +283,7 @@ const InventoryIssue = () => {
     }
   });
 
+  // Return mutation
   const returnMutation = useMutation({
     mutationFn: async (returnData: Omit<InventoryReturnItem, 'id' | 'created_at'>) => {
       const { data, error } = await supabase
@@ -355,6 +366,7 @@ const InventoryIssue = () => {
     }
   });
 
+  // Mock data for branches and customers
   const branches: Branch[] = [
     { id: "1", name: "Indore Office" },
     { id: "2", name: "Bhopal Office" },
@@ -367,6 +379,7 @@ const InventoryIssue = () => {
     { id: "3", name: "Tech Innovations" }
   ];
 
+  // Handle engineer selection
   const handleEngineerSelection = async (engineerId: string) => {
     setSelectedEngineer(engineerId);
     setSelectedReturnItem("");
@@ -389,10 +402,12 @@ const InventoryIssue = () => {
     }
   };
 
+  // Handle item selection
   const handleItemSelected = (item: InventoryItem) => {
     setSelectedItem(item);
   };
 
+  // Handle issue form submission
   const handleIssueSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -437,6 +452,7 @@ const InventoryIssue = () => {
     issueMutation.mutate(issueData);
   };
 
+  // Handle return form submission
   const handleReturnSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -491,134 +507,10 @@ const InventoryIssue = () => {
     returnMutation.mutate(returnData);
   };
 
+  // Handle receiver selection
   const handleReceiverSelection = (id: string, name: string) => {
     setReceiverId(id);
     setReceiverName(name);
-  };
-
-  // Custom item selector component that includes brand and model filters
-  const SimpleItemSelector = () => {
-    if (isLoadingInventoryItems) {
-      return (
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Input
-              type="search"
-              placeholder="Search items..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          
-          {/* Brand filter */}
-          <div>
-            <Select
-              value={selectedBrandId || undefined}
-              onValueChange={value => {
-                setSelectedBrandId(value || null);
-                setSelectedModelId(null); // Reset model when brand changes
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Brand" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Brands</SelectItem>
-                {brands.map(brand => (
-                  <SelectItem key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Model filter */}
-          <div>
-            <Select
-              value={selectedModelId || undefined}
-              onValueChange={value => setSelectedModelId(value || null)}
-              disabled={!selectedBrandId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Models</SelectItem>
-                {filteredModels.map(model => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        {/* Table of filtered items */}
-        <div className="border rounded-md overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Select</TableHead>
-                <TableHead>Item Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Price</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
-                    No items found. Try adjusting your filters.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredItems.map(item => (
-                  <TableRow 
-                    key={item.id}
-                    className={selectedItem?.id === item.id ? "bg-muted" : ""}
-                    onClick={() => handleItemSelected(item)}
-                  >
-                    <TableCell>
-                      <input
-                        type="radio"
-                        checked={selectedItem?.id === item.id}
-                        onChange={() => handleItemSelected(item)}
-                        className="h-4 w-4"
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.type}</TableCell>
-                    <TableCell>
-                      <span className={item.currentQuantity < item.minQuantity ? "text-destructive" : "text-green-600"}>
-                        {item.currentQuantity}
-                      </span>{" "}
-                      <span className="text-muted-foreground">
-                        (Min: {item.minQuantity})
-                      </span>
-                    </TableCell>
-                    <TableCell>₹{item.lastPurchasePrice}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -631,16 +523,16 @@ const InventoryIssue = () => {
       </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="form" className="flex items-center gap-2">
+        <TabsList className="w-full">
+          <TabsTrigger value="form" className="flex items-center gap-2 flex-1">
             <Send size={16} />
             <span>Issue Item</span>
           </TabsTrigger>
-          <TabsTrigger value="return" className="flex items-center gap-2">
+          <TabsTrigger value="return" className="flex items-center gap-2 flex-1">
             <ArrowLeft size={16} />
             <span>Return Item</span>
           </TabsTrigger>
-          <TabsTrigger value="recent" className="flex items-center gap-2">
+          <TabsTrigger value="recent" className="flex items-center gap-2 flex-1">
             <CheckCircle2 size={16} />
             <span>Recent Activities</span>
           </TabsTrigger>
@@ -649,9 +541,10 @@ const InventoryIssue = () => {
         <TabsContent value="form" className="space-y-4">
           <Card>
             <CardContent className="pt-6">
-              <form onSubmit={handleIssueSubmit} className="space-y-4">
-                <div className="mb-6">
-                  <Label className="text-base font-medium">Select Warehouse</Label>
+              <form onSubmit={handleIssueSubmit} className="space-y-6">
+                {/* Warehouse Selection */}
+                <div className="mb-4">
+                  <Label className="text-base font-medium mb-2 block">Select Warehouse</Label>
                   <WarehouseSelector 
                     warehouses={warehouses}
                     selectedWarehouse={selectedWarehouse}
@@ -660,6 +553,7 @@ const InventoryIssue = () => {
                   />
                 </div>
 
+                {/* Issue Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="issueType">Issue Type</Label>
@@ -701,8 +595,10 @@ const InventoryIssue = () => {
                     <Label htmlFor="receiver">{issueType} Name</Label>
                     <Select 
                       onValueChange={(value) => {
-                        const [id, name] = value.split('|');
-                        handleReceiverSelection(id, name);
+                        if (value && value !== "no-items" && value !== "loading") {
+                          const [id, name] = value.split('|');
+                          handleReceiverSelection(id, name);
+                        }
                       }}
                     >
                       <SelectTrigger id="receiver">
@@ -711,16 +607,22 @@ const InventoryIssue = () => {
                       <SelectContent>
                         {isLoadingEngineers && issueType === "Engineer" ? (
                           <SelectItem value="loading" disabled>Loading engineers...</SelectItem>
-                        ) : issueType === "Engineer" && engineers.map(engineer => (
-                          <SelectItem key={engineer.id} value={`${engineer.id}|${engineer.name}`}>
-                            {engineer.name}
-                          </SelectItem>
-                        ))}
+                        ) : issueType === "Engineer" && engineers.length > 0 ? (
+                          engineers.map(engineer => (
+                            <SelectItem key={engineer.id} value={`${engineer.id}|${engineer.name}`}>
+                              {engineer.name}
+                            </SelectItem>
+                          ))
+                        ) : issueType === "Engineer" ? (
+                          <SelectItem value="no-items" disabled>No engineers found</SelectItem>
+                        ) : null}
+                        
                         {issueType === "Customer" && customers.map(customer => (
                           <SelectItem key={customer.id} value={`${customer.id}|${customer.name}`}>
                             {customer.name}
                           </SelectItem>
                         ))}
+                        
                         {issueType === "Branch" && branches.map(branch => (
                           <SelectItem key={branch.id} value={`${branch.id}|${branch.name}`}>
                             {branch.name}
@@ -746,12 +648,145 @@ const InventoryIssue = () => {
                   )}
                 </div>
                 
+                {/* Item Selection */}
                 <div className="pt-4 border-t">
                   <h3 className="text-lg font-medium mb-4">Item Details</h3>
                   
-                  {/* Replace ItemSelector with our new SimpleItemSelector */}
-                  <SimpleItemSelector />
+                  {/* Brand, Model, and Item filters */}
+                  <div className="space-y-6">
+                    {/* Filters */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Search */}
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="search"
+                          placeholder="Search items..."
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          className="pl-8 w-full"
+                        />
+                      </div>
+                      
+                      {/* Brand filter */}
+                      <div>
+                        <Select
+                          value={selectedBrandId || ""}
+                          onValueChange={value => {
+                            if (value === "all") {
+                              setSelectedBrandId(null);
+                            } else {
+                              setSelectedBrandId(value || null);
+                            }
+                            setSelectedModelId(null); // Reset model when brand changes
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Brands</SelectItem>
+                            {brands.map(brand => (
+                              <SelectItem key={brand.id} value={brand.id}>
+                                {brand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Model filter */}
+                      <div>
+                        <Select
+                          value={selectedModelId || ""}
+                          onValueChange={value => {
+                            if (value === "all") {
+                              setSelectedModelId(null);
+                            } else {
+                              setSelectedModelId(value || null);
+                            }
+                          }}
+                          disabled={!selectedBrandId}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Model" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Models</SelectItem>
+                            {filteredModels.map(model => (
+                              <SelectItem key={model.id} value={model.id}>
+                                {model.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    {/* Table of filtered items */}
+                    <div className="border rounded-md overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">Select</TableHead>
+                            <TableHead>Item Name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Stock</TableHead>
+                            <TableHead>Price</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {isLoadingInventoryItems ? (
+                            <TableRow>
+                              <TableCell colSpan={5}>
+                                <div className="space-y-2">
+                                  <Skeleton className="h-10 w-full" />
+                                  <Skeleton className="h-10 w-full" />
+                                  <Skeleton className="h-10 w-full" />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ) : filteredItems.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-4">
+                                No items found. Try adjusting your filters.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            filteredItems.map(item => (
+                              <TableRow 
+                                key={item.id}
+                                className={selectedItem?.id === item.id ? "bg-muted" : ""}
+                                onClick={() => handleItemSelected(item)}
+                              >
+                                <TableCell>
+                                  <input
+                                    type="radio"
+                                    checked={selectedItem?.id === item.id}
+                                    onChange={() => handleItemSelected(item)}
+                                    className="h-4 w-4"
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">{item.name}</TableCell>
+                                <TableCell>{item.type}</TableCell>
+                                <TableCell>
+                                  <span className={item.currentQuantity < item.minQuantity ? "text-destructive" : "text-green-600"}>
+                                    {item.currentQuantity}
+                                  </span>{" "}
+                                  <span className="text-muted-foreground">
+                                    (Min: {item.minQuantity})
+                                  </span>
+                                </TableCell>
+                                <TableCell>₹{item.lastPurchasePrice}</TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                   
+                  {/* Quantity selection */}
                   {selectedItem && (
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -760,6 +795,7 @@ const InventoryIssue = () => {
                           id="quantity"
                           type="number"
                           min="1"
+                          max={selectedItem.currentQuantity}
                           value={quantity}
                           onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
                           required
@@ -778,6 +814,7 @@ const InventoryIssue = () => {
                     </div>
                   )}
                   
+                  {/* Submit button */}
                   <Button 
                     type="submit" 
                     className="w-full mt-6" 
@@ -802,15 +839,15 @@ const InventoryIssue = () => {
           <Card>
             <CardContent className="pt-6">
               <Tabs value={returnTab} onValueChange={setReturnTab}>
-                <TabsList className="mb-4">
-                  <TabsTrigger value="return-form">Return Form</TabsTrigger>
-                  <TabsTrigger value="return-history">Return History</TabsTrigger>
+                <TabsList className="mb-4 w-full">
+                  <TabsTrigger value="return-form" className="flex-1">Return Form</TabsTrigger>
+                  <TabsTrigger value="return-history" className="flex-1">Return History</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="return-form">
                   <form onSubmit={handleReturnSubmit} className="space-y-4">
                     <div className="mb-6">
-                      <Label className="text-base font-medium">Return To Warehouse</Label>
+                      <Label className="text-base font-medium block mb-2">Return To Warehouse</Label>
                       <WarehouseSelector 
                         warehouses={warehouses}
                         selectedWarehouse={selectedWarehouse}
@@ -832,11 +869,15 @@ const InventoryIssue = () => {
                           <SelectContent>
                             {isLoadingEngineers ? (
                               <SelectItem value="loading" disabled>Loading engineers...</SelectItem>
-                            ) : engineers.map(engineer => (
-                              <SelectItem key={engineer.id} value={engineer.id}>
-                                {engineer.name}
-                              </SelectItem>
-                            ))}
+                            ) : engineers.length > 0 ? (
+                              engineers.map(engineer => (
+                                <SelectItem key={engineer.id} value={engineer.id}>
+                                  {engineer.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-engineers" disabled>No engineers found</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -950,46 +991,48 @@ const InventoryIssue = () => {
                       <Skeleton className="h-10 w-full" />
                     </div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Item</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Returned By</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Reason</TableHead>
-                          <TableHead>Condition</TableHead>
-                          <TableHead>Warehouse</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {returnedItems.length === 0 ? (
+                    <div className="border rounded-md overflow-x-auto">
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                              No returns history found
-                            </TableCell>
+                            <TableHead>Item</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Returned By</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Reason</TableHead>
+                            <TableHead>Condition</TableHead>
+                            <TableHead>Warehouse</TableHead>
                           </TableRow>
-                        ) : (
-                          returnedItems.map((item) => (
-                            <TableRow key={item.id}>
-                              <TableCell className="font-medium">{item.item_name}</TableCell>
-                              <TableCell>{item.quantity}</TableCell>
-                              <TableCell>{item.engineer_name}</TableCell>
-                              <TableCell>{new Date(item.return_date).toLocaleDateString()}</TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{item.reason}</Badge>
+                        </TableHeader>
+                        <TableBody>
+                          {returnedItems.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                                No returns history found
                               </TableCell>
-                              <TableCell>
-                                <Badge variant={item.condition === "Good" ? "outline" : "destructive"}>
-                                  {item.condition}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{item.warehouse_name}</TableCell>
                             </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
+                          ) : (
+                            returnedItems.map((item) => (
+                              <TableRow key={item.id}>
+                                <TableCell className="font-medium">{item.item_name}</TableCell>
+                                <TableCell>{item.quantity}</TableCell>
+                                <TableCell>{item.engineer_name}</TableCell>
+                                <TableCell>{new Date(item.return_date).toLocaleDateString()}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{item.reason}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={item.condition === "Good" ? "outline" : "destructive"}>
+                                    {item.condition}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{item.warehouse_name}</TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>
@@ -1001,9 +1044,9 @@ const InventoryIssue = () => {
           <Card>
             <CardContent className="pt-6">
               <Tabs defaultValue="issues" className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="issues">Recent Issues</TabsTrigger>
-                  <TabsTrigger value="returns">Recent Returns</TabsTrigger>
+                <TabsList className="w-full">
+                  <TabsTrigger value="issues" className="flex-1">Recent Issues</TabsTrigger>
+                  <TabsTrigger value="returns" className="flex-1">Recent Returns</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="issues">
@@ -1014,7 +1057,7 @@ const InventoryIssue = () => {
                       <Skeleton className="h-10 w-full" />
                     </div>
                   ) : (
-                    <div className="rounded-md border">
+                    <div className="rounded-md border overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -1064,7 +1107,7 @@ const InventoryIssue = () => {
                       <Skeleton className="h-10 w-full" />
                     </div>
                   ) : (
-                    <div className="rounded-md border">
+                    <div className="rounded-md border overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
