@@ -18,6 +18,8 @@ import ServiceBilling from "@/pages/ServiceBilling";
 import CustomerForm from "@/pages/CustomerForm";
 import EngineerDetail from "@/pages/EngineerDetail";
 import Customers from "@/pages/Customers";
+import AccessDenied from "@/pages/AccessDenied";
+import CustomerFollowUps from "@/pages/customers/CustomerFollowUps";
 
 const AppRoutes = () => {
   return (
@@ -25,11 +27,14 @@ const AppRoutes = () => {
       {/* Auth routes without layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/access-denied" element={<AccessDenied />} />
       
       {/* Protected routes with layout */}
       <Route element={<Layout />}>
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+        <Route path="/customers/follow-ups" element={<ProtectedRoute><CustomerFollowUps /></ProtectedRoute>} />
+        <Route path="/customer-form" element={<ProtectedRoute><CustomerForm /></ProtectedRoute>} />
         
         <Route path="/finance" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />
         <Route path="/finance/cash-register" element={<ProtectedRoute><CashRegister /></ProtectedRoute>} />
@@ -42,7 +47,6 @@ const AppRoutes = () => {
         <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
         <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />
         <Route path="/service-billing" element={<ProtectedRoute><ServiceBilling /></ProtectedRoute>} />
-        <Route path="/customer-form" element={<ProtectedRoute><CustomerForm /></ProtectedRoute>} />
         <Route path="/engineer/:id" element={<ProtectedRoute><EngineerDetail /></ProtectedRoute>} />
       </Route>
     </Routes>

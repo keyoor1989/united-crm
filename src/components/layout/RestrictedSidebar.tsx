@@ -5,9 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 
 // This component only renders the sidebar if the user is authenticated
 const RestrictedSidebar = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
-  if (!user) return null;
+  if (!isAuthenticated || !user) return null;
   
   return <AppSidebar />;
 };

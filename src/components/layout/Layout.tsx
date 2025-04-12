@@ -9,12 +9,15 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import RestrictedSidebar from "./RestrictedSidebar";
 import "@/components/chat/chat.css";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutProps {
   children?: ReactNode;
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen={window.innerWidth >= 1024}>

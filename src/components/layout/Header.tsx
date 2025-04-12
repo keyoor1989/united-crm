@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Header = () => {
   const { toggleSidebar } = useSidebar();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -53,7 +53,7 @@ const Header = () => {
           <span className="sr-only">Toggle theme</span>
         </Button>
 
-        {user && (
+        {isAuthenticated && user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
