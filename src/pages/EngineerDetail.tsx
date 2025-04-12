@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback } from "@/types/service";
@@ -13,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const EngineerDetail = () => {
   const params = useParams();
-  const engineerId = params.engineerId;
+  const engineerId = params.id; // Use the correct parameter name from AppRoutes.tsx - should be 'id'
   const navigate = useNavigate();
   const { toast } = useToast();
   const [engineer, setEngineer] = useState<Engineer | null>(null);

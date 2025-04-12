@@ -35,14 +35,12 @@ import ProductCatalog from "@/pages/sales/ProductCatalog";
 import SmartAssistant from "@/pages/SmartAssistant";
 import NotFound from "@/pages/NotFound";
 
-// Import our newly created components
 import SentQuotations from "@/pages/sales/SentQuotations";
 import QuotationProducts from "@/pages/sales/QuotationProducts";
 import ContractUpload from "@/pages/sales/ContractUpload";
 import SentOrders from "@/pages/sales/SentOrders";
 import OrderHistory from "@/pages/sales/OrderHistory";
 
-// Import Finance pages
 import FinanceDashboard from "@/pages/finance/FinanceDashboard";
 import CashRegister from "@/pages/finance/CashRegister";
 import DepartmentRevenueNew from "@/pages/finance/DepartmentRevenueNew";
@@ -50,17 +48,14 @@ import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
 import CustomerPayments from "@/pages/finance/CustomerPayments";
 import OutstandingReceivables from "@/pages/finance/OutstandingReceivables";
 
-// Import Reports
 import Reports from "@/pages/Reports";
 import MachineRentalReport from "@/pages/reports/MachineRentalReport";
 import EngineerServiceReport from "@/pages/reports/EngineerServiceReport";
 import CustomerFollowUpReport from "@/pages/reports/CustomerFollowUpReport";
 import BranchProfitReport from "@/pages/reports/BranchProfitReport";
 
-// Import Task Management
 import TaskDashboard from "@/pages/tasks/TaskDashboard";
 
-// Import Auth related components
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Login from "@/pages/Login";
@@ -70,25 +65,21 @@ import UserManagement from "@/pages/user-management/UserManagement";
 const AppRoutes = () => (
   <AuthProvider>
     <Routes>
-      {/* Public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/access-denied" element={<AccessDenied />} />
       
-      {/* Protected routes */}
       <Route 
         element={
           <ProtectedRoute>
             <Layout />
           </ProtectedRoute>
         }>
-        {/* Redirect root to dashboard for iframe preview */}
         <Route path="/" element={<Dashboard />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/follow-ups" element={<CustomerFollowUps />} />
         <Route path="/customer-form" element={<CustomerForm />} />
         <Route path="/customer-form/:id" element={<CustomerForm />} />
         
-        {/* Finance Routes */}
         <Route path="/finance" element={<FinanceDashboard />} />
         <Route path="/finance/cash-register" element={<CashRegister />} />
         <Route path="/finance/revenue" element={<DepartmentRevenueNew />} />
@@ -96,24 +87,20 @@ const AppRoutes = () => (
         <Route path="/finance/payments" element={<CustomerPayments />} />
         <Route path="/finance/receivables" element={<OutstandingReceivables />} />
         
-        {/* Reports Routes */}
         <Route path="/reports" element={<Reports />} />
         <Route path="/reports/machine-rental" element={<MachineRentalReport />} />
         <Route path="/reports/engineer-service" element={<EngineerServiceReport />} />
         <Route path="/reports/customer-followup" element={<CustomerFollowUpReport />} />
         <Route path="/reports/branch-profit" element={<BranchProfitReport />} />
         
-        {/* Service Routes */}
         <Route path="/service" element={<Service />} />
         <Route path="/service-call-form" element={<ServiceCallForm />} />
         <Route path="/service/service-call-form" element={<ServiceCallForm />} />
         <Route path="/engineer/:id" element={<EngineerDetail />} />
         <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
         
-        {/* Task Management Routes */}
         <Route path="/tasks" element={<TaskDashboard />} />
         
-        {/* Inventory Routes */}
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/inventory/brands" element={<InventoryBrands />} />
         <Route path="/inventory/items" element={<InventoryItems />} />
@@ -134,7 +121,6 @@ const AppRoutes = () => (
         <Route path="/inventory/history" element={<InventoryHistory />} />
         <Route path="/inventory/alerts" element={<InventoryAlerts />} />
         
-        {/* Quotation routes */}
         <Route path="/quotations" element={<Quotations />} />
         <Route path="/quotation-form" element={<QuotationForm />} />
         <Route path="/quotation-form/:id" element={<QuotationForm />} />
@@ -143,7 +129,6 @@ const AppRoutes = () => (
         <Route path="/quotation-products" element={<QuotationProducts />} />
         <Route path="/contract-upload" element={<ContractUpload />} />
         
-        {/* Purchase order routes */}
         <Route path="/purchase-orders" element={<PurchaseOrders />} />
         <Route path="/purchase-order-form" element={<PurchaseOrderForm />} />
         <Route path="/purchase-order-form/:id" element={<PurchaseOrderForm />} />
@@ -152,22 +137,17 @@ const AppRoutes = () => (
         
         <Route path="/product-catalog" element={<ProductCatalog />} />
         
-        {/* AI Assistant */}
         <Route path="/smart-assistant" element={<SmartAssistant />} />
         
-        {/* Redirect old chat pages to the Smart Assistant */}
         <Route path="/chat" element={<Navigate to="/smart-assistant" replace />} />
         <Route path="/chat-assistant" element={<Navigate to="/smart-assistant" replace />} />
         <Route path="/command-copilot" element={<Navigate to="/smart-assistant" replace />} />
         
-        {/* User Management */}
         <Route path="/user-management" element={<UserManagement />} />
         
-        {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
       </Route>
       
-      {/* Redirect root to login if not authenticated */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   </AuthProvider>
