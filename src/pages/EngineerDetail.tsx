@@ -12,7 +12,8 @@ import { EngineerServiceCallTabs } from "@/components/service/EngineerServiceCal
 import { Skeleton } from "@/components/ui/skeleton";
 
 const EngineerDetail = () => {
-  const { engineerId } = useParams();
+  const params = useParams();
+  const engineerId = params.engineerId;
   const navigate = useNavigate();
   const { toast } = useToast();
   const [engineer, setEngineer] = useState<Engineer | null>(null);
@@ -49,6 +50,15 @@ const EngineerDetail = () => {
       console.log("Fetching existing engineer with ID:", engineerId);
       fetchEngineer(engineerId);
       fetchServiceCalls(engineerId);
+    } else {
+      // If no engineerId is provided, set loading to false to avoid infinite loading spinner
+      console.log("No engineerId provided, setting loading to false");
+      setIsLoading(false);
+      toast({
+        title: "Error",
+        description: "No engineer ID provided",
+        variant: "destructive",
+      });
     }
   }, [engineerId, isNewEngineer]);
 
