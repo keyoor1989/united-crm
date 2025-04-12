@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EngineerServiceCallTabs } from "@/components/service/EngineerServiceCallTabs";
-import EngineerProfile from "@/components/service/EngineerProfile";
+import { EngineerProfile } from "@/components/service/EngineerProfile";
 import { Engineer, ServiceCall } from "@/types/service";
 import { transformEngineersData, transformServiceCallsData } from "@/utils/serviceDataUtils";
 import { fetchEngineers, fetchServiceCalls } from "@/services/serviceDataService";
@@ -167,7 +167,7 @@ const EngineerDetail = () => {
               </li>
             </ul>
             
-            {engineer.status === "assigned" && (
+            {engineer.status.toLowerCase() === "assigned" && (
               <div className="mt-4 p-3 bg-blue-50 rounded-md">
                 <p className="text-sm font-medium">Current Assignment</p>
                 <p className="text-sm mt-1">{engineer.currentJob || "No details available"}</p>
@@ -177,7 +177,7 @@ const EngineerDetail = () => {
               </div>
             )}
             
-            {engineer.status === "on leave" && engineer.leaveEndDate && (
+            {engineer.status.toLowerCase() === "on leave" && engineer.leaveEndDate && (
               <div className="mt-4 p-3 bg-orange-50 rounded-md">
                 <p className="text-sm font-medium">On Leave Until</p>
                 <p className="text-sm">
@@ -275,12 +275,7 @@ const EngineerDetail = () => {
             </TabsContent>
             
             <TabsContent value="service-calls">
-              <EngineerServiceCallTabs 
-                pendingCalls={pendingCalls}
-                inProgressCalls={inProgressCalls}
-                completedCalls={completedCalls}
-                allCalls={serviceCalls}
-              />
+              <EngineerServiceCallTabs serviceCalls={serviceCalls} />
             </TabsContent>
             
             <TabsContent value="profile">
