@@ -24,9 +24,14 @@ const EngineerDetail = () => {
   const isNewEngineer = engineerId === "new";
 
   useEffect(() => {
-    // If we're adding a new engineer, don't fetch data
+    console.log("EngineerDetail mounted, engineerId:", engineerId, "isNewEngineer:", isNewEngineer);
+    
+    // Set loading to false immediately for new engineers
     if (isNewEngineer) {
-      console.log("Creating new engineer - no data to fetch");
+      console.log("Creating new engineer form - no data to fetch");
+      setIsLoading(false);
+      setShowEditForm(true);
+      
       // Create a blank engineer for the new form
       setEngineer({
         id: "",
@@ -39,9 +44,6 @@ const EngineerDetail = () => {
         currentJob: null,
         currentLocation: "",
       });
-      // Important: Set isLoading to false immediately for new engineers
-      setIsLoading(false);
-      setShowEditForm(true);
     } else if (engineerId) {
       // Only fetch existing engineer data if we have an ID and it's not "new"
       console.log("Fetching existing engineer with ID:", engineerId);

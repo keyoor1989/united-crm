@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,7 +43,8 @@ const EngineerForm: React.FC<EngineerFormProps> = ({
   onSave,
   onCancel,
 }) => {
-  // Initialize form with existing engineer data or defaults for new engineer
+  const defaultCurrentLocation = engineer.currentLocation || engineer.location || "";
+  
   const form = useForm<z.infer<typeof engineerSchema>>({
     resolver: zodResolver(engineerSchema),
     defaultValues: {
@@ -54,9 +54,11 @@ const EngineerForm: React.FC<EngineerFormProps> = ({
       location: engineer.location || "",
       status: engineer.status || "Available",
       skillLevel: engineer.skillLevel || "Intermediate",
-      currentLocation: engineer.currentLocation || engineer.location || "",
+      currentLocation: defaultCurrentLocation,
     },
   });
+
+  console.log("EngineerForm initialized with values:", form.getValues());
 
   const onSubmit = (values: z.infer<typeof engineerSchema>) => {
     console.log("Form submitted with values:", values);
