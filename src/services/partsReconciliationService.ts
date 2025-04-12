@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceCall, Part } from "@/types/service";
 import { toast } from "@/hooks/use-toast";
@@ -88,7 +89,9 @@ export const updatePartReconciliation = async (
       return false;
     }
     
-    const part = serviceCall.parts_used.find((p: any) => p.id === partId);
+    const partsUsed = serviceCall.parts_used as any[];
+    const part = partsUsed.find(p => p.id === partId);
+    
     if (!part) {
       console.error("Part not found in service call:", partId);
       return false;
@@ -136,14 +139,14 @@ export const updatePartReconciliation = async (
       }
     }
     
-    const updatedPartsUsed = serviceCall.parts_used.map((p: any) => {
+    const updatedPartsUsed = partsUsed.map(p => {
       if (p.id === partId) {
         return { ...p, isReconciled: reconciled };
       }
       return p;
     });
     
-    const allReconciled = updatedPartsUsed.every((p: any) => p.isReconciled);
+    const allReconciled = updatedPartsUsed.every(p => p.isReconciled);
     
     const { error: updateError } = await supabase
       .from('service_calls')
@@ -186,8 +189,10 @@ export const updateServiceCallReconciliation = async (
       return false;
     }
     
+    const partsUsed = serviceCall.parts_used as any[];
+    
     if (reconciled) {
-      for (const part of serviceCall.parts_used) {
+      for (const part of partsUsed) {
         if (!part.isReconciled) {
           const { data: engineerItems, error: itemsError } = await supabase
             .from('engineer_inventory')
@@ -235,7 +240,7 @@ export const updateServiceCallReconciliation = async (
       }
     }
     
-    const updatedPartsUsed = serviceCall.parts_used.map((part: any) => ({
+    const updatedPartsUsed = partsUsed.map(part => ({
       ...part,
       isReconciled: reconciled
     }));
