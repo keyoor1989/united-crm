@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Engineer, EngineerStatus } from "@/types/service";
 import { Phone, Mail, MapPin, Briefcase, User, Clock } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
+import { Link } from "react-router-dom";
 
 interface EngineerProfileProps {
   engineer: Engineer;
@@ -13,6 +14,25 @@ interface EngineerProfileProps {
 export const EngineerProfile: React.FC<EngineerProfileProps> = ({ engineer }) => {
   const isOnLeave = engineer.status === "On Leave";
   const leaveEnded = engineer.leaveEndDate && isPast(new Date(engineer.leaveEndDate));
+
+  // Format current job display to be more user-friendly
+  const formatCurrentJob = (currentJob: string | null) => {
+    if (!currentJob) return "None assigned";
+    
+    // Check if it's a service call with the specific format
+    if (currentJob.startsWith("Service Call #")) {
+      const serviceCallId = currentJob.replace("Service Call #", "");
+      return (
+        <span>
+          Service Call - <Link to={`/service?call=${serviceCallId}`} className="text-blue-600 hover:underline">
+            View Details
+          </Link>
+        </span>
+      );
+    }
+    
+    return currentJob;
+  };
 
   return (
     <Card>
@@ -71,9 +91,12 @@ export const EngineerProfile: React.FC<EngineerProfileProps> = ({ engineer }) =>
             )}
           </div>
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
-              <span>Current Job: {engineer.currentJob || "None assigned"}</span>
+            <div className="flex items-start gap-2">
+              <Briefcase className="h-4 w-4 mt-1 text-muted-foreground" />
+              <div>
+                <span className="font-medium">Current Job:</span>{" "}
+                {formatCurrentJob(engineer.currentJob)}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
