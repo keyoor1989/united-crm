@@ -1,4 +1,3 @@
-
 import { Customer, Machine, ServiceCall } from "@/types/service";
 import { addHours, subHours, subDays } from "date-fns";
 
@@ -136,8 +135,8 @@ export const mockServiceCalls: ServiceCall[] = [
     callType: "AMC",
     priority: "High",
     status: "Pending",
-    engineerId: "eng1",
-    engineerName: "Rajesh Kumar",
+    engineerId: null,
+    engineerName: "",
     createdAt: subHours(new Date(), 2).toISOString(),
     slaDeadline: addHours(new Date(), 10).toISOString(), // 12 hours SLA for Government
     startTime: null,

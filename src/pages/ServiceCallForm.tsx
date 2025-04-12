@@ -125,7 +125,7 @@ const ServiceCallForm = () => {
         skillLevel: eng.skill_level as EngineerSkillLevel,
         currentJob: eng.current_job,
         currentLocation: eng.current_location,
-        leaveEndDate: eng.leave_end_date
+        leaveEndDate: eng.leave_end_date || undefined
       }));
       
       setEngineers(transformedEngineers);
