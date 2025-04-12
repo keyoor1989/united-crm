@@ -66,6 +66,7 @@ const categories = ["Toner", "Drum", "Maintenance Kit", "Fuser", "Developer", "O
 
 const fetchBrands = async (): Promise<Brand[]> => {
   try {
+    console.log("Fetching brands from Supabase...");
     const { data, error } = await supabase
       .from('inventory_brands')
       .select('*')
@@ -115,6 +116,7 @@ const fetchBrands = async (): Promise<Brand[]> => {
 
 const fetchModelsByBrand = async (brandId: string): Promise<Model[]> => {
   try {
+    console.log("Fetching models for brand ID:", brandId);
     const { data, error } = await supabase
       .from('inventory_models')
       .select('*')
@@ -173,7 +175,9 @@ const fetchModelsByBrand = async (brandId: string): Promise<Model[]> => {
         id: model.id,
         brandId: model.brand_id,
         name: model.name,
-        type: model.type,
+        type: (model.type === "Machine" || model.type === "Spare Part") 
+          ? model.type as "Machine" | "Spare Part" 
+          : "Machine",
         createdAt: model.created_at,
         updatedAt: model.updated_at
       }));
