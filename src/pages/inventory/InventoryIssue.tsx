@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,11 +21,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Package, Scan, Send, CheckCircle2, ShoppingBag, Building, User } from "lucide-react";
+import { Package, Scan, Send, CheckCircle2, ShoppingBag, Building, User, ArrowLeft, ReplyAll } from "lucide-react";
 import { IssueType, Brand, Model, InventoryItem } from "@/types/inventory";
 import ItemSelector from "@/components/inventory/ItemSelector";
 import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
 import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
+import { Textarea } from "@/components/ui/textarea";
 
 // Sample data for issued items
 const recentIssues = [
@@ -152,7 +152,8 @@ const mockModels: Model[] = [
 const engineers = [
   { id: "1", name: "Rahul Verma" },
   { id: "2", name: "Deepak Kumar" },
-  { id: "3", name: "Sanjay Mishra" }
+  { id: "3", name: "Sanjay Mishra" },
+  { id: "4", name: "Amit Singh" }
 ];
 
 // Sample branches
@@ -169,6 +170,73 @@ const customers = [
   { id: "3", name: "Tech Innovations" }
 ];
 
+const engineerInventory = [
+  { 
+    id: "e1", 
+    engineerId: "1", 
+    engineerName: "Rahul Verma", 
+    itemId: "1", 
+    itemName: "Kyocera 2554ci Toner Black", 
+    quantity: 2,
+    assignedDate: "2025-04-02"
+  },
+  { 
+    id: "e2", 
+    engineerId: "2", 
+    engineerName: "Deepak Kumar", 
+    itemId: "2", 
+    itemName: "Ricoh MP2014 Drum Unit", 
+    quantity: 1,
+    assignedDate: "2025-04-03"
+  },
+  { 
+    id: "e3", 
+    engineerId: "4", 
+    engineerName: "Amit Singh", 
+    itemId: "4", 
+    itemName: "Canon 2525 Drum Unit", 
+    quantity: 1,
+    assignedDate: "2025-04-05"
+  },
+  { 
+    id: "e4", 
+    engineerId: "4", 
+    engineerName: "Amit Singh", 
+    itemId: "3", 
+    itemName: "Xerox 7845 Toner Cyan", 
+    quantity: 1,
+    assignedDate: "2025-04-08"
+  }
+];
+
+const recentReturns = [
+  {
+    id: "r1",
+    itemName: "Kyocera 2554ci Toner Black",
+    quantity: 1,
+    returnedBy: "Rahul Verma",
+    returnType: "Engineer" as IssueType,
+    returnDate: "2025-04-10",
+    reason: "Unused",
+    condition: "Good",
+    warehouseName: "Joshiji",
+  },
+  {
+    id: "r2",
+    itemName: "Canon 2525 Drum Unit",
+    quantity: 1,
+    returnedBy: "Amit Singh",
+    returnType: "Engineer" as IssueType,
+    returnDate: "2025-04-11",
+    reason: "Defective",
+    condition: "Damaged",
+    warehouseName: "Joshiji",
+  }
+];
+
+type ReturnReason = "Unused" | "Defective" | "Wrong Item" | "Excess" | "Other";
+type ItemCondition = "Good" | "Damaged" | "Needs Inspection";
+
 const InventoryIssue = () => {
   const [issueType, setIssueType] = useState<IssueType>("Engineer");
   const [quantity, setQuantity] = useState(1);
@@ -178,15 +246,28 @@ const InventoryIssue = () => {
   const { warehouses, isLoadingWarehouses } = useWarehouses();
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   
-  // State for selected item using our reusable component
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [returnTab, setReturnTab] = useState("return-form");
+  const [selectedEngineer, setSelectedEngineer] = useState("");
+  const [engineerItems, setEngineerItems] = useState<typeof engineerInventory>([]);
+  const [selectedReturnItem, setSelectedReturnItem] = useState("");
+  const [returnQuantity, setReturnQuantity] = useState(1);
+  const [returnReason, setReturnReason] = useState<ReturnReason>("Unused");
+  const [itemCondition, setItemCondition] = useState<ItemCondition>("Good");
+  const [returnNotes, setReturnNotes] = useState("");
 
-  // Handle item selection from the ItemSelector component
+  const handleEngineerSelection = (engineerId: string) => {
+    setSelectedEngineer(engineerId);
+    setSelectedReturnItem("");
+    
+    const items = engineerInventory.filter(item => item.engineerId === engineerId);
+    setEngineerItems(items);
+  };
+
   const handleItemSelected = (item: InventoryItem) => {
     setSelectedItem(item);
   };
 
-  // Handle issue submission
   const handleIssueSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -210,23 +291,69 @@ const InventoryIssue = () => {
       return;
     }
 
-    // In a real app, you would send this data to your API
     toast.success(`${quantity} × ${selectedItem.name} issued from ${
       warehouses.find(w => w.id === selectedWarehouse)?.name || 'warehouse'
     } to ${receiverName}`);
     
-    // Reset form
     setSelectedItem(null);
     setQuantity(1);
     setReceiverName("");
+  };
+
+  const handleReturnSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedEngineer) {
+      toast.warning("Please select an engineer");
+      return;
+    }
+
+    if (!selectedReturnItem) {
+      toast.warning("Please select an item to return");
+      return;
+    }
+
+    if (returnQuantity <= 0) {
+      toast.warning("Quantity must be greater than 0");
+      return;
+    }
+
+    if (!selectedWarehouse) {
+      toast.warning("Please select a warehouse for return");
+      return;
+    }
+
+    const item = engineerInventory.find(item => item.id === selectedReturnItem);
+    if (!item) {
+      toast.error("Item not found");
+      return;
+    }
+
+    if (returnQuantity > item.quantity) {
+      toast.warning(`Cannot return more than the available quantity (${item.quantity})`);
+      return;
+    }
+
+    const engineerName = engineers.find(eng => eng.id === selectedEngineer)?.name;
+    const warehouseName = warehouses.find(w => w.id === selectedWarehouse)?.name;
+
+    toast.success(`${returnQuantity} × ${item.itemName} returned from ${engineerName} to ${warehouseName}`);
+    
+    setSelectedEngineer("");
+    setSelectedReturnItem("");
+    setReturnQuantity(1);
+    setReturnReason("Unused");
+    setItemCondition("Good");
+    setReturnNotes("");
+    setEngineerItems([]);
   };
 
   return (
     <div className="container p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Issue Entry</h1>
-          <p className="text-muted-foreground">Issue inventory to engineers, customers or branches</p>
+          <h1 className="text-2xl font-bold">Issue & Return Entry</h1>
+          <p className="text-muted-foreground">Issue inventory to engineers or receive returns</p>
         </div>
       </div>
       
@@ -236,9 +363,13 @@ const InventoryIssue = () => {
             <Send size={16} />
             <span>Issue Item</span>
           </TabsTrigger>
+          <TabsTrigger value="return" className="flex items-center gap-2">
+            <ArrowLeft size={16} />
+            <span>Return Item</span>
+          </TabsTrigger>
           <TabsTrigger value="recent" className="flex items-center gap-2">
             <CheckCircle2 size={16} />
-            <span>Recent Issues</span>
+            <span>Recent Activities</span>
           </TabsTrigger>
         </TabsList>
         
@@ -246,7 +377,6 @@ const InventoryIssue = () => {
           <Card>
             <CardContent className="pt-6">
               <form onSubmit={handleIssueSubmit} className="space-y-4">
-                {/* Warehouse Selector */}
                 <div className="mb-6">
                   <Label className="text-base font-medium">Select Warehouse</Label>
                   <WarehouseSelector 
@@ -258,7 +388,6 @@ const InventoryIssue = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Issue Type Selection */}
                   <div className="space-y-2">
                     <Label htmlFor="issueType">Issue Type</Label>
                     <Select 
@@ -291,7 +420,6 @@ const InventoryIssue = () => {
                     </Select>
                   </div>
                   
-                  {/* Receiver Selection based on Issue Type */}
                   <div className="space-y-2">
                     <Label htmlFor="receiver">{issueType} Name</Label>
                     <Select value={receiverName} onValueChange={setReceiverName}>
@@ -318,7 +446,6 @@ const InventoryIssue = () => {
                     </Select>
                   </div>
                   
-                  {/* Bill Type - Only show for Customer */}
                   {issueType === "Customer" && (
                     <div className="space-y-2">
                       <Label htmlFor="billType">Bill Type</Label>
@@ -338,7 +465,6 @@ const InventoryIssue = () => {
                 <div className="pt-4 border-t">
                   <h3 className="text-lg font-medium mb-4">Item Details</h3>
                   
-                  {/* Use the ItemSelector component for brand/model/item selection */}
                   <ItemSelector 
                     brands={mockBrands}
                     models={mockModels}
@@ -347,7 +473,6 @@ const InventoryIssue = () => {
                     warehouseId={selectedWarehouse}
                   />
                   
-                  {/* Quantity */}
                   {selectedItem && (
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -388,48 +513,265 @@ const InventoryIssue = () => {
           </Card>
         </TabsContent>
         
+        <TabsContent value="return" className="space-y-4">
+          <Card>
+            <CardContent className="pt-6">
+              <Tabs value={returnTab} onValueChange={setReturnTab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="return-form">Return Form</TabsTrigger>
+                  <TabsTrigger value="return-history">Return History</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="return-form">
+                  <form onSubmit={handleReturnSubmit} className="space-y-4">
+                    <div className="mb-6">
+                      <Label className="text-base font-medium">Return To Warehouse</Label>
+                      <WarehouseSelector 
+                        warehouses={warehouses}
+                        selectedWarehouse={selectedWarehouse}
+                        onSelectWarehouse={setSelectedWarehouse}
+                        isLoading={isLoadingWarehouses}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="engineer">Select Engineer</Label>
+                        <Select 
+                          value={selectedEngineer} 
+                          onValueChange={handleEngineerSelection}
+                        >
+                          <SelectTrigger id="engineer">
+                            <SelectValue placeholder="Select engineer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {engineers.map(engineer => (
+                              <SelectItem key={engineer.id} value={engineer.id}>
+                                {engineer.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="returnItem">Select Item</Label>
+                        <Select 
+                          value={selectedReturnItem} 
+                          onValueChange={setSelectedReturnItem}
+                          disabled={!selectedEngineer}
+                        >
+                          <SelectTrigger id="returnItem">
+                            <SelectValue placeholder="Select item" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {engineerItems.map(item => (
+                              <SelectItem key={item.id} value={item.id}>
+                                {item.itemName} (Qty: {item.quantity})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="returnQuantity">Quantity</Label>
+                        <Input
+                          id="returnQuantity"
+                          type="number"
+                          min="1"
+                          value={returnQuantity}
+                          onChange={(e) => setReturnQuantity(parseInt(e.target.value) || 1)}
+                          disabled={!selectedReturnItem}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="returnReason">Return Reason</Label>
+                        <Select 
+                          value={returnReason} 
+                          onValueChange={(value) => setReturnReason(value as ReturnReason)}
+                        >
+                          <SelectTrigger id="returnReason">
+                            <SelectValue placeholder="Select reason" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Unused">Unused</SelectItem>
+                            <SelectItem value="Defective">Defective</SelectItem>
+                            <SelectItem value="Wrong Item">Wrong Item</SelectItem>
+                            <SelectItem value="Excess">Excess Quantity</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="itemCondition">Item Condition</Label>
+                        <Select 
+                          value={itemCondition} 
+                          onValueChange={(value) => setItemCondition(value as ItemCondition)}
+                        >
+                          <SelectTrigger id="itemCondition">
+                            <SelectValue placeholder="Select condition" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Good">Good (Can be restocked)</SelectItem>
+                            <SelectItem value="Damaged">Damaged</SelectItem>
+                            <SelectItem value="Needs Inspection">Needs Inspection</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="returnNotes">Notes (Optional)</Label>
+                      <Textarea
+                        id="returnNotes"
+                        placeholder="Enter any additional notes about this return"
+                        value={returnNotes}
+                        onChange={(e) => setReturnNotes(e.target.value)}
+                      />
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      variant="outline" 
+                      className="w-full mt-6" 
+                      disabled={!selectedReturnItem || !selectedWarehouse}
+                    >
+                      <ReplyAll className="mr-2 h-4 w-4" />
+                      Return Item to Inventory
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="return-history">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Returned By</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Condition</TableHead>
+                        <TableHead>Warehouse</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentReturns.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.itemName}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>{item.returnedBy}</TableCell>
+                          <TableCell>{item.returnDate}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{item.reason}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={item.condition === "Good" ? "outline" : "destructive"}>
+                              {item.condition}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{item.warehouseName}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
         <TabsContent value="recent">
           <Card>
             <CardContent className="pt-6">
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Issued To</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Bill Type</TableHead>
-                      <TableHead>Barcode</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentIssues.map((issue) => (
-                      <TableRow key={issue.id}>
-                        <TableCell className="font-medium flex items-center gap-2">
-                          <Package size={16} className="text-muted-foreground" />
-                          {issue.itemName}
-                        </TableCell>
-                        <TableCell>{issue.quantity}</TableCell>
-                        <TableCell>{issue.issuedTo}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {issue.issueType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{issue.issueDate}</TableCell>
-                        <TableCell>
-                          <Badge variant={issue.billType === "GST" ? "default" : "secondary"}>
-                            {issue.billType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{issue.barcode}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <Tabs defaultValue="issues" className="space-y-4">
+                <TabsList>
+                  <TabsTrigger value="issues">Recent Issues</TabsTrigger>
+                  <TabsTrigger value="returns">Recent Returns</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="issues">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Issued To</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Bill Type</TableHead>
+                          <TableHead>Barcode</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {recentIssues.map((issue) => (
+                          <TableRow key={issue.id}>
+                            <TableCell className="font-medium flex items-center gap-2">
+                              <Package size={16} className="text-muted-foreground" />
+                              {issue.itemName}
+                            </TableCell>
+                            <TableCell>{issue.quantity}</TableCell>
+                            <TableCell>{issue.issuedTo}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {issue.issueType}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{issue.issueDate}</TableCell>
+                            <TableCell>
+                              <Badge variant={issue.billType === "GST" ? "default" : "secondary"}>
+                                {issue.billType}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{issue.barcode}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="returns">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Returned By</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Reason</TableHead>
+                          <TableHead>Condition</TableHead>
+                          <TableHead>Warehouse</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {recentReturns.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-medium">{item.itemName}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>{item.returnedBy}</TableCell>
+                            <TableCell>{item.returnDate}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{item.reason}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={item.condition === "Good" ? "outline" : "destructive"}>
+                                {item.condition}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{item.warehouseName}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>

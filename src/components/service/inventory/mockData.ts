@@ -115,6 +115,16 @@ export const mockEngineerInventory = [
     assignedDate: "2025-02-28",
     warehouseSource: "Joshiji"
   },
+  { 
+    id: "4", 
+    engineerId: "eng-4", 
+    engineerName: "Amit Singh", 
+    itemId: "6", 
+    itemName: "Kyocera 2554ci Drum", 
+    quantity: 2, 
+    assignedDate: "2025-04-12",
+    warehouseSource: "Joshiji"
+  }
 ];
 
 // Mock data for usage history on service calls
@@ -141,4 +151,45 @@ export const mockUsageHistory = [
     serviceCallId: "SC002", 
     customerName: "XYZ Ltd" 
   },
+  { 
+    id: "3", 
+    engineerId: "eng-4", 
+    engineerName: "Amit Singh", 
+    itemId: "6", 
+    itemName: "Kyocera 2554ci Drum", 
+    quantity: 1, 
+    date: "2025-04-12", 
+    serviceCallId: "SC003", 
+    customerName: "Tech Solutions" 
+  }
+];
+
+// Mock data for returns history
+export const mockReturns = [
+  {
+    id: "r1",
+    engineerId: "eng-1",
+    engineerName: "Rajesh Kumar",
+    itemId: "1",
+    itemName: "Kyocera TK-1175 Toner",
+    quantity: 1,
+    returnDate: "2025-04-10",
+    reason: "Unused",
+    condition: "Good",
+    warehouseId: "wh-1",
+    warehouseName: "Joshiji"
+  },
+  {
+    id: "r2",
+    engineerId: "eng-4",
+    engineerName: "Amit Singh",
+    itemId: "6",
+    itemName: "Kyocera 2554ci Drum",
+    quantity: 1,
+    returnDate: "2025-04-11",
+    reason: "Defective",
+    condition: "Damaged",
+    warehouseId: "wh-1",
+    warehouseName: "Joshiji"
+  }
 ];
