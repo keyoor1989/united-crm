@@ -2,6 +2,7 @@ export type Brand = {
   id: string;
   name: string;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type Model = {
@@ -10,6 +11,7 @@ export type Model = {
   name: string;
   type: 'Machine' | 'Spare Part';
   createdAt: string;
+  updatedAt: string;
 };
 
 export type ItemType = 'Toner' | 'Drum' | 'Developer' | 'Fuser' | 'Paper Feed' | 'Other';

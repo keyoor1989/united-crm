@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -13,54 +13,243 @@ import { PlusCircle, Edit, Trash, Tag, Printer } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Brand, Model } from "@/types/inventory";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-// Mock data for testing UI
-const mockBrands: Brand[] = [
-  { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
-  { id: "2", name: "Ricoh", createdAt: "2025-03-02" },
-  { id: "3", name: "Canon", createdAt: "2025-03-03" },
-  { id: "4", name: "Xerox", createdAt: "2025-03-04" },
-  { id: "5", name: "Samsung", createdAt: "2025-03-05" },
-];
+const brandSchema = z.object({
+  name: z.string().min(1, "Brand name is required")
+});
 
-const mockModels: Model[] = [
-  { id: "1", brandId: "1", name: "2554ci", type: "Machine", createdAt: "2025-03-01" },
-  { id: "2", brandId: "1", name: "3252ci", type: "Machine", createdAt: "2025-03-02" },
-  { id: "3", brandId: "2", name: "MP2014", type: "Machine", createdAt: "2025-03-03" },
-  { id: "4", brandId: "3", name: "2525", type: "Machine", createdAt: "2025-03-04" },
-  { id: "5", brandId: "4", name: "7845", type: "Machine", createdAt: "2025-03-05" },
-];
+const modelSchema = z.object({
+  brandId: z.string().min(1, "Brand is required"),
+  name: z.string().min(1, "Model name is required"),
+  type: z.enum(["Machine", "Spare Part"])
+});
 
 const InventoryBrands = () => {
   const [openBrandDialog, setOpenBrandDialog] = useState(false);
   const [openModelDialog, setOpenModelDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
-  const [brands] = useState<Brand[]>(mockBrands);
-  const [models] = useState<Model[]>(mockModels);
-  const [newBrand, setNewBrand] = useState({ name: "" });
-  const [newModel, setNewModel] = useState({ brandId: "", name: "", type: "Machine" as "Machine" | "Spare Part" });
+  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null);
+  const [modelToDelete, setModelToDelete] = useState<Model | null>(null);
 
-  const handleBrandSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, you would save to the database
-    console.log("Saving brand:", selectedBrand ? "Update" : "New", newBrand);
-    setOpenBrandDialog(false);
-    setNewBrand({ name: "" });
-    setSelectedBrand(null);
+  const brandForm = useForm<z.infer<typeof brandSchema>>({
+    resolver: zodResolver(brandSchema),
+    defaultValues: {
+      name: ""
+    }
+  });
+
+  const modelForm = useForm<z.infer<typeof modelSchema>>({
+    resolver: zodResolver(modelSchema),
+    defaultValues: {
+      brandId: "",
+      name: "",
+      type: "Machine"
+    }
+  });
+
+  // Fetch brands and models data
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch brands
+      const { data: brandsData, error: brandsError } = await supabase
+        .from('inventory_brands')
+        .select('*')
+        .order('name');
+
+      if (brandsError) throw brandsError;
+      
+      // Fetch models
+      const { data: modelsData, error: modelsError } = await supabase
+        .from('inventory_models')
+        .select('*')
+        .order('name');
+
+      if (modelsError) throw modelsError;
+      
+      setBrands(brandsData);
+      setModels(modelsData);
+    } catch (error) {
+      toast.error("Failed to load data");
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleModelSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, you would save to the database
-    console.log("Saving model:", newModel);
-    setOpenModelDialog(false);
-    setNewModel({ brandId: "", name: "", type: "Machine" });
-  };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
+  // Brand form handling
   const openEditBrand = (brand: Brand) => {
     setSelectedBrand(brand);
-    setNewBrand({ name: brand.name });
+    brandForm.reset({ name: brand.name });
     setOpenBrandDialog(true);
+  };
+
+  const openAddBrand = () => {
+    setSelectedBrand(null);
+    brandForm.reset({ name: "" });
+    setOpenBrandDialog(true);
+  };
+
+  const handleBrandSubmit = async (values: z.infer<typeof brandSchema>) => {
+    try {
+      if (selectedBrand) {
+        // Update existing brand
+        const { error } = await supabase
+          .from('inventory_brands')
+          .update({ 
+            name: values.name,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedBrand.id);
+
+        if (error) throw error;
+        toast.success("Brand updated successfully");
+      } else {
+        // Create new brand
+        const { error } = await supabase
+          .from('inventory_brands')
+          .insert({ name: values.name });
+
+        if (error) throw error;
+        toast.success("Brand added successfully");
+      }
+      
+      setOpenBrandDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error(selectedBrand ? "Failed to update brand" : "Failed to add brand");
+      console.error("Error saving brand:", error);
+    }
+  };
+
+  const openDeleteBrandDialog = (brand: Brand) => {
+    setBrandToDelete(brand);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleDeleteBrand = async () => {
+    if (!brandToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from('inventory_brands')
+        .delete()
+        .eq('id', brandToDelete.id);
+
+      if (error) throw error;
+      
+      toast.success("Brand deleted successfully");
+      setOpenDeleteDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to delete brand");
+      console.error("Error deleting brand:", error);
+    }
+  };
+
+  // Model form handling
+  const openAddModel = () => {
+    setSelectedModel(null);
+    modelForm.reset({
+      brandId: "",
+      name: "",
+      type: "Machine"
+    });
+    setOpenModelDialog(true);
+  };
+
+  const openEditModel = (model: Model) => {
+    setSelectedModel(model);
+    modelForm.reset({
+      brandId: model.brandId,
+      name: model.name,
+      type: model.type
+    });
+    setOpenModelDialog(true);
+  };
+
+  const handleModelSubmit = async (values: z.infer<typeof modelSchema>) => {
+    try {
+      if (selectedModel) {
+        // Update existing model
+        const { error } = await supabase
+          .from('inventory_models')
+          .update({ 
+            brand_id: values.brandId,
+            name: values.name,
+            type: values.type,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', selectedModel.id);
+
+        if (error) throw error;
+        toast.success("Model updated successfully");
+      } else {
+        // Create new model
+        const { error } = await supabase
+          .from('inventory_models')
+          .insert({ 
+            brand_id: values.brandId, 
+            name: values.name, 
+            type: values.type 
+          });
+
+        if (error) throw error;
+        toast.success("Model added successfully");
+      }
+      
+      setOpenModelDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error(selectedModel ? "Failed to update model" : "Failed to add model");
+      console.error("Error saving model:", error);
+    }
+  };
+
+  const openDeleteModelDialog = (model: Model) => {
+    setModelToDelete(model);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleDeleteModel = async () => {
+    if (!modelToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from('inventory_models')
+        .delete()
+        .eq('id', modelToDelete.id);
+
+      if (error) throw error;
+      
+      toast.success("Model deleted successfully");
+      setOpenDeleteDialog(false);
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to delete model");
+      console.error("Error deleting model:", error);
+    }
+  };
+
+  // Get brand name by ID
+  const getBrandName = (brandId: string) => {
+    const brand = brands.find(b => b.id === brandId);
+    return brand?.name || "Unknown";
   };
 
   return (
@@ -85,74 +274,59 @@ const InventoryBrands = () => {
                 <CardTitle>All Brands</CardTitle>
                 <CardDescription>Add, edit or delete copier brands</CardDescription>
               </div>
-              <Dialog open={openBrandDialog} onOpenChange={setOpenBrandDialog}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-1">
-                    <PlusCircle className="h-4 w-4" />
-                    <span>Add Brand</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <form onSubmit={handleBrandSubmit}>
-                    <DialogHeader>
-                      <DialogTitle>{selectedBrand ? "Edit Brand" : "Add New Brand"}</DialogTitle>
-                      <DialogDescription>
-                        Enter the brand details below.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="brand-name">Brand Name</Label>
-                        <Input
-                          id="brand-name"
-                          value={newBrand.name}
-                          onChange={(e) => setNewBrand({ ...newBrand, name: e.target.value })}
-                          placeholder="e.g. Kyocera, Ricoh, Canon"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit">
-                        {selectedBrand ? "Update Brand" : "Add Brand"}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <Button onClick={openAddBrand} className="flex items-center gap-1">
+                <PlusCircle className="h-4 w-4" />
+                <span>Add Brand</span>
+              </Button>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Brand Name</TableHead>
-                    <TableHead>Total Models</TableHead>
-                    <TableHead>Created Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {brands.map((brand) => (
-                    <TableRow key={brand.id}>
-                      <TableCell className="font-medium">{brand.name}</TableCell>
-                      <TableCell>
-                        {models.filter(model => model.brandId === brand.id).length}
-                      </TableCell>
-                      <TableCell>{new Date(brand.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => openEditBrand(brand)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              {loading ? (
+                <div className="flex justify-center p-4">Loading brands...</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Brand Name</TableHead>
+                      <TableHead>Total Models</TableHead>
+                      <TableHead>Created Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {brands.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8">
+                          No brands found. Add your first brand to get started.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      brands.map((brand) => (
+                        <TableRow key={brand.id}>
+                          <TableCell className="font-medium">{brand.name}</TableCell>
+                          <TableCell>
+                            {models.filter(model => model.brandId === brand.id).length}
+                          </TableCell>
+                          <TableCell>{new Date(brand.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="icon" onClick={() => openEditBrand(brand)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => openDeleteBrandDialog(brand)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -164,27 +338,131 @@ const InventoryBrands = () => {
                 <CardTitle>All Models</CardTitle>
                 <CardDescription>Manage machine and spare part models</CardDescription>
               </div>
-              <Dialog open={openModelDialog} onOpenChange={setOpenModelDialog}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-1">
-                    <PlusCircle className="h-4 w-4" />
-                    <span>Add Model</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <form onSubmit={handleModelSubmit}>
-                    <DialogHeader>
-                      <DialogTitle>Add New Model</DialogTitle>
-                      <DialogDescription>
-                        Create a new model for a specific brand.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="model-brand">Select Brand</Label>
+              <Button onClick={openAddModel} className="flex items-center gap-1" disabled={brands.length === 0}>
+                <PlusCircle className="h-4 w-4" />
+                <span>Add Model</span>
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center p-4">Loading models...</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Model Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Created Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {models.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          {brands.length === 0 
+                            ? "Add brands first before creating models." 
+                            : "No models found. Add your first model to get started."}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      models.map((model) => (
+                        <TableRow key={model.id}>
+                          <TableCell>{getBrandName(model.brandId)}</TableCell>
+                          <TableCell className="font-medium">{model.name}</TableCell>
+                          <TableCell>
+                            <Badge variant={model.type === "Machine" ? "default" : "secondary"}>
+                              {model.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(model.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="icon" onClick={() => openEditModel(model)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => openDeleteModelDialog(model)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Brand Form Dialog */}
+      <Dialog open={openBrandDialog} onOpenChange={setOpenBrandDialog}>
+        <DialogContent>
+          <Form {...brandForm}>
+            <form onSubmit={brandForm.handleSubmit(handleBrandSubmit)}>
+              <DialogHeader>
+                <DialogTitle>{selectedBrand ? "Edit Brand" : "Add New Brand"}</DialogTitle>
+                <DialogDescription>
+                  Enter the brand details below.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                <FormField
+                  control={brandForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Brand Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          placeholder="e.g. Kyocera, Ricoh, Canon" 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={brandForm.formState.isSubmitting}>
+                  {selectedBrand ? "Update Brand" : "Add Brand"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Model Form Dialog */}
+      <Dialog open={openModelDialog} onOpenChange={setOpenModelDialog}>
+        <DialogContent>
+          <Form {...modelForm}>
+            <form onSubmit={modelForm.handleSubmit(handleModelSubmit)}>
+              <DialogHeader>
+                <DialogTitle>{selectedModel ? "Edit Model" : "Add New Model"}</DialogTitle>
+                <DialogDescription>
+                  Create a new model for a specific brand.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                <FormField
+                  control={modelForm.control}
+                  name="brandId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Select Brand</FormLabel>
+                      <FormControl>
                         <Select 
-                          value={newModel.brandId} 
-                          onValueChange={(value) => setNewModel({ ...newModel, brandId: value })}
+                          value={field.value} 
+                          onValueChange={field.onChange}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select Brand" />
@@ -197,22 +475,37 @@ const InventoryBrands = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="model-name">Model Name/Number</Label>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={modelForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Model Name/Number</FormLabel>
+                      <FormControl>
                         <Input
-                          id="model-name"
-                          value={newModel.name}
-                          onChange={(e) => setNewModel({ ...newModel, name: e.target.value })}
+                          {...field}
                           placeholder="e.g. 2554ci, MP2014"
-                          required
                         />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="model-type">Type</Label>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={modelForm.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type</FormLabel>
+                      <FormControl>
                         <Select 
-                          value={newModel.type} 
-                          onValueChange={(value) => setNewModel({ ...newModel, type: value as "Machine" | "Spare Part" })}
+                          value={field.value} 
+                          onValueChange={field.onChange}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -222,58 +515,48 @@ const InventoryBrands = () => {
                             <SelectItem value="Spare Part">Spare Part</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit">Add Model</Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Model Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Created Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {models.map((model) => {
-                    const brand = brands.find(b => b.id === model.brandId);
-                    return (
-                      <TableRow key={model.id}>
-                        <TableCell>{brand?.name || "Unknown"}</TableCell>
-                        <TableCell className="font-medium">{model.name}</TableCell>
-                        <TableCell>
-                          <Badge variant={model.type === "Machine" ? "default" : "secondary"}>
-                            {model.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{new Date(model.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={modelForm.formState.isSubmitting}>
+                  {selectedModel ? "Update Model" : "Add Model"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              {brandToDelete 
+                ? `Are you sure you want to delete the brand "${brandToDelete.name}"? This will also delete all associated models.` 
+                : modelToDelete 
+                  ? `Are you sure you want to delete the model "${modelToDelete.name}"?` 
+                  : "Are you sure you want to delete this item?"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setOpenDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={brandToDelete ? handleDeleteBrand : handleDeleteModel}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
