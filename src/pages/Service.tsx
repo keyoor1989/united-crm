@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ServiceCall, Engineer } from "@/types/service";
+import { ServiceCall, Engineer, Part } from "@/types/service";
 import { mockEngineers } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import ServiceCallDetail from "@/components/service/ServiceCallDetail";
@@ -64,7 +64,15 @@ const Service = () => {
         slaDeadline: call.sla_deadline || new Date().toISOString(),
         startTime: call.start_time,
         completionTime: call.completion_time,
-        partsUsed: call.parts_used || [],
+        partsUsed: Array.isArray(call.parts_used) 
+          ? call.parts_used.map((part: any) => ({
+              id: part.id || "",
+              name: part.name || "",
+              partNumber: part.partNumber || "",
+              quantity: part.quantity || 0,
+              price: part.price || 0
+            }))
+          : [],
         feedback: call.feedback,
       }));
       
