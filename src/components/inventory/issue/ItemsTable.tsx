@@ -85,7 +85,9 @@ const ItemsTable = ({ filteredItems, selectedItemId, handleSelectItem, isLoading
                   {item.compatible_models ? 
                     (Array.isArray(item.compatible_models) ? 
                       item.compatible_models.join(", ") : 
-                      JSON.stringify(item.compatible_models)) : 
+                      typeof item.compatible_models === 'string' ? 
+                        item.compatible_models : 
+                        JSON.stringify(item.compatible_models)) : 
                     "-"}
                 </TableCell>
                 <TableCell>{item.category}</TableCell>

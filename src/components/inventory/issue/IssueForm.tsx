@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,8 +41,8 @@ const IssueForm = () => {
   const [selectedReceiver, setSelectedReceiver] = useState<string>("");
   const [receiverName, setReceiverName] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("all_brands");
+  const [selectedModel, setSelectedModel] = useState("all_models");
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);

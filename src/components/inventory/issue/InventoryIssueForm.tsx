@@ -29,8 +29,8 @@ const InventoryIssueForm = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
-  const [selectedBrand, setSelectedBrand] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [selectedBrand, setSelectedBrand] = useState<string>("all_brands");
+  const [selectedModel, setSelectedModel] = useState<string>("all_models");
   
   // Form setup
   const form = useForm<FormValues>({
@@ -115,8 +115,8 @@ const InventoryIssueForm = () => {
       });
       setSelectedItemId(null);
       setSearchTerm("");
-      setSelectedBrand("");
-      setSelectedModel("");
+      setSelectedBrand("all_brands");
+      setSelectedModel("all_models");
       
     } catch (error) {
       console.error("Error issuing item:", error);

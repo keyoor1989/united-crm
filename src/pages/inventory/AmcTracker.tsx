@@ -23,7 +23,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,8 +40,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AMCMachine, AMCBilling, AMCProfitReport } from "@/types/inventory";
 
-interface AMCMachine {
+interface DbAMCMachine {
   id: string;
   contract_id: string;
   customer_id: string;
@@ -51,32 +51,163 @@ interface AMCMachine {
   machine_type: string;
   serial_number: string;
   location: string;
-  amc_start_date: string;
-  amc_end_date: string;
-  amc_type: string;
-  amc_amount: number;
-  gst_percentage: number;
-  total_amount: number;
-  remarks: string;
+  department?: string;
+  contract_type: string;
+  start_date: string;
+  end_date: string;
+  current_rent: number;
+  copy_limit_a4: number;
+  copy_limit_a3: number;
+  last_a4_reading: number;
+  last_a3_reading: number;
+  last_reading_date?: string;
+  created_at?: string;
+}
+
+interface DbAMCBilling {
+  id: string;
+  contract_id: string;
+  machine_id: string;
+  customer_id: string;
+  customer_name: string;
+  machine_model: string;
+  machine_type: string;
+  serial_number: string;
+  department?: string;
+  billing_month: string;
+  a4_opening_reading: number;
+  a4_closing_reading: number;
+  a4_total_copies: number;
+  a4_free_copies: number;
+  a4_extra_copies: number;
+  a4_extra_copy_rate: number;
+  a4_extra_copy_charge: number;
+  a3_opening_reading: number;
+  a3_closing_reading: number;
+  a3_total_copies: number;
+  a3_free_copies: number;
+  a3_extra_copies: number;
+  a3_extra_copy_rate: number;
+  a3_extra_copy_charge: number;
+  gst_percent: number;
+  gst_amount: number;
+  rent: number;
+  rent_gst: number;
+  total_bill: number;
+  bill_date: string;
+  bill_status: string;
+  invoice_no?: string;
   created_at: string;
 }
 
-interface AMCBilling {
+interface DbAMCConsumableUsage {
   id: string;
   contract_id: string;
+  machine_id: string;
   customer_id: string;
   customer_name: string;
-  machine_id: string;
-  billing_date: string;
-  billing_amount: number;
-  gst_percentage: number;
-  total_amount: number;
-  payment_date: string | null;
-  payment_mode: string | null;
-  payment_reference: string | null;
-  remarks: string | null;
-  created_at: string;
+  machine_model: string;
+  machine_type: string;
+  serial_number: string;
+  engineer_id?: string;
+  engineer_name?: string;
+  date: string;
+  item_id?: string;
+  item_name: string;
+  quantity: number;
+  cost: number;
+  inventory_deducted?: boolean;
+  department?: string;
+  remarks?: string;
+  created_at?: string;
 }
+
+interface DbAMCProfitReport {
+  id: string;
+  contract_id: string;
+  machine_id: string;
+  customer_id: string;
+  customer_name: string;
+  machine_model: string;
+  machine_type: string;
+  serial_number: string;
+  department?: string;
+  month: string;
+  rent_received: number;
+  extra_copy_income: number;
+  total_income: number;
+  consumables_cost: number;
+  engineer_visit_cost: number;
+  travel_expense: number;
+  food_expense: number;
+  other_expense: number;
+  total_expense: number;
+  profit: number;
+  profit_margin: number;
+  created_at?: string;
+}
+
+const convertToAMCMachine = (dbMachine: DbAMCMachine): AMCMachine => {
+  return {
+    id: dbMachine.id,
+    contract_id: dbMachine.contract_id,
+    customer_id: dbMachine.customer_id,
+    customer_name: dbMachine.customer_name,
+    model: dbMachine.model,
+    machine_type: dbMachine.machine_type,
+    serial_number: dbMachine.serial_number,
+    location: dbMachine.location,
+    department: dbMachine.department,
+    contract_type: dbMachine.contract_type,
+    start_date: dbMachine.start_date,
+    end_date: dbMachine.end_date,
+    current_rent: dbMachine.current_rent,
+    copy_limit_a4: dbMachine.copy_limit_a4,
+    copy_limit_a3: dbMachine.copy_limit_a3,
+    last_a4_reading: dbMachine.last_a4_reading,
+    last_a3_reading: dbMachine.last_a3_reading,
+    last_reading_date: dbMachine.last_reading_date,
+    created_at: dbMachine.created_at
+  };
+};
+
+const convertToAMCBilling = (dbBilling: DbAMCBilling): AMCBilling => {
+  return {
+    id: dbBilling.id,
+    contract_id: dbBilling.contract_id,
+    machine_id: dbBilling.machine_id,
+    customer_id: dbBilling.customer_id,
+    customer_name: dbBilling.customer_name,
+    machine_model: dbBilling.machine_model,
+    machine_type: dbBilling.machine_type,
+    serial_number: dbBilling.serial_number,
+    department: dbBilling.department,
+    billing_month: dbBilling.billing_month,
+    a4_opening_reading: dbBilling.a4_opening_reading,
+    a4_closing_reading: dbBilling.a4_closing_reading,
+    a4_total_copies: dbBilling.a4_total_copies,
+    a4_free_copies: dbBilling.a4_free_copies,
+    a4_extra_copies: dbBilling.a4_extra_copies,
+    a4_extra_copy_rate: dbBilling.a4_extra_copy_rate,
+    a4_extra_copy_charge: dbBilling.a4_extra_copy_charge,
+    a3_opening_reading: dbBilling.a3_opening_reading,
+    a3_closing_reading: dbBilling.a3_closing_reading,
+    a3_total_copies: dbBilling.a3_total_copies,
+    a3_free_copies: dbBilling.a3_free_copies,
+    a3_extra_copies: dbBilling.a3_extra_copies,
+    a3_extra_copy_rate: dbBilling.a3_extra_copy_rate,
+    a3_extra_copy_charge: dbBilling.a3_extra_copy_charge,
+    gst_percent: dbBilling.gst_percent,
+    gst_amount: dbBilling.gst_amount,
+    rent: dbBilling.rent,
+    rent_gst: dbBilling.rent_gst,
+    total_bill: dbBilling.total_bill,
+    bill_date: dbBilling.bill_date,
+    bill_status: dbBilling.bill_status,
+    invoice_no: dbBilling.invoice_no,
+    created_at: dbBilling.created_at
+  };
+};
 
 const AmcTracker: React.FC = () => {
   const { toast } = useToast();
@@ -88,7 +219,7 @@ const AmcTracker: React.FC = () => {
   const [filteredMachines, setFilteredMachines] = useState<AMCMachine[]>([]);
   const [isBillingDialogOpen, setIsBillingDialogOpen] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
-  const [newBilling, setNewBilling] = useState<Omit<AMCBilling, 'id' | 'created_at'>>({
+  const [newBilling, setNewBilling] = useState({
     contract_id: "",
     customer_id: "",
     customer_name: "",
@@ -97,10 +228,10 @@ const AmcTracker: React.FC = () => {
     billing_amount: 0,
     gst_percentage: 0,
     total_amount: 0,
-    payment_date: null,
-    payment_mode: null,
-    payment_reference: null,
-    remarks: null,
+    payment_date: null as string | null,
+    payment_mode: null as string | null,
+    payment_reference: null as string | null,
+    remarks: null as string | null,
   });
   const [paymentDate, setPaymentDate] = useState<Date | undefined>();
 
@@ -121,7 +252,8 @@ const AmcTracker: React.FC = () => {
             variant: "destructive",
           });
         } else {
-          setMachines(data || []);
+          const amcMachines = (data || []).map(convertToAMCMachine);
+          setMachines(amcMachines);
         }
       } finally {
         setLoadingMachines(false);
@@ -134,7 +266,7 @@ const AmcTracker: React.FC = () => {
         const { data, error } = await supabase
           .from('amc_billing')
           .select('*')
-          .order('billing_date', { ascending: false });
+          .order('billing_month', { ascending: false });
 
         if (error) {
           console.error("Error fetching billing data:", error);
@@ -144,7 +276,8 @@ const AmcTracker: React.FC = () => {
             variant: "destructive",
           });
         } else {
-          setBillingData(data || []);
+          const amcBillings = (data || []).map(convertToAMCBilling);
+          setBillingData(amcBillings);
         }
       } finally {
         setLoadingBilling(false);
@@ -244,12 +377,52 @@ const AmcTracker: React.FC = () => {
 
       const totalAmount = calculateTotalAmount();
 
+      const selectedMachine = machines.find(m => m.contract_id === selectedContractId);
+      
+      if (!selectedMachine) {
+        toast({
+          title: "Error",
+          description: "Machine not found.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const billingDataToInsert = {
-        ...newBilling,
-        billing_amount: billingAmount,
-        gst_percentage: gstPercentage,
-        total_amount: totalAmount,
+        contract_id: newBilling.contract_id,
+        machine_id: newBilling.machine_id,
+        customer_id: newBilling.customer_id,
+        customer_name: newBilling.customer_name,
+        machine_model: selectedMachine.model,
+        machine_type: selectedMachine.machine_type,
+        serial_number: selectedMachine.serial_number,
+        billing_month: newBilling.billing_date,
+        department: selectedMachine.department,
+        a4_opening_reading: 0,
+        a4_closing_reading: 0,
+        a4_total_copies: 0,
+        a4_free_copies: selectedMachine.copy_limit_a4,
+        a4_extra_copies: 0,
+        a4_extra_copy_rate: 0,
+        a4_extra_copy_charge: 0,
+        a3_opening_reading: 0,
+        a3_closing_reading: 0,
+        a3_total_copies: 0,
+        a3_free_copies: selectedMachine.copy_limit_a3,
+        a3_extra_copies: 0,
+        a3_extra_copy_rate: 0,
+        a3_extra_copy_charge: 0,
+        rent: billingAmount,
+        gst_percent: gstPercentage,
+        gst_amount: totalAmount - billingAmount,
+        rent_gst: totalAmount - billingAmount,
+        total_bill: totalAmount,
+        bill_date: newBilling.billing_date,
+        bill_status: "Generated",
         payment_date: paymentDate ? paymentDate.toISOString() : null,
+        payment_mode: newBilling.payment_mode,
+        payment_reference: newBilling.payment_reference,
+        remarks: newBilling.remarks
       };
 
       const { error } = await supabase
@@ -269,12 +442,15 @@ const AmcTracker: React.FC = () => {
           description: "Billing added successfully.",
         });
         handleBillingDialogClose();
-        // Refresh billing data
         const { data } = await supabase
           .from('amc_billing')
           .select('*')
-          .order('billing_date', { ascending: false });
-        setBillingData(data || []);
+          .order('billing_month', { ascending: false });
+        
+        if (data) {
+          const amcBillings = data.map(convertToAMCBilling);
+          setBillingData(amcBillings);
+        }
       }
     } catch (error) {
       console.error("Unexpected error:", error);
@@ -342,8 +518,8 @@ const AmcTracker: React.FC = () => {
                     <TableCell className="whitespace-nowrap">{machine.customer_name}</TableCell>
                     <TableCell>{machine.model}</TableCell>
                     <TableCell>{machine.serial_number}</TableCell>
-                    <TableCell>{new Date(machine.amc_start_date).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(machine.amc_end_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(machine.start_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(machine.end_date).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Button size="sm" onClick={() => handleBillingDialogOpen(machine.contract_id)}>Add Billing</Button>
                     </TableCell>
@@ -399,28 +575,28 @@ const AmcTracker: React.FC = () => {
                       {billing.customer_name}
                     </TableCell>
                     <TableCell key={`cell-${index}-3`} className="text-center">
-                      {new Date(billing.billing_date).toLocaleDateString()}
+                      {new Date(billing.billing_month).toLocaleDateString()}
                     </TableCell>
                     <TableCell key={`cell-${index}-4`} className="text-center">
-                      {billing.billing_amount}
+                      {billing.rent}
                     </TableCell>
                     <TableCell key={`cell-${index}-5`} className="text-center">
-                      {billing.gst_percentage}
+                      {billing.gst_percent}
                     </TableCell>
                     <TableCell key={`cell-${index}-6`} className="text-center">
-                      {billing.total_amount}
+                      {billing.total_bill}
                     </TableCell>
                     <TableCell key={`cell-${index}-7`} className="text-center">
-                      {billing.payment_date ? new Date(billing.payment_date).toLocaleDateString() : "N/A"}
+                      {billing.bill_date ? new Date(billing.bill_date).toLocaleDateString() : "N/A"}
                     </TableCell>
                     <TableCell key={`cell-${index}-8`} className="text-center">
-                      {billing.payment_mode || "N/A"}
+                      {billing.bill_status || "N/A"}
                     </TableCell>
                     <TableCell key={`cell-${index}-9`} className="text-center">
-                      {billing.payment_reference || "N/A"}
+                      {billing.invoice_no || "N/A"}
                     </TableCell>
                     <TableCell key={`cell-${index}-10`} className="text-center">
-                      {billing.remarks || "N/A"}
+                      N/A
                     </TableCell>
                   </TableRow>
                 ))
