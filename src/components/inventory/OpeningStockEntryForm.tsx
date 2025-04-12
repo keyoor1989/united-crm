@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -286,31 +285,7 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
       
     if (error) {
       console.error("Error fetching warehouses:", error);
-      console.log("Falling back to mock warehouse data");
-      return [
-        { 
-          id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", // Using a valid UUID instead of "default"
-          name: "Main Warehouse", 
-          code: "MAIN", 
-          location: "Chennai",
-          address: "123 Main Street",
-          contactPerson: "Admin",
-          contactPhone: "1234567890",
-          isActive: true,
-          createdAt: new Date().toISOString()
-        },
-        { 
-          id: "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b", // Using a valid UUID instead of "branch1"
-          name: "Branch Warehouse 1", 
-          code: "BR1", 
-          location: "Mumbai",
-          address: "456 Branch Street",
-          contactPerson: "Manager",
-          contactPhone: "9876543210",
-          isActive: true,
-          createdAt: new Date().toISOString()
-        }
-      ];
+      throw error;
     }
     
     console.log("Warehouse data from Supabase:", data);
@@ -328,59 +303,12 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
         createdAt: warehouse.created_at
       }));
     } else {
-      console.log("No warehouse data from Supabase, using mock data");
-      return [
-        { 
-          id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", // Using a valid UUID instead of "default"
-          name: "Main Warehouse", 
-          code: "MAIN", 
-          location: "Chennai",
-          address: "123 Main Street",
-          contactPerson: "Admin",
-          contactPhone: "1234567890",
-          isActive: true,
-          createdAt: new Date().toISOString()
-        },
-        { 
-          id: "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b", // Using a valid UUID instead of "branch1"
-          name: "Branch Warehouse 1", 
-          code: "BR1", 
-          location: "Mumbai",
-          address: "456 Branch Street",
-          contactPerson: "Manager",
-          contactPhone: "9876543210",
-          isActive: true,
-          createdAt: new Date().toISOString()
-        }
-      ];
+      console.log("No warehouse data from Supabase");
+      return [];
     }
   } catch (error) {
     console.error("Exception fetching warehouses:", error);
-    console.log("Falling back to mock warehouse data due to exception");
-    return [
-      { 
-        id: "f47ac10b-58cc-4372-a567-0e02b2c3d479", // Using a valid UUID instead of "default"
-        name: "Main Warehouse", 
-        code: "MAIN", 
-        location: "Chennai",
-        address: "123 Main Street",
-        contactPerson: "Admin",
-        contactPhone: "1234567890",
-        isActive: true,
-        createdAt: new Date().toISOString()
-      },
-      { 
-        id: "6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b", // Using a valid UUID instead of "branch1"
-        name: "Branch Warehouse 1", 
-        code: "BR1", 
-        location: "Mumbai",
-        address: "456 Branch Street",
-        contactPerson: "Manager",
-        contactPhone: "9876543210",
-        isActive: true,
-        createdAt: new Date().toISOString()
-      }
-    ];
+    throw error;
   }
 };
 
@@ -393,9 +321,11 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     queryFn: fetchBrands
   });
   
-  const { data: warehouses = [], isLoading: isLoadingWarehouses } = useQuery({
+  const { data: warehouses = [], isLoading: isLoadingWarehouses, refetch: refetchWarehouses } = useQuery({
     queryKey: ['warehouses'],
-    queryFn: fetchWarehouses
+    queryFn: fetchWarehouses,
+    staleTime: 0,
+    refetchOnWindowFocus: true
   });
   
   console.log("Warehouse data in component:", warehouses);
@@ -411,7 +341,6 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
       try {
         console.log("Saving opening stock entry to Supabase:", newPart);
         
-        // Validate the warehouse UUID before sending to the database
         if (!newPart.warehouseId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(newPart.warehouseId)) {
           throw new Error("Invalid warehouse ID format. Must be a valid UUID.");
         }
@@ -470,6 +399,12 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     },
   });
 
+  useEffect(() => {
+    if (open) {
+      refetchWarehouses();
+    }
+  }, [open, refetchWarehouses]);
+
   const handleSubmit = async (values: FormValues) => {
     try {
       const warehouseInfo = warehouses.find(w => w.id === values.warehouseId);
@@ -501,10 +436,8 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
         
         toast.success("Opening stock entry added successfully!");
         
-        // Notify parent component
         onAddPart(newPart);
         
-        // Reset form and close dialog
         form.reset();
         setSelectedModels([]);
         onOpenChange(false);
@@ -533,10 +466,6 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     setSelectedModels(updatedModels);
     form.setValue("compatibleModels", updatedModels);
   };
-
-  useEffect(() => {
-    console.log("Current warehouses data:", warehouses);
-  }, [warehouses]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -26,6 +26,14 @@ const WarehouseSelector = ({
     );
   }
 
+  if (warehouses.length === 0) {
+    return (
+      <div className="p-4 mb-4 border rounded-md bg-muted/30">
+        <p className="text-muted-foreground">No warehouses available. Please add warehouses first.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       <Button 
@@ -41,7 +49,7 @@ const WarehouseSelector = ({
           onClick={() => onSelectWarehouse(warehouse.id)}
           disabled={!warehouse.isActive}
         >
-          {warehouse.name}
+          {warehouse.name} ({warehouse.location})
         </Button>
       ))}
     </div>
