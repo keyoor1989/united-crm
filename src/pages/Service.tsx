@@ -7,7 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ServiceCall, Engineer } from "@/types/service";
 import { mockServiceCalls, mockEngineers } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
-import { ServiceCallDetail } from "@/components/service/ServiceCallDetail";
+import ServiceCallDetail from "@/components/service/ServiceCallDetail";
 import { ServiceSearchBar } from "@/components/service/ServiceSearchBar";
 import { ServiceCallTabs } from "@/components/service/ServiceCallTabs";
 import { EngineerLocations } from "@/components/service/EngineerLocations";
