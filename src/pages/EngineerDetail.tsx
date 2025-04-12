@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -21,13 +20,15 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Engineer, ServiceCall } from "@/types/service";
-import { mockEngineers, mockServiceCalls } from "@/data/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import EngineerForm from "@/components/service/EngineerForm";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const EngineerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [engineer, setEngineer] = useState<Engineer | null>(null);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,12 +36,10 @@ const EngineerDetail = () => {
   const isNewEngineer = id === "new";
 
   useEffect(() => {
-    // In a real app, this would be an API call
-    const fetchEngineer = () => {
+    const fetchData = async () => {
       setLoading(true);
       
       if (isNewEngineer) {
-        // Create empty engineer for new engineer form
         setEngineer({
           id: "",
           name: "",
@@ -57,28 +56,173 @@ const EngineerDetail = () => {
         return;
       }
 
-      // Find engineer by ID
-      const foundEngineer = mockEngineers.find(eng => eng.id === id);
-      if (foundEngineer) {
-        setEngineer(foundEngineer);
+      try {
+        const { data: engineerData, error: engineerError } = await supabase
+          .from('engineers')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (engineerError) {
+          console.error("Error fetching engineer:", engineerError);
+          toast({
+            title: "Error",
+            description: "Failed to load engineer details",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
         
-        // Get service calls assigned to this engineer
-        const engineerCalls = mockServiceCalls.filter(
-          call => call.engineerId === id
-        );
-        setServiceCalls(engineerCalls);
+        if (engineerData) {
+          const transformedEngineer: Engineer = {
+            id: engineerData.id,
+            name: engineerData.name,
+            phone: engineerData.phone,
+            email: engineerData.email,
+            location: engineerData.location,
+            status: engineerData.status,
+            skillLevel: engineerData.skill_level,
+            currentJob: engineerData.current_job,
+            currentLocation: engineerData.current_location,
+          };
+          
+          setEngineer(transformedEngineer);
+          
+          const { data: callsData, error: callsError } = await supabase
+            .from('service_calls')
+            .select('*')
+            .eq('engineer_id', id)
+            .order('created_at', { ascending: false });
+            
+          if (callsError) {
+            console.error("Error fetching service calls:", callsError);
+            toast({
+              title: "Warning",
+              description: "Failed to load engineer's service calls",
+              variant: "destructive",
+            });
+          } else {
+            const transformedCalls: ServiceCall[] = callsData.map(call => ({
+              id: call.id,
+              customerId: call.customer_id,
+              customerName: call.customer_name,
+              phone: call.phone,
+              machineId: call.machine_id || "",
+              machineModel: call.machine_model,
+              serialNumber: call.serial_number || "",
+              location: call.location,
+              issueType: call.issue_type,
+              issueDescription: call.issue_description,
+              callType: call.call_type,
+              priority: call.priority,
+              status: call.status,
+              engineerId: call.engineer_id,
+              engineerName: call.engineer_name || "",
+              createdAt: call.created_at,
+              slaDeadline: call.sla_deadline || new Date().toISOString(),
+              startTime: call.start_time,
+              completionTime: call.completion_time,
+              partsUsed: Array.isArray(call.parts_used) 
+                ? call.parts_used.map((part: any) => ({
+                    id: part.id || "",
+                    name: part.name || "",
+                    partNumber: part.partNumber || "",
+                    quantity: part.quantity || 0,
+                    price: part.price || 0
+                  }))
+                : [],
+              feedback: call.feedback 
+                ? {
+                    rating: call.feedback.rating || 0,
+                    comment: call.feedback.comment || null,
+                    date: call.feedback.date || new Date().toISOString()
+                  }
+                : null,
+            }));
+            
+            setServiceCalls(transformedCalls);
+          }
+        }
+      } catch (error) {
+        console.error("Unexpected error:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    fetchEngineer();
-  }, [id, isNewEngineer]);
+    fetchData();
+  }, [id, isNewEngineer, toast]);
 
-  const handleSaveEngineer = (updatedEngineer: Engineer) => {
-    // In a real app, this would be an API call to save the engineer
-    console.log("Saving engineer:", updatedEngineer);
-    // Navigate back to service page after saving
-    navigate("/service");
+  const handleSaveEngineer = async (updatedEngineer: Engineer) => {
+    try {
+      const engineerData = {
+        name: updatedEngineer.name,
+        phone: updatedEngineer.phone,
+        email: updatedEngineer.email,
+        location: updatedEngineer.location,
+        status: updatedEngineer.status,
+        skill_level: updatedEngineer.skillLevel,
+        current_job: updatedEngineer.currentJob,
+        current_location: updatedEngineer.currentLocation,
+      };
+      
+      if (isNewEngineer) {
+        const { data, error } = await supabase
+          .from('engineers')
+          .insert(engineerData)
+          .select();
+          
+        if (error) {
+          console.error("Error creating engineer:", error);
+          toast({
+            title: "Error",
+            description: "Failed to create engineer record",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        toast({
+          title: "Engineer Created",
+          description: "The engineer has been added successfully",
+        });
+      } else {
+        const { error } = await supabase
+          .from('engineers')
+          .update(engineerData)
+          .eq('id', updatedEngineer.id);
+          
+        if (error) {
+          console.error("Error updating engineer:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update engineer record",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        toast({
+          title: "Engineer Updated",
+          description: "The engineer has been updated successfully",
+        });
+      }
+      
+      navigate("/service");
+    } catch (error) {
+      console.error("Unexpected error saving engineer:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while saving",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -150,7 +294,6 @@ const EngineerDetail = () => {
     );
   }
 
-  // If it's a new engineer, show the form directly
   if (isNewEngineer) {
     return (
       <Layout>

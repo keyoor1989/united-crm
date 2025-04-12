@@ -1,5 +1,5 @@
 
-import { Customer, Machine, Engineer, ServiceCall } from "@/types/service";
+import { Customer, Machine, ServiceCall } from "@/types/service";
 import { addHours, subHours, subDays } from "date-fns";
 
 // Mock Customers
@@ -119,70 +119,6 @@ export const mockMachines: Machine[] = [
     contractType: "AMC",
   },
 ];
-
-// Mock Engineers
-export let mockEngineers: Engineer[] = [
-  {
-    id: "eng1",
-    name: "Rajesh Kumar",
-    phone: "+91 9876543220",
-    email: "rajesh@service.com",
-    location: "Indore",
-    status: "Available",
-    skillLevel: "Expert",
-    currentJob: null,
-    currentLocation: "Indore Office",
-  },
-  {
-    id: "eng2",
-    name: "Vikram Singh",
-    phone: "+91 9876543221",
-    email: "vikram@service.com",
-    location: "Indore",
-    status: "On Call",
-    skillLevel: "Senior",
-    currentJob: "City Hospital",
-    currentLocation: "Indore - City Hospital",
-  },
-  {
-    id: "eng3",
-    name: "Sunil Sharma",
-    phone: "+91 9876543222",
-    email: "sunil@service.com",
-    location: "Bhopal",
-    status: "Break",
-    skillLevel: "Intermediate",
-    currentJob: null,
-    currentLocation: "Bhopal Office",
-  },
-  {
-    id: "eng4",
-    name: "Amit Patel",
-    phone: "+91 9876543223",
-    email: "amit@service.com",
-    location: "Jabalpur",
-    status: "Off Duty",
-    skillLevel: "Senior",
-    currentJob: null,
-    currentLocation: "Jabalpur Office",
-  },
-];
-
-// Add new engineer function for adding engineers in the UI
-export const addEngineer = (engineer: Engineer) => {
-  // In a real app, this would be an API call
-  mockEngineers = [...mockEngineers, engineer];
-  return engineer;
-};
-
-// Update existing engineer
-export const updateEngineer = (updatedEngineer: Engineer) => {
-  // In a real app, this would be an API call
-  mockEngineers = mockEngineers.map(eng => 
-    eng.id === updatedEngineer.id ? updatedEngineer : eng
-  );
-  return updatedEngineer;
-};
 
 // Mock Service Calls
 export const mockServiceCalls: ServiceCall[] = [

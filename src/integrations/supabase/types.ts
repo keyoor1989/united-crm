@@ -133,6 +133,45 @@ export type Database = {
         }
         Relationships: []
       }
+      engineers: {
+        Row: {
+          created_at: string | null
+          current_job: string | null
+          current_location: string
+          email: string
+          id: string
+          location: string
+          name: string
+          phone: string
+          skill_level: string
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_job?: string | null
+          current_location: string
+          email: string
+          id?: string
+          location: string
+          name: string
+          phone: string
+          skill_level: string
+          status: string
+        }
+        Update: {
+          created_at?: string | null
+          current_job?: string | null
+          current_location?: string
+          email?: string
+          id?: string
+          location?: string
+          name?: string
+          phone?: string
+          skill_level?: string
+          status?: string
+        }
+        Relationships: []
+      }
       quotations: {
         Row: {
           created_at: string

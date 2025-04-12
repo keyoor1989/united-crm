@@ -1,9 +1,9 @@
 
 import React from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
+import * as z from "zod";
+import { Engineer } from "@/types/service";
 import {
   Form,
   FormControl,
@@ -20,77 +20,62 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Engineer } from "@/types/service";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Save, X } from "lucide-react";
 
-const engineerFormSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  phone: z.string().min(10, { message: "Please enter a valid phone number." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
-  location: z.string().min(1, { message: "Location is required." }),
+const engineerSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phone: z.string().min(10, "Phone must be at least 10 characters"),
+  email: z.string().email("Must be a valid email address"),
+  location: z.string().min(2, "Location is required"),
   status: z.string(),
   skillLevel: z.string(),
-  currentJob: z.string().nullable(),
-  currentLocation: z.string(),
+  currentLocation: z.string().min(2, "Current location is required"),
 });
 
-type EngineerFormProps = {
+interface EngineerFormProps {
   engineer: Engineer;
   onSave: (engineer: Engineer) => void;
-};
+  onCancel?: () => void;
+}
 
-const EngineerForm: React.FC<EngineerFormProps> = ({ engineer, onSave }) => {
-  const { toast } = useToast();
-  const form = useForm<Engineer>({
-    resolver: zodResolver(engineerFormSchema),
+const EngineerForm: React.FC<EngineerFormProps> = ({
+  engineer,
+  onSave,
+  onCancel,
+}) => {
+  const form = useForm<z.infer<typeof engineerSchema>>({
+    resolver: zodResolver(engineerSchema),
     defaultValues: {
-      id: engineer.id || `eng${Math.floor(Math.random() * 1000)}`,
       name: engineer.name || "",
       phone: engineer.phone || "",
       email: engineer.email || "",
       location: engineer.location || "",
       status: engineer.status || "Available",
       skillLevel: engineer.skillLevel || "Intermediate",
-      currentJob: engineer.currentJob || null,
-      currentLocation: engineer.currentLocation || "",
+      currentLocation: engineer.currentLocation || engineer.location || "",
     },
   });
 
-  const onSubmit = (data: Engineer) => {
-    toast({
-      title: engineer.id ? "Engineer Updated" : "Engineer Created",
-      description: `${data.name} has been ${engineer.id ? "updated" : "added"} successfully.`,
+  const onSubmit = (values: z.infer<typeof engineerSchema>) => {
+    onSave({
+      ...engineer,
+      ...values,
     });
-    onSave(data);
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Engineer Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Engineer's full name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="email@example.com" {...field} />
+                  <Input placeholder="Full name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -104,7 +89,21 @@ const EngineerForm: React.FC<EngineerFormProps> = ({ engineer, onSave }) => {
               <FormItem>
                 <FormLabel>Phone Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="+91 9876543210" {...field} />
+                  <Input placeholder="Phone number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email Address</FormLabel>
+                <FormControl>
+                  <Input placeholder="Email" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -118,21 +117,7 @@ const EngineerForm: React.FC<EngineerFormProps> = ({ engineer, onSave }) => {
               <FormItem>
                 <FormLabel>Base Location</FormLabel>
                 <FormControl>
-                  <Input placeholder="City" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="currentLocation"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Current Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="Current working location" {...field} />
+                  <Input placeholder="City or location" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -145,7 +130,10 @@ const EngineerForm: React.FC<EngineerFormProps> = ({ engineer, onSave }) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -169,14 +157,17 @@ const EngineerForm: React.FC<EngineerFormProps> = ({ engineer, onSave }) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Skill Level</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select skill level" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Beginner">Beginner</SelectItem>
+                    <SelectItem value="Junior">Junior</SelectItem>
                     <SelectItem value="Intermediate">Intermediate</SelectItem>
                     <SelectItem value="Senior">Senior</SelectItem>
                     <SelectItem value="Expert">Expert</SelectItem>
@@ -186,11 +177,39 @@ const EngineerForm: React.FC<EngineerFormProps> = ({ engineer, onSave }) => {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="currentLocation"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Current Location</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Current location"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
-        <div className="flex justify-end space-x-2">
-          <Button type="submit" className="bg-brand-500 hover:bg-brand-600">
-            {engineer.id ? "Update Engineer" : "Add Engineer"}
+        <div className="flex justify-end gap-2">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+          )}
+          <Button type="submit">
+            <Save className="mr-2 h-4 w-4" />
+            Save Engineer
           </Button>
         </div>
       </form>

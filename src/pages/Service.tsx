@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ServiceCall, Engineer, Part } from "@/types/service";
-import { mockEngineers } from "@/data/mockData";
+import { ServiceCall, Engineer, Part, Feedback } from "@/types/service";
 import { useToast } from "@/hooks/use-toast";
 import ServiceCallDetail from "@/components/service/ServiceCallDetail";
 import { ServiceSearchBar } from "@/components/service/ServiceSearchBar";
@@ -16,7 +16,7 @@ const Service = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
-  const [engineers, setEngineers] = useState<Engineer[]>(mockEngineers);
+  const [engineers, setEngineers] = useState<Engineer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedServiceCall, setSelectedServiceCall] = useState<ServiceCall | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
@@ -24,7 +24,43 @@ const Service = () => {
   
   useEffect(() => {
     fetchServiceCalls();
+    fetchEngineers();
   }, []);
+  
+  const fetchEngineers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('engineers')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error("Error fetching engineers:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load engineers",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const transformedEngineers: Engineer[] = data.map(eng => ({
+        id: eng.id,
+        name: eng.name,
+        phone: eng.phone,
+        email: eng.email,
+        location: eng.location,
+        status: eng.status,
+        skillLevel: eng.skill_level,
+        currentJob: eng.current_job,
+        currentLocation: eng.current_location
+      }));
+      
+      setEngineers(transformedEngineers);
+    } catch (err) {
+      console.error("Unexpected error fetching engineers:", err);
+    }
+  };
   
   const fetchServiceCalls = async () => {
     setIsLoading(true);
@@ -73,7 +109,13 @@ const Service = () => {
               price: part.price || 0
             }))
           : [],
-        feedback: call.feedback,
+        feedback: call.feedback 
+          ? {
+              rating: call.feedback.rating || 0,
+              comment: call.feedback.comment || null,
+              date: call.feedback.date || new Date().toISOString()
+            }
+          : null,
       }));
       
       setServiceCalls(transformedCalls);
@@ -123,7 +165,8 @@ const Service = () => {
         return;
       }
       
-      const { error } = await supabase
+      // Update the service call in the database
+      const { error: serviceCallError } = await supabase
         .from('service_calls')
         .update({
           engineer_id: engineerId,
@@ -132,8 +175,8 @@ const Service = () => {
         })
         .eq('id', serviceCallId);
         
-      if (error) {
-        console.error("Error assigning engineer:", error);
+      if (serviceCallError) {
+        console.error("Error assigning engineer:", serviceCallError);
         toast({
           title: "Error",
           description: "Failed to assign engineer to service call",
@@ -142,6 +185,27 @@ const Service = () => {
         return;
       }
       
+      // Update the engineer in the database
+      const serviceCall = serviceCalls.find(call => call.id === serviceCallId);
+      const { error: engineerError } = await supabase
+        .from('engineers')
+        .update({
+          status: "On Call",
+          current_job: `Service Call #${serviceCallId}`,
+          current_location: serviceCall?.location || assignedEngineer.location
+        })
+        .eq('id', engineerId);
+        
+      if (engineerError) {
+        console.error("Error updating engineer status:", engineerError);
+        toast({
+          title: "Error",
+          description: "Failed to update engineer status",
+          variant: "destructive",
+        });
+      }
+      
+      // Update local state
       const updatedCalls = serviceCalls.map(call => {
         if (call.id === serviceCallId) {
           return {
@@ -156,7 +220,6 @@ const Service = () => {
       
       const updatedEngineers = engineers.map(eng => {
         if (eng.id === engineerId) {
-          const serviceCall = serviceCalls.find(call => call.id === serviceCallId);
           return {
             ...eng,
             status: "On Call",
@@ -199,9 +262,10 @@ const Service = () => {
   const handleRefresh = () => {
     setSearchTerm("");
     fetchServiceCalls();
+    fetchEngineers();
     toast({
       title: "Refreshed",
-      description: "Service calls have been refreshed",
+      description: "Service calls and engineers have been refreshed",
     });
   };
 
