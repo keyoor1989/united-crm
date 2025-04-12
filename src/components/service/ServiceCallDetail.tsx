@@ -46,7 +46,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
           engineer_id: engineerId === "unassigned" ? null : engineerId,
           status,
           issue_description: resolutionNotes,
-          updated_at: new Date().toISOString(),
+          // Removed the updated_at field that was causing the error
           completion_time: status === "Completed" ? new Date().toISOString() : serviceCall.completionTime
         })
         .eq('id', serviceCall.id);
