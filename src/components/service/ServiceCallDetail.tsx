@@ -54,24 +54,30 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
       if (serviceCallError) throw serviceCallError;
       
       // If the status is Completed, update the engineer's status to Available
-      if (status === "Completed" && engineerId && engineerId !== "unassigned") {
-        const { error: engineerError } = await supabase
-          .from('engineers')
-          .update({
-            status: 'Available' as EngineerStatus,
-            current_job: null
-          })
-          .eq('id', engineerId);
-          
-        if (engineerError) {
-          console.error("Error updating engineer status:", engineerError);
-          // We don't throw here to avoid failing the whole operation
+      // Even if the engineer was "unassigned", we need to make sure any previously assigned engineer is set to Available
+      if (status === "Completed") {
+        // If there was an engineer assigned to this call, update their status
+        if (serviceCall.engineerId && serviceCall.engineerId !== "unassigned") {
+          console.log("Updating engineer status to Available:", serviceCall.engineerId);
+          const { error: engineerError } = await supabase
+            .from('engineers')
+            .update({
+              status: 'Available' as EngineerStatus,
+              current_job: null
+            })
+            .eq('id', serviceCall.engineerId);
+            
+          if (engineerError) {
+            console.error("Error updating engineer status:", engineerError);
+            // We don't throw here to avoid failing the whole operation
+          }
         }
       }
       
       // If status changed to "Assigned" and engineer is assigned, update engineer status
       if (status === "Assigned" && engineerId && engineerId !== "unassigned" && 
           (serviceCall.status !== "Assigned" || serviceCall.engineerId !== engineerId)) {
+        console.log("Setting engineer to On Call:", engineerId);
         const { error: engineerError } = await supabase
           .from('engineers')
           .update({
@@ -88,6 +94,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
       // If engineer was changed (reassigned), update previous engineer's status
       if (serviceCall.engineerId && serviceCall.engineerId !== engineerId && 
           serviceCall.engineerId !== "unassigned") {
+        console.log("Freeing up previously assigned engineer:", serviceCall.engineerId);
         const { error: prevEngineerError } = await supabase
           .from('engineers')
           .update({
