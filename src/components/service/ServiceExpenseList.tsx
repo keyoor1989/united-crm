@@ -4,22 +4,59 @@ import { ServiceExpense } from "@/types/serviceExpense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, CalendarDays, User } from "lucide-react";
+import { Receipt, CalendarDays, User, DollarSign } from "lucide-react";
 import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { updateExpenseReimbursementStatus } from "@/services/serviceExpenseService";
+import { useToast } from "@/hooks/use-toast";
 
 interface ServiceExpenseListProps {
   expenses: ServiceExpense[];
 }
 
 const ServiceExpenseList = ({ expenses }: ServiceExpenseListProps) => {
+  const { toast } = useToast();
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalReimbursed = expenses
+    .filter(expense => expense.isReimbursed)
+    .reduce((sum, expense) => sum + expense.amount, 0);
+  const totalPending = totalExpenses - totalReimbursed;
+  
+  const handleToggleReimbursement = async (expense: ServiceExpense) => {
+    const newStatus = !expense.isReimbursed;
+    const success = await updateExpenseReimbursementStatus(expense.id, newStatus);
+    
+    if (success) {
+      // Update the expense in the UI (this is handled by the parent component in a real app)
+      expense.isReimbursed = newStatus;
+      
+      toast({
+        title: newStatus ? "Expense Reimbursed" : "Reimbursement Cancelled",
+        description: `${expense.category} expense of ₹${expense.amount.toFixed(2)} for ${expense.engineerName}`,
+        variant: newStatus ? "default" : "destructive",
+      });
+    }
+  };
   
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex justify-between">
+        <CardTitle className="flex flex-col sm:flex-row justify-between gap-2">
           <span>Service Expenses</span>
-          <span>Total: ₹{totalExpenses.toFixed(2)}</span>
+          <div className="flex gap-4 text-sm">
+            <span className="flex items-center">
+              <Badge variant="outline" className="mr-1">Total:</Badge> 
+              ₹{totalExpenses.toFixed(2)}
+            </span>
+            <span className="flex items-center">
+              <Badge variant="success" className="mr-1">Reimbursed:</Badge> 
+              ₹{totalReimbursed.toFixed(2)}
+            </span>
+            <span className="flex items-center">
+              <Badge variant="secondary" className="mr-1">Pending:</Badge> 
+              ₹{totalPending.toFixed(2)}
+            </span>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -35,6 +72,7 @@ const ServiceExpenseList = ({ expenses }: ServiceExpenseListProps) => {
                 <TableHead>Engineer</TableHead>
                 <TableHead className="text-right">Amount (₹)</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -63,6 +101,16 @@ const ServiceExpenseList = ({ expenses }: ServiceExpenseListProps) => {
                     <Badge variant={expense.isReimbursed ? "success" : "secondary"}>
                       {expense.isReimbursed ? "Reimbursed" : "Pending"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleToggleReimbursement(expense)}
+                    >
+                      <DollarSign className="h-4 w-4 mr-1" />
+                      {expense.isReimbursed ? "Mark Unpaid" : "Reimburse"}
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

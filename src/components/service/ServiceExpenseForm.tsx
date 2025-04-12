@@ -11,14 +11,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ExpenseCategory, ServiceExpense } from "@/types/serviceExpense";
 import { v4 as uuidv4 } from "uuid";
-import { CalendarIcon, Receipt } from "lucide-react";
+import { CalendarIcon, Receipt, User } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface ServiceExpenseFormProps {
   serviceCallId: string;
@@ -71,6 +72,10 @@ const ServiceExpenseForm = ({
     <Card>
       <CardHeader>
         <CardTitle>Add Expense</CardTitle>
+        <CardDescription className="flex items-center">
+          <User className="h-4 w-4 mr-2" />
+          Engineer: <Badge variant="outline" className="ml-2">{engineerName}</Badge>
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
