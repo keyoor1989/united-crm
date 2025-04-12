@@ -7,9 +7,8 @@ export type NavItem = {
   label: string;
 };
 
-export type NavSection = {
-  key: string;
+export type SidebarSectionConfig = {
+  title: string;
   icon: LucideIcon;
-  label: string;
   items: NavItem[];
 };
