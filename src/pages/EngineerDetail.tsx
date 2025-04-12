@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback } from "@/types/service";
@@ -42,13 +43,29 @@ const EngineerDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [showEditForm, setShowEditForm] = useState(false);
+  const isNewEngineer = engineerId === "new";
 
   useEffect(() => {
-    if (engineerId) {
+    if (engineerId && !isNewEngineer) {
       fetchEngineer(engineerId);
       fetchServiceCalls(engineerId);
+    } else if (isNewEngineer) {
+      // Create a blank engineer for the new form
+      setEngineer({
+        id: "",
+        name: "",
+        phone: "",
+        email: "",
+        location: "",
+        status: "Available",
+        skillLevel: "Intermediate",
+        currentJob: null,
+        currentLocation: "",
+      });
+      setIsLoading(false);
+      setShowEditForm(true);
     }
-  }, [engineerId]);
+  }, [engineerId, isNewEngineer]);
 
   const fetchEngineer = async (id: string) => {
     setIsLoading(true);
@@ -157,37 +174,78 @@ const EngineerDetail = () => {
 
   const handleSaveEngineer = async (updatedEngineer: Engineer) => {
     try {
-      const { error } = await supabase
-        .from("engineers")
-        .update({
-          name: updatedEngineer.name,
-          phone: updatedEngineer.phone,
-          email: updatedEngineer.email,
-          location: updatedEngineer.location,
-          status: updatedEngineer.status,
-          skill_level: updatedEngineer.skillLevel,
-          current_location: updatedEngineer.currentLocation,
-        })
-        .eq("id", updatedEngineer.id);
+      if (isNewEngineer) {
+        // For new engineers, insert a new record
+        const { data, error } = await supabase
+          .from("engineers")
+          .insert({
+            name: updatedEngineer.name,
+            phone: updatedEngineer.phone,
+            email: updatedEngineer.email,
+            location: updatedEngineer.location,
+            status: updatedEngineer.status,
+            skill_level: updatedEngineer.skillLevel,
+            current_location: updatedEngineer.currentLocation,
+            current_job: updatedEngineer.currentJob
+          })
+          .select();
 
-      if (error) {
-        console.error("Error updating engineer:", error);
+        if (error) {
+          console.error("Error creating engineer:", error);
+          toast({
+            title: "Error",
+            description: "Failed to create engineer",
+            variant: "destructive",
+          });
+          return;
+        }
+
         toast({
-          title: "Error",
-          description: "Failed to update engineer",
-          variant: "destructive",
+          title: "Success",
+          description: "Engineer created successfully",
         });
-        return;
-      }
+        
+        // Navigate to the newly created engineer's detail page
+        if (data && data.length > 0) {
+          navigate(`/engineer/${data[0].id}`);
+        } else {
+          navigate('/service');
+        }
+        
+      } else {
+        // For existing engineers, update the record
+        const { error } = await supabase
+          .from("engineers")
+          .update({
+            name: updatedEngineer.name,
+            phone: updatedEngineer.phone,
+            email: updatedEngineer.email,
+            location: updatedEngineer.location,
+            status: updatedEngineer.status,
+            skill_level: updatedEngineer.skillLevel,
+            current_location: updatedEngineer.currentLocation,
+          })
+          .eq("id", updatedEngineer.id);
 
-      setEngineer(updatedEngineer);
-      setShowEditForm(false);
-      toast({
-        title: "Success",
-        description: "Engineer updated successfully",
-      });
+        if (error) {
+          console.error("Error updating engineer:", error);
+          toast({
+            title: "Error",
+            description: "Failed to update engineer",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setEngineer(updatedEngineer);
+        setShowEditForm(false);
+        toast({
+          title: "Success",
+          description: "Engineer updated successfully",
+        });
+      }
     } catch (err) {
-      console.error("Unexpected error updating engineer:", err);
+      console.error("Unexpected error saving engineer:", err);
     }
   };
 
@@ -195,7 +253,7 @@ const EngineerDetail = () => {
     return <div className="p-4">Loading engineer data...</div>;
   }
 
-  if (!engineer) {
+  if (!engineer && !isNewEngineer) {
     return <div className="p-4">Engineer not found</div>;
   }
 
@@ -206,17 +264,29 @@ const EngineerDetail = () => {
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Button onClick={() => setShowEditForm(!showEditForm)}>
-          <Edit className="h-4 w-4 mr-2" />
-          {showEditForm ? "Cancel Edit" : "Edit Engineer"}
-        </Button>
+        {!isNewEngineer && (
+          <Button onClick={() => setShowEditForm(!showEditForm)}>
+            <Edit className="h-4 w-4 mr-2" />
+            {showEditForm ? "Cancel Edit" : "Edit Engineer"}
+          </Button>
+        )}
       </div>
 
-      {showEditForm ? (
+      {showEditForm || isNewEngineer ? (
         <EngineerForm
-          engineer={engineer}
+          engineer={engineer || {
+            id: "",
+            name: "",
+            phone: "",
+            email: "",
+            location: "",
+            status: "Available",
+            skillLevel: "Intermediate",
+            currentJob: null,
+            currentLocation: "",
+          }}
           onSave={handleSaveEngineer}
-          onCancel={() => setShowEditForm(false)}
+          onCancel={isNewEngineer ? () => navigate(-1) : () => setShowEditForm(false)}
         />
       ) : (
         <>
@@ -224,21 +294,21 @@ const EngineerDetail = () => {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-2xl font-bold">{engineer.name}</CardTitle>
-                  <CardDescription>{engineer.skillLevel} Engineer</CardDescription>
+                  <CardTitle className="text-2xl font-bold">{engineer?.name}</CardTitle>
+                  <CardDescription>{engineer?.skillLevel} Engineer</CardDescription>
                 </div>
                 <Badge
                   className={
-                    engineer.status === "Available"
+                    engineer?.status === "Available"
                       ? "bg-green-100 text-green-800 hover:bg-green-100"
-                      : engineer.status === "On Call"
+                      : engineer?.status === "On Call"
                       ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                      : engineer.status === "Break"
+                      : engineer?.status === "Break"
                       ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
                       : "bg-gray-100 text-gray-800 hover:bg-gray-100"
                   }
                 >
-                  {engineer.status}
+                  {engineer?.status}
                 </Badge>
               </div>
             </CardHeader>
@@ -247,29 +317,29 @@ const EngineerDetail = () => {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{engineer.phone}</span>
+                    <span>{engineer?.phone}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{engineer.email}</span>
+                    <span>{engineer?.email}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>Base Location: {engineer.location}</span>
+                    <span>Base Location: {engineer?.location}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>Current Location: {engineer.currentLocation}</span>
+                    <span>Current Location: {engineer?.currentLocation}</span>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    <span>Current Job: {engineer.currentJob || "None assigned"}</span>
+                    <span>Current Job: {engineer?.currentJob || "None assigned"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <span>Skill Level: {engineer.skillLevel}</span>
+                    <span>Skill Level: {engineer?.skillLevel}</span>
                   </div>
                 </div>
               </div>
