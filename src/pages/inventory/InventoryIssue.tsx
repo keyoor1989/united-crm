@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Helmet } from "react-helmet";
-import { Send, ArrowLeft, CircleCheck2 } from "lucide-react";
+import { Send, ArrowLeft, CircleCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import IssueForm from "@/components/inventory/issue/IssueForm";
@@ -41,7 +41,7 @@ const InventoryIssue = () => {
             value="activities" 
             className="flex items-center gap-2 data-[state=active]:bg-slate-100 data-[state=active]:shadow-none px-6"
           >
-            <CircleCheck2 className="h-4 w-4" />
+            <CircleCheck className="h-4 w-4" />
             Recent Activities
           </TabsTrigger>
         </TabsList>

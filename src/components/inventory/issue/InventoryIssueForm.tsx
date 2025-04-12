@@ -164,6 +164,7 @@ const InventoryIssueForm = () => {
             filteredItems={filteredItems}
             selectedItemId={selectedItemId}
             handleSelectItem={handleSelectItem}
+            isLoading={isLoadingItems}
           />
         </div>
 
