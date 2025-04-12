@@ -28,6 +28,9 @@ const ActivityLog = () => {
     createdAt: item.assigned_date
   }));
 
+  console.log("Issued items raw:", issuedItemsRaw);
+  console.log("Transformed issued items:", issuedItems);
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <TabsList className="w-full">
