@@ -1,3 +1,4 @@
+
 import { InventoryItem } from "@/types/inventory";
 
 // Mock inventory items for testing the engineer inventory management

@@ -1,225 +1,301 @@
 
 import React, { useState, useEffect } from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Scan, Package } from "lucide-react";
-import { toast } from "sonner";
-import { Brand, Model, InventoryItem } from "@/types/inventory";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Search, Filter, ArrowUpDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { InventoryItem, Brand, Model } from "@/types/inventory";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ItemSelectorProps {
+  onItemSelect: (item: InventoryItem) => void;
   brands: Brand[];
   models: Model[];
   items: InventoryItem[];
-  onItemSelect: (item: InventoryItem) => void;
-  showBarcodeScan?: boolean;
-  showQuantityInSelector?: boolean;
-  warehouseId?: string | null;
+  warehouseId: string | null;
 }
 
 const ItemSelector = ({
+  onItemSelect,
   brands,
   models,
   items,
-  onItemSelect,
-  showBarcodeScan = true,
-  showQuantityInSelector = true,
-  warehouseId = null
+  warehouseId,
 }: ItemSelectorProps) => {
-  const [selectedBrandId, setSelectedBrandId] = useState<string>("");
-  const [selectedModelId, setSelectedModelId] = useState<string>("");
-  const [selectedItemId, setSelectedItemId] = useState<string>("");
-  const [barcodeInput, setBarcodeInput] = useState<string>("");
-  
-  // Filter to only include valid brands with non-empty IDs
-  const validBrands = brands.filter(brand => !!brand.id);
-  
-  // Reset model selection when brand changes
-  useEffect(() => {
-    setSelectedModelId("");
-    setSelectedItemId("");
-  }, [selectedBrandId]);
-  
-  // Reset item selection when model changes
-  useEffect(() => {
-    setSelectedItemId("");
-  }, [selectedModelId]);
-  
-  // Filter models based on selected brand
-  const filteredModels = models.filter(
-    model => selectedBrandId && model.brandId === selectedBrandId
-  );
-  
-  // Filter items based on selected model and warehouse if specified
-  const filteredItems = items.filter(
-    item => {
-      // First filter by model if selected
-      const matchesModel = selectedModelId ? item.modelId === selectedModelId : true;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"name" | "quantity">("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // Fetch real inventory items from the database
+  const { data: inventoryItems = [], isLoading: isLoadingInventoryItems } = useQuery({
+    queryKey: ['inventoryItems', warehouseId],
+    queryFn: async () => {
+      let query = supabase
+        .from('opening_stock_entries')
+        .select('*');
       
-      // Then filter by warehouse if specified (this is a placeholder - in a real app you would 
-      // filter based on warehouse stock records)
-      // This assumes items have a warehouseId property or similar
-      const matchesWarehouse = warehouseId ? true : true; // Placeholder logic
-      
-      return matchesModel && matchesWarehouse;
-    }
-  );
-  
-  // Handle barcode scan
-  const handleBarcodeScan = () => {
-    if (!barcodeInput) {
-      toast.warning("Please enter a barcode to scan");
-      return;
-    }
-    
-    // Find the item by barcode
-    const item = items.find(item => item.barcode === barcodeInput);
-    
-    if (item) {
-      // Find the model and brand for this item
-      const model = models.find(model => model.id === item.modelId);
-      const brand = brands.find(brand => brand.id === item.brandId);
-      
-      if (model && brand) {
-        setSelectedBrandId(brand.id);
-        setSelectedModelId(model.id);
-        setSelectedItemId(item.id);
-        onItemSelect(item);
-        toast.success(`Item ${item.name} found and selected`);
+      if (warehouseId) {
+        query = query.eq('warehouse_id', warehouseId);
       }
-    } else {
-      toast.error(`No item found with barcode ${barcodeInput}`);
+      
+      const { data, error } = await query.order('part_name');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Transform the opening_stock_entries to match InventoryItem structure
+      return data.map(item => ({
+        id: item.id,
+        modelId: "", // Not available directly
+        brandId: "", // Not available directly  
+        name: item.part_name,
+        type: item.category,
+        minQuantity: item.min_stock,
+        currentQuantity: item.quantity,
+        lastPurchasePrice: item.purchase_price,
+        lastVendor: "", // Not available
+        barcode: item.part_number || "",
+        createdAt: item.created_at
+      })) as InventoryItem[];
+    },
+    enabled: true
+  });
+
+  // Extract unique item types from inventory items
+  const itemTypes = React.useMemo(() => {
+    const types = new Set<string>();
+    inventoryItems.forEach((item) => types.add(item.type));
+    return Array.from(types).sort();
+  }, [inventoryItems]);
+
+  // Filter and sort items
+  const filteredItems = React.useMemo(() => {
+    let result = [...inventoryItems];
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.name.toLowerCase().includes(query) ||
+          item.type.toLowerCase().includes(query) ||
+          (item.barcode && item.barcode.toLowerCase().includes(query))
+      );
     }
-    
-    setBarcodeInput("");
-  };
-  
-  // Handle direct item selection
-  const handleItemChange = (value: string) => {
-    setSelectedItemId(value);
-    const item = items.find(item => item.id === value);
+
+    // Apply brand filter
+    if (selectedBrand) {
+      result = result.filter((item) => item.brandId === selectedBrand);
+    }
+
+    // Apply type filter
+    if (selectedType) {
+      result = result.filter((item) => item.type === selectedType);
+    }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      if (sortBy === "name") {
+        return sortDirection === "asc"
+          ? a.name.localeCompare(b.name)
+          : b.name.localeCompare(a.name);
+      } else {
+        return sortDirection === "asc"
+          ? a.currentQuantity - b.currentQuantity
+          : b.currentQuantity - a.currentQuantity;
+      }
+    });
+
+    return result;
+  }, [inventoryItems, searchQuery, selectedBrand, selectedType, sortBy, sortDirection]);
+
+  // Reset selected item when filtered items change
+  useEffect(() => {
+    setSelectedItem(null);
+  }, [searchQuery, selectedBrand, selectedType]);
+
+  // Handle item selection
+  const handleItemSelect = (itemId: string) => {
+    setSelectedItem(itemId);
+    const item = inventoryItems.find((i) => i.id === itemId);
     if (item) {
       onItemSelect(item);
     }
   };
-  
-  return (
-    <div className="space-y-4">
-      {/* Brand, Model, Item Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="brand-select">Brand</Label>
-          <Select 
-            value={selectedBrandId} 
-            onValueChange={setSelectedBrandId}
-          >
-            <SelectTrigger id="brand-select">
-              <SelectValue placeholder="Select Brand" />
-            </SelectTrigger>
-            <SelectContent>
-              {validBrands.length > 0 ? (
-                validBrands.map(brand => (
-                  <SelectItem key={brand.id} value={brand.id}>
-                    {brand.name || 'Unnamed Brand'}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no_brands" disabled>No brands available</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="model-select">Model</Label>
-          <Select 
-            value={selectedModelId} 
-            onValueChange={setSelectedModelId}
-            disabled={!selectedBrandId}
-          >
-            <SelectTrigger id="model-select">
-              <SelectValue placeholder={selectedBrandId ? "Select Model" : "Select Brand first"} />
-            </SelectTrigger>
-            <SelectContent>
-              {filteredModels.length > 0 ? (
-                filteredModels.map(model => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name || 'Unnamed Model'}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no_models" disabled>
-                  {selectedBrandId ? "No models available for this brand" : "Select a brand first"}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="item-select">Item</Label>
-          <Select 
-            value={selectedItemId} 
-            onValueChange={handleItemChange}
-            disabled={!selectedModelId}
-          >
-            <SelectTrigger id="item-select">
-              <SelectValue placeholder={selectedModelId ? "Select Item" : "Select Model first"} />
-            </SelectTrigger>
-            <SelectContent>
-              {filteredItems.length > 0 ? (
-                filteredItems.map(item => (
-                  <SelectItem key={item.id} value={item.id}>
-                    <div className="flex justify-between w-full items-center">
-                      <span>{item.name || 'Unnamed Item'}</span>
-                      {showQuantityInSelector && (
-                        <Badge variant={item.currentQuantity < item.minQuantity ? "destructive" : "outline"}>
-                          {item.currentQuantity} in stock
-                        </Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no_items" disabled>
-                  {selectedModelId ? "No items available for this model" : "Select a model first"}
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      {/* Barcode Scanner */}
-      {showBarcodeScan && (
-        <div className="pt-2">
-          <Label htmlFor="barcode-scan">Scan Barcode</Label>
-          <div className="flex gap-2 mt-1">
-            <Input
-              id="barcode-scan"
-              placeholder="Enter or scan barcode"
-              value={barcodeInput}
-              onChange={(e) => setBarcodeInput(e.target.value)}
-            />
-            <Button type="button" onClick={handleBarcodeScan} variant="outline">
-              <Scan size={16} className="mr-2" />
-              Scan
-            </Button>
+  // Toggle sort direction or change sort field
+  const handleSort = (field: "name" | "quantity") => {
+    if (sortBy === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setSelectedBrand(null);
+    setSelectedType(null);
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="space-y-4">
+          {/* Search and filters */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="col-span-1 md:col-span-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search by name or barcode..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Select
+                value={selectedType || ""}
+                onValueChange={(value) => setSelectedType(value || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Item Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Types</SelectItem>
+                  {itemTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleClearFilters}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Clear Filters
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            If barcode scanner is not available, you can use the selection above.
-          </p>
+
+          {/* Items table */}
+          {isLoadingInventoryItems ? (
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">Select</TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
+                      Item Name
+                      {sortBy === "name" && (
+                        <ArrowUpDown className="ml-1 h-4 w-4 inline" />
+                      )}
+                    </TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("quantity")}>
+                      Stock
+                      {sortBy === "quantity" && (
+                        <ArrowUpDown className="ml-1 h-4 w-4 inline" />
+                      )}
+                    </TableHead>
+                    <TableHead>Price</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-4">
+                        No items found. Try adjusting your filters.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredItems.map((item) => (
+                      <TableRow 
+                        key={item.id} 
+                        className={selectedItem === item.id ? "bg-muted" : ""}
+                        onClick={() => handleItemSelect(item.id)}
+                      >
+                        <TableCell>
+                          <RadioGroup value={selectedItem || ""}>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem
+                                value={item.id}
+                                id={`item-${item.id}`}
+                                checked={selectedItem === item.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleItemSelect(item.id);
+                                }}
+                              />
+                            </div>
+                          </RadioGroup>
+                        </TableCell>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.type}</TableCell>
+                        <TableCell>
+                          <span className={item.currentQuantity < item.minQuantity ? "text-destructive" : "text-green-600"}>
+                            {item.currentQuantity}
+                          </span>{" "}
+                          <span className="text-muted-foreground">
+                            (Min: {item.minQuantity})
+                          </span>
+                        </TableCell>
+                        <TableCell>₹{item.lastPurchasePrice}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

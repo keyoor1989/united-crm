@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,90 +36,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 type ReturnReason = "Unused" | "Defective" | "Wrong Item" | "Excess" | "Other";
 type ItemCondition = "Good" | "Damaged" | "Needs Inspection";
 
-const inventoryItems: InventoryItem[] = [
-  { 
-    id: "1", 
-    modelId: "1", 
-    brandId: "1", 
-    name: "Kyocera 2554ci Toner Black", 
-    type: "Toner", 
-    minQuantity: 2, 
-    currentQuantity: 3, 
-    lastPurchasePrice: 4500, 
-    lastVendor: "Toner World", 
-    barcode: "KYO-TN2554-BK-001", 
-    createdAt: "2025-03-10" 
-  },
-  { 
-    id: "2", 
-    modelId: "2", 
-    brandId: "2", 
-    name: "Ricoh MP2014 Drum Unit", 
-    type: "Drum", 
-    minQuantity: 1, 
-    currentQuantity: 2, 
-    lastPurchasePrice: 3200, 
-    lastVendor: "Copier Zone", 
-    barcode: "RICOH-DU2014-001", 
-    createdAt: "2025-03-11" 
-  },
-  { 
-    id: "3", 
-    modelId: "3", 
-    brandId: "3", 
-    name: "Xerox 7845 Toner Cyan", 
-    type: "Toner", 
-    minQuantity: 2, 
-    currentQuantity: 1, 
-    lastPurchasePrice: 5600, 
-    lastVendor: "Printer Parts", 
-    barcode: "XER-TN7845-C-001", 
-    createdAt: "2025-03-12" 
-  },
-  { 
-    id: "4", 
-    modelId: "4", 
-    brandId: "4", 
-    name: "Canon 2525 Drum Unit", 
-    type: "Drum", 
-    minQuantity: 1, 
-    currentQuantity: 4, 
-    lastPurchasePrice: 4200, 
-    lastVendor: "Canon Supplies", 
-    barcode: "CAN-DRM2525-001", 
-    createdAt: "2025-03-13" 
-  },
-  { 
-    id: "5", 
-    modelId: "5", 
-    brandId: "5", 
-    name: "HP M428 Toner", 
-    type: "Toner", 
-    minQuantity: 3, 
-    currentQuantity: 7, 
-    lastPurchasePrice: 2800, 
-    lastVendor: "HP Store", 
-    barcode: "HP-TNM428-002", 
-    createdAt: "2025-03-14" 
-  }
-];
-
-const mockBrands: Brand[] = [
-  { id: "1", name: "Kyocera", createdAt: "2025-03-01", updatedAt: "2025-03-01" },
-  { id: "2", name: "Ricoh", createdAt: "2025-03-02", updatedAt: "2025-03-02" },
-  { id: "3", name: "Xerox", createdAt: "2025-03-03", updatedAt: "2025-03-03" },
-  { id: "4", name: "Canon", createdAt: "2025-03-04", updatedAt: "2025-03-04" },
-  { id: "5", name: "HP", createdAt: "2025-03-05", updatedAt: "2025-03-05" }
-];
-
-const mockModels: Model[] = [
-  { id: "1", brandId: "1", name: "2554ci", type: "Machine", createdAt: "2025-03-01", updatedAt: "2025-03-01" },
-  { id: "2", brandId: "2", name: "MP2014", type: "Machine", createdAt: "2025-03-02", updatedAt: "2025-03-02" },
-  { id: "3", brandId: "3", name: "7845", type: "Machine", createdAt: "2025-03-03", updatedAt: "2025-03-03" },
-  { id: "4", brandId: "4", name: "2525", type: "Machine", createdAt: "2025-03-04", updatedAt: "2025-03-04" },
-  { id: "5", brandId: "5", name: "M428", type: "Machine", createdAt: "2025-03-05", updatedAt: "2025-03-05" }
-];
-
 type Engineer = {
   id: string;
   name: string;
@@ -154,6 +71,70 @@ const InventoryIssue = () => {
   const [returnReason, setReturnReason] = useState<ReturnReason>("Unused");
   const [itemCondition, setItemCondition] = useState<ItemCondition>("Good");
   const [returnNotes, setReturnNotes] = useState("");
+
+  // Fetch real inventory items from the database
+  const { data: inventoryItems = [], isLoading: isLoadingInventoryItems } = useQuery({
+    queryKey: ['inventoryItems'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('opening_stock_entries')
+        .select('*')
+        .order('part_name');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Transform the opening_stock_entries to match InventoryItem structure
+      return data.map(item => ({
+        id: item.id,
+        modelId: "", // Not available in opening_stock_entries
+        brandId: "", // Not available directly
+        name: item.part_name,
+        type: item.category,
+        minQuantity: item.min_stock,
+        currentQuantity: item.quantity,
+        lastPurchasePrice: item.purchase_price,
+        lastVendor: "", // Not available
+        barcode: item.part_number || "",
+        createdAt: item.created_at
+      })) as InventoryItem[];
+    }
+  });
+
+  // Fetch brands
+  const { data: brands = [] } = useQuery({
+    queryKey: ['brands'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inventory_brands')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data as Brand[];
+    }
+  });
+
+  // Fetch models
+  const { data: models = [] } = useQuery({
+    queryKey: ['models'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inventory_models')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return data as Model[];
+    }
+  });
 
   const { data: engineers = [], isLoading: isLoadingEngineers } = useQuery({
     queryKey: ['engineers'],
@@ -214,10 +195,23 @@ const InventoryIssue = () => {
         throw new Error(error.message);
       }
       
+      // Update inventory quantity after issue
+      if (selectedItem) {
+        const { error: updateError } = await supabase
+          .from('opening_stock_entries')
+          .update({ quantity: selectedItem.currentQuantity - issueData.quantity })
+          .eq('id', selectedItem.id);
+        
+        if (updateError) {
+          throw new Error(updateError.message);
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['engineerInventory'] });
+      queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
       toast.success(`${quantity} × ${selectedItem?.name} issued to ${receiverName}`);
       
       setSelectedItem(null);
@@ -241,33 +235,59 @@ const InventoryIssue = () => {
         throw new Error(error.message);
       }
       
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['inventoryReturns'] });
-      
       const item = engineerItems.find(item => item.id === selectedReturnItem);
       if (item) {
         const remainingQuantity = item.quantity - returnQuantity;
         
         if (remainingQuantity <= 0) {
-          supabase
+          const { error: deleteError } = await supabase
             .from('engineer_inventory')
             .delete()
-            .eq('id', item.id)
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ['engineerInventory'] });
-            });
+            .eq('id', item.id);
+          
+          if (deleteError) {
+            throw new Error(deleteError.message);
+          }
         } else {
-          supabase
+          const { error: updateError } = await supabase
             .from('engineer_inventory')
             .update({ quantity: remainingQuantity })
-            .eq('id', item.id)
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ['engineerInventory'] });
-            });
+            .eq('id', item.id);
+          
+          if (updateError) {
+            throw new Error(updateError.message);
+          }
+        }
+        
+        // Update the stock quantity in the opening_stock_entries
+        const { error: stockUpdateError } = await supabase
+          .from('opening_stock_entries')
+          .select('quantity')
+          .eq('id', item.item_id)
+          .single();
+          
+        if (!stockUpdateError) {
+          const { data: stockData } = await supabase
+            .from('opening_stock_entries')
+            .select('quantity')
+            .eq('id', item.item_id)
+            .single();
+          
+          if (stockData) {
+            await supabase
+              .from('opening_stock_entries')
+              .update({ quantity: stockData.quantity + returnQuantity })
+              .eq('id', item.item_id);
+          }
         }
       }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventoryReturns'] });
+      queryClient.invalidateQueries({ queryKey: ['engineerInventory'] });
+      queryClient.invalidateQueries({ queryKey: ['inventoryItems'] });
       
       const engineerName = engineers.find(eng => eng.id === selectedEngineer)?.name;
       const warehouseName = warehouses.find(w => w.id === selectedWarehouse)?.name;
@@ -345,6 +365,11 @@ const InventoryIssue = () => {
 
     if (!selectedWarehouse) {
       toast.warning("Please select a warehouse");
+      return;
+    }
+
+    if (selectedItem.currentQuantity < quantity) {
+      toast.warning(`Not enough items in stock. Only ${selectedItem.currentQuantity} available.`);
       return;
     }
 
