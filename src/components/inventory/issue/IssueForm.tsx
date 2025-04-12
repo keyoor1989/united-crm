@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -207,7 +206,7 @@ const IssueForm = () => {
               <SelectValue placeholder="Select Brand" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Brands</SelectItem>
+              <SelectItem value="all_brands">All Brands</SelectItem>
               {brands.map(brand => (
                 <SelectItem key={brand} value={brand}>
                   {brand}
@@ -225,7 +224,7 @@ const IssueForm = () => {
               <SelectValue placeholder="Select Model" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Models</SelectItem>
+              <SelectItem value="all_models">All Models</SelectItem>
               {models.map(model => (
                 <SelectItem key={model} value={model}>
                   {model}

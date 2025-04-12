@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -52,7 +51,6 @@ const ItemSelector = ({
   const [sortBy, setSortBy] = useState<"name" | "quantity">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // Fetch real inventory items from the database
   const { data: inventoryItems = [], isLoading: isLoadingInventoryItems } = useQuery({
     queryKey: ['inventoryItems', warehouseId],
     queryFn: async () => {
@@ -70,7 +68,6 @@ const ItemSelector = ({
         throw new Error(error.message);
       }
       
-      // Transform the opening_stock_entries to match InventoryItem structure
       return data.map(item => ({
         id: item.id,
         modelId: "", // Not available directly
@@ -88,18 +85,15 @@ const ItemSelector = ({
     enabled: true
   });
 
-  // Extract unique item types from inventory items
   const itemTypes = React.useMemo(() => {
     const types = new Set<string>();
     inventoryItems.forEach((item) => types.add(item.type));
     return Array.from(types).sort();
   }, [inventoryItems]);
 
-  // Filter and sort items
   const filteredItems = React.useMemo(() => {
     let result = [...inventoryItems];
 
-    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -110,17 +104,14 @@ const ItemSelector = ({
       );
     }
 
-    // Apply brand filter
     if (selectedBrand) {
       result = result.filter((item) => item.brandId === selectedBrand);
     }
 
-    // Apply type filter
     if (selectedType) {
       result = result.filter((item) => item.type === selectedType);
     }
 
-    // Apply sorting
     result.sort((a, b) => {
       if (sortBy === "name") {
         return sortDirection === "asc"
@@ -136,12 +127,10 @@ const ItemSelector = ({
     return result;
   }, [inventoryItems, searchQuery, selectedBrand, selectedType, sortBy, sortDirection]);
 
-  // Reset selected item when filtered items change
   useEffect(() => {
     setSelectedItem(null);
   }, [searchQuery, selectedBrand, selectedType]);
 
-  // Handle item selection
   const handleItemSelect = (itemId: string) => {
     setSelectedItem(itemId);
     const item = inventoryItems.find((i) => i.id === itemId);
@@ -150,7 +139,6 @@ const ItemSelector = ({
     }
   };
 
-  // Toggle sort direction or change sort field
   const handleSort = (field: "name" | "quantity") => {
     if (sortBy === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -160,7 +148,6 @@ const ItemSelector = ({
     }
   };
 
-  // Clear all filters
   const handleClearFilters = () => {
     setSearchQuery("");
     setSelectedBrand(null);
@@ -171,7 +158,6 @@ const ItemSelector = ({
     <Card>
       <CardContent className="p-4">
         <div className="space-y-4">
-          {/* Search and filters */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="col-span-1 md:col-span-2">
               <div className="relative">
@@ -195,7 +181,6 @@ const ItemSelector = ({
                   <SelectValue placeholder="Item Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {/* Changed the value from "all" to "all_types" to avoid empty string */}
                   <SelectItem value="all_types">All Types</SelectItem>
                   {itemTypes.map((type) => (
                     <SelectItem key={type} value={type}>
@@ -218,7 +203,6 @@ const ItemSelector = ({
             </div>
           </div>
 
-          {/* Items table */}
           {isLoadingInventoryItems ? (
             <div className="space-y-2">
               <Skeleton className="h-10 w-full" />

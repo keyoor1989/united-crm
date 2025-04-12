@@ -26,53 +26,50 @@ const ItemFilters = ({
   models,
 }: ItemFiltersProps) => {
   return (
-    <div className="grid grid-cols-3 gap-4 mb-4">
-      {/* Search */}
-      <div>
-        <div className="relative">
-          <Search className="h-4 w-4 absolute top-3 left-3 text-gray-500" />
-          <Input 
-            placeholder="Search items..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-11 rounded-md"
-          />
-        </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="relative">
+        <Search className="h-4 w-4 absolute top-3 left-3 text-gray-500" />
+        <Input
+          placeholder="Search items..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 h-11 rounded-md"
+        />
       </div>
-      
-      {/* Brand Selection */}
-      <div>
-        <Select value={selectedBrand} onValueChange={setSelectedBrand}>
-          <SelectTrigger className="h-11 rounded-md">
-            <SelectValue placeholder="Select Brand" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All Brands</SelectItem>
-            {brands.map(brand => (
-              <SelectItem key={brand} value={brand}>
-                {brand}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      
-      {/* Model Selection */}
-      <div>
-        <Select value={selectedModel} onValueChange={setSelectedModel}>
-          <SelectTrigger className="h-11 rounded-md">
-            <SelectValue placeholder="Select Model" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All Models</SelectItem>
-            {models.map(model => (
-              <SelectItem key={model} value={model}>
-                {model}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+
+      <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select Brand" />
+        </SelectTrigger>
+        <SelectContent>
+          {/* Using "all_brands" instead of empty string to avoid errors */}
+          <SelectItem value="all_brands">All Brands</SelectItem>
+          {brands.map((brand) => (
+            <SelectItem key={brand} value={brand}>
+              {brand}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={selectedModel}
+        onValueChange={setSelectedModel}
+        disabled={models.length === 0}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select Model" />
+        </SelectTrigger>
+        <SelectContent>
+          {/* Using "all_models" instead of empty string to avoid errors */}
+          <SelectItem value="all_models">All Models</SelectItem>
+          {models.map((model) => (
+            <SelectItem key={model} value={model}>
+              {model}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };
