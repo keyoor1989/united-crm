@@ -38,7 +38,7 @@ const data = [
   },
 ];
 
-interface CompletionTimeChartProps {
+export interface CompletionTimeChartProps {
   engineerId: string;
   dateRange: {
     from: Date;
@@ -79,3 +79,5 @@ export const CompletionTimeChart: React.FC<CompletionTimeChartProps> = ({ engine
     </div>
   );
 };
+
+export default CompletionTimeChart;

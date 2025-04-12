@@ -39,7 +39,7 @@ const data = [
   },
 ];
 
-interface EngineerJobsChartProps {
+export interface EngineerJobsChartProps {
   engineerId: string;
   dateRange: {
     from: Date;
@@ -72,3 +72,5 @@ export const EngineerJobsChart: React.FC<EngineerJobsChartProps> = ({ engineerId
     </div>
   );
 };
+
+export default EngineerJobsChart;

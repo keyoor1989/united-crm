@@ -19,7 +19,7 @@ const data = [
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
-interface JobTypeDistributionChartProps {
+export interface JobTypeDistributionChartProps {
   engineerId: string;
   dateRange: {
     from: Date;
@@ -53,3 +53,5 @@ export const JobTypeDistributionChart: React.FC<JobTypeDistributionChartProps> =
     </div>
   );
 };
+
+export default JobTypeDistributionChart;

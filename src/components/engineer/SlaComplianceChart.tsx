@@ -39,7 +39,7 @@ const data = [
   },
 ];
 
-interface SlaComplianceChartProps {
+export interface SlaComplianceChartProps {
   engineerId: string;
   dateRange: {
     from: Date;
@@ -72,3 +72,5 @@ export const SlaComplianceChart: React.FC<SlaComplianceChartProps> = ({ engineer
     </div>
   );
 };
+
+export default SlaComplianceChart;

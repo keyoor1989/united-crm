@@ -101,7 +101,7 @@ const EngineerDetail = () => {
         skillLevel: data.skill_level as EngineerSkillLevel,
         currentJob: data.current_job,
         currentLocation: data.current_location,
-        leaveEndDate: data.leave_end_date ? data.leave_end_date : undefined
+        leaveEndDate: data.leave_end_date || undefined
       };
 
       setEngineer(engineerData);

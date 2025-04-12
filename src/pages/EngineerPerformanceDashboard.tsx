@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Table, 
@@ -17,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { 
   Calendar,
@@ -43,9 +41,14 @@ import { JobTypeDistributionChart } from "@/components/engineer/JobTypeDistribut
 import { CompletionTimeChart } from "@/components/engineer/CompletionTimeChart";
 import { SlaComplianceChart } from "@/components/engineer/SlaComplianceChart";
 import { EngineerLeaderboard } from "@/components/engineer/EngineerLeaderboard";
+import { addDays } from "date-fns";
 
 const EngineerPerformanceDashboard = () => {
-  const [dateRange, setDateRange] = useState("This Month");
+  const [dateRange, setDateRange] = useState({
+    from: addDays(new Date(), -30),
+    to: new Date(),
+  });
+  const [selectedEngineer, setSelectedEngineer] = useState("all");
   const [location, setLocation] = useState("All Locations");
   const [jobType, setJobType] = useState("All Types");
   const [jobPriority, setJobPriority] = useState("All Priorities");
@@ -216,7 +219,10 @@ const EngineerPerformanceDashboard = () => {
             <CardTitle>Jobs Completed per Engineer</CardTitle>
           </CardHeader>
           <CardContent>
-            <EngineerJobsChart />
+            <EngineerJobsChart 
+              engineerId={selectedEngineer} 
+              dateRange={dateRange}
+            />
           </CardContent>
         </Card>
         
@@ -225,7 +231,10 @@ const EngineerPerformanceDashboard = () => {
             <CardTitle>Job Distribution by Type</CardTitle>
           </CardHeader>
           <CardContent>
-            <JobTypeDistributionChart />
+            <JobTypeDistributionChart 
+              engineerId={selectedEngineer} 
+              dateRange={dateRange}
+            />
           </CardContent>
         </Card>
         
@@ -234,7 +243,10 @@ const EngineerPerformanceDashboard = () => {
             <CardTitle>Avg Completion Time Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            <CompletionTimeChart />
+            <CompletionTimeChart 
+              engineerId={selectedEngineer} 
+              dateRange={dateRange}
+            />
           </CardContent>
         </Card>
         
@@ -243,7 +255,10 @@ const EngineerPerformanceDashboard = () => {
             <CardTitle>SLA Met vs Breached</CardTitle>
           </CardHeader>
           <CardContent>
-            <SlaComplianceChart />
+            <SlaComplianceChart 
+              engineerId={selectedEngineer} 
+              dateRange={dateRange}
+            />
           </CardContent>
         </Card>
       </div>
