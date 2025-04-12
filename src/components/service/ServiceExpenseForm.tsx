@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ExpenseCategory, ServiceExpense } from "@/types/serviceExpense";
 import { ServiceCall } from "@/types/service";
 import { v4 as uuidv4 } from "uuid";
-import { CalendarIcon, Receipt, User, Wrench, Building } from "lucide-react";
+import { CalendarIcon, Receipt, User, Wrench, Building, AlertCircle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useServiceData } from "@/hooks/useServiceData";
 import { useCustomers } from "@/hooks/useCustomers";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ServiceExpenseFormProps {
   serviceCallId: string;
@@ -43,10 +45,12 @@ const ServiceExpenseForm = ({
   const [selectedServiceCallId, setSelectedServiceCallId] = useState<string>(serviceCallId);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null);
+  const [showAttentionAlert, setShowAttentionAlert] = useState<boolean>(false);
   
   const { allCalls, isLoading } = useServiceData();
   const { customers, isLoading: customersLoading } = useCustomers();
   
+  // Get all active service calls (not completed or cancelled)
   const activeServiceCalls = allCalls.filter(
     call => call.status !== "Completed" && call.status !== "Cancelled"
   );
@@ -62,18 +66,27 @@ const ServiceExpenseForm = ({
       if (selectedCall) {
         setSelectedCustomerId(selectedCall.customerId);
         setSelectedCustomerName(selectedCall.customerName);
+        // Hide alert when a specific service call is selected
+        setShowAttentionAlert(false);
       }
     } else {
       setSelectedCustomerId(null);
       setSelectedCustomerName(null);
+      // Show alert when "general" is selected
+      setShowAttentionAlert(true);
     }
   }, [selectedServiceCallId, allCalls]);
   
   const handleCustomerChange = (customerId: string) => {
-    setSelectedCustomerId(customerId);
-    const customer = customers.find(c => c.id === customerId);
-    if (customer) {
-      setSelectedCustomerName(customer.name);
+    setSelectedCustomerId(customerId === "no_customer" ? null : customerId);
+    
+    if (customerId === "no_customer") {
+      setSelectedCustomerName(null);
+    } else {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        setSelectedCustomerName(customer.name);
+      }
     }
   };
   
@@ -101,6 +114,7 @@ const ServiceExpenseForm = ({
     
     onExpenseAdded(newExpense);
     
+    // Reset form
     setCategory("Travel");
     setAmount("0");
     setDescription("");
@@ -121,7 +135,9 @@ const ServiceExpenseForm = ({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="service-call">Service Call</Label>
+            <Label htmlFor="service-call" className="flex items-center">
+              Service Call <span className="text-red-500 ml-1">*</span>
+            </Label>
             <Select
               value={selectedServiceCallId}
               onValueChange={setSelectedServiceCallId}
@@ -148,6 +164,18 @@ const ServiceExpenseForm = ({
               </SelectContent>
             </Select>
           </div>
+          
+          {showAttentionAlert && (
+            <Alert variant="warning" className="bg-amber-50 border-amber-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Attention</AlertTitle>
+              <AlertDescription>
+                This expense won't be tied to a specific service call, so it won't be calculated 
+                in any service call's profit. Select a specific service call if this expense should 
+                reduce a service call's profit.
+              </AlertDescription>
+            </Alert>
+          )}
           
           {selectedServiceCallId === "general" && (
             <div className="space-y-2">
@@ -182,7 +210,7 @@ const ServiceExpenseForm = ({
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category">Expense Category</Label>
+              <Label htmlFor="category">Expense Category <span className="text-red-500">*</span></Label>
               <Select
                 value={category}
                 onValueChange={(value) => setCategory(value as ExpenseCategory)}
@@ -201,7 +229,7 @@ const ServiceExpenseForm = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (₹)</Label>
+              <Label htmlFor="amount">Amount (₹) <span className="text-red-500">*</span></Label>
               <Input
                 id="amount"
                 type="number"
@@ -215,7 +243,7 @@ const ServiceExpenseForm = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">Date <span className="text-red-500">*</span></Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -241,7 +269,7 @@ const ServiceExpenseForm = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
             <Textarea
               id="description"
               value={description}

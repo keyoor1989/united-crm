@@ -4,12 +4,13 @@ import BillingReportView from "@/components/service/BillingReportView";
 import { useServiceData } from "@/hooks/useServiceData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, CircleDollarSign, PiggyBank, BadgeDollarSign, Receipt, TrendingUp } from "lucide-react";
+import { BarChart, CircleDollarSign, PiggyBank, BadgeDollarSign, Receipt, TrendingUp, AlertCircle } from "lucide-react";
 import { ServiceCall } from "@/types/service";
 import ServiceChargeForm from "@/components/service/ServiceChargeForm";
 import ServiceExpenseList from "@/components/service/ServiceExpenseList";
 import { fetchServiceExpenses } from "@/services/serviceExpenseService";
 import { ServiceExpense } from "@/types/serviceExpense";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ServiceBilling = () => {
   const { allCalls, isLoading, fetchServiceCalls } = useServiceData();
@@ -55,12 +56,14 @@ const ServiceBilling = () => {
         total + ((part.cost || part.price * 0.6) * part.quantity), 0) || 0;
       
       // Find expenses that actually impact profit calculation - only non-reimbursed expenses
-      // (reimbursed expenses have already been paid for and don't affect profit)
+      // We specifically match expenses to this exact service call ID (important!)
       const callExpenses = serviceExpenses.filter(expense => 
         expense.serviceCallId === call.id && 
         expense.engineerId !== "system" &&
         !expense.isReimbursed
       );
+      
+      console.log(`Finding expenses for call ${call.id} (${call.customerName}):`, callExpenses);
       
       // Calculate service expenses that affect profit (only unreimbursed expenses)
       const serviceCallExpenses = callExpenses.reduce((total, expense) => 
@@ -116,6 +119,15 @@ const ServiceBilling = () => {
       ? (profitableCalls.length / processedCalls.length) * 100 
       : 0;
     
+    // Count general expenses (not tied to service calls)
+    const generalExpenses = serviceExpenses.filter(expense => 
+      (expense.serviceCallId === "general" || expense.serviceCallId === "00000000-0000-0000-0000-000000000000") && 
+      expense.engineerId !== "system" &&
+      !expense.isReimbursed
+    );
+    
+    const generalExpensesTotal = generalExpenses.reduce((total, expense) => total + expense.amount, 0);
+    
     const serviceTypes = [...new Set(processedCalls.map(call => call.issueType))];
     const serviceTypeDistribution = serviceTypes.map(type => {
       const callsOfType = processedCalls.filter(call => call.issueType === type);
@@ -136,7 +148,8 @@ const ServiceBilling = () => {
       totalExpenses,
       totalProfit,
       paidAmount,
-      unpaidAmount
+      unpaidAmount,
+      generalExpensesTotal
     });
     
     return {
@@ -148,7 +161,9 @@ const ServiceBilling = () => {
       paidCalls: paidCalls.length,
       unpaidCalls: unpaidCalls.length,
       profitableCallsPercent,
-      serviceTypeDistribution
+      serviceTypeDistribution,
+      generalExpensesTotal,
+      generalExpenses
     };
   };
   
@@ -217,6 +232,18 @@ const ServiceBilling = () => {
           </TabsContent>
           
           <TabsContent value="summary">
+            {summary.generalExpensesTotal > 0 && (
+              <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Unallocated Expenses Detected</AlertTitle>
+                <AlertDescription>
+                  There are ₹{summary.generalExpensesTotal.toFixed(2)} in general expenses not allocated to any service call.
+                  These expenses are not reflected in any service call's profit calculation.
+                  To fix this, edit these expenses and assign them to the appropriate service calls.
+                </AlertDescription>
+              </Alert>
+            )}
+          
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card>
                 <CardHeader className="pb-2">
