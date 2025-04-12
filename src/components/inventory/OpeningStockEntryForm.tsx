@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -35,17 +34,14 @@ import { useQuery, QueryClient, QueryClientProvider, useMutation } from "@tansta
 import { Brand, Model, Warehouse } from "@/types/inventory";
 import { supabase } from "@/integrations/supabase/client";
 
-// Create a client
 const queryClient = new QueryClient();
 
-// Wrap the component with QueryClientProvider
 const OpeningStockEntryFormWithQueryClient = (props) => (
   <QueryClientProvider client={queryClient}>
     <OpeningStockEntryForm {...props} />
   </QueryClientProvider>
 );
 
-// Define the form schema with warehouse field
 const formSchema = z.object({
   brand: z.string().min(1, { message: "Brand is required" }),
   compatibleModels: z.array(z.string()).min(1, { message: "At least one compatible model is required" }),
@@ -66,12 +62,9 @@ interface OpeningStockEntryFormProps {
   onAddPart: (part: any) => void;
 }
 
-// Category options - this is static data
 const categories = ["Toner", "Drum", "Maintenance Kit", "Fuser", "Developer", "Other"];
 
-// Mock fetch functions - in a real app, these would be API calls to your backend
 const fetchBrands = async (): Promise<Brand[]> => {
-  // This would be a real API call in production
   return [
     { id: "1", name: "Kyocera", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
     { id: "2", name: "Canon", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -83,7 +76,6 @@ const fetchBrands = async (): Promise<Brand[]> => {
 };
 
 const fetchModelsByBrand = async (brandId: string): Promise<Model[]> => {
-  // This would be a real API call in production
   const allModels: Record<string, Model[]> = {
     "1": [
       { id: "k1", brandId: "1", name: "ECOSYS M2040dn", type: "Machine", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -130,7 +122,6 @@ const fetchModelsByBrand = async (brandId: string): Promise<Model[]> => {
   return allModels[brandId] || [];
 };
 
-// Function to fetch warehouses from Supabase
 const fetchWarehouses = async (): Promise<Warehouse[]> => {
   try {
     const { data, error } = await supabase
@@ -141,7 +132,6 @@ const fetchWarehouses = async (): Promise<Warehouse[]> => {
       
     if (error) {
       console.error("Error fetching warehouses:", error);
-      // Return mock data as a fallback
       return [
         { 
           id: "default", 
@@ -190,30 +180,27 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   
-  // Fetch brands data
   const { data: brands = [] } = useQuery({
     queryKey: ['brands'],
     queryFn: fetchBrands
   });
   
-  // Fetch warehouses data
   const { data: warehouses = [] } = useQuery({
     queryKey: ['warehouses'],
     queryFn: fetchWarehouses
   });
   
-  // Fetch models data for the selected brand
   const { data: models = [] } = useQuery({
     queryKey: ['models', selectedBrand],
     queryFn: () => selectedBrand ? fetchModelsByBrand(selectedBrand) : Promise.resolve([]),
     enabled: !!selectedBrand
   });
 
-  // Create a mutation for saving opening stock entry
   const saveStockEntryMutation = useMutation({
     mutationFn: async (newPart: any) => {
       try {
-        // First, try to save to Supabase
+        console.log("Saving opening stock entry to Supabase:", newPart);
+        
         const { data, error } = await supabase
           .from('opening_stock_entries')
           .insert({
@@ -236,6 +223,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
           throw error;
         }
         
+        console.log("Successfully saved to Supabase:", data);
         return data;
       } catch (error) {
         console.error("Exception saving opening stock entry:", error);
@@ -244,6 +232,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['opening-stock-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['machine-parts'] });
     },
     onError: (error) => {
       console.error("Error saving opening stock entry:", error);
@@ -267,44 +256,50 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
   });
 
   const handleSubmit = async (values: FormValues) => {
-    const warehouseInfo = warehouses.find(w => w.id === values.warehouseId);
-    
-    const newPart = {
-      id: `MP${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
-      partNumber: values.partNumber || `${values.brand.substring(0, 2)}-${Math.floor(Math.random() * 10000)}`,
-      name: values.partName,
-      brand: brands.find(b => b.id === values.brand)?.name || values.brand,
-      compatibleModels: values.compatibleModels,
-      category: values.category,
-      currentStock: values.quantity,
-      minStock: values.minStock,
-      purchasePrice: values.purchasePrice,
-      warehouseId: values.warehouseId,
-      warehouseName: warehouseInfo?.name || "Unknown Warehouse",
-    };
-
     try {
-      // Try to save to Supabase first
-      await saveStockEntryMutation.mutateAsync(newPart);
+      const warehouseInfo = warehouses.find(w => w.id === values.warehouseId);
+      console.log("Selected warehouse:", warehouseInfo);
       
-      // If successful or not, still update the UI with the new part
-      onAddPart(newPart);
-      
-      toast.success("Opening stock entry added successfully!");
-      
-      form.reset();
-      setSelectedModels([]);
-      onOpenChange(false);
+      const newPart = {
+        id: `MP${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
+        partNumber: values.partNumber || `${values.brand.substring(0, 2)}-${Math.floor(Math.random() * 10000)}`,
+        name: values.partName,
+        brand: brands.find(b => b.id === values.brand)?.name || values.brand,
+        compatibleModels: values.compatibleModels,
+        category: values.category,
+        currentStock: values.quantity,
+        minStock: values.minStock,
+        purchasePrice: values.purchasePrice,
+        warehouseId: values.warehouseId,
+        warehouseName: warehouseInfo?.name || "Unknown Warehouse",
+      };
+
+      console.log("Submitting new part:", newPart);
+
+      try {
+        await saveStockEntryMutation.mutateAsync(newPart);
+        
+        onAddPart(newPart);
+        
+        toast.success("Opening stock entry added successfully!");
+        
+        form.reset();
+        setSelectedModels([]);
+        onOpenChange(false);
+      } catch (error) {
+        console.error("Error saving to database:", error);
+        
+        onAddPart(newPart);
+        
+        toast.success("Opening stock entry added to UI (database save failed)");
+        
+        form.reset();
+        setSelectedModels([]);
+        onOpenChange(false);
+      }
     } catch (error) {
-      // Even if the database save fails, we still want to update the UI
-      // This ensures the app is still usable even with database issues
-      onAddPart(newPart);
-      
-      toast.success("Opening stock entry added to UI (database save failed)");
-      
-      form.reset();
-      setSelectedModels([]);
-      onOpenChange(false);
+      console.error("Form submission error:", error);
+      toast.error("Error adding opening stock entry");
     }
   };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,21 @@ import { mockInventoryItems } from "@/components/service/inventory/mockData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+// Define a type for machine parts based on the database structure
+interface MachinePart {
+  id: string;
+  partNumber: string;
+  name: string;
+  brand: string;
+  category: string;
+  compatibleModels: string[];
+  currentStock: number;
+  minStock: number;
+  purchasePrice: number;
+  warehouseId?: string;
+  warehouseName?: string;
+}
+
 const queryClient = new QueryClient();
 
 const MachinePartsWithQueryClient = () => (
@@ -35,6 +51,7 @@ const MachineParts = () => {
     queryKey: ['machine-parts'],
     queryFn: async () => {
       try {
+        // Try to fetch from Supabase first
         const { data, error } = await supabase
           .from('opening_stock_entries')
           .select('*')
@@ -42,34 +59,36 @@ const MachineParts = () => {
         
         if (error) {
           console.error("Error fetching machine parts:", error);
-          return mockInventoryItems;
+          return mockInventoryItems as MachinePart[];
         }
         
         if (data && data.length > 0) {
+          // Transform Supabase data to match our MachinePart type
           return data.map(item => ({
             id: item.id,
-            partNumber: item.part_number,
+            partNumber: item.part_number || '',
             name: item.part_name,
             brand: item.brand,
             category: item.category,
-            compatibleModels: item.compatible_models || [],
+            compatibleModels: Array.isArray(item.compatible_models) ? item.compatible_models : [],
             currentStock: item.quantity,
             minStock: item.min_stock,
             purchasePrice: item.purchase_price,
             warehouseId: item.warehouse_id,
             warehouseName: item.warehouse_name || "Main Warehouse",
-          }));
+          })) as MachinePart[];
         } else {
-          return mockInventoryItems;
+          console.log("No data from Supabase, using mock data");
+          return mockInventoryItems as MachinePart[];
         }
       } catch (error) {
         console.error("Exception fetching machine parts:", error);
-        return mockInventoryItems;
+        return mockInventoryItems as MachinePart[];
       }
     }
   });
   
-  const filteredParts = machineParts.filter(part => {
+  const filteredParts = machineParts.filter((part: MachinePart) => {
     const matchesSearch = searchQuery ? 
       part.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       part.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -83,7 +102,7 @@ const MachineParts = () => {
     return matchesSearch && matchesCategory;
   });
   
-  const getStockStatus = (current, min) => {
+  const getStockStatus = (current: number, min: number) => {
     if (current <= 0) {
       return { label: "Out of Stock", variant: "destructive" as const };
     } else if (current < min) {
@@ -93,7 +112,7 @@ const MachineParts = () => {
     }
   };
 
-  const handleAddPart = (newPart) => {
+  const handleAddPart = () => {
     refetch();
   };
 
