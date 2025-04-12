@@ -44,12 +44,12 @@ const WarehouseSelector = ({
       </Button>
       {warehouses.map((warehouse) => (
         <Button
-          key={warehouse.id}
+          key={warehouse.id || `warehouse-${warehouse.name}`} // Ensure we always have a valid key
           variant={selectedWarehouse === warehouse.id ? "default" : "outline"}
           onClick={() => onSelectWarehouse(warehouse.id)}
           disabled={!warehouse.isActive}
         >
-          {warehouse.name} ({warehouse.location})
+          {warehouse.name || "Unnamed"} ({warehouse.location || "Unknown"})
         </Button>
       ))}
     </div>

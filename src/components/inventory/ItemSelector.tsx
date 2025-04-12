@@ -37,6 +37,9 @@ const ItemSelector = ({
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [barcodeInput, setBarcodeInput] = useState<string>("");
   
+  // Filter to only include valid brands with non-empty IDs
+  const validBrands = brands.filter(brand => !!brand.id);
+  
   // Reset model selection when brand changes
   useEffect(() => {
     setSelectedModelId("");
@@ -50,12 +53,12 @@ const ItemSelector = ({
   
   // Filter models based on selected brand
   const filteredModels = models.filter(
-    model => selectedBrandId ? model.brandId === selectedBrandId : true
+    model => selectedBrandId && model.brandId === selectedBrandId
   );
   
   // Filter items based on selected model
   const filteredItems = items.filter(
-    item => selectedModelId ? item.modelId === selectedModelId : true
+    item => selectedModelId && item.modelId === selectedModelId
   );
   
   // Handle barcode scan
@@ -110,9 +113,9 @@ const ItemSelector = ({
               <SelectValue placeholder="Select Brand" />
             </SelectTrigger>
             <SelectContent>
-              {brands.map(brand => (
+              {validBrands.map(brand => (
                 <SelectItem key={brand.id} value={brand.id}>
-                  {brand.name}
+                  {brand.name || 'Unnamed Brand'}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -132,7 +135,7 @@ const ItemSelector = ({
             <SelectContent>
               {filteredModels.map(model => (
                 <SelectItem key={model.id} value={model.id}>
-                  {model.name}
+                  {model.name || 'Unnamed Model'}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -153,7 +156,7 @@ const ItemSelector = ({
               {filteredItems.map(item => (
                 <SelectItem key={item.id} value={item.id}>
                   <div className="flex justify-between w-full items-center">
-                    <span>{item.name}</span>
+                    <span>{item.name || 'Unnamed Item'}</span>
                     {showQuantityInSelector && (
                       <Badge variant={item.currentQuantity < item.minQuantity ? "destructive" : "outline"}>
                         {item.currentQuantity} in stock

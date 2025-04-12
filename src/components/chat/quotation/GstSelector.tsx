@@ -12,18 +12,24 @@ const GstSelector: React.FC<GstSelectorProps> = ({
   gstPercent,
   onGstChange,
 }) => {
+  const gstOptions = ["5", "12", "18", "28"];
+  
+  // Ensure gstPercent is a valid, non-empty value
+  const validGstPercent = gstOptions.includes(gstPercent) ? gstPercent : "5";
+
   return (
     <div className="space-y-2">
       <Label htmlFor="gst">GST Percentage</Label>
-      <Select value={gstPercent} onValueChange={onGstChange}>
+      <Select value={validGstPercent} onValueChange={onGstChange}>
         <SelectTrigger>
           <SelectValue placeholder="Select GST %" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="5">5%</SelectItem>
-          <SelectItem value="12">12%</SelectItem>
-          <SelectItem value="18">18%</SelectItem>
-          <SelectItem value="28">28%</SelectItem>
+          {gstOptions.map(option => (
+            <SelectItem key={option} value={option}>
+              {option}%
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>

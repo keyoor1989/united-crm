@@ -61,16 +61,16 @@ const MachineParts = () => {
         
         if (data && data.length > 0) {
           return data.map(item => ({
-            id: item.id,
-            partNumber: item.part_number || '',
-            name: item.part_name,
-            brand: item.brand,
-            category: item.category,
-            compatibleModels: Array.isArray(item.compatible_models) ? item.compatible_models : [],
-            currentStock: item.quantity,
-            minStock: item.min_stock,
-            purchasePrice: item.purchase_price,
-            warehouseId: item.warehouse_id,
+            id: item.id || "unknown-id",
+            partNumber: item.part_number || 'N/A',
+            name: item.part_name || 'Unnamed Part',
+            brand: item.brand || 'No Brand',
+            category: item.category || 'Uncategorized',
+            compatibleModels: Array.isArray(item.compatible_models) ? item.compatible_models.filter(model => !!model) : [],
+            currentStock: item.quantity || 0,
+            minStock: item.min_stock || 0,
+            purchasePrice: item.purchase_price || 0,
+            warehouseId: item.warehouse_id || null,
             warehouseName: item.warehouse_name || "Main Warehouse",
           })) as MachinePart[];
         } else {
