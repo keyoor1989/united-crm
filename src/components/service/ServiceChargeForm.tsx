@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CalendarIcon, Receipt, DollarSign } from "lucide-react";
+import { CalendarIcon, Receipt, DollarSign, TrendingUp } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -37,6 +37,12 @@ const ServiceChargeForm = ({ onChargeAdded }: ServiceChargeFormProps) => {
   const { customers, isLoading: customersLoading } = useCustomers();
   
   const handleCustomerChange = (customerId: string) => {
+    if (customerId === "select_customer") {
+      setSelectedCustomerId(null);
+      setSelectedCustomerName(null);
+      return;
+    }
+    
     setSelectedCustomerId(customerId);
     const customer = customers.find(c => c.id === customerId);
     if (customer) {
@@ -90,9 +96,12 @@ const ServiceChargeForm = ({ onChargeAdded }: ServiceChargeFormProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add Service Charge</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-green-500" />
+          Add Service Income
+        </CardTitle>
         <CardDescription>
-          Record a service charge payment received from a customer
+          Record a service charge payment received from a customer (Income)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -120,7 +129,7 @@ const ServiceChargeForm = ({ onChargeAdded }: ServiceChargeFormProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="amount">Amount (₹)</Label>
+            <Label htmlFor="amount">Amount Received (₹)</Label>
             <Input
               id="amount"
               type="number"
@@ -129,11 +138,12 @@ const ServiceChargeForm = ({ onChargeAdded }: ServiceChargeFormProps) => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               required
+              className="bg-green-50"
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date">Date Received</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -164,14 +174,14 @@ const ServiceChargeForm = ({ onChargeAdded }: ServiceChargeFormProps) => {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter service charge details"
+              placeholder="Enter service income details"
               required
             />
           </div>
           
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isSubmitting}>
             <DollarSign className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Adding..." : "Add Service Charge"}
+            {isSubmitting ? "Adding..." : "Record Service Income"}
           </Button>
         </form>
       </CardContent>

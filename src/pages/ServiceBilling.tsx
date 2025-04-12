@@ -4,7 +4,7 @@ import BillingReportView from "@/components/service/BillingReportView";
 import { useServiceData } from "@/hooks/useServiceData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, CircleDollarSign, PiggyBank, BadgeDollarSign, Receipt } from "lucide-react";
+import { BarChart, CircleDollarSign, PiggyBank, BadgeDollarSign, Receipt, TrendingUp } from "lucide-react";
 import { ServiceCall } from "@/types/service";
 import ServiceChargeForm from "@/components/service/ServiceChargeForm";
 
@@ -127,8 +127,8 @@ const ServiceBilling = () => {
               Financial Summary
             </TabsTrigger>
             <TabsTrigger value="add-charge" className="flex items-center gap-2">
-              <Receipt className="h-4 w-4" />
-              Add Service Charge
+              <TrendingUp className="h-4 w-4 text-green-500" />
+              Add Service Income
             </TabsTrigger>
           </TabsList>
           
@@ -252,27 +252,32 @@ const ServiceBilling = () => {
               <div className="md:col-span-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Service Charge Instructions</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-green-500" />
+                      Service Income Instructions
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <p>
-                      Use this form to record service charges received from customers that are not already 
+                      Use this form to record service income received from customers that is not already 
                       associated with a specific service call in the system.
                     </p>
                     <div className="space-y-2">
-                      <h3 className="font-medium">How to add a service charge:</h3>
+                      <h3 className="font-medium">How to add service income:</h3>
                       <ol className="list-decimal list-inside space-y-1">
                         <li>Select the customer who made the payment</li>
                         <li>Enter the amount received</li>
                         <li>Select the date when the payment was received</li>
                         <li>Add a description of the service provided</li>
-                        <li>Click "Add Service Charge" to save the record</li>
+                        <li>Click "Record Service Income" to save the record</li>
                       </ol>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Note: All service charges added here will appear in the expense reports and 
-                      will be marked as "reimbursed" by default.
-                    </p>
+                    <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
+                      <p className="text-sm text-amber-800">
+                        <strong>Note:</strong> All service income added here will appear as income in the financial reports
+                        even though they're stored in the expense system as "reimbursed" records for technical reasons.
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
