@@ -15,14 +15,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ExpenseCategory, ServiceExpense } from "@/types/serviceExpense";
 import { ServiceCall } from "@/types/service";
 import { v4 as uuidv4 } from "uuid";
-import { CalendarIcon, Receipt, User, Wrench, Building, AlertCircle, CheckCircle } from "lucide-react";
+import { CalendarIcon, Receipt, User, Wrench, Building, AlertCircle, CheckCircle, Clock, AlertTriangle, Search } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format, isAfter, isBefore, isEqual, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useCustomers } from "@/hooks/useCustomers";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ServiceExpenseFormProps {
   serviceCallId: string;
@@ -30,6 +31,7 @@ interface ServiceExpenseFormProps {
   engineerName: string;
   onExpenseAdded: (expense: ServiceExpense) => void;
   completedServiceCalls: ServiceCall[];
+  expenses?: ServiceExpense[];
 }
 
 const ServiceExpenseForm = ({
@@ -38,6 +40,7 @@ const ServiceExpenseForm = ({
   engineerName,
   onExpenseAdded,
   completedServiceCalls,
+  expenses = []
 }: ServiceExpenseFormProps) => {
   const [category, setCategory] = useState<ExpenseCategory>("Travel");
   const [amount, setAmount] = useState<string>("0");
@@ -47,8 +50,14 @@ const ServiceExpenseForm = ({
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null);
   const [showAttentionAlert, setShowAttentionAlert] = useState<boolean>(false);
+  const [expenseDate, setExpenseDate] = useState<Date>(new Date());
+  const [dateError, setDateError] = useState<string | null>(null);
   
   const { customers, isLoading: customersLoading } = useCustomers();
+  
+  // Check if the selected service call has already been reimbursed
+  const hasExistingExpenses = selectedServiceCallId && selectedServiceCallId !== "general" && 
+    expenses.some(expense => expense.serviceCallId === selectedServiceCallId);
   
   useEffect(() => {
     if (serviceCallId) {
@@ -63,6 +72,20 @@ const ServiceExpenseForm = ({
       if (selectedCall) {
         setSelectedCustomerId(selectedCall.customerId);
         setSelectedCustomerName(selectedCall.customerName);
+        
+        // Check if the service call has a completion date and validate the expense date
+        if (selectedCall.completionTime) {
+          const completionDate = parseISO(selectedCall.completionTime);
+          
+          // Reset date error
+          setDateError(null);
+          
+          // Validate expense date is not before service completion
+          if (isBefore(expenseDate, completionDate) && !isEqual(expenseDate, completionDate)) {
+            setDateError("Expense date cannot be before service call completion date");
+          }
+        }
+        
         // Hide alert when a specific service call is selected
         setShowAttentionAlert(false);
       }
@@ -71,8 +94,10 @@ const ServiceExpenseForm = ({
       setSelectedCustomerName(null);
       // Show alert when "general" is selected
       setShowAttentionAlert(true);
+      // Clear date error for general expenses
+      setDateError(null);
     }
-  }, [selectedServiceCallId, completedServiceCalls]);
+  }, [selectedServiceCallId, completedServiceCalls, expenseDate]);
   
   const handleCustomerChange = (customerId: string) => {
     setSelectedCustomerId(customerId === "no_customer" ? null : customerId);
@@ -87,10 +112,40 @@ const ServiceExpenseForm = ({
     }
   };
   
+  const handleExpenseDateChange = (newDate: Date) => {
+    setExpenseDate(newDate);
+    
+    // Validate expense date against service call completion date if a service call is selected
+    if (selectedServiceCallId && selectedServiceCallId !== "general") {
+      const selectedCall = completedServiceCalls.find(call => call.id === selectedServiceCallId);
+      if (selectedCall && selectedCall.completionTime) {
+        const completionDate = parseISO(selectedCall.completionTime);
+        
+        // Reset date error
+        setDateError(null);
+        
+        // Validate expense date is not before service completion
+        if (isBefore(newDate, completionDate) && !isEqual(newDate, completionDate)) {
+          setDateError("Expense date cannot be before service call completion date");
+        }
+      }
+    }
+  };
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!category || !amount || !description) {
+      return;
+    }
+    
+    // Check for date error before submitting
+    if (dateError) {
+      toast({
+        title: "Invalid Date",
+        description: dateError,
+        variant: "destructive",
+      });
       return;
     }
     
@@ -104,7 +159,7 @@ const ServiceExpenseForm = ({
       category,
       amount: parseFloat(amount),
       description,
-      date: date.toISOString(),
+      date: expenseDate.toISOString(),
       isReimbursed: false,
       createdAt: new Date().toISOString(),
     };
@@ -115,8 +170,20 @@ const ServiceExpenseForm = ({
     setCategory("Travel");
     setAmount("0");
     setDescription("");
-    setDate(new Date());
+    setExpenseDate(new Date());
   };
+
+  // Function to check if a service call already has expenses submitted
+  const getServiceCallExpenseStatus = (serviceCallId: string) => {
+    return expenses.some(expense => expense.serviceCallId === serviceCallId);
+  };
+
+  // Sorting completed service calls: most recent first
+  const sortedServiceCalls = [...completedServiceCalls].sort((a, b) => {
+    const dateA = a.completionTime ? new Date(a.completionTime).getTime() : 0;
+    const dateB = b.completionTime ? new Date(b.completionTime).getTime() : 0;
+    return dateB - dateA; // Sort in descending order (newest first)
+  });
 
   return (
     <Card>
@@ -150,18 +217,43 @@ const ServiceExpenseForm = ({
                   </div>
                 </SelectItem>
                 
-                {completedServiceCalls.length > 0 ? (
-                  completedServiceCalls.map((call) => (
-                    <SelectItem key={call.id} value={call.id}>
-                      <div className="flex flex-col">
-                        <span className="flex items-center">
-                          {call.customerName} - {call.machineModel}
-                          <CheckCircle className="h-3 w-3 ml-1 text-green-600" />
-                        </span>
-                        <span className="text-xs text-muted-foreground">{call.location}</span>
-                      </div>
-                    </SelectItem>
-                  ))
+                {sortedServiceCalls.length > 0 ? (
+                  sortedServiceCalls.map((call) => {
+                    const hasExpenses = getServiceCallExpenseStatus(call.id);
+                    const completionDate = call.completionTime 
+                      ? format(new Date(call.completionTime), "dd/MM/yyyy") 
+                      : "Unknown";
+                    
+                    return (
+                      <SelectItem key={call.id} value={call.id}>
+                        <div className="flex flex-col">
+                          <span className="flex items-center">
+                            {call.customerName} - {call.machineModel}
+                            {hasExpenses ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="ml-1">
+                                      <AlertTriangle className="h-3 w-3 text-amber-600" />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Expense already submitted for this call</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <CheckCircle className="h-3 w-3 ml-1 text-green-600" />
+                            )}
+                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Completed: {completionDate} - {call.location}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })
                 ) : (
                   <SelectItem value="no-completed-calls" disabled>
                     <span className="text-muted-foreground">No completed service calls available</span>
@@ -170,6 +262,17 @@ const ServiceExpenseForm = ({
               </SelectContent>
             </Select>
           </div>
+          
+          {hasExistingExpenses && (
+            <Alert variant="warning" className="bg-amber-50 border-amber-200">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Expense Already Submitted</AlertTitle>
+              <AlertDescription>
+                An expense has already been submitted for this service call. Adding another expense 
+                for the same call may lead to duplicate reimbursements.
+              </AlertDescription>
+            </Alert>
+          )}
           
           {showAttentionAlert && (
             <Alert variant="warning" className="bg-amber-50 border-amber-200">
@@ -249,25 +352,29 @@ const ServiceExpenseForm = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="date">Date <span className="text-red-500">*</span></Label>
+            <Label htmlFor="date" className={cn(dateError && "text-red-500")}>
+              Expense Date <span className="text-red-500">*</span>
+              {dateError && <span className="ml-2 text-xs text-red-500">({dateError})</span>}
+            </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
+                    !expenseDate && "text-muted-foreground",
+                    dateError && "border-red-500 text-red-500"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                  {expenseDate ? format(expenseDate, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={date}
-                  onSelect={(date) => date && setDate(date)}
+                  selected={expenseDate}
+                  onSelect={(date) => date && handleExpenseDateChange(date)}
                   initialFocus
                 />
               </PopoverContent>
@@ -285,7 +392,11 @@ const ServiceExpenseForm = ({
             />
           </div>
           
-          <Button type="submit" className="w-full">
+          <Button 
+            type="submit" 
+            className="w-full"
+            disabled={!!dateError}
+          >
             <Receipt className="mr-2 h-4 w-4" />
             Add Expense
           </Button>
