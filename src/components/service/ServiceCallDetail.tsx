@@ -46,7 +46,6 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
           engineer_id: engineerId === "unassigned" ? null : engineerId,
           status,
           issue_description: resolutionNotes,
-          // Removed the updated_at field that was causing the error
           completion_time: status === "Completed" ? new Date().toISOString() : serviceCall.completionTime
         })
         .eq('id', serviceCall.id);
@@ -54,7 +53,6 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
       if (serviceCallError) throw serviceCallError;
       
       // If the status is Completed, update the engineer's status to Available
-      // Even if the engineer was "unassigned", we need to make sure any previously assigned engineer is set to Available
       if (status === "Completed") {
         // If there was an engineer assigned to this call, update their status
         if (serviceCall.engineerId && serviceCall.engineerId !== "unassigned") {
@@ -70,6 +68,22 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
           if (engineerError) {
             console.error("Error updating engineer status:", engineerError);
             // We don't throw here to avoid failing the whole operation
+          }
+        }
+        
+        // If a different engineer is currently assigned when completing, also update them
+        if (engineerId && engineerId !== "unassigned" && engineerId !== serviceCall.engineerId) {
+          console.log("Also updating newly assigned engineer to Available:", engineerId);
+          const { error: newEngineerError } = await supabase
+            .from('engineers')
+            .update({
+              status: 'Available' as EngineerStatus,
+              current_job: null
+            })
+            .eq('id', engineerId);
+            
+          if (newEngineerError) {
+            console.error("Error updating new engineer status:", newEngineerError);
           }
         }
       }
