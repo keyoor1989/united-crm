@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceCall, Part } from "@/types/service";
 import { toast } from "@/hooks/use-toast";
@@ -96,58 +97,104 @@ export const updatePartReconciliation = async (
       return false;
     }
     
+    // Only update engineer inventory if reconciling (not unreconciling)
     if (reconciled && !part.isReconciled) {
-      const { data: engineerItems, error: itemsError } = await supabase
-        .from('engineer_inventory')
+      // First, check if the part has already been reconciled in the database
+      const { data: reconciliationRecord, error: reconciliationError } = await supabase
+        .from('part_reconciliations')
         .select('*')
-        .eq('engineer_id', serviceCall.engineer_id)
-        .ilike('item_name', `%${part.name}%`);
-        
-      if (itemsError) {
-        console.error("Error fetching engineer inventory:", itemsError);
-      } else if (engineerItems && engineerItems.length > 0) {
-        const matchingItem = engineerItems[0];
-        
-        const newQuantity = Math.max(0, matchingItem.quantity - part.quantity);
-        
-        if (newQuantity === 0) {
-          const { error: deleteError } = await supabase
-            .from('engineer_inventory')
-            .delete()
-            .eq('id', matchingItem.id);
-            
-          if (deleteError) {
-            console.error("Error removing item from engineer inventory:", deleteError);
+        .eq('service_call_id', serviceCallId)
+        .eq('part_id', partId)
+        .single();
+      
+      if (reconciliationError && reconciliationError.code !== 'PGRST116') { // PGRST116 means "no rows returned"
+        console.error("Error checking part reconciliation status:", reconciliationError);
+      }
+      
+      // If not already reconciled in database, update engineer inventory and save reconciliation record
+      if (!reconciliationRecord) {
+        const { data: engineerItems, error: itemsError } = await supabase
+          .from('engineer_inventory')
+          .select('*')
+          .eq('engineer_id', serviceCall.engineer_id)
+          .ilike('item_name', `%${part.name}%`);
+          
+        if (itemsError) {
+          console.error("Error fetching engineer inventory:", itemsError);
+        } else if (engineerItems && engineerItems.length > 0) {
+          const matchingItem = engineerItems[0];
+          
+          const newQuantity = Math.max(0, matchingItem.quantity - part.quantity);
+          
+          // Update engineer inventory
+          if (newQuantity === 0) {
+            const { error: deleteError } = await supabase
+              .from('engineer_inventory')
+              .delete()
+              .eq('id', matchingItem.id);
+              
+            if (deleteError) {
+              console.error("Error removing item from engineer inventory:", deleteError);
+            } else {
+              console.log(`Removed item ${matchingItem.item_name} from engineer inventory`);
+              toast({
+                title: "Inventory Updated",
+                description: `Removed ${matchingItem.item_name} from ${serviceCall.engineer_id}'s inventory`,
+                variant: "default",
+              });
+            }
           } else {
-            console.log(`Removed item ${matchingItem.item_name} from engineer inventory`);
-            toast({
-              title: "Inventory Updated",
-              description: `Removed ${matchingItem.item_name} from ${serviceCall.engineer_id}'s inventory`,
-              variant: "default",
+            const { error: updateError } = await supabase
+              .from('engineer_inventory')
+              .update({ quantity: newQuantity })
+              .eq('id', matchingItem.id);
+              
+            if (updateError) {
+              console.error("Error updating engineer inventory:", updateError);
+            } else {
+              console.log(`Updated item ${matchingItem.item_name} quantity to ${newQuantity}`);
+              toast({
+                title: "Inventory Updated",
+                description: `Updated ${matchingItem.item_name} quantity to ${newQuantity}`,
+                variant: "default",
+              });
+            }
+          }
+          
+          // Record this reconciliation in the database
+          const { error: insertError } = await supabase
+            .from('part_reconciliations')
+            .insert({
+              service_call_id: serviceCallId,
+              part_id: partId,
+              part_name: part.name,
+              quantity: part.quantity,
+              engineer_id: serviceCall.engineer_id,
+              reconciled_at: new Date().toISOString()
             });
+            
+          if (insertError) {
+            console.error("Error recording part reconciliation:", insertError);
           }
         } else {
-          const { error: updateError } = await supabase
-            .from('engineer_inventory')
-            .update({ quantity: newQuantity })
-            .eq('id', matchingItem.id);
-            
-          if (updateError) {
-            console.error("Error updating engineer inventory:", updateError);
-          } else {
-            console.log(`Updated item ${matchingItem.item_name} quantity to ${newQuantity}`);
-            toast({
-              title: "Inventory Updated",
-              description: `Updated ${matchingItem.item_name} quantity to ${newQuantity}`,
-              variant: "default",
-            });
-          }
+          console.log("No matching item found in engineer inventory for:", part.name);
         }
-      } else {
-        console.log("No matching item found in engineer inventory for:", part.name);
+      }
+    } else if (!reconciled && part.isReconciled) {
+      // Handle unreconciling if needed (optional - could add inventory back)
+      // For now, we'll just delete the reconciliation record
+      const { error: deleteError } = await supabase
+        .from('part_reconciliations')
+        .delete()
+        .eq('service_call_id', serviceCallId)
+        .eq('part_id', partId);
+        
+      if (deleteError) {
+        console.error("Error removing reconciliation record:", deleteError);
       }
     }
     
+    // Update the part's reconciliation status in the service call
     const updatedPartsUsed = partsUsed.map(p => {
       if (p.id === partId) {
         return { ...p, isReconciled: reconciled };
@@ -203,59 +250,102 @@ export const updateServiceCallReconciliation = async (
     if (reconciled) {
       for (const part of partsUsed) {
         if (!part.isReconciled) {
-          const { data: engineerItems, error: itemsError } = await supabase
-            .from('engineer_inventory')
+          // Check if this part has already been reconciled in the database
+          const { data: reconciliationRecord, error: reconciliationError } = await supabase
+            .from('part_reconciliations')
             .select('*')
-            .eq('engineer_id', serviceCall.engineer_id)
-            .ilike('item_name', `%${part.name}%`);
+            .eq('service_call_id', serviceCallId)
+            .eq('part_id', part.id)
+            .single();
             
-          if (itemsError) {
-            console.error("Error fetching engineer inventory:", itemsError);
+          if (reconciliationError && reconciliationError.code !== 'PGRST116') { 
+            console.error("Error checking part reconciliation status:", reconciliationError);
             continue;
           }
           
-          if (engineerItems && engineerItems.length > 0) {
-            const matchingItem = engineerItems[0];
+          // Only update inventory if not already reconciled in database
+          if (!reconciliationRecord) {
+            const { data: engineerItems, error: itemsError } = await supabase
+              .from('engineer_inventory')
+              .select('*')
+              .eq('engineer_id', serviceCall.engineer_id)
+              .ilike('item_name', `%${part.name}%`);
+              
+            if (itemsError) {
+              console.error("Error fetching engineer inventory:", itemsError);
+              continue;
+            }
             
-            const newQuantity = Math.max(0, matchingItem.quantity - part.quantity);
-            
-            if (newQuantity === 0) {
-              const { error: deleteError } = await supabase
-                .from('engineer_inventory')
-                .delete()
-                .eq('id', matchingItem.id);
-                
-              if (deleteError) {
-                console.error("Error removing item from engineer inventory:", deleteError);
+            if (engineerItems && engineerItems.length > 0) {
+              const matchingItem = engineerItems[0];
+              
+              const newQuantity = Math.max(0, matchingItem.quantity - part.quantity);
+              
+              if (newQuantity === 0) {
+                const { error: deleteError } = await supabase
+                  .from('engineer_inventory')
+                  .delete()
+                  .eq('id', matchingItem.id);
+                  
+                if (deleteError) {
+                  console.error("Error removing item from engineer inventory:", deleteError);
+                } else {
+                  console.log(`Removed item ${matchingItem.item_name} from engineer inventory`);
+                  toast({
+                    title: "Inventory Updated",
+                    description: `Removed ${matchingItem.item_name} from engineer's inventory`,
+                    variant: "default",
+                  });
+                }
               } else {
-                console.log(`Removed item ${matchingItem.item_name} from engineer inventory`);
-                toast({
-                  title: "Inventory Updated",
-                  description: `Removed ${matchingItem.item_name} from engineer's inventory`,
-                  variant: "default",
+                const { error: updateError } = await supabase
+                  .from('engineer_inventory')
+                  .update({ quantity: newQuantity })
+                  .eq('id', matchingItem.id);
+                  
+                if (updateError) {
+                  console.error("Error updating engineer inventory:", updateError);
+                } else {
+                  console.log(`Updated item ${matchingItem.item_name} quantity to ${newQuantity}`);
+                  toast({
+                    title: "Inventory Updated",
+                    description: `Updated ${matchingItem.item_name} quantity to ${newQuantity}`,
+                    variant: "default",
+                  });
+                }
+              }
+              
+              // Record this reconciliation
+              const { error: insertError } = await supabase
+                .from('part_reconciliations')
+                .insert({
+                  service_call_id: serviceCallId,
+                  part_id: part.id,
+                  part_name: part.name,
+                  quantity: part.quantity,
+                  engineer_id: serviceCall.engineer_id,
+                  reconciled_at: new Date().toISOString()
                 });
+                
+              if (insertError) {
+                console.error("Error recording part reconciliation:", insertError);
               }
             } else {
-              const { error: updateError } = await supabase
-                .from('engineer_inventory')
-                .update({ quantity: newQuantity })
-                .eq('id', matchingItem.id);
-                
-              if (updateError) {
-                console.error("Error updating engineer inventory:", updateError);
-              } else {
-                console.log(`Updated item ${matchingItem.item_name} quantity to ${newQuantity}`);
-                toast({
-                  title: "Inventory Updated",
-                  description: `Updated ${matchingItem.item_name} quantity to ${newQuantity}`,
-                  variant: "default",
-                });
-              }
+              console.log("No matching item found in engineer inventory for:", part.name);
             }
-          } else {
-            console.log("No matching item found in engineer inventory for:", part.name);
           }
         }
+      }
+    } else if (!reconciled) {
+      // Handle unreconciling all parts if needed (optional - could add inventory back)
+      // For now, just delete reconciliation records
+      const { error: deleteError } = await supabase
+        .from('part_reconciliations')
+        .delete()
+        .eq('service_call_id', serviceCallId);
+        
+      if (deleteError) {
+        console.error("Error removing reconciliation records:", deleteError);
       }
     }
     
