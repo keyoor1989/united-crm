@@ -95,11 +95,12 @@ const Service = () => {
         
         // Parse feedback to ensure it's a Feedback object or null
         let parsedFeedback: Feedback | null = null;
-        if (call.feedback && typeof call.feedback === 'object') {
+        if (call.feedback && typeof call.feedback === 'object' && !Array.isArray(call.feedback)) {
+          const feedbackObj = call.feedback as Record<string, any>;
           parsedFeedback = {
-            rating: typeof call.feedback.rating === 'number' ? call.feedback.rating : 0,
-            comment: typeof call.feedback.comment === 'string' ? call.feedback.comment : null,
-            date: typeof call.feedback.date === 'string' ? call.feedback.date : new Date().toISOString()
+            rating: typeof feedbackObj.rating === 'number' ? feedbackObj.rating : 0,
+            comment: typeof feedbackObj.comment === 'string' ? feedbackObj.comment : null,
+            date: typeof feedbackObj.date === 'string' ? feedbackObj.date : new Date().toISOString()
           };
         }
         

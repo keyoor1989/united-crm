@@ -103,7 +103,6 @@ const EngineerDetail = () => {
       }
 
       const transformedCalls: ServiceCall[] = data.map(call => {
-        // Parse parts_used to ensure it's an array of Part objects
         let parsedPartsUsed: Part[] = [];
         if (Array.isArray(call.parts_used)) {
           parsedPartsUsed = call.parts_used.map((part: any) => ({
@@ -115,13 +114,13 @@ const EngineerDetail = () => {
           }));
         }
         
-        // Parse feedback to ensure it's a Feedback object or null
         let parsedFeedback: Feedback | null = null;
-        if (call.feedback && typeof call.feedback === 'object') {
+        if (call.feedback && typeof call.feedback === 'object' && !Array.isArray(call.feedback)) {
+          const feedbackObj = call.feedback as Record<string, any>;
           parsedFeedback = {
-            rating: typeof call.feedback.rating === 'number' ? call.feedback.rating : 0,
-            comment: typeof call.feedback.comment === 'string' ? call.feedback.comment : null,
-            date: typeof call.feedback.date === 'string' ? call.feedback.date : new Date().toISOString()
+            rating: typeof feedbackObj.rating === 'number' ? feedbackObj.rating : 0,
+            comment: typeof feedbackObj.comment === 'string' ? feedbackObj.comment : null,
+            date: typeof feedbackObj.date === 'string' ? feedbackObj.date : new Date().toISOString()
           };
         }
 
@@ -328,7 +327,6 @@ const EngineerDetail = () => {
   );
 };
 
-// Helper component for service call cards
 const ServiceCallCard = ({ call }: { call: ServiceCall }) => {
   return (
     <Card className="hover:bg-accent/10 transition-colors">
