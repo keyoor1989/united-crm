@@ -6,6 +6,7 @@ import { Send, ArrowLeft, CircleCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InventoryIssueForm from "@/components/inventory/issue/InventoryIssueForm";
 import { Card, CardContent } from "@/components/ui/card";
+import ActivityLog from "@/components/inventory/issue/ActivityLog";
 
 const IssueInventory = () => {
   return (
@@ -62,7 +63,7 @@ const IssueInventory = () => {
         <TabsContent value="activities">
           <Card>
             <CardContent>
-              <p>Recent activities will be displayed here</p>
+              <ActivityLog />
             </CardContent>
           </Card>
         </TabsContent>
