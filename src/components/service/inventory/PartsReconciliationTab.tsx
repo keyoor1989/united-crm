@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -8,21 +8,138 @@ import { Input } from "@/components/ui/input";
 import { Search, Check, X, FileText, ArrowDownToLine } from "lucide-react";
 import { ServiceCall, Part } from "@/types/service";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { fetchServiceCallsWithParts, updatePartReconciliation, updateServiceCallReconciliation } from "@/services/partsReconciliationService";
+import { useToast } from "@/hooks/use-toast";
 
 interface PartsReconciliationTabProps {
-  serviceCalls: ServiceCall[];
-  onReconcile: (serviceCallId: string, reconciled: boolean) => void;
-  onPartReconcile: (serviceCallId: string, partId: string, reconciled: boolean) => void;
-  isLoading: boolean;
+  serviceCalls?: ServiceCall[];
+  onReconcile?: (serviceCallId: string, reconciled: boolean) => void;
+  onPartReconcile?: (serviceCallId: string, partId: string, reconciled: boolean) => void;
+  isLoading?: boolean;
 }
 
 const PartsReconciliationTab = ({ 
-  serviceCalls, 
-  onReconcile, 
-  onPartReconcile,
-  isLoading 
+  serviceCalls: propServiceCalls, 
+  onReconcile: propOnReconcile, 
+  onPartReconcile: propOnPartReconcile,
+  isLoading: propIsLoading 
 }: PartsReconciliationTabProps) => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
+  const [isLoading, setIsLoading] = useState(propIsLoading || true);
+  
+  // Use either the props or fetch from the database
+  useEffect(() => {
+    if (propServiceCalls) {
+      setServiceCalls(propServiceCalls);
+      setIsLoading(false);
+    } else {
+      fetchServiceCallsFromDB();
+    }
+  }, [propServiceCalls]);
+  
+  // Function to fetch service calls from the database
+  const fetchServiceCallsFromDB = async () => {
+    setIsLoading(true);
+    try {
+      const calls = await fetchServiceCallsWithParts();
+      setServiceCalls(calls);
+    } catch (error) {
+      console.error("Error fetching service calls:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load service calls. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle part reconciliation either through props or directly with the database
+  const handlePartReconcile = async (serviceCallId: string, partId: string, reconciled: boolean) => {
+    if (propOnPartReconcile) {
+      propOnPartReconcile(serviceCallId, partId, reconciled);
+    } else {
+      const success = await updatePartReconciliation(serviceCallId, partId, reconciled);
+      if (success) {
+        // Update the local state to reflect the change
+        setServiceCalls(prev => 
+          prev.map(call => {
+            if (call.id === serviceCallId) {
+              const updatedParts = call.partsUsed.map(part => {
+                if (part.id === partId) {
+                  return { ...part, isReconciled: reconciled };
+                }
+                return part;
+              });
+              
+              const allReconciled = updatedParts.every(part => part.isReconciled);
+              
+              return {
+                ...call,
+                partsUsed: updatedParts,
+                partsReconciled: allReconciled
+              };
+            }
+            return call;
+          })
+        );
+        
+        toast({
+          title: reconciled ? "Part Reconciled" : "Part Unreconciled",
+          description: `Part has been ${reconciled ? "reconciled" : "unreconciled"} successfully.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update part reconciliation status.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+  
+  // Handle service call reconciliation either through props or directly with the database
+  const handleReconcile = async (serviceCallId: string, reconciled: boolean) => {
+    if (propOnReconcile) {
+      propOnReconcile(serviceCallId, reconciled);
+    } else {
+      const success = await updateServiceCallReconciliation(serviceCallId, reconciled);
+      if (success) {
+        // Update the local state to reflect the change
+        setServiceCalls(prev => 
+          prev.map(call => {
+            if (call.id === serviceCallId) {
+              const updatedParts = call.partsUsed.map(part => ({
+                ...part,
+                isReconciled: reconciled
+              }));
+              
+              return {
+                ...call,
+                partsUsed: updatedParts,
+                partsReconciled: reconciled
+              };
+            }
+            return call;
+          })
+        );
+        
+        toast({
+          title: reconciled ? "Service Call Reconciled" : "Service Call Unreconciled",
+          description: `All parts in the service call have been ${reconciled ? "reconciled" : "unreconciled"} successfully.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update service call reconciliation status.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
   
   // Filter service calls with parts
   const callsWithParts = serviceCalls.filter(call => 
@@ -34,12 +151,25 @@ const PartsReconciliationTab = ({
     call.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (call.engineerName && call.engineerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     call.machineModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (call.serialNumber && call.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
     call.partsUsed.some(part => part.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
-  console.log("Search term:", searchTerm);
+  // Function to export reconciliation data (placeholder for now)
+  const handleExport = () => {
+    toast({
+      title: "Export Started",
+      description: "The reconciliation data export has started. The file will be downloaded shortly.",
+    });
+    
+    // We would implement actual export functionality here
+    console.log("Exporting reconciliation data:", filteredCalls);
+  };
+  
+  console.log("Service calls with parts:", callsWithParts);
   console.log("Filtered calls:", filteredCalls);
   console.log("Engineer names in calls:", callsWithParts.map(call => call.engineerName));
+  console.log("Search term:", searchTerm);
   
   if (isLoading) {
     return (
@@ -77,7 +207,7 @@ const PartsReconciliationTab = ({
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport}>
             <ArrowDownToLine className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -108,7 +238,7 @@ const PartsReconciliationTab = ({
                       <Button 
                         size="sm" 
                         variant="outline"
-                        onClick={() => onReconcile(call.id, !call.partsReconciled)}
+                        onClick={() => handleReconcile(call.id, !call.partsReconciled)}
                       >
                         {call.partsReconciled ? (
                           <><X className="mr-1 h-4 w-4" /> Unreconcile</>
@@ -150,7 +280,7 @@ const PartsReconciliationTab = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => onPartReconcile(call.id, part.id, !part.isReconciled)}
+                              onClick={() => handlePartReconcile(call.id, part.id, !part.isReconciled)}
                             >
                               {part.isReconciled ? (
                                 <X className="h-4 w-4" />

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useServiceData } from "@/hooks/useServiceData";
 import { useToast } from "@/hooks/use-toast";
@@ -16,10 +17,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ServiceInventoryManagement = () => {
   const { toast } = useToast();
-  const { allCalls, engineers, isLoading } = useServiceData();
+  const { engineers, isLoading } = useServiceData();
   const { warehouses, isLoadingWarehouses } = useWarehouses();
   
-  const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>(allCalls);
   const [activeTab, setActiveTab] = useState("engineer-inventory");
   const [expenses, setExpenses] = useState<ServiceExpense[]>([]);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
@@ -32,53 +32,6 @@ const ServiceInventoryManagement = () => {
       title: "Expense Added",
       description: `${expense.category} expense of ₹${expense.amount} added for ${expense.engineerName}`,
     });
-  };
-  
-  const handleReconcile = (serviceCallId: string, reconciled: boolean) => {
-    setServiceCalls(prev =>
-      prev.map(call => {
-        if (call.id === serviceCallId) {
-          const updatedParts = call.partsUsed.map(part => ({
-            ...part,
-            isReconciled: reconciled
-          }));
-          
-          return {
-            ...call,
-            partsUsed: updatedParts,
-            partsReconciled: reconciled
-          };
-        }
-        return call;
-      })
-    );
-  };
-  
-  const handlePartReconcile = (serviceCallId: string, partId: string, reconciled: boolean) => {
-    setServiceCalls(prev =>
-      prev.map(call => {
-        if (call.id === serviceCallId) {
-          const updatedParts = call.partsUsed.map(part => {
-            if (part.id === partId) {
-              return {
-                ...part,
-                isReconciled: reconciled
-              };
-            }
-            return part;
-          });
-          
-          const allReconciled = updatedParts.every(part => part.isReconciled);
-          
-          return {
-            ...call,
-            partsUsed: updatedParts,
-            partsReconciled: allReconciled
-          };
-        }
-        return call;
-      })
-    );
   };
 
   return (
@@ -107,12 +60,7 @@ const ServiceInventoryManagement = () => {
         </TabsContent>
         
         <TabsContent value="parts-reconciliation">
-          <PartsReconciliationTab 
-            serviceCalls={serviceCalls}
-            onReconcile={handleReconcile}
-            onPartReconcile={handlePartReconcile}
-            isLoading={isLoading}
-          />
+          <PartsReconciliationTab isLoading={isLoading} />
         </TabsContent>
         
         <TabsContent value="service-expenses">

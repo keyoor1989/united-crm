@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,20 +10,182 @@ import { ServiceCall, Part } from "@/types/service";
 import { Check, FileCheck, FileX, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { fetchServiceCallsWithParts, updatePartReconciliation, updateServiceCallReconciliation } from "@/services/partsReconciliationService";
 
 interface PartsReconciliationTableProps {
-  serviceCalls: ServiceCall[];
-  onReconcile: (serviceCallId: string, reconciled: boolean) => void;
-  onPartReconcile: (serviceCallId: string, partId: string, reconciled: boolean) => void;
+  serviceCalls?: ServiceCall[];
+  onReconcile?: (serviceCallId: string, reconciled: boolean) => void;
+  onPartReconcile?: (serviceCallId: string, partId: string, reconciled: boolean) => void;
 }
 
 const PartsReconciliationTable = ({ 
-  serviceCalls, 
-  onReconcile,
-  onPartReconcile 
+  serviceCalls: propServiceCalls, 
+  onReconcile: propOnReconcile,
+  onPartReconcile: propOnPartReconcile 
 }: PartsReconciliationTableProps) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Use either the props or fetch from the database
+  useEffect(() => {
+    if (propServiceCalls) {
+      setServiceCalls(propServiceCalls);
+      setIsLoading(false);
+    } else {
+      fetchServiceCallsFromDB();
+    }
+  }, [propServiceCalls]);
+  
+  // Function to fetch service calls from the database
+  const fetchServiceCallsFromDB = async () => {
+    setIsLoading(true);
+    try {
+      const calls = await fetchServiceCallsWithParts();
+      setServiceCalls(calls);
+    } catch (error) {
+      console.error("Error fetching service calls:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load service calls. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Handle part reconciliation either through props or directly with the database
+  const handlePartReconcile = async (serviceCallId: string, partId: string, reconciled: boolean) => {
+    if (propOnPartReconcile) {
+      propOnPartReconcile(serviceCallId, partId, reconciled);
+    } else {
+      const success = await updatePartReconciliation(serviceCallId, partId, reconciled);
+      if (success) {
+        // Update the local state to reflect the change
+        setServiceCalls(prev => 
+          prev.map(call => {
+            if (call.id === serviceCallId) {
+              const updatedParts = call.partsUsed.map(part => {
+                if (part.id === partId) {
+                  return { ...part, isReconciled: reconciled };
+                }
+                return part;
+              });
+              
+              const allReconciled = updatedParts.every(part => part.isReconciled);
+              
+              return {
+                ...call,
+                partsUsed: updatedParts,
+                partsReconciled: allReconciled
+              };
+            }
+            return call;
+          })
+        );
+        
+        toast({
+          title: reconciled ? "Part Reconciled" : "Part Unreconciled",
+          description: `Part has been ${reconciled ? "reconciled" : "unreconciled"} successfully.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update part reconciliation status.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+  
+  // Handle service call reconciliation either through props or directly with the database
+  const handleReconcile = async (serviceCallId: string, reconciled: boolean) => {
+    if (propOnReconcile) {
+      propOnReconcile(serviceCallId, reconciled);
+    } else {
+      const success = await updateServiceCallReconciliation(serviceCallId, reconciled);
+      if (success) {
+        // Update the local state to reflect the change
+        setServiceCalls(prev => 
+          prev.map(call => {
+            if (call.id === serviceCallId) {
+              const updatedParts = call.partsUsed.map(part => ({
+                ...part,
+                isReconciled: reconciled
+              }));
+              
+              return {
+                ...call,
+                partsUsed: updatedParts,
+                partsReconciled: reconciled
+              };
+            }
+            return call;
+          })
+        );
+        
+        toast({
+          title: reconciled ? "Service Call Reconciled" : "Service Call Unreconciled",
+          description: `All parts in the service call have been ${reconciled ? "reconciled" : "unreconciled"} successfully.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update service call reconciliation status.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+  
+  // Handle bulk reconciliation of the next pending service call
+  const handleBulkReconcile = async () => {
+    if (pendingReconciliation.length === 0) {
+      return;
+    }
+    
+    // Reconcile all parts in the first service call from the list
+    const serviceCall = pendingReconciliation[0];
+    
+    if (propOnReconcile) {
+      propOnReconcile(serviceCall.id, true);
+    } else {
+      const success = await updateServiceCallReconciliation(serviceCall.id, true);
+      if (success) {
+        // Update the local state to reflect the change
+        setServiceCalls(prev => 
+          prev.map(call => {
+            if (call.id === serviceCall.id) {
+              const updatedParts = call.partsUsed.map(part => ({
+                ...part,
+                isReconciled: true
+              }));
+              
+              return {
+                ...call,
+                partsUsed: updatedParts,
+                partsReconciled: true
+              };
+            }
+            return call;
+          })
+        );
+        
+        toast({
+          title: "Parts Reconciled",
+          description: `Parts for service call #${serviceCall.id.substring(0, 8)} have been reconciled`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to reconcile service call.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
   
   // Filter service calls that have parts and match search term
   const callsWithParts = serviceCalls.filter(call => 
@@ -31,7 +194,8 @@ const PartsReconciliationTable = ({
     call.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (call.engineerName && call.engineerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
     call.machineModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (call.serialNumber && call.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+    (call.serialNumber && call.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    call.partsUsed.some(part => part.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
   console.log("Engineer names in PartsReconciliationTable:", serviceCalls.map(call => call.engineerName));
@@ -39,21 +203,6 @@ const PartsReconciliationTable = ({
   
   const pendingReconciliation = callsWithParts.filter(call => !call.partsReconciled);
   const reconciled = callsWithParts.filter(call => call.partsReconciled);
-  
-  const handleBulkReconcile = () => {
-    if (pendingReconciliation.length === 0) {
-      return;
-    }
-    
-    // Reconcile all parts in the first service call from the list
-    const serviceCall = pendingReconciliation[0];
-    onReconcile(serviceCall.id, true);
-    
-    toast({
-      title: "Parts Reconciled",
-      description: `Parts for service call #${serviceCall.id.substring(0, 8)} have been reconciled`,
-    });
-  };
   
   const calculateTotalPartsValue = (parts: Part[]): number => {
     return parts.reduce((total, part) => total + (part.price * part.quantity), 0);
@@ -72,11 +221,26 @@ const PartsReconciliationTable = ({
     return revenue - cost;
   };
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-xl">Parts Reconciliation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-64">
+            <p>Loading reconciliation data...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle>Parts Reconciliation</CardTitle>
+          <CardTitle className="text-xl">Parts Reconciliation</CardTitle>
           <div className="flex gap-2">
             <div className="relative w-60">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -153,7 +317,7 @@ const PartsReconciliationTable = ({
                                 <Checkbox
                                   id={`${call.id}-${part.id}`}
                                   checked={part.isReconciled}
-                                  onCheckedChange={(checked) => onPartReconcile(call.id, part.id, !!checked)}
+                                  onCheckedChange={(checked) => handlePartReconcile(call.id, part.id, !!checked)}
                                 />
                                 <label htmlFor={`${call.id}-${part.id}`} className="text-sm cursor-pointer">
                                   {part.name} × {part.quantity}
@@ -176,7 +340,7 @@ const PartsReconciliationTable = ({
                         <TableCell>
                           <Button 
                             size="sm" 
-                            onClick={() => onReconcile(call.id, true)}
+                            onClick={() => handleReconcile(call.id, true)}
                           >
                             Reconcile
                           </Button>
@@ -262,7 +426,7 @@ const PartsReconciliationTable = ({
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => onReconcile(call.id, false)}
+                            onClick={() => handleReconcile(call.id, false)}
                           >
                             Unreconcile
                           </Button>
