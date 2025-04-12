@@ -64,6 +64,21 @@ const warehouseFormSchema = z.object({
 
 type WarehouseFormValues = z.infer<typeof warehouseFormSchema>;
 
+// Set up Supabase authentication for anonymous access
+// This is needed to make RLS policies work with the anonymous key
+const setupSupabaseAuth = async () => {
+  const { data, error } = await supabase.auth.signInAnonymously();
+  
+  if (error) {
+    console.error("Error signing in anonymously:", error);
+    toast.error("Authentication failed. Some features may not work properly.");
+    return false;
+  }
+  
+  console.log("Anonymous auth established", data);
+  return true;
+};
+
 // Fetch warehouses from Supabase
 const fetchWarehouses = async (): Promise<Warehouse[]> => {
   const { data, error } = await supabase
@@ -128,6 +143,17 @@ const InventoryWarehouses = () => {
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  // Initialize anonymous authentication
+  useEffect(() => {
+    const initAuth = async () => {
+      const success = await setupSupabaseAuth();
+      setAuthInitialized(success);
+    };
+    
+    initAuth();
+  }, []);
 
   // Initialize form
   const form = useForm<WarehouseFormValues>({
@@ -150,7 +176,8 @@ const InventoryWarehouses = () => {
     error: warehousesError 
   } = useQuery({
     queryKey: ['warehouses'],
-    queryFn: fetchWarehouses
+    queryFn: fetchWarehouses,
+    enabled: authInitialized
   });
 
   // Fetch warehouse stock query
@@ -160,7 +187,7 @@ const InventoryWarehouses = () => {
   } = useQuery({
     queryKey: ['warehouseStock', selectedWarehouse],
     queryFn: () => fetchWarehouseStock(selectedWarehouse),
-    enabled: activeTab === "inventory"
+    enabled: activeTab === "inventory" && authInitialized
   });
 
   // Create warehouse mutation
@@ -313,6 +340,18 @@ const InventoryWarehouses = () => {
       toast.error(`Error loading warehouses: ${warehousesError.message}`);
     }
   }, [warehousesError]);
+
+  if (!authInitialized) {
+    return (
+      <div className="container p-6 flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <h2 className="text-xl font-semibold mb-2">Initializing...</h2>
+          <p className="text-muted-foreground">Setting up secure access to warehouse data</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="container p-6">
