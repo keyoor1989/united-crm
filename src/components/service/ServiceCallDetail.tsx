@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { ServiceCall, Engineer } from "@/types/service";
@@ -16,14 +17,14 @@ interface ServiceCallDetailProps {
   serviceCall: ServiceCall;
   engineers: Engineer[];
   onClose: () => void;
-  refreshCalls: () => void;
+  onUpdate: () => void; // Renamed from refreshCalls to onUpdate
 }
 
 const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
   serviceCall,
   engineers,
   onClose,
-  refreshCalls,
+  onUpdate, // Updated prop name
 }) => {
   const { toast } = useToast();
   const [selectedEngineer, setSelectedEngineer] = useState<string | null>(
@@ -199,7 +200,7 @@ const ServiceCallDetail: React.FC<ServiceCallDetailProps> = ({
         description: "Service call updated successfully",
       });
 
-      refreshCalls();
+      onUpdate(); // Updated function call
       onClose();
     } catch (err) {
       console.error("Unexpected error updating service call:", err);

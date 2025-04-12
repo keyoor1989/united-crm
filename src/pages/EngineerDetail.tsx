@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Engineer, ServiceCall, Part, Feedback, EngineerStatus, EngineerSkillLevel } from "@/types/service";
@@ -9,11 +10,6 @@ import EngineerForm from "@/components/service/EngineerForm";
 import { EngineerProfile } from "@/components/service/EngineerProfile";
 import { EngineerServiceCallTabs } from "@/components/service/EngineerServiceCallTabs";
 import { Skeleton } from "@/components/ui/skeleton";
-
-export const engineerServiceCalls: ServiceCall[] = [
-  // ... keep existing entries, but make sure they include the new required fields:
-  // serviceCharge, isPaid, partsReconciled
-];
 
 const EngineerDetail = () => {
   const params = useParams();
@@ -201,6 +197,12 @@ const EngineerDetail = () => {
           completionTime: call.completion_time,
           partsUsed: parsedPartsUsed,
           feedback: parsedFeedback,
+          // Add missing properties from ServiceCall type
+          serviceCharge: 'service_charge' in call ? call.service_charge : 0,
+          isPaid: 'is_paid' in call ? call.is_paid : false,
+          partsReconciled: 'parts_reconciled' in call ? call.parts_reconciled : false,
+          paymentDate: 'payment_date' in call ? call.payment_date : undefined,
+          paymentMethod: 'payment_method' in call ? call.payment_method : undefined
         };
       });
 

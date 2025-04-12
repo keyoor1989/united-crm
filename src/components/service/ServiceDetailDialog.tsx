@@ -2,13 +2,13 @@
 import React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ServiceCallDetail from "@/components/service/ServiceCallDetail";
-import { ServiceCall } from "@/types/service";
+import { ServiceCall, Engineer } from "@/types/service";
 
 interface ServiceDetailDialogProps {
   showDialog: boolean;
   serviceCall: ServiceCall | null;
   onClose: () => void;
-  onUpdate: () => void;
+  onUpdate: () => void; // Match the prop name used in ServiceCallDetail
 }
 
 const ServiceDetailDialog: React.FC<ServiceDetailDialogProps> = ({
@@ -23,6 +23,7 @@ const ServiceDetailDialog: React.FC<ServiceDetailDialogProps> = ({
         {serviceCall && (
           <ServiceCallDetail 
             serviceCall={serviceCall} 
+            engineers={[]} // We need to pass engineers array
             onClose={onClose}
             onUpdate={onUpdate}
           />
