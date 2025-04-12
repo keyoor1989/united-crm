@@ -4,7 +4,7 @@ import { ServiceExpense } from "@/types/serviceExpense";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Receipt, CalendarDays, User, DollarSign, Tool } from "lucide-react";
+import { Receipt, CalendarDays, User, DollarSign, Wrench } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { updateExpenseReimbursementStatus } from "@/services/serviceExpenseService";
@@ -102,7 +102,7 @@ const ServiceExpenseList = ({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center">
-                      <Tool className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <Wrench className="mr-2 h-4 w-4 text-muted-foreground" />
                       {expense.serviceCallId === "general" || !expense.serviceCallInfo ? (
                         <Badge variant="outline" className="bg-gray-100">General Expense</Badge>
                       ) : (

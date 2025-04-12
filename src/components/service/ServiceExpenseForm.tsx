@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ExpenseCategory, ServiceExpense } from "@/types/serviceExpense";
 import { ServiceCall } from "@/types/service";
 import { v4 as uuidv4 } from "uuid";
-import { CalendarIcon, Receipt, User, Tool } from "lucide-react";
+import { CalendarIcon, Receipt, User, Wrench } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
@@ -44,7 +43,6 @@ const ServiceExpenseForm = ({
   
   const { allCalls, isLoading } = useServiceData();
   
-  // Filter for active service calls
   const activeServiceCalls = allCalls.filter(
     call => call.status !== "Completed" && call.status !== "Cancelled"
   );
@@ -75,7 +73,6 @@ const ServiceExpenseForm = ({
     
     onExpenseAdded(newExpense);
     
-    // Reset form
     setCategory("Travel");
     setAmount("0");
     setDescription("");
@@ -107,7 +104,7 @@ const ServiceExpenseForm = ({
               <SelectContent>
                 <SelectItem value="general">
                   <div className="flex items-center">
-                    <Tool className="h-4 w-4 mr-2" />
+                    <Wrench className="h-4 w-4 mr-2" />
                     General Expense (Not tied to specific call)
                   </div>
                 </SelectItem>

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceExpense, ExpenseCategory } from "@/types/serviceExpense";
 import { toast } from "@/hooks/use-toast";
