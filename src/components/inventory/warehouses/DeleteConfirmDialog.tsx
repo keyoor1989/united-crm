@@ -15,6 +15,7 @@ interface DeleteConfirmDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isDeleting: boolean;
+  warehouseName?: string;
 }
 
 const DeleteConfirmDialog = ({
@@ -22,6 +23,7 @@ const DeleteConfirmDialog = ({
   onOpenChange,
   onConfirm,
   isDeleting,
+  warehouseName = "this warehouse",
 }: DeleteConfirmDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -29,7 +31,7 @@ const DeleteConfirmDialog = ({
         <DialogHeader>
           <DialogTitle>Confirm Deletion</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this warehouse? This action cannot be undone, and all inventory 
+            Are you sure you want to delete {warehouseName}? This action cannot be undone, and all inventory 
             associated with this warehouse will also be deleted.
           </DialogDescription>
         </DialogHeader>
@@ -37,6 +39,7 @@ const DeleteConfirmDialog = ({
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)}
+            disabled={isDeleting}
           >
             Cancel
           </Button>

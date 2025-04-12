@@ -7,16 +7,30 @@ import { WarehouseFormValues } from "@/components/inventory/warehouses/Warehouse
 
 // Set up Supabase authentication for anonymous access
 export const setupSupabaseAuth = async () => {
-  const { data, error } = await supabase.auth.signInAnonymously();
-  
-  if (error) {
-    console.error("Error signing in anonymously:", error);
-    toast.error("Authentication failed. Some features may not work properly.");
+  try {
+    const session = await supabase.auth.getSession();
+    
+    // Only sign in anonymously if there's no existing session
+    if (!session.data.session) {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      
+      if (error) {
+        console.error("Error signing in anonymously:", error);
+        toast.error("Authentication failed. Some features may not work properly.");
+        return false;
+      }
+      
+      console.log("Anonymous auth established");
+    } else {
+      console.log("Using existing auth session");
+    }
+    
+    return true;
+  } catch (err) {
+    console.error("Authentication setup error:", err);
+    toast.error("Failed to set up secure data access.");
     return false;
   }
-  
-  console.log("Anonymous auth established", data);
-  return true;
 };
 
 // Fetch warehouses from Supabase
@@ -83,7 +97,9 @@ export const useWarehouses = (authInitialized: boolean) => {
   const warehousesQuery = useQuery({
     queryKey: ['warehouses'],
     queryFn: fetchWarehouses,
-    enabled: authInitialized
+    enabled: authInitialized,
+    retry: 2,
+    staleTime: 30000 // 30 seconds
   });
 
   // Create warehouse mutation
@@ -156,7 +172,7 @@ export const useWarehouses = (authInitialized: boolean) => {
       if (error) throw error;
       return warehouseId;
     },
-    onSuccess: (deletedId) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['warehouses'] });
       toast.success("Warehouse deleted successfully!");
     },
@@ -185,7 +201,8 @@ export const useWarehouseStock = (selectedWarehouse: string | null, activeTab: s
   const stockQuery = useQuery({
     queryKey: ['warehouseStock', selectedWarehouse],
     queryFn: () => fetchWarehouseStock(selectedWarehouse),
-    enabled: activeTab === "inventory" && authInitialized
+    enabled: activeTab === "inventory" && authInitialized,
+    retry: 1
   });
 
   return {
