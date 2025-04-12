@@ -129,8 +129,7 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     
     const callExpenses = serviceExpenses.filter(expense => 
       expense.serviceCallId === call.id && 
-      expense.engineerId !== "system" &&
-      !expense.isReimbursed
+      expense.engineerId !== "system"
     );
     
     const partsCost = call.partsUsed?.reduce((total, part) => {
@@ -152,6 +151,14 @@ const BillingReportView = ({ serviceCalls }: BillingReportViewProps) => {
     const totalRevenue = (call.serviceCharge || 0) + partsRevenue;
     
     const profit = totalRevenue - totalExpenses;
+    
+    console.log(`Service Call ${call.id}:`, {
+      revenue: totalRevenue,
+      partsCost,
+      serviceExpenses: serviceExpensesTotal,
+      totalExpenses,
+      profit
+    });
     
     return {
       ...call,

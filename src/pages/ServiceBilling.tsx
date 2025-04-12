@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import BillingReportView from "@/components/service/BillingReportView";
 import { useServiceData } from "@/hooks/useServiceData";
@@ -51,15 +50,14 @@ const ServiceBilling = () => {
       const partsCost = call.partsUsed?.reduce((total, part) => 
         total + ((part.cost || part.price * 0.6) * part.quantity), 0) || 0;
       
-      // Find all expenses for this service call (excluding system-generated income)
-      // Only including expenses that are not reimbursed (unpaid expenses)
+      // Find ALL expenses for this service call (excluding system-generated income)
+      // We need ALL actual expenses regardless of reimbursement status
       const callExpenses = serviceExpenses.filter(expense => 
         expense.serviceCallId === call.id && 
-        expense.engineerId !== "system" && 
-        !expense.isReimbursed
+        expense.engineerId !== "system"
       );
       
-      // Calculate service expenses
+      // Calculate service expenses - all real expenses need to be counted for profit calculation
       const serviceCallExpenses = callExpenses.reduce((total, expense) => 
         total + expense.amount, 0) || 0;
       
@@ -71,7 +69,7 @@ const ServiceBilling = () => {
         total + (part.price * part.quantity), 0) || 0;
       const totalRevenue = (call.serviceCharge || 0) + partsRevenue;
       
-      // Profit is revenue minus expenses
+      // Profit is revenue minus expenses - this is the correct calculation
       const profit = totalRevenue - totalExpenses;
       
       return {
