@@ -417,6 +417,7 @@ export type Database = {
           id: string
           part_id: string
           part_name: string
+          purchase_price: number | null
           quantity: number
           reconciled_at: string
           service_call_id: string
@@ -427,6 +428,7 @@ export type Database = {
           id?: string
           part_id: string
           part_name: string
+          purchase_price?: number | null
           quantity: number
           reconciled_at?: string
           service_call_id: string
@@ -437,6 +439,7 @@ export type Database = {
           id?: string
           part_id?: string
           part_name?: string
+          purchase_price?: number | null
           quantity?: number
           reconciled_at?: string
           service_call_id?: string

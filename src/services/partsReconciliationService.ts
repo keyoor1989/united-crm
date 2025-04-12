@@ -161,7 +161,18 @@ export const updatePartReconciliation = async (
             }
           }
           
-          // Record this reconciliation in the database
+          // Get purchase price from opening_stock_entries
+          const { data: stockEntries, error: stockError } = await supabase
+            .from('opening_stock_entries')
+            .select('purchase_price')
+            .eq('part_name', part.name)
+            .limit(1);
+            
+          const purchasePrice = stockEntries && stockEntries.length > 0 
+            ? Number(stockEntries[0].purchase_price) 
+            : 0;
+          
+          // Record this reconciliation in the database with purchase price
           const { error: insertError } = await supabase
             .from('part_reconciliations')
             .insert({
@@ -169,7 +180,8 @@ export const updatePartReconciliation = async (
               part_id: partId,
               part_name: part.name,
               quantity: part.quantity,
-              engineer_id: serviceCall.engineer_id
+              engineer_id: serviceCall.engineer_id,
+              purchase_price: purchasePrice
             });
             
           if (insertError) {
@@ -314,7 +326,18 @@ export const updateServiceCallReconciliation = async (
                 }
               }
               
-              // Record this reconciliation
+              // Get purchase price from opening_stock_entries
+              const { data: stockEntries, error: stockError } = await supabase
+                .from('opening_stock_entries')
+                .select('purchase_price')
+                .eq('part_name', part.name)
+                .limit(1);
+                
+              const purchasePrice = stockEntries && stockEntries.length > 0 
+                ? Number(stockEntries[0].purchase_price) 
+                : 0;
+              
+              // Record this reconciliation with purchase price
               const { error: insertError } = await supabase
                 .from('part_reconciliations')
                 .insert({
@@ -322,7 +345,8 @@ export const updateServiceCallReconciliation = async (
                   part_id: part.id,
                   part_name: part.name,
                   quantity: part.quantity,
-                  engineer_id: serviceCall.engineer_id
+                  engineer_id: serviceCall.engineer_id,
+                  purchase_price: purchasePrice
                 });
                 
               if (insertError) {
