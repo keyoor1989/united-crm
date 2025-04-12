@@ -22,7 +22,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { DetailedServiceCallCard } from "../DetailedServiceCallCard";
+import { DetailedServiceCallCard } from "@/components/service/DetailedServiceCallCard";
 import { Label } from "@/components/ui/label";
 
 interface ServiceExpenseListProps {

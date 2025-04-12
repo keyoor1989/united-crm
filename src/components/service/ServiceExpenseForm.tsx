@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCustomers } from "@/hooks/useCustomers";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 interface ServiceExpenseFormProps {
   serviceCallId: string;
@@ -53,9 +53,9 @@ const ServiceExpenseForm = ({
   const [expenseDate, setExpenseDate] = useState<Date>(new Date());
   const [dateError, setDateError] = useState<string | null>(null);
   
+  const { toast } = useToast();
   const { customers, isLoading: customersLoading } = useCustomers();
   
-  // Check if the selected service call has already been reimbursed
   const hasExistingExpenses = selectedServiceCallId && selectedServiceCallId !== "general" && 
     expenses.some(expense => expense.serviceCallId === selectedServiceCallId);
   
@@ -66,35 +66,28 @@ const ServiceExpenseForm = ({
   }, [serviceCallId]);
   
   useEffect(() => {
-    // When service call changes, update the customer information
     if (selectedServiceCallId && selectedServiceCallId !== "general") {
       const selectedCall = completedServiceCalls.find(call => call.id === selectedServiceCallId);
       if (selectedCall) {
         setSelectedCustomerId(selectedCall.customerId);
         setSelectedCustomerName(selectedCall.customerName);
         
-        // Check if the service call has a completion date and validate the expense date
         if (selectedCall.completionTime) {
           const completionDate = parseISO(selectedCall.completionTime);
           
-          // Reset date error
           setDateError(null);
           
-          // Validate expense date is not before service completion
           if (isBefore(expenseDate, completionDate) && !isEqual(expenseDate, completionDate)) {
             setDateError("Expense date cannot be before service call completion date");
           }
         }
         
-        // Hide alert when a specific service call is selected
         setShowAttentionAlert(false);
       }
     } else {
       setSelectedCustomerId(null);
       setSelectedCustomerName(null);
-      // Show alert when "general" is selected
       setShowAttentionAlert(true);
-      // Clear date error for general expenses
       setDateError(null);
     }
   }, [selectedServiceCallId, completedServiceCalls, expenseDate]);
@@ -115,16 +108,13 @@ const ServiceExpenseForm = ({
   const handleExpenseDateChange = (newDate: Date) => {
     setExpenseDate(newDate);
     
-    // Validate expense date against service call completion date if a service call is selected
     if (selectedServiceCallId && selectedServiceCallId !== "general") {
       const selectedCall = completedServiceCalls.find(call => call.id === selectedServiceCallId);
       if (selectedCall && selectedCall.completionTime) {
         const completionDate = parseISO(selectedCall.completionTime);
         
-        // Reset date error
         setDateError(null);
         
-        // Validate expense date is not before service completion
         if (isBefore(newDate, completionDate) && !isEqual(newDate, completionDate)) {
           setDateError("Expense date cannot be before service call completion date");
         }
@@ -139,7 +129,6 @@ const ServiceExpenseForm = ({
       return;
     }
     
-    // Check for date error before submitting
     if (dateError) {
       toast({
         title: "Invalid Date",
@@ -166,23 +155,20 @@ const ServiceExpenseForm = ({
     
     onExpenseAdded(newExpense);
     
-    // Reset form
     setCategory("Travel");
     setAmount("0");
     setDescription("");
     setExpenseDate(new Date());
   };
 
-  // Function to check if a service call already has expenses submitted
   const getServiceCallExpenseStatus = (serviceCallId: string) => {
     return expenses.some(expense => expense.serviceCallId === serviceCallId);
   };
 
-  // Sorting completed service calls: most recent first
   const sortedServiceCalls = [...completedServiceCalls].sort((a, b) => {
     const dateA = a.completionTime ? new Date(a.completionTime).getTime() : 0;
     const dateB = b.completionTime ? new Date(b.completionTime).getTime() : 0;
-    return dateB - dateA; // Sort in descending order (newest first)
+    return dateB - dateA;
   });
 
   return (
