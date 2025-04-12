@@ -1,5 +1,5 @@
 
 import { InventoryItem } from "@/types/inventory";
 
-// Empty mock data arrays to be filled from API or database in a real application
+// Mock data array to be filled when parts are added
 export const mockInventoryItems: InventoryItem[] = [];

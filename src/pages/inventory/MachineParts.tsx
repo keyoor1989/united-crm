@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,11 @@ import {
 } from "@/components/ui/table";
 import { Search, Filter, Plus, FileText, Settings, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import OpeningStockEntryForm from "@/components/inventory/OpeningStockEntryForm";
+import { mockInventoryItems } from "@/components/service/inventory/mockData";
 
 // Mock machine parts data
-const mockMachineParts = [
+const initialMockMachineParts = [
   {
     id: "MP001",
     partNumber: "TK-1175",
@@ -25,6 +28,7 @@ const mockMachineParts = [
     category: "Toner",
     currentStock: 15,
     minStock: 5,
+    purchasePrice: 3500
   },
   {
     id: "MP002",
@@ -35,6 +39,7 @@ const mockMachineParts = [
     category: "Drum",
     currentStock: 8,
     minStock: 3,
+    purchasePrice: 4200
   },
   {
     id: "MP003",
@@ -45,6 +50,7 @@ const mockMachineParts = [
     category: "Maintenance Kit",
     currentStock: 4,
     minStock: 2,
+    purchasePrice: 6800
   },
   {
     id: "MP004",
@@ -55,6 +61,7 @@ const mockMachineParts = [
     category: "Drum",
     currentStock: 6,
     minStock: 3,
+    purchasePrice: 3950
   },
   {
     id: "MP005",
@@ -65,20 +72,38 @@ const mockMachineParts = [
     category: "Fuser",
     currentStock: 2,
     minStock: 1,
+    purchasePrice: 2500
   },
 ];
 
 const MachineParts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [machineParts, setMachineParts] = useState(initialMockMachineParts);
+  const [openStockEntryForm, setOpenStockEntryForm] = useState(false);
   
-  const filteredParts = mockMachineParts.filter(part => 
-    searchQuery ? 
+  // Save inventory items to mock data
+  useEffect(() => {
+    if (mockInventoryItems.length === 0) {
+      // Convert machine parts to inventory items format for global use
+      // This would typically be synced with a database in a real app
+    }
+  }, [machineParts]);
+  
+  const filteredParts = machineParts.filter(part => {
+    // Filter by search query
+    const matchesSearch = searchQuery ? 
       part.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       part.partNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       part.brand.toLowerCase().includes(searchQuery.toLowerCase())
-    : true
-  );
+    : true;
+    
+    // Filter by tab/category
+    const matchesCategory = activeTab === "all" || 
+      part.category.toLowerCase().includes(activeTab.toLowerCase());
+    
+    return matchesSearch && matchesCategory;
+  });
   
   const getStockStatus = (current: number, min: number) => {
     if (current <= 0) {
@@ -90,6 +115,10 @@ const MachineParts = () => {
     }
   };
 
+  const handleAddPart = (newPart: any) => {
+    setMachineParts(prevParts => [...prevParts, newPart]);
+  };
+
   return (
     <div className="container p-6">
       <div className="flex justify-between items-center mb-6">
@@ -99,7 +128,10 @@ const MachineParts = () => {
             Manage and organize parts for different machine models
           </p>
         </div>
-        <Button className="flex items-center gap-1 bg-black text-white hover:bg-black/90">
+        <Button 
+          className="flex items-center gap-1 bg-black text-white hover:bg-black/90"
+          onClick={() => setOpenStockEntryForm(true)}
+        >
           <Plus className="h-4 w-4" />
           Add New Part
         </Button>
@@ -151,6 +183,7 @@ const MachineParts = () => {
                     <TableHead>Category</TableHead>
                     <TableHead>Compatible Models</TableHead>
                     <TableHead>Stock</TableHead>
+                    <TableHead>Price (₹)</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -170,6 +203,7 @@ const MachineParts = () => {
                           </div>
                         </TableCell>
                         <TableCell>{part.currentStock}</TableCell>
+                        <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
                         <TableCell>
                           <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
                         </TableCell>
@@ -192,7 +226,7 @@ const MachineParts = () => {
                   
                   {filteredParts.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="h-24 text-center">
+                      <TableCell colSpan={9} className="h-24 text-center">
                         No parts found
                       </TableCell>
                     </TableRow>
@@ -268,6 +302,13 @@ const MachineParts = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Opening Stock Entry Form Dialog */}
+      <OpeningStockEntryForm 
+        open={openStockEntryForm}
+        onOpenChange={setOpenStockEntryForm}
+        onAddPart={handleAddPart}
+      />
     </div>
   );
 };
