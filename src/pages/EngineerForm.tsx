@@ -3,7 +3,7 @@ import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Container } from "@/components/ui/container";
 import EngineerForm from "@/components/service/EngineerForm";
-import { Engineer } from "@/types/service";
+import { Engineer, EngineerStatus, EngineerSkillLevel } from "@/types/service";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -18,8 +18,8 @@ const EngineerFormPage: React.FC = () => {
     phone: "",
     email: "",
     location: "",
-    status: "Available",
-    skillLevel: "Intermediate",
+    status: "Available" as EngineerStatus,
+    skillLevel: "Intermediate" as EngineerSkillLevel,
     currentJob: null,
     currentLocation: "",
   });
@@ -48,8 +48,8 @@ const EngineerFormPage: React.FC = () => {
           phone: data.phone,
           email: data.email,
           location: data.location,
-          status: data.status,
-          skillLevel: data.skill_level,
+          status: data.status as EngineerStatus,
+          skillLevel: data.skill_level as EngineerSkillLevel,
           currentJob: data.current_job,
           currentLocation: data.current_location,
           leaveEndDate: data.leave_end_date,

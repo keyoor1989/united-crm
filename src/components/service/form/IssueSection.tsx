@@ -1,11 +1,12 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Loader2, Save } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import { ServiceCallFormValues } from "@/hooks/useServiceCallForm";
@@ -34,6 +35,15 @@ const IssueSection: React.FC<IssueSectionProps> = ({
   onSubmit,
 }) => {
   const navigate = useNavigate();
+  const callType = form.watch("callType");
+  const isPaidCall = callType === "Paid Call";
+  
+  useEffect(() => {
+    // Reset service charge when call type changes and it's not a paid call
+    if (!isPaidCall) {
+      form.setValue("serviceCharge", 0);
+    }
+  }, [callType, form, isPaidCall]);
   
   return (
     <Card>
@@ -103,6 +113,30 @@ const IssueSection: React.FC<IssueSectionProps> = ({
               </FormItem>
             )}
           />
+
+          {isPaidCall && (
+            <FormField
+              control={form.control}
+              name="serviceCharge"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Service Charge</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="Enter service charge amount"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Service charge amount for paid call
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}

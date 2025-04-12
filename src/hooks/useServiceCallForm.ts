@@ -23,6 +23,7 @@ export const serviceCallSchema = z.object({
   callType: z.string().min(1, { message: "Call type is required" }),
   priority: z.string(),
   engineerId: z.string().optional(),
+  serviceCharge: z.number().min(0).default(0),
 });
 
 export type ServiceCallFormValues = z.infer<typeof serviceCallSchema>;
@@ -53,6 +54,7 @@ export const useServiceCallForm = () => {
       callType: "",
       priority: "Medium",
       engineerId: "",
+      serviceCharge: 0,
     },
   });
 
@@ -266,6 +268,10 @@ export const useServiceCallForm = () => {
 
       const initialStatus = data.engineerId ? "Pending" : "Pending";
       
+      // Determine if it's a paid call and set the appropriate service charge
+      const serviceCharge = data.callType === "Paid Call" ? data.serviceCharge : 0;
+      const isPaid = data.callType !== "Paid Call";
+      
       const { data: serviceCallData, error: serviceCallError } = await supabase
         .from('service_calls')
         .insert({
@@ -287,7 +293,9 @@ export const useServiceCallForm = () => {
             : "",
           sla_deadline: slaDeadline,
           parts_used: [],
-          feedback: null
+          feedback: null,
+          service_charge: serviceCharge,
+          is_paid: isPaid
         })
         .select()
         .single();
