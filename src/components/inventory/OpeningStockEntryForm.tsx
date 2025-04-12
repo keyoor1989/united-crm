@@ -31,8 +31,8 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Brand, Model } from "@/types/inventory";
-import { mockWarehouses } from "@/pages/inventory/InventoryWarehouses";
+import { Brand, Model, Warehouse } from "@/types/inventory";
+import { supabase } from "@/integrations/supabase/client";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -129,14 +129,71 @@ const fetchModelsByBrand = async (brandId: string): Promise<Model[]> => {
   return allModels[brandId] || [];
 };
 
+// Function to fetch warehouses from Supabase
+const fetchWarehouses = async (): Promise<Warehouse[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('warehouses')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+      
+    if (error) {
+      console.error("Error fetching warehouses:", error);
+      return [];
+    }
+    
+    return data.map(warehouse => ({
+      id: warehouse.id,
+      name: warehouse.name,
+      code: warehouse.code,
+      location: warehouse.location,
+      address: warehouse.address,
+      contactPerson: warehouse.contact_person,
+      contactPhone: warehouse.contact_phone,
+      isActive: warehouse.is_active,
+      createdAt: warehouse.created_at
+    }));
+  } catch (error) {
+    console.error("Exception fetching warehouses:", error);
+    return [];
+  }
+};
+
 const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEntryFormProps) => {
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  const [authInitialized, setAuthInitialized] = useState(false);
+  
+  // Initialize anonymous authentication
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.signInAnonymously();
+        if (!error) {
+          setAuthInitialized(true);
+        } else {
+          console.error("Auth error:", error);
+        }
+      } catch (err) {
+        console.error("Auth exception:", err);
+      }
+    };
+    
+    initAuth();
+  }, []);
   
   // Fetch brands data
   const { data: brands = [] } = useQuery({
     queryKey: ['brands'],
     queryFn: fetchBrands
+  });
+  
+  // Fetch warehouses data
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: fetchWarehouses,
+    enabled: authInitialized
   });
   
   // Fetch models data for the selected brand
@@ -162,7 +219,7 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
   });
 
   const handleSubmit = (values: FormValues) => {
-    const warehouseInfo = mockWarehouses.find(w => w.id === values.warehouseId);
+    const warehouseInfo = warehouses.find(w => w.id === values.warehouseId);
     
     const newPart = {
       id: `MP${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
@@ -220,8 +277,8 @@ const OpeningStockEntryForm = ({ open, onOpenChange, onAddPart }: OpeningStockEn
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {mockWarehouses.length > 0 ? (
-                mockWarehouses.filter(w => w.isActive).map((warehouse) => (
+              {warehouses.length > 0 ? (
+                warehouses.map((warehouse) => (
                   <SelectItem key={warehouse.id} value={warehouse.id}>
                     {warehouse.name} ({warehouse.location})
                   </SelectItem>
