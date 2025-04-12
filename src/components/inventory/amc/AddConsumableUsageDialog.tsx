@@ -62,7 +62,7 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
         
         if (error) throw error;
         
-        // Type casting data as AMCMachine[] with explicitly converting machine_type to the expected type
+        // Explicitly cast data to AMCMachine[]
         setMachines(data as AMCMachine[] || []);
       } catch (error) {
         console.error('Error fetching machines:', error);

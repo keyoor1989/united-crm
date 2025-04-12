@@ -162,21 +162,21 @@ const AmcTracker = () => {
     const machineProfits: Record<string, ProfitableMachine> = {};
     
     profitReports.forEach(report => {
-      if (!machineProfits[report.machineId]) {
-        machineProfits[report.machineId] = {
-          id: report.machineId,
-          customerName: report.customerName,
-          machineModel: report.machineModel,
-          serialNumber: report.serialNumber,
+      if (!machineProfits[report.machine_id]) {
+        machineProfits[report.machine_id] = {
+          id: report.machine_id,
+          customerName: report.customer_name,
+          machineModel: report.machine_model,
+          serialNumber: report.serial_number,
           profit: 0,
           profitMargin: 0
         };
       }
       
-      machineProfits[report.machineId].profit += report.profit;
+      machineProfits[report.machine_id].profit += report.profit;
       // Average profit margin across all reports for this machine
-      machineProfits[report.machineId].profitMargin = 
-        (machineProfits[report.machineId].profitMargin + report.profitMargin) / 2;
+      machineProfits[report.machine_id].profitMargin = 
+        (machineProfits[report.machine_id].profitMargin + report.profit_margin) / 2;
     });
     
     // Sort machines by profit and take top 5
@@ -195,21 +195,21 @@ const AmcTracker = () => {
         .from('amc_contracts')
         .insert([{
           id: newContract.id,
-          customer_id: newContract.customerId,
-          customer_name: newContract.customerName,
-          machine_model: newContract.machineModel,
-          machine_type: newContract.machineType,
-          serial_number: newContract.serialNumber,
-          contract_type: newContract.contractType,
-          start_date: newContract.startDate,
-          end_date: newContract.endDate,
-          monthly_rent: newContract.monthlyRent,
-          gst_percent: newContract.gstPercent,
-          copy_limit_a4: newContract.copyLimitA4,
-          copy_limit_a3: newContract.copyLimitA3,
-          extra_a4_copy_charge: newContract.extraA4CopyCharge,
-          extra_a3_copy_charge: newContract.extraA3CopyCharge,
-          billing_cycle: newContract.billingCycle,
+          customer_id: newContract.customer_id,
+          customer_name: newContract.customer_name,
+          machine_model: newContract.machine_model,
+          machine_type: newContract.machine_type,
+          serial_number: newContract.serial_number,
+          contract_type: newContract.contract_type,
+          start_date: newContract.start_date,
+          end_date: newContract.end_date,
+          monthly_rent: newContract.monthly_rent,
+          gst_percent: newContract.gst_percent,
+          copy_limit_a4: newContract.copy_limit_a4,
+          copy_limit_a3: newContract.copy_limit_a3,
+          extra_a4_copy_charge: newContract.extra_a4_copy_charge,
+          extra_a3_copy_charge: newContract.extra_a3_copy_charge,
+          billing_cycle: newContract.billing_cycle,
           status: newContract.status,
           location: newContract.location,
           department: newContract.department,
@@ -224,19 +224,19 @@ const AmcTracker = () => {
         .from('amc_machines')
         .insert([{
           contract_id: newContract.id,
-          customer_id: newContract.customerId,
-          customer_name: newContract.customerName,
-          model: newContract.machineModel,
-          machine_type: newContract.machineType,
-          serial_number: newContract.serialNumber,
+          customer_id: newContract.customer_id,
+          customer_name: newContract.customer_name,
+          model: newContract.machine_model,
+          machine_type: newContract.machine_type,
+          serial_number: newContract.serial_number,
           location: newContract.location || 'Main Office',
           department: newContract.department,
-          contract_type: newContract.contractType,
-          start_date: newContract.startDate,
-          end_date: newContract.endDate,
-          current_rent: newContract.monthlyRent,
-          copy_limit_a4: newContract.copyLimitA4,
-          copy_limit_a3: newContract.copyLimitA3,
+          contract_type: newContract.contract_type,
+          start_date: newContract.start_date,
+          end_date: newContract.end_date,
+          current_rent: newContract.monthly_rent,
+          copy_limit_a4: newContract.copy_limit_a4,
+          copy_limit_a3: newContract.copy_limit_a3,
           last_a4_reading: 0,
           last_a3_reading: 0,
           last_reading_date: new Date().toISOString()
@@ -249,7 +249,7 @@ const AmcTracker = () => {
       setContracts(prevContracts => [...prevContracts, newContract]);
       
       if (machineData && machineData.length > 0) {
-        setMachines(prevMachines => [...prevMachines, machineData[0]]);
+        setMachines(prevMachines => [...prevMachines, machineData[0] as AMCMachine]);
       }
       
       toast.success("Contract added successfully");
@@ -266,18 +266,18 @@ const AmcTracker = () => {
       const { data, error } = await supabase
         .from('amc_consumable_usage')
         .insert([{
-          contract_id: newUsage.contractId,
-          machine_id: newUsage.machineId,
-          customer_id: newUsage.customerId,
-          customer_name: newUsage.customerName,
-          machine_model: newUsage.machineModel,
-          machine_type: newUsage.machineType,
-          serial_number: newUsage.serialNumber,
-          engineer_id: newUsage.engineerId,
-          engineer_name: newUsage.engineerName,
+          contract_id: newUsage.contract_id,
+          machine_id: newUsage.machine_id,
+          customer_id: newUsage.customer_id,
+          customer_name: newUsage.customer_name,
+          machine_model: newUsage.machine_model,
+          machine_type: newUsage.machine_type,
+          serial_number: newUsage.serial_number,
+          engineer_id: newUsage.engineer_id,
+          engineer_name: newUsage.engineer_name,
           date: newUsage.date,
-          item_id: newUsage.itemId,
-          item_name: newUsage.itemName,
+          item_id: newUsage.item_id,
+          item_name: newUsage.item_name,
           quantity: newUsage.quantity,
           cost: newUsage.cost,
           inventory_deducted: newUsage.inventory_deducted,
@@ -309,12 +309,12 @@ const AmcTracker = () => {
       const { data: existingReports, error: reportQueryError } = await supabase
         .from('amc_profit_reports')
         .select('*')
-        .eq('machine_id', usage.machineId)
+        .eq('machine_id', usage.machine_id)
         .eq('month', usageMonth);
       
       if (reportQueryError) throw reportQueryError;
       
-      const contract = contracts.find(c => c.id === usage.contractId);
+      const contract = contracts.find(c => c.id === usage.contract_id);
       if (!contract) {
         console.error('Contract not found for usage:', usage);
         return;
@@ -355,39 +355,39 @@ const AmcTracker = () => {
         // Create new report
         const newReport: AMCProfitReport = {
           id: usage.id, // Use the same ID as the usage for simplicity
-          contractId: usage.contractId,
-          machineId: usage.machineId,
-          customerId: usage.customerId,
-          customerName: usage.customerName,
-          machineModel: usage.machineModel,
-          machineType: usage.machineType,
-          serialNumber: usage.serialNumber,
-          department: null, // To be populated if available
+          contract_id: usage.contract_id,
+          machine_id: usage.machine_id,
+          customer_id: usage.customer_id,
+          customer_name: usage.customer_name,
+          machine_model: usage.machine_model,
+          machine_type: usage.machine_type,
+          serial_number: usage.serial_number,
+          department: usage.department,
           month: usageMonth,
-          rent_received: contract.monthlyRent,
+          rent_received: contract.monthly_rent,
           extra_copy_income: 0, // Will be updated when billing is done
-          total_income: contract.monthlyRent,
+          total_income: contract.monthly_rent,
           consumables_cost: usage.cost,
           engineer_visit_cost: 0,
           travel_expense: 0,
           food_expense: 0,
           other_expense: 0,
           total_expense: usage.cost,
-          profit: contract.monthlyRent - usage.cost,
-          profit_margin: ((contract.monthlyRent - usage.cost) / contract.monthlyRent) * 100,
+          profit: contract.monthly_rent - usage.cost,
+          profit_margin: ((contract.monthly_rent - usage.cost) / contract.monthly_rent) * 100,
           created_at: new Date().toISOString()
         };
         
         const { data, error } = await supabase
           .from('amc_profit_reports')
           .insert([{
-            contract_id: newReport.contractId,
-            machine_id: newReport.machineId,
-            customer_id: newReport.customerId,
-            customer_name: newReport.customerName,
-            machine_model: newReport.machineModel,
-            machine_type: newReport.machineType,
-            serial_number: newReport.serialNumber,
+            contract_id: newReport.contract_id,
+            machine_id: newReport.machine_id,
+            customer_id: newReport.customer_id,
+            customer_name: newReport.customer_name,
+            machine_model: newReport.machine_model,
+            machine_type: newReport.machine_type,
+            serial_number: newReport.serial_number,
             department: newReport.department,
             month: newReport.month,
             rent_received: newReport.rent_received,
@@ -408,7 +408,7 @@ const AmcTracker = () => {
         
         // Update state
         if (data && data.length > 0) {
-          setProfitReports(prev => [...prev, data[0]]);
+          setProfitReports(prev => [...prev, data[0] as AMCProfitReport]);
         }
       }
       
@@ -435,13 +435,13 @@ const AmcTracker = () => {
       const { data, error } = await supabase
         .from('amc_billing')
         .insert([{
-          contract_id: newBilling.contractId,
-          machine_id: newBilling.machineId,
-          customer_id: newBilling.customerId,
-          customer_name: newBilling.customerName,
-          machine_model: newBilling.machineModel,
-          machine_type: newBilling.machineType,
-          serial_number: newBilling.serialNumber,
+          contract_id: newBilling.contract_id,
+          machine_id: newBilling.machine_id,
+          customer_id: newBilling.customer_id,
+          customer_name: newBilling.customer_name,
+          machine_model: newBilling.machine_model,
+          machine_type: newBilling.machine_type,
+          serial_number: newBilling.serial_number,
           department: newBilling.department,
           billing_month: newBilling.billing_month,
           a4_opening_reading: newBilling.a4_opening_reading,
@@ -479,7 +479,7 @@ const AmcTracker = () => {
           last_a3_reading: newBilling.a3_closing_reading,
           last_reading_date: newBilling.bill_date
         })
-        .eq('id', newBilling.machineId)
+        .eq('id', newBilling.machine_id)
         .select();
       
       if (updateError) throw updateError;
@@ -489,7 +489,7 @@ const AmcTracker = () => {
       
       // Update machines state
       setMachines(prevMachines => prevMachines.map(machine => 
-        machine.id === newBilling.machineId 
+        machine.id === newBilling.machine_id 
           ? { 
               ...machine, 
               last_a4_reading: newBilling.a4_closing_reading,
@@ -518,7 +518,7 @@ const AmcTracker = () => {
       const { data: existingReports, error: reportQueryError } = await supabase
         .from('amc_profit_reports')
         .select('*')
-        .eq('machine_id', billing.machineId)
+        .eq('machine_id', billing.machine_id)
         .eq('month', billingMonth);
       
       if (reportQueryError) throw reportQueryError;
@@ -559,13 +559,13 @@ const AmcTracker = () => {
         // Create new report
         const newReport: AMCProfitReport = {
           id: billing.id, // Use the same ID as the billing for simplicity
-          contractId: billing.contractId,
-          machineId: billing.machineId,
-          customerId: billing.customerId,
-          customerName: billing.customerName,
-          machineModel: billing.machineModel,
-          machineType: billing.machineType,
-          serialNumber: billing.serialNumber,
+          contract_id: billing.contract_id,
+          machine_id: billing.machine_id,
+          customer_id: billing.customer_id,
+          customer_name: billing.customer_name,
+          machine_model: billing.machine_model,
+          machine_type: billing.machine_type,
+          serial_number: billing.serial_number,
           department: billing.department,
           month: billingMonth,
           rent_received: billing.rent,
@@ -585,13 +585,13 @@ const AmcTracker = () => {
         const { data, error } = await supabase
           .from('amc_profit_reports')
           .insert([{
-            contract_id: newReport.contractId,
-            machine_id: newReport.machineId,
-            customer_id: newReport.customerId,
-            customer_name: newReport.customerName,
-            machine_model: newReport.machineModel,
-            machine_type: newReport.machineType,
-            serial_number: newReport.serialNumber,
+            contract_id: newReport.contract_id,
+            machine_id: newReport.machine_id,
+            customer_id: newReport.customer_id,
+            customer_name: newReport.customer_name,
+            machine_model: newReport.machine_model,
+            machine_type: newReport.machine_type,
+            serial_number: newReport.serial_number,
             department: newReport.department,
             month: newReport.month,
             rent_received: newReport.rent_received,
@@ -612,7 +612,7 @@ const AmcTracker = () => {
         
         // Update state
         if (data && data.length > 0) {
-          setProfitReports(prev => [...prev, data[0]]);
+          setProfitReports(prev => [...prev, data[0] as AMCProfitReport]);
         }
       }
       
