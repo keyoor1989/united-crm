@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -37,7 +36,6 @@ const PartsReconciliationTab = ({
   const [showAddPartDialog, setShowAddPartDialog] = useState(false);
   const [selectedServiceCall, setSelectedServiceCall] = useState<ServiceCall | null>(null);
   
-  // Use either the props or fetch from the database
   useEffect(() => {
     if (propServiceCalls) {
       setServiceCalls(propServiceCalls);
@@ -47,7 +45,6 @@ const PartsReconciliationTab = ({
     }
   }, [propServiceCalls]);
   
-  // Function to fetch service calls from the database
   const fetchServiceCallsFromDB = async () => {
     setIsLoading(true);
     try {
@@ -65,14 +62,12 @@ const PartsReconciliationTab = ({
     }
   };
   
-  // Handle part reconciliation either through props or directly with the database
   const handlePartReconcile = async (serviceCallId: string, partId: string, reconciled: boolean) => {
     if (propOnPartReconcile) {
       propOnPartReconcile(serviceCallId, partId, reconciled);
     } else {
       const success = await updatePartReconciliation(serviceCallId, partId, reconciled);
       if (success) {
-        // Update the local state to reflect the change
         setServiceCalls(prev => 
           prev.map(call => {
             if (call.id === serviceCallId) {
@@ -109,14 +104,12 @@ const PartsReconciliationTab = ({
     }
   };
   
-  // Handle service call reconciliation either through props or directly with the database
   const handleReconcile = async (serviceCallId: string, reconciled: boolean) => {
     if (propOnReconcile) {
       propOnReconcile(serviceCallId, reconciled);
     } else {
       const success = await updateServiceCallReconciliation(serviceCallId, reconciled);
       if (success) {
-        // Update the local state to reflect the change
         setServiceCalls(prev => 
           prev.map(call => {
             if (call.id === serviceCallId) {
@@ -149,13 +142,11 @@ const PartsReconciliationTab = ({
     }
   };
 
-  // Handle adding a part to service call
   const handleAddPart = async (part: Partial<Part>) => {
     if (!selectedServiceCall) return;
     
     const success = await addPartToServiceCall(selectedServiceCall.id, part);
     if (success) {
-      // Refresh the data to include the new part
       fetchServiceCallsFromDB();
       
       toast({
@@ -173,18 +164,15 @@ const PartsReconciliationTab = ({
     }
   };
   
-  // Open add part dialog for specific service call
   const openAddPartDialog = (serviceCall: ServiceCall) => {
     setSelectedServiceCall(serviceCall);
     setShowAddPartDialog(true);
   };
   
-  // Filter service calls with parts
   const callsWithParts = serviceCalls.filter(call => 
     call.partsUsed && call.partsUsed.length > 0
   );
   
-  // Filter based on search term - now also searches engineer name
   const filteredCalls = serviceCalls.filter(call => 
     call.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (call.engineerName && call.engineerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -193,14 +181,12 @@ const PartsReconciliationTab = ({
     call.partsUsed.some(part => part.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
-  // Function to export reconciliation data (placeholder for now)
   const handleExport = () => {
     toast({
       title: "Export Started",
       description: "The reconciliation data export has started. The file will be downloaded shortly.",
     });
     
-    // We would implement actual export functionality here
     console.log("Exporting reconciliation data:", filteredCalls);
   };
   
@@ -368,7 +354,6 @@ const PartsReconciliationTab = ({
         )}
       </CardContent>
       
-      {/* Add Part Dialog */}
       <AddPartDialog 
         open={showAddPartDialog} 
         onClose={() => setShowAddPartDialog(false)}
