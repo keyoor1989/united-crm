@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -53,18 +54,20 @@ export default function EngineerServiceReport() {
         return;
       }
       
-      const transformedEngineers: Engineer[] = data.map(eng => ({
-        id: eng.id,
-        name: eng.name,
-        phone: eng.phone,
-        email: eng.email,
-        location: eng.location,
-        status: eng.status as EngineerStatus,
-        skillLevel: eng.skill_level as EngineerSkillLevel,
-        currentJob: eng.current_job,
-        currentLocation: eng.current_location,
-        leaveEndDate: eng.leave_end_date || undefined
-      }));
+      const transformedEngineers: Engineer[] = data.map(eng => {
+        return {
+          id: eng.id,
+          name: eng.name,
+          phone: eng.phone,
+          email: eng.email,
+          location: eng.location,
+          status: eng.status as EngineerStatus,
+          skillLevel: eng.skill_level as EngineerSkillLevel,
+          currentJob: eng.current_job,
+          currentLocation: eng.current_location,
+          leaveEndDate: eng.leave_end_date || undefined
+        };
+      });
       
       setEngineers(transformedEngineers);
       setIsLoading(false);
