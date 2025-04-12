@@ -16,69 +16,14 @@ import { Badge } from "@/components/ui/badge";
 import { Search, PlusCircle, Edit, Trash, Barcode, Printer } from "lucide-react";
 import { Brand, Model, InventoryItem, ItemType } from "@/types/inventory";
 
-// Mock data
-const mockBrands: Brand[] = [
-  { id: "1", name: "Kyocera", createdAt: "2025-03-01" },
-  { id: "2", name: "Ricoh", createdAt: "2025-03-02" },
-  { id: "3", name: "Canon", createdAt: "2025-03-03" },
-];
-
-const mockModels: Model[] = [
-  { id: "1", brandId: "1", name: "2554ci", type: "Machine", createdAt: "2025-03-01" },
-  { id: "2", brandId: "1", name: "3252ci", type: "Machine", createdAt: "2025-03-02" },
-  { id: "3", brandId: "2", name: "MP2014", type: "Machine", createdAt: "2025-03-03" },
-];
-
-const mockItems: InventoryItem[] = [
-  { 
-    id: "1", 
-    modelId: "1", 
-    brandId: "1", 
-    name: "Black Toner", 
-    type: "Toner", 
-    minQuantity: 5, 
-    currentQuantity: 12, 
-    lastPurchasePrice: 5200, 
-    lastVendor: "Copier Zone", 
-    barcode: "KYO2554-BT001", 
-    createdAt: "2025-03-10" 
-  },
-  { 
-    id: "2", 
-    modelId: "1", 
-    brandId: "1", 
-    name: "Drum Unit", 
-    type: "Drum", 
-    minQuantity: 2, 
-    currentQuantity: 3, 
-    lastPurchasePrice: 8700, 
-    lastVendor: "Toner World", 
-    barcode: "KYO2554-DR002", 
-    createdAt: "2025-03-11" 
-  },
-  { 
-    id: "3", 
-    modelId: "3", 
-    brandId: "2", 
-    name: "Developer Unit", 
-    type: "Developer", 
-    minQuantity: 1, 
-    currentQuantity: 0, 
-    lastPurchasePrice: 6300, 
-    lastVendor: "Copier Zone", 
-    barcode: "RIC2014-DV003", 
-    createdAt: "2025-03-12" 
-  },
-];
-
 const itemTypes: ItemType[] = ["Toner", "Drum", "Developer", "Fuser", "Paper Feed", "Other"];
 
 const InventoryItems = () => {
   const [openItemDialog, setOpenItemDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [brands] = useState<Brand[]>(mockBrands);
-  const [models] = useState<Model[]>(mockModels);
-  const [items] = useState<InventoryItem[]>(mockItems);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const [items, setItems] = useState<InventoryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   
   const [newItem, setNewItem] = useState<{
@@ -311,60 +256,61 @@ const InventoryItems = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredItems.map((item) => {
-                const brand = brands.find(b => b.id === item.brandId);
-                const model = models.find(m => m.id === item.modelId);
-                
-                return (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{brand?.name || "Unknown"}</div>
-                        <div className="text-sm text-muted-foreground">{model?.name || "Unknown"}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{item.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{item.type}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className={`font-medium ${item.currentQuantity < item.minQuantity ? "text-red-500" : ""}`}>
-                        {item.currentQuantity} {item.currentQuantity < item.minQuantity && "⚠️"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Min: {item.minQuantity}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div>₹{item.lastPurchasePrice.toLocaleString()}</div>
-                      <div className="text-xs text-muted-foreground">{item.lastVendor}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Barcode className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{item.barcode}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Printer className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon">
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {filteredItems.length === 0 && (
+              {filteredItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                     No items found. Try changing your search or add a new item.
                   </TableCell>
                 </TableRow>
+              ) : (
+                filteredItems.map((item) => {
+                  const brand = brands.find(b => b.id === item.brandId);
+                  const model = models.find(m => m.id === item.modelId);
+                  
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{brand?.name || "Unknown"}</div>
+                          <div className="text-sm text-muted-foreground">{model?.name || "Unknown"}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{item.type}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className={`font-medium ${item.currentQuantity < item.minQuantity ? "text-red-500" : ""}`}>
+                          {item.currentQuantity} {item.currentQuantity < item.minQuantity && "⚠️"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Min: {item.minQuantity}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div>₹{item.lastPurchasePrice.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">{item.lastVendor}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Barcode className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{item.barcode}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon">
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

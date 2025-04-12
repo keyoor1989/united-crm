@@ -25,69 +25,16 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-// Sample inventory data
-const inventoryItems = [
-  {
-    id: 1,
-    name: "Kyocera 2554ci Toner Black",
-    sku: "K-TN2554-BK",
-    category: "Toner",
-    quantity: 0,
-    location: "Indore (HQ)",
-    price: 4500,
-    status: "Out of Stock"
-  },
-  {
-    id: 2,
-    name: "Ricoh MP2014 Drum Unit",
-    sku: "R-DRM-MP2014",
-    category: "Drum",
-    quantity: 2,
-    location: "Indore (HQ)",
-    price: 3200,
-    status: "Low Stock"
-  },
-  {
-    id: 3,
-    name: "Xerox 7845 Toner Cyan",
-    sku: "X-TN7845-CY",
-    category: "Toner",
-    quantity: 1,
-    location: "Bhopal Office",
-    price: 5100,
-    status: "Low Stock"
-  },
-  {
-    id: 4,
-    name: "Canon 2525 Drum Unit",
-    sku: "C-DRM-2525",
-    category: "Drum",
-    quantity: 4,
-    location: "Indore (HQ)",
-    price: 4200,
-    status: "In Stock"
-  },
-  {
-    id: 5,
-    name: "HP M428 Toner",
-    sku: "HP-TN-M428",
-    category: "Toner",
-    quantity: 7,
-    location: "Jabalpur Office",
-    price: 2800,
-    status: "In Stock"
-  },
-  {
-    id: 6,
-    name: "Sharp MX3070 Toner Black",
-    sku: "SH-TN3070-BK",
-    category: "Toner",
-    quantity: 3,
-    location: "Indore (HQ)",
-    price: 5500,
-    status: "In Stock"
-  },
-];
+interface InventoryItem {
+  id: number;
+  name: string;
+  sku: string;
+  category: string;
+  quantity: number;
+  location: string;
+  price: number;
+  status: string;
+}
 
 interface InventoryTableProps {
   searchQuery?: string;
@@ -102,6 +49,7 @@ const InventoryTable = ({
 }: InventoryTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -168,7 +116,7 @@ const InventoryTable = ({
       
       return matchesSearch && matchesCategory && matchesLocation;
     });
-  }, [searchQuery, categoryFilter, locationFilter]);
+  }, [searchQuery, categoryFilter, locationFilter, inventoryItems]);
   
   // Reset to first page when filters change
   React.useEffect(() => {
