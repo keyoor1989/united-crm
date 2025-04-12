@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ServiceCall, Part } from "@/types/service";
 import { toast } from "@/hooks/use-toast";
@@ -21,7 +20,6 @@ export const fetchServiceCallsWithParts = async (): Promise<ServiceCall[]> => {
       return [];
     }
     
-    // Transform the data to match our ServiceCall type
     const serviceCalls: ServiceCall[] = data.map(call => ({
       id: call.id,
       customerId: call.customer_id,
@@ -74,10 +72,9 @@ export const updatePartReconciliation = async (
   reconciled: boolean
 ): Promise<boolean> => {
   try {
-    // First fetch the current service call to get the parts_used array
     const { data: serviceCall, error: fetchError } = await supabase
       .from('service_calls')
-      .select('parts_used')
+      .select('parts_used, engineer_id')
       .eq('id', serviceCallId)
       .single();
     
@@ -86,24 +83,68 @@ export const updatePartReconciliation = async (
       return false;
     }
     
-    // Make sure parts_used is an array before trying to use map
     if (!Array.isArray(serviceCall.parts_used)) {
       console.error("parts_used is not an array:", serviceCall.parts_used);
       return false;
     }
     
-    // Update the parts_used array with the new reconciliation status
-    const updatedPartsUsed = serviceCall.parts_used.map((part: any) => {
-      if (part.id === partId) {
-        return { ...part, isReconciled: reconciled };
+    const part = serviceCall.parts_used.find((p: any) => p.id === partId);
+    if (!part) {
+      console.error("Part not found in service call:", partId);
+      return false;
+    }
+    
+    if (reconciled && !part.isReconciled) {
+      const { data: engineerItems, error: itemsError } = await supabase
+        .from('engineer_inventory')
+        .select('*')
+        .eq('engineer_id', serviceCall.engineer_id)
+        .ilike('item_name', `%${part.name}%`);
+        
+      if (itemsError) {
+        console.error("Error fetching engineer inventory:", itemsError);
+      } else if (engineerItems && engineerItems.length > 0) {
+        const matchingItem = engineerItems[0];
+        
+        const newQuantity = Math.max(0, matchingItem.quantity - part.quantity);
+        
+        if (newQuantity === 0) {
+          const { error: deleteError } = await supabase
+            .from('engineer_inventory')
+            .delete()
+            .eq('id', matchingItem.id);
+            
+          if (deleteError) {
+            console.error("Error removing item from engineer inventory:", deleteError);
+          } else {
+            console.log(`Removed item ${matchingItem.item_name} from engineer inventory`);
+          }
+        } else {
+          const { error: updateError } = await supabase
+            .from('engineer_inventory')
+            .update({ quantity: newQuantity })
+            .eq('id', matchingItem.id);
+            
+          if (updateError) {
+            console.error("Error updating engineer inventory:", updateError);
+          } else {
+            console.log(`Updated item ${matchingItem.item_name} quantity to ${newQuantity}`);
+          }
+        }
+      } else {
+        console.log("No matching item found in engineer inventory for:", part.name);
       }
-      return part;
+    }
+    
+    const updatedPartsUsed = serviceCall.parts_used.map((p: any) => {
+      if (p.id === partId) {
+        return { ...p, isReconciled: reconciled };
+      }
+      return p;
     });
     
-    // Check if all parts are now reconciled
-    const allReconciled = updatedPartsUsed.every((part: any) => part.isReconciled);
+    const allReconciled = updatedPartsUsed.every((p: any) => p.isReconciled);
     
-    // Update the service call with the modified parts_used array and parts_reconciled flag
     const { error: updateError } = await supabase
       .from('service_calls')
       .update({ 
@@ -129,10 +170,9 @@ export const updateServiceCallReconciliation = async (
   reconciled: boolean
 ): Promise<boolean> => {
   try {
-    // First fetch the current service call to get the parts_used array
     const { data: serviceCall, error: fetchError } = await supabase
       .from('service_calls')
-      .select('parts_used')
+      .select('parts_used, engineer_id')
       .eq('id', serviceCallId)
       .single();
     
@@ -141,19 +181,65 @@ export const updateServiceCallReconciliation = async (
       return false;
     }
     
-    // Make sure parts_used is an array before trying to use map
     if (!Array.isArray(serviceCall.parts_used)) {
       console.error("parts_used is not an array:", serviceCall.parts_used);
       return false;
     }
     
-    // Update all parts in the parts_used array with the new reconciliation status
+    if (reconciled) {
+      for (const part of serviceCall.parts_used) {
+        if (!part.isReconciled) {
+          const { data: engineerItems, error: itemsError } = await supabase
+            .from('engineer_inventory')
+            .select('*')
+            .eq('engineer_id', serviceCall.engineer_id)
+            .ilike('item_name', `%${part.name}%`);
+            
+          if (itemsError) {
+            console.error("Error fetching engineer inventory:", itemsError);
+            continue;
+          }
+          
+          if (engineerItems && engineerItems.length > 0) {
+            const matchingItem = engineerItems[0];
+            
+            const newQuantity = Math.max(0, matchingItem.quantity - part.quantity);
+            
+            if (newQuantity === 0) {
+              const { error: deleteError } = await supabase
+                .from('engineer_inventory')
+                .delete()
+                .eq('id', matchingItem.id);
+                
+              if (deleteError) {
+                console.error("Error removing item from engineer inventory:", deleteError);
+              } else {
+                console.log(`Removed item ${matchingItem.item_name} from engineer inventory`);
+              }
+            } else {
+              const { error: updateError } = await supabase
+                .from('engineer_inventory')
+                .update({ quantity: newQuantity })
+                .eq('id', matchingItem.id);
+                
+              if (updateError) {
+                console.error("Error updating engineer inventory:", updateError);
+              } else {
+                console.log(`Updated item ${matchingItem.item_name} quantity to ${newQuantity}`);
+              }
+            }
+          } else {
+            console.log("No matching item found in engineer inventory for:", part.name);
+          }
+        }
+      }
+    }
+    
     const updatedPartsUsed = serviceCall.parts_used.map((part: any) => ({
       ...part,
       isReconciled: reconciled
     }));
     
-    // Update the service call with the modified parts_used array and parts_reconciled flag
     const { error: updateError } = await supabase
       .from('service_calls')
       .update({ 
@@ -179,7 +265,6 @@ export const addPartToServiceCall = async (
   part: Partial<Part>
 ): Promise<boolean> => {
   try {
-    // First fetch the current service call to get the parts_used array
     const { data: serviceCall, error: fetchError } = await supabase
       .from('service_calls')
       .select('parts_used')
@@ -191,10 +276,8 @@ export const addPartToServiceCall = async (
       return false;
     }
     
-    // Make sure parts_used is an array
     const currentParts = Array.isArray(serviceCall.parts_used) ? serviceCall.parts_used : [];
     
-    // Create a new part with a unique ID
     const newPart = {
       id: crypto.randomUUID(),
       name: part.name || "Unknown Part",
@@ -206,10 +289,8 @@ export const addPartToServiceCall = async (
       isReconciled: false
     };
     
-    // Add the new part to the parts_used array
     const updatedPartsUsed = [...currentParts, newPart];
     
-    // Update the service call with the modified parts_used array
     const { error: updateError } = await supabase
       .from('service_calls')
       .update({ 
