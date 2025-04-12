@@ -1,11 +1,10 @@
-
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ServiceCall, Engineer } from "@/types/service";
-import { mockServiceCalls, mockEngineers } from "@/data/mockData";
+import { mockEngineers } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import ServiceCallDetail from "@/components/service/ServiceCallDetail";
 import { ServiceSearchBar } from "@/components/service/ServiceSearchBar";
@@ -15,7 +14,7 @@ import { EngineerLocations } from "@/components/service/EngineerLocations";
 const Service = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>(mockServiceCalls);
+  const [serviceCalls, setServiceCalls] = useState<ServiceCall[]>([]);
   const [engineers, setEngineers] = useState<Engineer[]>(mockEngineers);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedServiceCall, setSelectedServiceCall] = useState<ServiceCall | null>(null);
@@ -96,8 +95,7 @@ const Service = () => {
   };
 
   const handleRefresh = () => {
-    // This would typically fetch fresh data from the API
-    // For now we just reset the search term
+    setSearchTerm("");
   };
 
   return (
