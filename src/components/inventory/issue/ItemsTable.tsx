@@ -31,8 +31,10 @@ const ItemsTable = ({ filteredItems, selectedItemId, handleSelectItem }: ItemsTa
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-24">Select</TableHead>
+            <TableHead className="w-16">Select</TableHead>
             <TableHead>Item Name</TableHead>
+            <TableHead>Brand</TableHead>
+            <TableHead>Model</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Stock</TableHead>
             <TableHead>Price</TableHead>
@@ -54,6 +56,8 @@ const ItemsTable = ({ filteredItems, selectedItemId, handleSelectItem }: ItemsTa
                   </div>
                 </TableCell>
                 <TableCell>{item.part_name}</TableCell>
+                <TableCell>{item.brand || "-"}</TableCell>
+                <TableCell>{item.category || "-"}</TableCell>
                 <TableCell>{item.category}</TableCell>
                 <TableCell>
                   <span className={item.quantity < item.min_stock ? "text-destructive" : "text-green-600"}>
@@ -68,7 +72,7 @@ const ItemsTable = ({ filteredItems, selectedItemId, handleSelectItem }: ItemsTa
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
+              <TableCell colSpan={7} className="text-center py-4">
                 No items found. Try adjusting your search or filters.
               </TableCell>
             </TableRow>

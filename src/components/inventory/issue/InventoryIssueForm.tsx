@@ -167,7 +167,7 @@ const InventoryIssueForm = () => {
         assigned_date: new Date().toISOString(),
         warehouse_id: selectedWarehouse,
         warehouse_source: selectedWarehouse 
-          ? form.getValues().warehouses?.find(w => w.id === selectedWarehouse)?.name 
+          ? (await supabase.from('warehouses').select('name').eq('id', selectedWarehouse).single()).data?.name
           : null
       };
       
