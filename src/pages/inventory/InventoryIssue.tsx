@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,7 +71,6 @@ const InventoryIssue = () => {
   const [itemCondition, setItemCondition] = useState<ItemCondition>("Good");
   const [returnNotes, setReturnNotes] = useState("");
 
-  // Fetch real inventory items from the database
   const { data: inventoryItems = [], isLoading: isLoadingInventoryItems } = useQuery({
     queryKey: ['inventoryItems'],
     queryFn: async () => {
@@ -85,7 +83,6 @@ const InventoryIssue = () => {
         throw new Error(error.message);
       }
       
-      // Transform the opening_stock_entries to match InventoryItem structure
       return data.map(item => ({
         id: item.id,
         modelId: "", // Not available in opening_stock_entries
@@ -102,8 +99,7 @@ const InventoryIssue = () => {
     }
   });
 
-  // Fetch brands
-  const { data: brands = [] } = useQuery({
+  const { data: brandsData = [] } = useQuery({
     queryKey: ['brands'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -115,12 +111,18 @@ const InventoryIssue = () => {
         throw new Error(error.message);
       }
       
-      return data as Brand[];
+      return data;
     }
   });
 
-  // Fetch models
-  const { data: models = [] } = useQuery({
+  const brands: Brand[] = brandsData.map(brand => ({
+    id: brand.id,
+    name: brand.name,
+    createdAt: brand.created_at,
+    updatedAt: brand.updated_at
+  }));
+
+  const { data: modelsData = [] } = useQuery({
     queryKey: ['models'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -132,9 +134,18 @@ const InventoryIssue = () => {
         throw new Error(error.message);
       }
       
-      return data as Model[];
+      return data;
     }
   });
+
+  const models: Model[] = modelsData.map(model => ({
+    id: model.id,
+    brandId: model.brand_id,
+    name: model.name,
+    type: model.type as 'Machine' | 'Spare Part',
+    createdAt: model.created_at,
+    updatedAt: model.updated_at
+  }));
 
   const { data: engineers = [], isLoading: isLoadingEngineers } = useQuery({
     queryKey: ['engineers'],
@@ -195,7 +206,6 @@ const InventoryIssue = () => {
         throw new Error(error.message);
       }
       
-      // Update inventory quantity after issue
       if (selectedItem) {
         const { error: updateError } = await supabase
           .from('opening_stock_entries')
@@ -259,7 +269,6 @@ const InventoryIssue = () => {
           }
         }
         
-        // Update the stock quantity in the opening_stock_entries
         const { error: stockUpdateError } = await supabase
           .from('opening_stock_entries')
           .select('quantity')
@@ -577,8 +586,8 @@ const InventoryIssue = () => {
                   <h3 className="text-lg font-medium mb-4">Item Details</h3>
                   
                   <ItemSelector 
-                    brands={mockBrands}
-                    models={mockModels}
+                    brands={brands}
+                    models={models}
                     items={inventoryItems}
                     onItemSelect={handleItemSelected}
                     warehouseId={selectedWarehouse}
