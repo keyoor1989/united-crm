@@ -35,6 +35,7 @@ import InventoryIssue from "@/pages/inventory/InventoryIssue";
 import InventoryWarehouses from "@/pages/inventory/InventoryWarehouses";
 import InventoryHistory from "@/pages/inventory/InventoryHistory";
 import EngineerForm from "@/pages/EngineerForm";
+import AmcTracker from "@/pages/inventory/AmcTracker";
 
 const AppRoutes = () => {
   return (
@@ -69,6 +70,7 @@ const AppRoutes = () => {
         <Route path="/inventory/issue" element={<ProtectedRoute><InventoryIssue /></ProtectedRoute>} />
         <Route path="/inventory/warehouses" element={<ProtectedRoute><InventoryWarehouses /></ProtectedRoute>} />
         <Route path="/inventory/transfers" element={<ProtectedRoute><InventoryHistory /></ProtectedRoute>} />
+        <Route path="/inventory/amc-tracker" element={<ProtectedRoute><AmcTracker /></ProtectedRoute>} />
         
         <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
         <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />

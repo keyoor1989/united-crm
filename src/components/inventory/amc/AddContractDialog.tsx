@@ -1,142 +1,125 @@
 
-import React from "react";
+import React, { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus } from "lucide-react";
+import { AMCContract } from "@/types/inventory";
+import { useCustomers } from "@/hooks/useCustomers";
 import { toast } from "sonner";
-import { AMCContractType, BillingCycle } from "@/types/inventory";
 
-// Define the form schema
+interface AddContractDialogProps {
+  onContractAdded: (contract: AMCContract) => void;
+}
+
 const formSchema = z.object({
-  customerId: z.string().min(1, "Customer is required"),
-  customerName: z.string().min(1, "Customer name is required"),
-  machineModel: z.string().min(1, "Machine model is required"),
-  serialNumber: z.string().min(1, "Serial number is required"),
-  contractType: z.enum(["AMC", "Rental"]),
-  startDate: z.date(),
-  endDate: z.date(),
-  monthlyRent: z.coerce.number().positive("Rent must be greater than 0"),
-  gstPercent: z.coerce.number().min(0, "GST cannot be negative"),
-  copyLimit: z.coerce.number().nonnegative("Copy limit cannot be negative"),
-  extraCopyCharge: z.coerce.number().nonnegative("Charge cannot be negative"),
-  billingCycle: z.enum(["Monthly", "Quarterly", "Yearly"]),
+  customerId: z.string({ required_error: "Customer is required" }),
+  customerName: z.string(),
+  machineModel: z.string().min(2, { message: "Machine model is required" }),
+  machineType: z.enum(["Black & White", "Color"], { required_error: "Machine type is required" }),
+  serialNumber: z.string().min(2, { message: "Serial number is required" }),
+  contractType: z.enum(["AMC", "Rental"], { required_error: "Contract type is required" }),
+  startDate: z.string().min(1, { message: "Start date is required" }),
+  endDate: z.string().min(1, { message: "End date is required" }),
+  monthlyRent: z.string().min(1, { message: "Monthly rent is required" }),
+  gstPercent: z.string().min(1, { message: "GST percentage is required" }),
+  copyLimitA4: z.string().min(1, { message: "A4 copy limit is required" }),
+  copyLimitA3: z.string().default("0"),
+  extraA4CopyCharge: z.string().min(1, { message: "A4 extra copy charge is required" }),
+  extraA3CopyCharge: z.string().default("0"),
+  billingCycle: z.enum(["Monthly", "Quarterly", "Yearly"], { required_error: "Billing cycle is required" }),
+  location: z.string().optional(),
+  department: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Mock customers for the demo
-const mockCustomers = [
-  { id: "cust001", name: "TechSolutions Pvt Ltd" },
-  { id: "cust002", name: "Global Enterprises" },
-  { id: "cust003", name: "Sunrise Hospital" },
-  { id: "cust004", name: "Metro College" },
-  { id: "cust005", name: "City Municipality" },
-];
+const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }) => {
+  const [open, setOpen] = useState(false);
+  const { customers, isLoading } = useCustomers();
 
-interface AddContractDialogProps {
-  onContractAdded: (contract: any) => void;
-}
-
-const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
-  const [open, setOpen] = React.useState(false);
-  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerId: "",
-      customerName: "",
-      machineModel: "",
-      serialNumber: "",
       contractType: "AMC",
-      startDate: new Date(),
-      endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-      monthlyRent: 0,
-      gstPercent: 18,
-      copyLimit: 0,
-      extraCopyCharge: 0,
+      machineType: "Black & White",
       billingCycle: "Monthly",
+      gstPercent: "18",
+      copyLimitA3: "0",
+      extraA3CopyCharge: "0",
     },
   });
 
-  const handleCustomerChange = (customerId: string) => {
-    const customer = mockCustomers.find(c => c.id === customerId);
-    if (customer) {
-      form.setValue("customerId", customer.id);
-      form.setValue("customerName", customer.name);
-    }
-  };
-
-  const onSubmit = (data: FormValues) => {
-    // Generate an ID for the new contract
-    const newContract = {
-      id: `amc${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`,
-      ...data,
-      startDate: format(data.startDate, "yyyy-MM-dd"),
-      endDate: format(data.endDate, "yyyy-MM-dd"),
-      status: "Active" as const,
-      createdAt: new Date().toISOString(),
+  const onSubmit = (values: FormValues) => {
+    const newContract: AMCContract = {
+      id: uuidv4(),
+      customerId: values.customerId,
+      customerName: values.customerName,
+      machineModel: values.machineModel,
+      machineType: values.machineType as "Black & White" | "Color",
+      serialNumber: values.serialNumber,
+      contractType: values.contractType as "AMC" | "Rental",
+      startDate: values.startDate,
+      endDate: values.endDate,
+      monthlyRent: parseFloat(values.monthlyRent),
+      gstPercent: parseFloat(values.gstPercent),
+      copyLimitA4: parseInt(values.copyLimitA4),
+      copyLimitA3: parseInt(values.copyLimitA3 || "0"),
+      extraA4CopyCharge: parseFloat(values.extraA4CopyCharge),
+      extraA3CopyCharge: parseFloat(values.extraA3CopyCharge || "0"),
+      billingCycle: values.billingCycle as "Monthly" | "Quarterly" | "Yearly",
+      status: "Active",
+      location: values.location,
+      department: values.department,
+      notes: values.notes,
     };
-    
+
     onContractAdded(newContract);
-    toast.success("AMC contract added successfully!");
+    toast.success("Contract added successfully");
     setOpen(false);
     form.reset();
+  };
+
+  const handleCustomerChange = (customerId: string) => {
+    const selectedCustomer = customers.find((c) => c.id === customerId);
+    if (selectedCustomer) {
+      form.setValue("customerName", selectedCustomer.name);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-black text-white hover:bg-black/90">
+        <Button className="gap-1 bg-black hover:bg-gray-800">
+          <Plus className="h-4 w-4" />
           Add New Contract
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add New AMC/Rental Contract</DialogTitle>
         </DialogHeader>
-        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Customer Selection */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="customerId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Customer</FormLabel>
-                    <Select 
-                      onValueChange={(value) => handleCustomerChange(value)}
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handleCustomerChange(value);
+                      }}
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -145,7 +128,7 @@ const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {mockCustomers.map(customer => (
+                        {customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id}>
                             {customer.name}
                           </SelectItem>
@@ -156,8 +139,6 @@ const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
                   </FormItem>
                 )}
               />
-
-              {/* Machine Model */}
               <FormField
                 control={form.control}
                 name="machineModel"
@@ -171,8 +152,27 @@ const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
                   </FormItem>
                 )}
               />
-
-              {/* Serial Number */}
+              <FormField
+                control={form.control}
+                name="machineType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Machine Type</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select machine type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Black & White">Black & White</SelectItem>
+                        <SelectItem value="Color">Color</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="serialNumber"
@@ -186,8 +186,6 @@ const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
                   </FormItem>
                 )}
               />
-
-              {/* Contract Type */}
               <FormField
                 control={form.control}
                 name="contractType"
@@ -197,7 +195,7 @@ const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select contract type" />
+                          <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -209,155 +207,6 @@ const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
                   </FormItem>
                 )}
               />
-
-              {/* Start Date */}
-              <FormField
-                control={form.control}
-                name="startDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Start Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) =>
-                            date < new Date(new Date().setDate(new Date().getDate() - 1))
-                          }
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* End Date */}
-              <FormField
-                control={form.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>End Date</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "w-full pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => {
-                            const startDate = form.getValues("startDate");
-                            return date <= startDate;
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Monthly Rent */}
-              <FormField
-                control={form.control}
-                name="monthlyRent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monthly Rent (₹)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" step="100" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* GST Percentage */}
-              <FormField
-                control={form.control}
-                name="gstPercent"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>GST %</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" max="100" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Copy Limit */}
-              <FormField
-                control={form.control}
-                name="copyLimit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Free Copy Limit</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" step="1000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Extra Copy Charge */}
-              <FormField
-                control={form.control}
-                name="extraCopyCharge"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Extra Copy Charge (₹)</FormLabel>
-                    <FormControl>
-                      <Input type="number" min="0" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Billing Cycle */}
               <FormField
                 control={form.control}
                 name="billingCycle"
@@ -367,7 +216,7 @@ const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select billing cycle" />
+                          <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -380,11 +229,155 @@ const AddContractDialog = ({ onContractAdded }: AddContractDialogProps) => {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="monthlyRent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monthly Rent (₹)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="0" step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="gstPercent"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GST %</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="copyLimitA4"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>A4 Copy Limit</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="0" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="copyLimitA3"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>A3 Copy Limit</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="0" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="extraA4CopyCharge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>A4 Extra Copy Charge (₹)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="0" step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="extraA3CopyCharge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>A3 Extra Copy Charge (₹)</FormLabel>
+                    <FormControl>
+                      <Input type="number" min="0" step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Head Office" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Admin" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-
-            <DialogFooter>
-              <Button type="submit">Save Contract</Button>
-            </DialogFooter>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Any additional notes" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="flex justify-end">
+              <Button type="submit" className="bg-black hover:bg-gray-800">
+                Save Contract
+              </Button>
+            </div>
           </form>
         </Form>
       </DialogContent>
