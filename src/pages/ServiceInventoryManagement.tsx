@@ -84,9 +84,6 @@ const ServiceInventoryManagement = () => {
     );
   };
 
-  // Log the warehouse data to help with debugging
-  console.log("Warehouse data in component:", warehouses);
-
   return (
     <div className="container mx-auto space-y-6">
       <InventoryHeader activeTab={activeTab} onTabChange={setActiveTab} />
