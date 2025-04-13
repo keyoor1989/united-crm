@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form";
@@ -77,6 +76,7 @@ export const useServiceCallForm = () => {
       location: customer.location,
     });
     setSelectedCustomer(customer);
+    setShowCustomerSearch(false);
     
     // Fetch customer machines
     const fetchCustomerMachines = async () => {

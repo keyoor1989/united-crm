@@ -8,12 +8,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UseFormReturn } from "react-hook-form";
 import { ServiceCallFormData } from "@/hooks/useServiceCallForm";
 import { CustomerType } from "@/types/customer";
 import { Clock } from "lucide-react";
+import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
 
 interface CustomerSectionProps {
   form: UseFormReturn<ServiceCallFormData>;
@@ -23,35 +23,6 @@ interface CustomerSectionProps {
   setShowCustomerSearch: (show: boolean) => void;
   handleCustomerSelect: (customer: CustomerType) => void;
 }
-
-interface CustomerSearchProps {
-  onSelectCustomer: (customer: CustomerType) => void;
-  showSearch: boolean;
-  onToggleSearch: () => void;
-  customerName: string;
-}
-
-// Simple placeholder for CustomerSearch until the real component is available
-const CustomerSearch: React.FC<CustomerSearchProps> = ({ 
-  onSelectCustomer, 
-  showSearch, 
-  onToggleSearch, 
-  customerName 
-}) => {
-  return (
-    <div className="mb-4">
-      <FormItem>
-        <FormLabel>Customer</FormLabel>
-        <div className="flex gap-2">
-          <Input value={customerName} readOnly placeholder="Search or select a customer" />
-          <Button type="button" onClick={onToggleSearch}>
-            {showSearch ? "Cancel" : "Search"}
-          </Button>
-        </div>
-      </FormItem>
-    </div>
-  );
-};
 
 const CustomerSection: React.FC<CustomerSectionProps> = ({
   form,
@@ -71,12 +42,14 @@ const CustomerSection: React.FC<CustomerSectionProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <CustomerSearch
-            onSelectCustomer={handleCustomerSelect}
-            showSearch={showCustomerSearch}
-            onToggleSearch={() => setShowCustomerSearch(!showCustomerSearch)}
-            customerName={selectedCustomer?.name || ""}
-          />
+          <div className="col-span-2">
+            <CustomerSearch
+              onSelectCustomer={handleCustomerSelect}
+              showSearch={showCustomerSearch}
+              onToggleSearch={() => setShowCustomerSearch(!showCustomerSearch)}
+              customerName={selectedCustomer?.name || ""}
+            />
+          </div>
 
           <FormField
             control={form.control}
