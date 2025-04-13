@@ -54,7 +54,7 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         email: vendor.email,
         phone: vendor.phone,
         address: vendor.address,
-        gst_no: vendor.gstNo,
+        gst_no: vendor.gstNo || '',
       }).select();
       
       if (error) throw new Error(error.message);

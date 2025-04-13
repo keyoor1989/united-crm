@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { InventoryItem } from './useInventoryItems';
+import { InventoryItem } from '@/types/inventory';
 
 /**
  * Custom hook to filter inventory items based on search, brand and model

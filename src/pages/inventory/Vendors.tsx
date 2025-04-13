@@ -20,6 +20,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Vendor } from "@/types/inventory";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
 
 // Mock vendors data
 const mockVendors: Vendor[] = [
@@ -153,10 +154,16 @@ const Vendors = () => {
       toast.success("Vendor updated successfully");
     } else {
       // Add new vendor
-      const newVendor: Vendor = {
-        ...vendorForm,
-        id: `${vendors.length + 1}`,
-        createdAt: new Date().toISOString().split('T')[0]
+      const formData = vendorForm;
+      const newVendor = {
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        name: formData.name,
+        contactPerson: formData.contactPerson || '',
+        gstNo: formData.gstNo || '',
+        phone: formData.phone,
+        email: formData.email || '',
+        address: formData.address || ''
       };
       setVendors(prev => [...prev, newVendor]);
       toast.success("Vendor added successfully");

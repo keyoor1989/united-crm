@@ -1,8 +1,8 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { InventoryItem } from "./useInventoryItems";
 import { toast } from "sonner";
+import { InventoryItem } from "@/types/inventory";
 
 interface IssueItemParams {
   itemId: string;
@@ -16,59 +16,51 @@ interface IssueItemParams {
 
 export const useIssueItem = () => {
   const queryClient = useQueryClient();
-
-  const issueMutation = useMutation({
+  
+  return useMutation({
     mutationFn: async (params: IssueItemParams) => {
-      const { itemId, engineerId, engineerName, itemName, quantity, warehouseId, warehouseName } = params;
-
-      // Check current item stock
-      const { data: itemData, error: itemError } = await supabase
-        .from('opening_stock_entries')
-        .select('quantity')
-        .eq('id', itemId)
-        .single();
-
-      if (itemError) throw new Error(itemError.message);
-      if (itemData.quantity < quantity) {
-        throw new Error(`Not enough items in stock. Only ${itemData.quantity} available.`);
-      }
-
-      // 1. Add to engineer inventory
-      const { error: issueError } = await supabase
+      // Insert into engineer_inventory table
+      const { data, error } = await supabase
         .from('engineer_inventory')
         .insert({
-          engineer_id: engineerId,
-          engineer_name: engineerName,
-          item_id: itemId,
-          item_name: itemName,
-          quantity,
-          warehouse_id: warehouseId,
-          warehouse_source: warehouseName
-        });
-
-      if (issueError) throw new Error(issueError.message);
-
-      // 2. Update stock quantity
-      const { error: updateError } = await supabase
-        .from('opening_stock_entries')
-        .update({
-          quantity: itemData.quantity - quantity
+          engineer_id: params.engineerId,
+          engineer_name: params.engineerName,
+          item_id: params.itemId,
+          item_name: params.itemName,
+          quantity: params.quantity,
+          warehouse_id: params.warehouseId,
+          warehouse_source: params.warehouseName
         })
-        .eq('id', itemId);
-
-      if (updateError) throw new Error(updateError.message);
-
-      return { success: true };
+        .select();
+      
+      if (error) throw error;
+      
+      // Update the stock in the opening_stock_entries table
+      if (params.itemId) {
+        const { error: updateError } = await supabase
+          .from('opening_stock_entries')
+          .update({ 
+            quantity: supabase.rpc('decrement', { 
+              x: params.quantity 
+            })
+          })
+          .eq('id', params.itemId);
+        
+        if (updateError) throw updateError;
+      }
+      
+      return data;
     },
     onSuccess: () => {
+      // Invalidate relevant queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
-      queryClient.invalidateQueries({ queryKey: ['engineerInventory'] });
+      queryClient.invalidateQueries({ queryKey: ['engineer_inventory'] });
+      
       toast.success("Item issued successfully");
     },
     onError: (error) => {
-      toast.error(`Error issuing item: ${error.message}`);
+      console.error('Error issuing item:', error);
+      toast.error("Failed to issue item. Please try again.");
     }
   });
-
-  return issueMutation;
 };

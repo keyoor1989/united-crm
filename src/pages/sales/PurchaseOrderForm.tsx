@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -17,7 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { 
   PlusCircle, Trash2, ArrowLeft, Save, SendIcon, 
   CheckSquare, Building, Calendar, TruckIcon, Loader2
-} from 'lucide-react';
+} from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { 
   products, createPurchaseOrderItem

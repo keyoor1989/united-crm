@@ -1,12 +1,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PurchaseOrder, PurchaseOrderItem } from '@/types/sales';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus } from '@/types/sales';
+import { dbAdapters } from '@/utils/dbTypeAdapters';
 
 /**
  * Service to handle purchase order operations
  */
-export const purchaseOrderService = {
+const purchaseOrderService = {
   /**
    * Get all purchase orders
    */
@@ -34,7 +34,7 @@ export const purchaseOrderService = {
         grandTotal: order.grand_total,
         createdAt: order.created_at,
         deliveryDate: order.delivery_date || '',
-        status: order.status,
+        status: order.status as PurchaseOrderStatus,
         notes: order.notes || '',
         terms: order.terms || ''
       }));
@@ -72,7 +72,7 @@ export const purchaseOrderService = {
         grandTotal: data.grand_total,
         createdAt: data.created_at,
         deliveryDate: data.delivery_date || '',
-        status: data.status,
+        status: data.status as PurchaseOrderStatus,
         notes: data.notes || '',
         terms: data.terms || ''
       };
@@ -93,7 +93,7 @@ export const purchaseOrderService = {
           po_number: purchaseOrder.poNumber,
           vendor_id: purchaseOrder.vendorId,
           vendor_name: purchaseOrder.vendorName,
-          items: purchaseOrder.items,
+          items: JSON.stringify(purchaseOrder.items), // Convert complex objects to JSON string
           subtotal: purchaseOrder.subtotal,
           total_gst: purchaseOrder.totalGst,
           grand_total: purchaseOrder.grandTotal,
@@ -122,7 +122,7 @@ export const purchaseOrderService = {
         grandTotal: data.grand_total,
         createdAt: data.created_at,
         deliveryDate: data.delivery_date || '',
-        status: data.status,
+        status: data.status as PurchaseOrderStatus,
         notes: data.notes || '',
         terms: data.terms || ''
       };
@@ -142,7 +142,7 @@ export const purchaseOrderService = {
       if (updates.poNumber) updateData.po_number = updates.poNumber;
       if (updates.vendorId) updateData.vendor_id = updates.vendorId;
       if (updates.vendorName) updateData.vendor_name = updates.vendorName;
-      if (updates.items) updateData.items = updates.items;
+      if (updates.items) updateData.items = JSON.stringify(updates.items);
       if (updates.subtotal !== undefined) updateData.subtotal = updates.subtotal;
       if (updates.totalGst !== undefined) updateData.total_gst = updates.totalGst;
       if (updates.grandTotal !== undefined) updateData.grand_total = updates.grandTotal;
@@ -182,5 +182,64 @@ export const purchaseOrderService = {
       console.error(`Error deleting purchase order with ID ${id}:`, error);
       throw error;
     }
+  },
+
+  /**
+   * Generate a unique purchase order number
+   */
+  generatePurchaseOrderNumber: async (): Promise<string> => {
+    try {
+      // Get the current date
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      
+      // Query to get the count of POs this month
+      const { count, error } = await supabase
+        .from('purchase_orders')
+        .select('id', { count: 'exact', head: true })
+        .like('po_number', `PO-${year}-${month}-%`);
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Generate the new number with a sequential counter
+      const counter = String((count || 0) + 1).padStart(3, '0');
+      return `PO-${year}-${month}-${counter}`;
+    } catch (error) {
+      console.error('Error generating purchase order number:', error);
+      // Fallback to a simple format if generation fails
+      const date = new Date();
+      return `PO-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+    }
+  },
+
+  /**
+   * Fetch all purchase orders
+   */
+  fetchPurchaseOrders: async (): Promise<PurchaseOrder[]> => {
+    return purchaseOrderService.getAllPurchaseOrders();
+  },
+
+  /**
+   * Fetch a purchase order by ID
+   */
+  fetchPurchaseOrderById: async (id: string): Promise<PurchaseOrder> => {
+    return purchaseOrderService.getPurchaseOrderById(id);
   }
 };
+
+// Export the service and individual methods for convenience
+export const { 
+  getAllPurchaseOrders, 
+  getPurchaseOrderById, 
+  createPurchaseOrder, 
+  updatePurchaseOrder, 
+  deletePurchaseOrder,
+  generatePurchaseOrderNumber,
+  fetchPurchaseOrders,
+  fetchPurchaseOrderById
+} = purchaseOrderService;
+
+export { purchaseOrderService };

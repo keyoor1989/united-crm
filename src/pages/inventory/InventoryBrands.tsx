@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import {
@@ -49,17 +48,16 @@ const InventoryBrands = () => {
         const { data, error } = await supabase
           .from('inventory_brands')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('name');
 
         if (error) {
           console.error("Error fetching brands:", error);
           toast({
-            title: "Error",
-            description: "Failed to fetch brands. Please try again.",
             variant: "destructive",
+            title: "Failed to fetch brands",
+            description: "There was an error loading brands. Please try again."
           });
         } else {
-          // Convert data to Brand type with proper adapters
           const brandData = (data || []).map(brand => dbAdapter.adaptBrand(brand));
           setBrands(brandData);
         }
@@ -84,7 +82,6 @@ const InventoryBrands = () => {
             variant: "destructive",
           });
         } else {
-          // Convert data to Model type with proper adapters
           const modelData = (data || []).map(model => dbAdapter.adaptModel(model));
           setModels(modelData);
         }
@@ -115,7 +112,6 @@ const InventoryBrands = () => {
         toast.success("Brand added successfully.");
         setBrandDialogOpen(false);
         setBrandName("");
-        // Refresh brands
         const { data } = await supabase
           .from('inventory_brands')
           .select('*')
@@ -143,7 +139,6 @@ const InventoryBrands = () => {
       return;
     }
     
-    // Ensure modelType is of the expected type
     const typedModelType = (modelType as "Machine" | "Spare Part") || "Spare Part";
     
     const addModel = async () => {
@@ -159,7 +154,6 @@ const InventoryBrands = () => {
           toast.success("Model added successfully.");
           setModelDialogOpen(false);
           setModelName("");
-          // Refresh models
           const { data } = await supabase
             .from('inventory_models')
             .select('*')

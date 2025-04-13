@@ -1,291 +1,547 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus } from "lucide-react";
-import { toast } from "sonner";
-import { Vendor } from "@/types/inventory";
-import { useVendors } from "@/contexts/VendorContext";
+import React, { useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { PlusCircle, Trash2, Pencil, Package } from 'lucide-react';
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/components/ui/use-toast"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { supabase } from '@/integrations/supabase/client';
+import { Vendor } from '@/types/inventory';
 
-import VendorTable from "@/components/inventory/vendors/VendorTable";
-import PurchaseHistory from "@/components/inventory/vendors/PurchaseHistory";
-import VendorFormDialog from "@/components/inventory/vendors/VendorFormDialog";
-import DeleteVendorDialog from "@/components/inventory/vendors/DeleteVendorDialog";
-
-const mockPurchaseHistory = [
-  {
-    id: "ph001",
-    vendorId: "vendor1",
-    vendorName: "Ajanta Traders",
-    itemName: "Kyocera TK-1175 Toner",
-    quantity: 5,
-    purchaseRate: 3200,
-    purchaseDate: "2025-03-15",
-    invoiceNo: "AJT/2025/1234",
-  },
-  {
-    id: "ph002",
-    vendorId: "vendor1",
-    vendorName: "Ajanta Traders",
-    itemName: "Canon NPG-59 Drum",
-    quantity: 2,
-    purchaseRate: 4200,
-    purchaseDate: "2025-02-20",
-    invoiceNo: "AJT/2025/1156",
-  },
-  {
-    id: "ph003",
-    vendorId: "vendor2",
-    vendorName: "Ravi Distributors",
-    itemName: "Ricoh SP 210 Toner",
-    quantity: 8,
-    purchaseRate: 2400,
-    purchaseDate: "2025-03-05",
-    invoiceNo: "RD/2025/0458",
-  },
-  {
-    id: "ph004",
-    vendorId: "vendor3",
-    vendorName: "Mehta Enterprises",
-    itemName: "HP CF217A Toner",
-    quantity: 10,
-    purchaseRate: 1800,
-    purchaseDate: "2025-03-18",
-    invoiceNo: "ME/2025/0712",
-  },
-  {
-    id: "ph005",
-    vendorId: "vendor4",
-    vendorName: "Global Supplies",
-    itemName: "Xerox 3020 Drum Unit",
-    quantity: 3,
-    purchaseRate: 3500,
-    purchaseDate: "2025-03-10",
-    invoiceNo: "GS/2025/0221",
-  },
-];
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Vendor name must be at least 2 characters.",
+  }),
+  contactPerson: z.string().optional(),
+  gstNo: z.string().optional(),
+  phone: z.string().min(10, {
+    message: "Phone number must be at least 10 characters.",
+  }),
+  email: z.string().email({
+    message: "Invalid email address.",
+  }).optional(),
+  address: z.string().optional(),
+})
 
 const InventoryVendors = () => {
-  const { vendors: salesVendors, addVendor, updateVendor, deleteVendor } = useVendors();
-  const [activeTab, setActiveTab] = useState("vendors");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
-  const [vendorToDelete, setVendorToDelete] = useState<string | null>(null);
-  
-  const vendors: Vendor[] = salesVendors.map(vendor => ({
-    id: vendor.id,
-    name: vendor.name,
-    contactPerson: vendor.contactPerson,
-    email: vendor.email,
-    phone: vendor.phone,
-    address: vendor.address,
-    gstNo: '',
-    createdAt: new Date().toISOString().split('T')[0]
-  }));
-  
-  const [formData, setFormData] = useState({
-    id: "",
-    name: "",
-    gstNo: "",
-    phone: "",
-    email: "",
-    address: "",
-  });
-  
-  const filteredVendors = vendors.filter(vendor => 
-    searchQuery ? 
-      vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (vendor.gstNo && vendor.gstNo.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      vendor.email.toLowerCase().includes(searchQuery.toLowerCase())
-    : true
-  );
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleAddVendor = () => {
-    setSelectedVendor(null);
-    setFormData({
-      id: "",
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const [selectedVendorName, setSelectedVendorName] = useState<string | null>(null);
+  const { toast } = useToast()
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
       name: "",
+      contactPerson: "",
       gstNo: "",
       phone: "",
       email: "",
       address: "",
-    });
-    setIsAddVendorOpen(true);
-  };
-  
-  const handleEditVendor = (vendor: Vendor) => {
-    setSelectedVendor(vendor);
-    setFormData({
-      id: vendor.id,
-      name: vendor.name,
-      gstNo: vendor.gstNo || "",
-      phone: vendor.phone,
-      email: vendor.email,
-      address: vendor.address,
-    });
-    setIsAddVendorOpen(true);
-  };
-  
-  const handleDeleteClick = (vendorId: string) => {
-    setVendorToDelete(vendorId);
-    setIsDeleteConfirmOpen(true);
-  };
-  
-  const handleSaveVendor = () => {
-    if (!formData.name || !formData.phone || !formData.email || !formData.address) {
-      toast.error("Please fill all required fields");
+    },
+  })
+
+  const editForm = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      contactPerson: "",
+      gstNo: "",
+      phone: "",
+      email: "",
+      address: "",
+    },
+  })
+
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('vendors')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching vendors:', error);
+          toast({
+            variant: "destructive",
+            title: "Failed to fetch vendors",
+            description: "There was an error loading vendors. Please try again."
+          });
+          return;
+        }
+
+        if (data) {
+          setVendors(data);
+        }
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+        toast({
+          variant: "destructive",
+          title: "Failed to fetch vendors",
+          description: "There was an error loading vendors. Please try again."
+        });
+      }
+    };
+
+    fetchVendors();
+  }, [toast]);
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      const newVendor = {
+        id: uuidv4(),
+        createdAt: new Date().toISOString(),
+        name: values.name,
+        contactPerson: values.contactPerson || '',
+        gstNo: values.gstNo || '',
+        phone: values.phone,
+        email: values.email || '',
+        address: values.address || ''
+      };
+
+      const { error } = await supabase
+        .from('vendors')
+        .insert(newVendor);
+
+      if (error) {
+        console.error('Error creating vendor:', error);
+        toast({
+          variant: "destructive",
+          title: "Failed to create vendor",
+          description: "There was an error creating the vendor. Please try again."
+        });
+        return;
+      }
+
+      setVendors([...vendors, newVendor]);
+      setOpen(false);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Vendor created successfully."
+      })
+    } catch (error) {
+      console.error('Error creating vendor:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to create vendor",
+        description: "There was an error creating the vendor. Please try again."
+      });
+    }
+  }
+
+  const onEditSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!selectedVendorId) {
+      toast({
+        variant: "destructive",
+        title: "No vendor selected",
+        description: "Please select a vendor to edit."
+      });
       return;
     }
-    
-    if (selectedVendor) {
-      const salesVendor = {
-        id: selectedVendor.id,
-        name: formData.name,
-        contactPerson: selectedVendor.contactPerson,
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
-        createdAt: selectedVendor.createdAt
+
+    try {
+      const updatedVendor = {
+        name: values.name,
+        contact_person: values.contactPerson || '',
+        gst_no: values.gstNo || '',
+        phone: values.phone,
+        email: values.email || '',
+        address: values.address || ''
       };
-      
-      updateVendor(salesVendor);
-      toast.success("Vendor updated successfully");
-    } else {
-      const newSalesVendor = {
-        name: formData.name,
-        contactPerson: "",
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
-        gstNo: formData.gstNo,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      
-      addVendor(newSalesVendor);
-      toast.success("Vendor added successfully");
-    }
-    
-    setIsAddVendorOpen(false);
-  };
-  
-  const handleDeleteVendor = () => {
-    if (vendorToDelete) {
-      const hasHistory = mockPurchaseHistory.some(purchase => purchase.vendorId === vendorToDelete);
-      
-      if (hasHistory) {
-        toast.error("Cannot delete vendor with purchase history");
-      } else {
-        deleteVendor(vendorToDelete);
-        toast.success("Vendor deleted successfully");
+
+      const { error } = await supabase
+        .from('vendors')
+        .update(updatedVendor)
+        .eq('id', selectedVendorId);
+
+      if (error) {
+        console.error('Error updating vendor:', error);
+        toast({
+          variant: "destructive",
+          title: "Failed to update vendor",
+          description: "There was an error updating the vendor. Please try again."
+        });
+        return;
       }
-      
-      setIsDeleteConfirmOpen(false);
-      setVendorToDelete(null);
+
+      setVendors(
+        vendors.map(vendor =>
+          vendor.id === selectedVendorId ? { ...vendor, ...updatedVendor } : vendor
+        )
+      );
+      setEditOpen(false);
+      editForm.reset();
+      toast({
+        title: "Success",
+        description: "Vendor updated successfully."
+      })
+    } catch (error) {
+      console.error('Error updating vendor:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to update vendor",
+        description: "There was an error updating the vendor. Please try again."
+      });
     }
+  }
+
+  const handleEdit = (vendor: Vendor) => {
+    setSelectedVendorId(vendor.id);
+    editForm.setValue("name", vendor.name);
+    editForm.setValue("contactPerson", vendor.contactPerson || "");
+    editForm.setValue("gstNo", vendor.gstNo || "");
+    editForm.setValue("phone", vendor.phone);
+    editForm.setValue("email", vendor.email || "");
+    editForm.setValue("address", vendor.address || "");
+    setEditOpen(true);
   };
-  
-  const handleViewVendorDetails = (vendor: Vendor) => {
-    setSelectedVendor(vendor);
-    setActiveTab("purchase-history");
+
+  const handleRemove = async (vendorId: string, vendorName: string) => {
+    setSelectedVendorId(vendorId);
+    setSelectedVendorName(vendorName);
+    setRemoveOpen(true);
   };
-  
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+
+  const confirmRemove = async () => {
+    if (!selectedVendorId) {
+      toast({
+        variant: "destructive",
+        title: "No vendor selected",
+        description: "Please select a vendor to remove."
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .delete()
+        .eq('id', selectedVendorId);
+
+      if (error) {
+        console.error('Error deleting vendor:', error);
+        toast({
+          variant: "destructive",
+          title: "Failed to delete vendor",
+          description: "There was an error deleting the vendor. Please try again."
+        });
+        return;
+      }
+
+      setVendors(vendors.filter(vendor => vendor.id !== selectedVendorId));
+      setRemoveOpen(false);
+      setSelectedVendorId(null);
+      toast({
+        title: "Success",
+        description: "Vendor deleted successfully."
+      })
+    } catch (error) {
+      console.error('Error deleting vendor:', error);
+      toast({
+        variant: "destructive",
+        title: "Failed to delete vendor",
+        description: "There was an error deleting the vendor. Please try again."
+      });
+    }
   };
 
   return (
-    <div className="container p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Vendor Management</h1>
-          <p className="text-muted-foreground">
-            Manage your suppliers and purchase sources
-          </p>
-        </div>
-        <Button 
-          onClick={handleAddVendor} 
-          className="gap-1"
-        >
-          <Plus className="h-4 w-4" />
-          Add New Vendor
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Manage Vendors</h1>
+        <Button onClick={() => setOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add Vendor
         </Button>
       </div>
-      
-      <div className="flex items-center gap-4 mb-4">
-        <div className="relative grow">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search vendors..."
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <Button variant="outline" size="icon">
-          <Filter className="h-4 w-4" />
-        </Button>
+
+      <div className="rounded-md border">
+        <ScrollArea>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[200px]">Name</TableHead>
+                <TableHead>Contact Person</TableHead>
+                <TableHead>GST No.</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {vendors.map((vendor) => (
+                <TableRow key={vendor.id}>
+                  <TableCell className="font-medium">{vendor.name}</TableCell>
+                  <TableCell>{vendor.contactPerson}</TableCell>
+                  <TableCell>{vendor.gstNo}</TableCell>
+                  <TableCell>{vendor.phone}</TableCell>
+                  <TableCell>{vendor.email}</TableCell>
+                  <TableCell>{vendor.address}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(vendor)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleRemove(vendor.id, vendor.name)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </div>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="vendors">Vendors</TabsTrigger>
-          <TabsTrigger value="purchase-history">Purchase History</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="vendors" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Vendor Directory</CardTitle>
-              <CardDescription>
-                List of all registered suppliers and distributors
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <VendorTable 
-                vendors={filteredVendors}
-                formatDate={formatDate}
-                onViewVendorDetails={handleViewVendorDetails}
-                onEditVendor={handleEditVendor}
-                onDeleteClick={handleDeleteClick}
+
+      {/* Add Vendor Modal */}
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add New Vendor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter the vendor details to create a new vendor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Vendor Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="purchase-history" className="mt-4">
-          <PurchaseHistory 
-            selectedVendor={selectedVendor}
-            setActiveTab={setActiveTab}
-            formatDate={formatDate}
-            purchaseHistory={mockPurchaseHistory}
-            searchQuery={searchQuery}
-          />
-        </TabsContent>
-      </Tabs>
-      
-      <VendorFormDialog 
-        open={isAddVendorOpen}
-        onOpenChange={setIsAddVendorOpen}
-        selectedVendor={selectedVendor}
-        formData={formData}
-        handleInputChange={handleInputChange}
-        handleSaveVendor={handleSaveVendor}
-      />
-      
-      <DeleteVendorDialog 
-        open={isDeleteConfirmOpen}
-        onOpenChange={setIsDeleteConfirmOpen}
-        handleDeleteVendor={handleDeleteVendor}
-      />
+              <FormField
+                control={form.control}
+                name="contactPerson"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Person</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contact Person" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="gstNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GST No.</FormLabel>
+                    <FormControl>
+                      <Input placeholder="GST No." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Phone" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Email" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => form.reset()}>Cancel</AlertDialogCancel>
+                <AlertDialogAction type="submit">Add Vendor</AlertDialogAction>
+              </AlertDialogFooter>
+            </form>
+          </Form>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Vendor Modal */}
+      <AlertDialog open={editOpen} onOpenChange={setEditOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit Vendor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Edit the vendor details to update the vendor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Vendor Name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="contactPerson"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Person</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Contact Person" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="gstNo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>GST No.</FormLabel>
+                    <FormControl>
+                      <Input placeholder="GST No." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Phone" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Email" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => editForm.reset()}>Cancel</AlertDialogCancel>
+                <AlertDialogAction type="submit">Update Vendor</AlertDialogAction>
+              </AlertDialogFooter>
+            </form>
+          </Form>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Vendor Alert */}
+      <AlertDialog open={removeOpen} onOpenChange={setRemoveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Vendor</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <span className="font-medium">{selectedVendorName}</span>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setRemoveOpen(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemove}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

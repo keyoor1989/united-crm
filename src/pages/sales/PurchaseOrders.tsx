@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { PurchaseOrderStatus } from "@/types/sales";
 import PurchaseOrderHeader from "@/components/sales/purchase-orders/PurchaseOrderHeader";
 import PurchaseOrderFilters from "@/components/sales/purchase-orders/PurchaseOrderFilters";
 import PurchaseOrderTable from "@/components/sales/purchase-orders/PurchaseOrderTable";
-import { fetchPurchaseOrders } from "@/services/purchaseOrderService";
+// Fix the import for fetchPurchaseOrders
+import { fetchPurchaseOrders } from '@/services/purchaseOrderService';
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 

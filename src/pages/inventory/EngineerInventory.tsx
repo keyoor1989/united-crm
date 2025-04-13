@@ -24,34 +24,34 @@ import { toast } from "sonner";
 // Mock vendors data
 const mockVendors: Vendor[] = [
   {
-    id: "vendor1",
-    name: "Ajanta Traders",
-    contactPerson: "Rajesh Kumar",
-    gstNo: "24AAKCS9636Q1ZX",
-    phone: "9876543210",
-    email: "info@ajanta.com",
-    address: "142, Industrial Area, Indore, MP",
-    createdAt: "2024-01-15"
+    id: '1',
+    createdAt: new Date().toISOString(),
+    name: 'PCB Solutions Pvt Ltd',
+    contactPerson: 'Rajesh Kumar',
+    gstNo: 'GSTIN123456',
+    phone: '+91 9876543210',
+    email: 'info@pcbsolutions.in',
+    address: '123 Electronics Market, Mumbai'
   },
   {
-    id: "vendor2",
-    name: "Ravi Distributors",
-    contactPerson: "Sunil Ravi",
-    gstNo: "08AAQCS5896P1Z0",
-    phone: "8765432109",
-    email: "sales@ravidistributors.com",
-    address: "278, MIDC Area, Nagpur, MH",
-    createdAt: "2024-01-20"
+    id: '2',
+    createdAt: new Date().toISOString(),
+    name: 'TechParts India',
+    contactPerson: 'Sunil Sharma',
+    gstNo: 'GSTIN789012',
+    phone: '+91 8765432109',
+    email: 'support@techparts.in',
+    address: '456 Industrial Area, Delhi'
   },
   {
-    id: "vendor3",
-    name: "Mehta Enterprises",
-    contactPerson: "Amit Mehta",
-    gstNo: "33AAICS4599Q2ZX",
-    phone: "7654321098",
-    email: "contact@mehtaenterprises.com",
-    address: "56, Electronic City, Bangalore, KA",
-    createdAt: "2024-02-05"
+    id: '3',
+    createdAt: new Date().toISOString(),
+    name: 'Copier Components Ltd',
+    contactPerson: 'Amit Patel',
+    gstNo: 'GSTIN345678',
+    phone: '+91 7654321098',
+    email: 'sales@copiercomponents.in',
+    address: '789 Business Park, Bangalore'
   }
 ];
 

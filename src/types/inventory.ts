@@ -1,4 +1,3 @@
-
 // Standard interface types for inventory management
 export interface Vendor {
   id: string;

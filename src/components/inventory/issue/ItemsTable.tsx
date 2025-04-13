@@ -9,7 +9,7 @@ import {
   TableCell 
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InventoryItem } from "@/hooks/inventory/useInventoryItems";
+import { InventoryItem } from "@/types/inventory";
 
 interface ItemsTableProps {
   filteredItems: InventoryItem[];

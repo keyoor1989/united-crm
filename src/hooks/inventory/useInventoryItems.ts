@@ -2,7 +2,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyInventoryAlert } from "@/services/telegramService";
-import { InventoryItem, DbInventoryItem, dbAdapter } from "@/types/inventory";
+import { InventoryItem, DbInventoryItem } from "@/types/inventory";
+
+// Export the InventoryItem type for use in other files
+export type { InventoryItem, DbInventoryItem };
 
 // Function to convert the database schema InventoryItem to the app's InventoryItem type
 export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
@@ -70,7 +73,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
           (item.quantity as number) < (item.min_stock as number)
         );
         
-        if (lowStockItems.length > 0) {
+        if (lowStockItems.length > 0 && lowStockItems[0] !== null) {
           // Only send the first low stock alert to avoid spamming
           try {
             notifyInventoryAlert(lowStockItems[0] as DbInventoryItem);
@@ -90,7 +93,13 @@ export const useInventoryItems = (warehouseId: string | null) => {
         }
         
         // Cast to handle type compatibility with the database schema
-        return adaptInventoryItem(item as DbInventoryItem);
+        try {
+          // Use type assertion after explicit check to convert error objects safely
+          return adaptInventoryItem(item as unknown as DbInventoryItem);
+        } catch (err) {
+          console.error("Error adapting item:", item, err);
+          return null;
+        }
       }).filter(Boolean) as InventoryItem[]; // Filter out null values
     },
   });

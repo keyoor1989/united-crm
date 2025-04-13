@@ -1,459 +1,377 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
-import { Search, Filter, Plus, FileText, Settings, Printer } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import OpeningStockEntryForm from "@/components/inventory/OpeningStockEntryForm";
-import { mockInventoryItems } from "@/components/service/inventory/mockData";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { Search, Plus, Filter, Download, Printer, MoreHorizontal } from "lucide-react";
+import { InventoryItem } from "@/types/inventory";
 
-interface MachinePart {
-  id: string;
-  partNumber: string;
-  name: string;
-  brand: string;
-  category: string;
-  compatibleModels: string[];
-  currentStock: number;
-  minStock: number;
-  purchasePrice: number;
-  warehouseId?: string;
-  warehouseName?: string;
-}
+// Mock data for machine parts
+const mockInventoryItems = [
+  {
+    id: '1',
+    name: 'Toner Cartridge',
+    category: 'Toner',
+    brand: 'Canon',
+    model: 'IR2525',
+    currentStock: 15,
+    minStockLevel: 5,
+    maxStockLevel: 30,
+    reorderPoint: 10,
+    unitCost: 2500,
+    unitPrice: 3000,
+    location: 'Warehouse A',
+    lastRestocked: '2023-01-15',
+    createdAt: '2023-01-01',
+    modelId: 'model-1',
+    brandId: 'brand-1',
+    type: 'Toner',
+    minQuantity: 5,
+    currentQuantity: 15,
+    lastPurchasePrice: 2500,
+    lastVendor: 'ABC Supplies',
+    barcode: 'TON-12345',
+    part_name: 'Toner Cartridge',
+    quantity: 15,
+    min_stock: 5,
+    purchase_price: 2500,
+    part_number: 'TON-12345',
+    compatible_models: ['IR2525', 'IR2530'],
+    brand_id: 'brand-1',
+    model_id: 'model-1'
+  }
+];
 
 const MachineParts = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedBrand, setSelectedBrand] = useState("all");
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
-  const [openStockEntryForm, setOpenStockEntryForm] = useState(false);
-  
-  const { data: machineParts = [], isLoading, refetch } = useQuery({
-    queryKey: ['machine-parts'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('opening_stock_entries')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error("Error fetching machine parts:", error);
-          return mockInventoryItems as unknown as MachinePart[];
-        }
-        
-        if (data && data.length > 0) {
-          return data.map(item => ({
-            id: item.id || "unknown-id",
-            partNumber: item.part_number || 'N/A',
-            name: item.part_name || 'Unnamed Part',
-            brand: item.brand || 'No Brand',
-            category: item.category || 'Uncategorized',
-            compatibleModels: Array.isArray(item.compatible_models) ? item.compatible_models.filter(model => !!model) : [],
-            currentStock: item.quantity || 0,
-            minStock: item.min_stock || 0,
-            purchasePrice: item.purchase_price || 0,
-            warehouseId: item.warehouse_id || null,
-            warehouseName: item.warehouse_name || "Main Warehouse",
-          })) as MachinePart[];
-        } else {
-          console.log("No data from Supabase, using mock data");
-          return mockInventoryItems as unknown as MachinePart[];
-        }
-      } catch (error) {
-        console.error("Exception fetching machine parts:", error);
-        return mockInventoryItems as unknown as MachinePart[];
-      }
-    }
-  });
-  
-  const filteredParts = machineParts.filter((part: MachinePart) => {
-    const matchesSearch = searchQuery ? 
-      part.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      part.partNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      part.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      part.warehouseName?.toLowerCase().includes(searchQuery.toLowerCase())
-    : true;
-    
-    const matchesCategory = activeTab === "all" || 
-      part.category?.toLowerCase().includes(activeTab.toLowerCase());
-    
-    return matchesSearch && matchesCategory;
-  });
-  
-  const getStockStatus = (current: number, min: number) => {
-    if (current <= 0) {
-      return { label: "Out of Stock", variant: "destructive" as const };
-    } else if (current < min) {
-      return { label: "Low Stock", variant: "warning" as const };
-    } else {
-      return { label: "In Stock", variant: "success" as const };
-    }
-  };
 
-  const handleAddPart = () => {
-    refetch();
+  // Fetch items (mock data for now)
+  useEffect(() => {
+    // In a real app, this would be an API call
+    setItems(mockInventoryItems);
+  }, []);
+
+  // Filter items based on search term, category, and brand
+  const filteredItems = items.filter(item => {
+    const matchesSearch = 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.part_number && item.part_number.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
+    const matchesBrand = selectedBrand === "all" || item.brand === selectedBrand;
+    
+    // Filter by tab
+    if (activeTab === "low_stock") {
+      return matchesSearch && matchesCategory && matchesBrand && item.currentStock < item.minStockLevel;
+    }
+    
+    return matchesSearch && matchesCategory && matchesBrand;
+  });
+
+  // Get unique categories and brands for filters
+  const categories = Array.from(new Set(items.map(item => item.category)));
+  const brands = Array.from(new Set(items.map(item => item.brand)));
+
+  // Add new item handler (would connect to API in real app)
+  const handleAddItem = (formData: any) => {
+    console.log("Adding new item:", formData);
+    setIsAddDialogOpen(false);
+    // In a real app, this would make an API call and then refresh the items
   };
 
   return (
-    <div className="container p-6">
+    <div className="container mx-auto py-6">
+      <Helmet>
+        <title>Machine Parts Inventory</title>
+      </Helmet>
+
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Machine Parts Catalog</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Machine Parts Inventory</h1>
           <p className="text-muted-foreground">
-            Manage and organize parts for different machine models
+            Manage your machine parts, toners, and other consumables
           </p>
         </div>
-        <Button 
-          className="flex items-center gap-1 bg-black text-white hover:bg-black/90"
-          onClick={() => setOpenStockEntryForm(true)}
-        >
-          <Plus className="h-4 w-4" />
-          Add New Part
-        </Button>
-      </div>
-
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-        <div className="relative w-full">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search parts by name, number, or brand..."
-            className="pl-8 w-full"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <Button variant="outline" className="sm:ml-auto flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          Filters
-        </Button>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="all">All Parts</TabsTrigger>
-          <TabsTrigger value="toner">Toner</TabsTrigger>
-          <TabsTrigger value="drum">Drums</TabsTrigger>
-          <TabsTrigger value="maintenance">Maintenance Kits</TabsTrigger>
-          <TabsTrigger value="fuser">Fusers</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="all" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Parts Catalog</CardTitle>
-              <CardDescription>
-                Complete listing of all machine parts in inventory
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="h-[300px] flex items-center justify-center">
-                  <p>Loading parts inventory...</p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Button variant="outline" size="sm">
+            <Printer className="h-4 w-4 mr-2" />
+            Print
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Part
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Add New Machine Part</DialogTitle>
+                <DialogDescription>
+                  Enter the details of the new part to add it to inventory
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Part Name</Label>
+                    <Input id="name" placeholder="e.g., Toner Cartridge" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Toner">Toner</SelectItem>
+                        <SelectItem value="Drum">Drum</SelectItem>
+                        <SelectItem value="Fuser">Fuser</SelectItem>
+                        <SelectItem value="Developer">Developer</SelectItem>
+                        <SelectItem value="Paper Feed">Paper Feed</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Part Number</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Brand</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Compatible Models</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Price (₹)</TableHead>
-                      <TableHead>Warehouse</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredParts.length > 0 ? (
-                      filteredParts.map((part) => {
-                        const stockStatus = getStockStatus(part.currentStock, part.minStock);
-                        return (
-                          <TableRow key={part.id}>
-                            <TableCell className="font-medium">{part.partNumber}</TableCell>
-                            <TableCell>{part.name}</TableCell>
-                            <TableCell>{part.brand}</TableCell>
-                            <TableCell>{part.category}</TableCell>
-                            <TableCell>
-                              <div className="text-xs max-w-[200px] truncate">
-                                {Array.isArray(part.compatibleModels) 
-                                  ? part.compatibleModels.join(", ") 
-                                  : "N/A"}
-                              </div>
-                            </TableCell>
-                            <TableCell>{part.currentStock}</TableCell>
-                            <TableCell>{typeof part.purchasePrice === 'number' 
-                              ? part.purchasePrice.toLocaleString() 
-                              : part.purchasePrice}</TableCell>
-                            <TableCell>{part.warehouseName || "Main Warehouse"}</TableCell>
-                            <TableCell>
-                              <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button variant="ghost" size="icon">
-                                  <FileText className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon">
-                                  <Settings className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon">
-                                  <Printer className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={10} className="h-24 text-center">
-                          No parts found. Add your first part by clicking "Add New Part" above.
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="brand">Brand</Label>
+                    <Select>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select brand" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brands.map(brand => (
+                          <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                        ))}
+                        <SelectItem value="other">Add New Brand...</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="model">Compatible Model</Label>
+                    <Input id="model" placeholder="e.g., IR2525, WorkCentre" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentStock">Current Stock</Label>
+                    <Input id="currentStock" type="number" min="0" defaultValue="0" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="minStock">Min Stock Level</Label>
+                    <Input id="minStock" type="number" min="0" defaultValue="5" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="unitCost">Unit Cost (₹)</Label>
+                    <Input id="unitCost" type="number" min="0" defaultValue="0" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="partNumber">Part Number / SKU</Label>
+                  <Input id="partNumber" placeholder="e.g., NPG-51" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                <Button onClick={() => handleAddItem({})}>Add Part</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <div className="flex justify-between items-center">
+          <TabsList>
+            <TabsTrigger value="all">All Parts</TabsTrigger>
+            <TabsTrigger value="low_stock">Low Stock</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search parts..."
+                className="w-[250px] pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedBrand} onValueChange={setSelectedBrand}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Brands</SelectItem>
+                {brands.map(brand => (
+                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <TabsContent value="all" className="space-y-4">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Part Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead>Compatible Models</TableHead>
+                    <TableHead>Part Number</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Unit Cost</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredItems.length > 0 ? (
+                    filteredItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.category}</TableCell>
+                        <TableCell>{item.brand}</TableCell>
+                        <TableCell>
+                          {Array.isArray(item.compatible_models) 
+                            ? item.compatible_models.join(", ") 
+                            : item.model}
+                        </TableCell>
+                        <TableCell>{item.part_number || "-"}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <span className={item.currentStock < item.minStockLevel ? "text-destructive font-medium" : ""}>
+                              {item.currentStock}
+                            </span>
+                            {item.currentStock < item.minStockLevel && (
+                              <Badge variant="destructive" className="ml-2">Low</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>₹{item.unitCost.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              )}
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
+                        No parts found. Try adjusting your filters or add a new part.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
-        
-        <TabsContent value="toner" className="mt-4">
+
+        <TabsContent value="low_stock" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Toner Cartridges</CardTitle>
+              <CardTitle>Low Stock Items</CardTitle>
               <CardDescription>
-                Toner cartridges for various printer and copier models
+                Items that are below their minimum stock level and need to be reordered
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              {filteredParts.length > 0 ? (
-                <Table>
-                  <TableHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Part Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead>Current Stock</TableHead>
+                    <TableHead>Min Stock</TableHead>
+                    <TableHead>Reorder Amount</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredItems.length > 0 ? (
+                    filteredItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.category}</TableCell>
+                        <TableCell>{item.brand}</TableCell>
+                        <TableCell className="text-destructive font-medium">{item.currentStock}</TableCell>
+                        <TableCell>{item.minStockLevel}</TableCell>
+                        <TableCell>{item.maxStockLevel - item.currentStock}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm">Reorder</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
                     <TableRow>
-                      <TableHead>Part Number</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Brand</TableHead>
-                      <TableHead>Compatible Models</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Price (₹)</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                        No low stock items found. All inventory levels are healthy.
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredParts.map(part => {
-                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
-                      return (
-                        <TableRow key={part.id}>
-                          <TableCell className="font-medium">{part.partNumber}</TableCell>
-                          <TableCell>{part.name}</TableCell>
-                          <TableCell>{part.brand}</TableCell>
-                          <TableCell>
-                            <div className="text-xs max-w-[200px] truncate">
-                              {part.compatibleModels.join(", ")}
-                            </div>
-                          </TableCell>
-                          <TableCell>{part.currentStock}</TableCell>
-                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="h-[200px] flex items-center justify-center">
-                  <p className="text-muted-foreground">No toner cartridges found</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="drum" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Drum Units</CardTitle>
-              <CardDescription>
-                Drum and imaging units for various machine models
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredParts.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Part Number</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Brand</TableHead>
-                      <TableHead>Compatible Models</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Price (₹)</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredParts.map(part => {
-                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
-                      return (
-                        <TableRow key={part.id}>
-                          <TableCell className="font-medium">{part.partNumber}</TableCell>
-                          <TableCell>{part.name}</TableCell>
-                          <TableCell>{part.brand}</TableCell>
-                          <TableCell>
-                            <div className="text-xs max-w-[200px] truncate">
-                              {part.compatibleModels.join(", ")}
-                            </div>
-                          </TableCell>
-                          <TableCell>{part.currentStock}</TableCell>
-                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="h-[200px] flex items-center justify-center">
-                  <p className="text-muted-foreground">No drum units found</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="maintenance" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Maintenance Kits</CardTitle>
-              <CardDescription>
-                Preventive maintenance kits for various machine models
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredParts.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Part Number</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Brand</TableHead>
-                      <TableHead>Compatible Models</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Price (₹)</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredParts.map(part => {
-                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
-                      return (
-                        <TableRow key={part.id}>
-                          <TableCell className="font-medium">{part.partNumber}</TableCell>
-                          <TableCell>{part.name}</TableCell>
-                          <TableCell>{part.brand}</TableCell>
-                          <TableCell>
-                            <div className="text-xs max-w-[200px] truncate">
-                              {part.compatibleModels.join(", ")}
-                            </div>
-                          </TableCell>
-                          <TableCell>{part.currentStock}</TableCell>
-                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="h-[200px] flex items-center justify-center">
-                  <p className="text-muted-foreground">No maintenance kits found</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="fuser" className="mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Fusers & Fixing Film</CardTitle>
-              <CardDescription>
-                Fuser assemblies and fixing film for various machine models
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredParts.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Part Number</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Brand</TableHead>
-                      <TableHead>Compatible Models</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Price (₹)</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredParts.map(part => {
-                      const stockStatus = getStockStatus(part.currentStock, part.minStock);
-                      return (
-                        <TableRow key={part.id}>
-                          <TableCell className="font-medium">{part.partNumber}</TableCell>
-                          <TableCell>{part.name}</TableCell>
-                          <TableCell>{part.brand}</TableCell>
-                          <TableCell>
-                            <div className="text-xs max-w-[200px] truncate">
-                              {part.compatibleModels.join(", ")}
-                            </div>
-                          </TableCell>
-                          <TableCell>{part.currentStock}</TableCell>
-                          <TableCell>{part.purchasePrice.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant={stockStatus.variant}>{stockStatus.label}</Badge>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="h-[200px] flex items-center justify-center">
-                  <p className="text-muted-foreground">No fuser units found</p>
-                </div>
-              )}
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-      
-      <OpeningStockEntryForm 
-        open={openStockEntryForm}
-        onOpenChange={setOpenStockEntryForm}
-        onAddPart={handleAddPart}
-      />
     </div>
   );
 };
