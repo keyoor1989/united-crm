@@ -1,279 +1,397 @@
-
 import { InventoryItem } from "@/types/inventory";
 
-// Mock inventory items for testing the engineer inventory management
-export const mockInventoryItems: InventoryItem[] = [
+// Mock inventory items for engineer inventory display
+export const mockItems: InventoryItem[] = [
   {
     id: "1",
-    model: "mdl-1",
-    brand: "brd-1",
-    name: "Kyocera TK-1175 Toner",
+    name: "TK-1170 Toner",
     category: "Toner",
+    brand: "Kyocera",
+    model: "ECOSYS M2040dn",
+    currentStock: 15,
     minStockLevel: 5,
-    currentStock: 12,
-    unitCost: 1200,
-    location: "",
-    lastRestocked: "",
-    createdAt: "2025-01-15",
+    maxStockLevel: 30,
+    reorderPoint: 8,
+    unitCost: 2500,
+    unitPrice: 3250,
+    location: "Main Warehouse",
+    lastRestocked: "2023-03-15",
+    createdAt: "2023-01-01",
+    
     // Additional properties
-    modelId: "mdl-1",
-    brandId: "brd-1",
+    brandId: "brand-1",
+    modelId: "model-1",
     type: "Toner",
     minQuantity: 5,
-    currentQuantity: 12,
-    lastPurchasePrice: 1200,
-    lastVendor: "Ajanta Traders",
-    barcode: "TK1175001",
+    currentQuantity: 15,
+    lastPurchasePrice: 2500,
+    lastVendor: "Kyocera Distributors",
+    barcode: "TK1170-001"
   },
   {
     id: "2",
-    model: "mdl-2",
-    brand: "brd-2",
-    name: "Ricoh MP2014 Drum Unit",
-    category: "Drum",
-    minStockLevel: 2,
-    currentStock: 5,
-    unitCost: 3500,
-    location: "",
-    lastRestocked: "",
-    createdAt: "2025-01-20",
+    name: "TK-1175 Toner",
+    category: "Toner",
+    brand: "Kyocera",
+    model: "ECOSYS M2640idw",
+    currentStock: 8,
+    minStockLevel: 3,
+    maxStockLevel: 25,
+    reorderPoint: 5,
+    unitCost: 3000,
+    unitPrice: 3900,
+    location: "Main Warehouse",
+    lastRestocked: "2023-04-12",
+    createdAt: "2023-01-15",
+    
     // Additional properties
-    modelId: "mdl-2",
-    brandId: "brd-2",
-    type: "Drum",
-    minQuantity: 2,
-    currentQuantity: 5,
-    lastPurchasePrice: 3500,
-    lastVendor: "Ravi Distributors",
-    barcode: "RM2014D001",
+    brandId: "brand-1",
+    modelId: "model-2",
+    type: "Toner",
+    minQuantity: 3,
+    currentQuantity: 8,
+    lastPurchasePrice: 3000,
+    lastVendor: "Kyocera Distributors",
+    barcode: "TK1175-002"
   },
   {
     id: "3",
-    model: "mdl-1",
-    brand: "brd-1",
-    name: "Kyocera 2554ci Fuser",
-    category: "Fuser",
-    minStockLevel: 1,
-    currentStock: 3,
-    unitCost: 8000,
-    location: "",
-    lastRestocked: "",
-    createdAt: "2025-02-05",
+    name: "TK-3190 Toner",
+    category: "Toner",
+    brand: "Kyocera",
+    model: "ECOSYS P3060dn",
+    currentStock: 4,
+    minStockLevel: 5,
+    maxStockLevel: 20,
+    reorderPoint: 7,
+    unitCost: 4500,
+    unitPrice: 5850,
+    location: "Main Warehouse",
+    lastRestocked: "2023-02-28",
+    createdAt: "2023-01-20",
+    
     // Additional properties
-    modelId: "mdl-1",
-    brandId: "brd-1",
-    type: "Fuser",
-    minQuantity: 1,
-    currentQuantity: 3,
-    lastPurchasePrice: 8000,
-    lastVendor: "Precision Equipments",
-    barcode: "K2554F001",
+    brandId: "brand-1",
+    modelId: "model-3",
+    type: "Toner",
+    minQuantity: 5,
+    currentQuantity: 4,
+    lastPurchasePrice: 4500,
+    lastVendor: "Kyocera Distributors",
+    barcode: "TK3190-003"
   },
   {
     id: "4",
-    model: "mdl-3",
-    brand: "brd-3",
-    name: "Canon NPG-59 Toner",
-    category: "Toner",
+    name: "C-EXV 42 Drum",
+    category: "Drum",
+    brand: "Canon",
+    model: "imageRUNNER 2525",
+    currentStock: 12,
     minStockLevel: 4,
-    currentStock: 8,
-    unitCost: 1500,
-    location: "",
-    lastRestocked: "",
-    createdAt: "2025-02-10",
+    maxStockLevel: 20,
+    reorderPoint: 6,
+    unitCost: 3500,
+    unitPrice: 4550,
+    location: "Secondary Warehouse",
+    lastRestocked: "2023-03-01",
+    createdAt: "2023-01-25",
+    
     // Additional properties
-    modelId: "mdl-3",
-    brandId: "brd-3",
-    type: "Toner",
+    brandId: "brand-2",
+    modelId: "model-4",
+    type: "Drum",
     minQuantity: 4,
-    currentQuantity: 8,
-    lastPurchasePrice: 1500,
-    lastVendor: "Ajanta Traders",
-    barcode: "CNPG59001",
+    currentQuantity: 12,
+    lastPurchasePrice: 3500,
+    lastVendor: "Canon India",
+    barcode: "CEXV42-004"
   },
   {
     id: "5",
-    model: "mdl-4",
-    brand: "brd-4",
-    name: "HP 88A Toner",
-    category: "Toner",
-    minStockLevel: 6,
-    currentStock: 10,
-    unitCost: 980,
-    location: "",
-    lastRestocked: "",
-    createdAt: "2025-02-15",
+    name: "NPG-71 Drum",
+    category: "Drum",
+    brand: "Canon",
+    model: "imageRUNNER ADVANCE C5535i",
+    currentStock: 7,
+    minStockLevel: 2,
+    maxStockLevel: 15,
+    reorderPoint: 4,
+    unitCost: 4000,
+    unitPrice: 5200,
+    location: "Secondary Warehouse",
+    lastRestocked: "2023-04-05",
+    createdAt: "2023-02-01",
+    
     // Additional properties
-    modelId: "mdl-4",
-    brandId: "brd-4",
-    type: "Toner",
-    minQuantity: 6,
-    currentQuantity: 10,
-    lastPurchasePrice: 980,
-    lastVendor: "Ravi Distributors",
-    barcode: "HP88A001",
+    brandId: "brand-2",
+    modelId: "model-5",
+    type: "Drum",
+    minQuantity: 2,
+    currentQuantity: 7,
+    lastPurchasePrice: 4000,
+    lastVendor: "Canon India",
+    barcode: "NPG71-005"
   },
   {
     id: "6",
-    model: "mdl-5",
-    brand: "brd-1",
-    name: "Kyocera 2554ci Drum",
-    category: "Drum",
-    minStockLevel: 1,
-    currentStock: 4,
-    unitCost: 7500,
-    location: "",
-    lastRestocked: "",
-    createdAt: "2025-03-01",
+    name: "SP 210LE Toner",
+    category: "Toner",
+    brand: "Ricoh",
+    model: "SP 210 Series",
+    currentStock: 20,
+    minStockLevel: 10,
+    maxStockLevel: 40,
+    reorderPoint: 15,
+    unitCost: 1800,
+    unitPrice: 2340,
+    location: "Main Warehouse",
+    lastRestocked: "2023-03-22",
+    createdAt: "2023-02-05",
+    
     // Additional properties
-    modelId: "mdl-5",
-    brandId: "brd-1",
+    brandId: "brand-3",
+    modelId: "model-6",
+    type: "Toner",
+    minQuantity: 10,
+    currentQuantity: 20,
+    lastPurchasePrice: 1800,
+    lastVendor: "Ricoh Suppliers",
+    barcode: "SP210LE-006"
+  },
+  {
+    id: "7",
+    name: "SP 3700 Toner",
+    category: "Toner",
+    brand: "Ricoh",
+    model: "SP 3710DN",
+    currentStock: 14,
+    minStockLevel: 6,
+    maxStockLevel: 30,
+    reorderPoint: 10,
+    unitCost: 2200,
+    unitPrice: 2860,
+    location: "Main Warehouse",
+    lastRestocked: "2023-04-18",
+    createdAt: "2023-02-10",
+    
+    // Additional properties
+    brandId: "brand-3",
+    modelId: "model-7",
+    type: "Toner",
+    minQuantity: 6,
+    currentQuantity: 14,
+    lastPurchasePrice: 2200,
+    lastVendor: "Ricoh Suppliers",
+    barcode: "SP3700-007"
+  },
+  {
+    id: "8",
+    name: "CF217A Toner",
+    category: "Toner",
+    brand: "HP",
+    model: "LaserJet Pro M102a",
+    currentStock: 25,
+    minStockLevel: 8,
+    maxStockLevel: 40,
+    reorderPoint: 12,
+    unitCost: 1500,
+    unitPrice: 1950,
+    location: "Secondary Warehouse",
+    lastRestocked: "2023-03-10",
+    createdAt: "2023-02-15",
+    
+    // Additional properties
+    brandId: "brand-4",
+    modelId: "model-8",
+    type: "Toner",
+    minQuantity: 8,
+    currentQuantity: 25,
+    lastPurchasePrice: 1500,
+    lastVendor: "HP India Supplies",
+    barcode: "CF217A-008"
+  },
+  {
+    id: "9",
+    name: "CF226A Toner",
+    category: "Toner",
+    brand: "HP",
+    model: "LaserJet Pro M402dn",
+    currentStock: 18,
+    minStockLevel: 7,
+    maxStockLevel: 35,
+    reorderPoint: 11,
+    unitCost: 1900,
+    unitPrice: 2470,
+    location: "Secondary Warehouse",
+    lastRestocked: "2023-04-01",
+    createdAt: "2023-02-20",
+    
+    // Additional properties
+    brandId: "brand-4",
+    modelId: "model-9",
+    type: "Toner",
+    minQuantity: 7,
+    currentQuantity: 18,
+    lastPurchasePrice: 1900,
+    lastVendor: "HP India Supplies",
+    barcode: "CF226A-009"
+  },
+  {
+    id: "10",
+    name: "006R01516 Drum",
+    category: "Drum",
+    brand: "Xerox",
+    model: "WorkCentre 3655",
+    currentStock: 9,
+    minStockLevel: 3,
+    maxStockLevel: 20,
+    reorderPoint: 5,
+    unitCost: 3800,
+    unitPrice: 4940,
+    location: "Main Warehouse",
+    lastRestocked: "2023-03-18",
+    createdAt: "2023-02-25",
+    
+    // Additional properties
+    brandId: "brand-5",
+    modelId: "model-10",
     type: "Drum",
-    minQuantity: 1,
-    currentQuantity: 4,
-    lastPurchasePrice: 7500,
-    lastVendor: "Precision Equipments",
-    barcode: "K2554D001",
+    minQuantity: 3,
+    currentQuantity: 9,
+    lastPurchasePrice: 3800,
+    lastVendor: "Xerox Authorised Dealers",
+    barcode: "006R01516-010"
   }
 ];
 
-// Mock data for engineer inventory items
-export const mockEngineerInventory = [
-  { 
-    id: "1", 
-    engineerId: "eng-1", 
-    engineerName: "Rajesh Kumar", 
-    itemId: "1", 
-    itemName: "Kyocera TK-1175 Toner", 
-    quantity: 2, 
-    assignedDate: "2025-03-15",
-    warehouseSource: "Joshiji"
-  },
-  { 
-    id: "2", 
-    engineerId: "eng-2", 
-    engineerName: "Deepak Sharma", 
-    itemId: "2", 
-    itemName: "Ricoh MP2014 Drum Unit", 
-    quantity: 1, 
-    assignedDate: "2025-03-10",
-    warehouseSource: "Joshiji"
-  },
-  { 
-    id: "3", 
-    engineerId: "eng-1", 
-    engineerName: "Rajesh Kumar", 
-    itemId: "3", 
-    itemName: "Kyocera 2554ci Fuser", 
-    quantity: 1, 
-    assignedDate: "2025-02-28",
-    warehouseSource: "Joshiji"
-  },
-  { 
-    id: "4", 
-    engineerId: "eng-4", 
-    engineerName: "Amit Singh", 
-    itemId: "6", 
-    itemName: "Kyocera 2554ci Drum", 
-    quantity: 2, 
-    assignedDate: "2025-04-12",
-    warehouseSource: "Joshiji"
-  }
-];
-
-// Mock data for usage history on service calls
-export const mockUsageHistory = [
-  { 
-    id: "1", 
-    engineerId: "eng-1", 
-    engineerName: "Rajesh Kumar", 
-    itemId: "1", 
-    itemName: "Kyocera TK-1175 Toner", 
-    quantity: 1, 
-    date: "2025-03-20", 
-    serviceCallId: "SC001", 
-    customerName: "ABC Corp" 
-  },
-  { 
-    id: "2", 
-    engineerId: "eng-2", 
-    engineerName: "Deepak Sharma", 
-    itemId: "2", 
-    itemName: "Ricoh MP2014 Drum Unit", 
-    quantity: 1, 
-    date: "2025-03-15", 
-    serviceCallId: "SC002", 
-    customerName: "XYZ Ltd" 
-  },
-  { 
-    id: "3", 
-    engineerId: "eng-4", 
-    engineerName: "Amit Singh", 
-    itemId: "6", 
-    itemName: "Kyocera 2554ci Drum", 
-    quantity: 1, 
-    date: "2025-04-12", 
-    serviceCallId: "SC003", 
-    customerName: "Tech Solutions" 
-  }
-];
-
-// Mock data for returns history
-export const mockReturns = [
+// Mock engineers data
+export const mockEngineers = [
   {
-    id: "r1",
-    engineerId: "eng-1",
-    engineerName: "Rajesh Kumar",
-    itemId: "1",
-    itemName: "Kyocera TK-1175 Toner",
-    quantity: 1,
-    returnDate: "2025-04-10",
-    reason: "Unused",
-    condition: "Good",
-    warehouseId: "wh-1",
-    warehouseName: "Joshiji"
+    id: "engineer-1",
+    name: "Arun Kumar",
+    email: "arun.kumar@example.com",
+    phone: "9876543210",
+    location: "Chennai",
+    skillLevel: "Expert",
+    status: "Active",
+    currentLocation: "Chennai",
+    currentJob: "Service Call at ABC Corp",
+    leaveEndDate: null,
+    createdAt: "2022-01-01"
   },
   {
-    id: "r2",
-    engineerId: "eng-4",
-    engineerName: "Amit Singh",
-    itemId: "6",
-    itemName: "Kyocera 2554ci Drum",
-    quantity: 1,
-    returnDate: "2025-04-11",
-    reason: "Defective",
-    condition: "Damaged",
-    warehouseId: "wh-1",
-    warehouseName: "Joshiji"
+    id: "engineer-2",
+    name: "Priya Sharma",
+    email: "priya.sharma@example.com",
+    phone: "8765432109",
+    location: "Mumbai",
+    skillLevel: "Intermediate",
+    status: "Active",
+    currentLocation: "Mumbai",
+    currentJob: "Installation at XYZ Ltd",
+    leaveEndDate: null,
+    createdAt: "2022-02-15"
+  },
+  {
+    id: "engineer-3",
+    name: "Rajesh Patel",
+    email: "rajesh.patel@example.com",
+    phone: "7654321098",
+    location: "Delhi",
+    skillLevel: "Advanced",
+    status: "On Leave",
+    currentLocation: "Delhi",
+    currentJob: null,
+    leaveEndDate: "2023-05-01",
+    createdAt: "2022-03-10"
+  },
+  {
+    id: "engineer-4",
+    name: "Sneha Reddy",
+    email: "sneha.reddy@example.com",
+    phone: "6543210987",
+    location: "Bangalore",
+    skillLevel: "Beginner",
+    status: "Active",
+    currentLocation: "Bangalore",
+    currentJob: "Training Session",
+    leaveEndDate: null,
+    createdAt: "2022-04-05"
   }
 ];
 
-// Types for database integration
-export type EngineerInventoryItem = {
-  id: string;
-  engineer_id: string;
-  engineer_name: string;
-  item_id: string;
-  item_name: string;
-  quantity: number;
-  assigned_date: string;
-  warehouse_id?: string;
-  warehouse_source?: string;
-  created_at?: string;
-};
-
-export type InventoryReturnItem = {
-  id: string;
-  engineer_id: string;
-  engineer_name: string;
-  item_id: string;
-  item_name: string;
-  quantity: number;
-  return_date: string;
-  reason: string;
-  condition: string;
-  warehouse_id?: string;
-  warehouse_name?: string;
-  notes?: string;
-  created_at?: string;
-};
+// Mock service calls data
+export const mockServiceCalls = [
+  {
+    id: "service-1",
+    customerId: "customer-1",
+    customerName: "ABC Corp",
+    engineerId: "engineer-1",
+    engineerName: "Arun Kumar",
+    location: "Chennai",
+    phone: "9876543210",
+    issueType: "Hardware",
+    issueDescription: "Printer not printing",
+    priority: "High",
+    status: "Open",
+    callType: "Repair",
+    slaDeadline: "2023-04-30",
+    startTime: "2023-04-29 09:00",
+    completionTime: null,
+    partsUsed: [],
+    serviceCharge: 500,
+    paymentMethod: "Cash",
+    paymentDate: "2023-04-29",
+    isPaid: true,
+    feedback: null,
+    createdAt: "2023-04-28"
+  },
+  {
+    id: "service-2",
+    customerId: "customer-2",
+    customerName: "XYZ Ltd",
+    engineerId: "engineer-2",
+    engineerName: "Priya Sharma",
+    location: "Mumbai",
+    phone: "8765432109",
+    issueType: "Software",
+    issueDescription: "Driver installation failed",
+    priority: "Medium",
+    status: "In Progress",
+    callType: "Installation",
+    slaDeadline: "2023-05-05",
+    startTime: "2023-04-29 10:00",
+    completionTime: null,
+    partsUsed: [],
+    serviceCharge: 0,
+    paymentMethod: null,
+    paymentDate: null,
+    isPaid: false,
+    feedback: null,
+    createdAt: "2023-04-29"
+  },
+  {
+    id: "service-3",
+    customerId: "customer-3",
+    customerName: "PQR Enterprises",
+    engineerId: "engineer-1",
+    engineerName: "Arun Kumar",
+    location: "Chennai",
+    phone: "9876543210",
+    issueType: "Maintenance",
+    issueDescription: "Routine maintenance",
+    priority: "Low",
+    status: "Scheduled",
+    callType: "Maintenance",
+    slaDeadline: "2023-05-10",
+    startTime: "2023-05-01 14:00",
+    completionTime: null,
+    partsUsed: [],
+    serviceCharge: 300,
+    paymentMethod: "Online",
+    paymentDate: "2023-05-01",
+    isPaid: true,
+    feedback: null,
+    createdAt: "2023-04-29"
+  }
+];

@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarClock } from "lucide-react";
-import { AMCBilling, AMCContract, AMCMachine } from "@/types/inventory";
+import { AMCBilling, AMCContract, AMCMachine, dbAdapter } from "@/types/inventory";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -72,7 +72,9 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
         
         if (error) throw error;
         
-        setMachines(data as AMCMachine[] || []);
+        // Use the adapter to convert db format to frontend format
+        const adaptedMachines = data.map(machine => dbAdapter.adaptAMCMachine(machine));
+        setMachines(adaptedMachines);
       } catch (error) {
         console.error('Error fetching machines:', error);
         toast.error('Failed to load machines');
@@ -87,7 +89,9 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
         
         if (error) throw error;
         
-        setContracts(data as AMCContract[] || []);
+        // Use the adapter to convert db format to frontend format
+        const adaptedContracts = data.map(contract => dbAdapter.adaptAMCContract(contract));
+        setContracts(adaptedContracts);
       } catch (error) {
         console.error('Error fetching contracts:', error);
       } finally {
@@ -105,20 +109,20 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
       setSelectedMachine(machine);
       
       // Find the related contract
-      const contract = contracts.find((c) => c.id === machine.contract_id);
+      const contract = contracts.find((c) => c.id === machine.contractId);
       setSelectedContract(contract || null);
       
-      form.setValue("contractId", machine.contract_id);
-      form.setValue("customerId", machine.customer_id);
-      form.setValue("customerName", machine.customer_name);
+      form.setValue("contractId", machine.contractId);
+      form.setValue("customerId", machine.customerId);
+      form.setValue("customerName", machine.customerName);
       form.setValue("machineModel", machine.model);
-      form.setValue("machineType", machine.machine_type);
-      form.setValue("serialNumber", machine.serial_number);
+      form.setValue("machineType", machine.machineType);
+      form.setValue("serialNumber", machine.serialNumber);
       form.setValue("department", machine.department || '');
       
       // Set opening readings from the machine's last readings
-      form.setValue("a4OpeningReading", machine.last_a4_reading.toString());
-      form.setValue("a3OpeningReading", machine.last_a3_reading.toString());
+      form.setValue("a4OpeningReading", machine.lastA4Reading.toString());
+      form.setValue("a3OpeningReading", machine.lastA3Reading.toString());
     }
   };
 
@@ -136,12 +140,12 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
       
       // Calculate extra copies based on contract limit
       if (selectedMachine && selectedContract) {
-        const a4Limit = selectedMachine.copy_limit_a4;
+        const a4Limit = selectedMachine.copyLimitA4;
         const extraA4 = totalA4 > a4Limit ? totalA4 - a4Limit : 0;
         setA4ExtraCopies(extraA4);
         
         // Calculate charges
-        const a4ExtraRate = selectedContract.extra_a4_copy_charge;
+        const a4ExtraRate = selectedContract.extraA4CopyCharge;
         setA4TotalCharge(extraA4 * a4ExtraRate);
       }
     }
@@ -152,11 +156,11 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
       setA3TotalCopies(totalA3);
       
       if (selectedMachine && selectedContract) {
-        const a3Limit = selectedMachine.copy_limit_a3;
+        const a3Limit = selectedMachine.copyLimitA3;
         const extraA3 = totalA3 > a3Limit ? totalA3 - a3Limit : 0;
         setA3ExtraCopies(extraA3);
         
-        const a3ExtraRate = selectedContract.extra_a3_copy_charge;
+        const a3ExtraRate = selectedContract.extraA3CopyCharge;
         setA3TotalCharge(extraA3 * a3ExtraRate);
       }
     }
@@ -165,8 +169,8 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
   // Calculate grand total
   useEffect(() => {
     if (selectedContract) {
-      const baseRent = selectedContract.monthly_rent;
-      const gstPercent = selectedContract.gst_percent;
+      const baseRent = selectedContract.monthlyRent;
+      const gstPercent = selectedContract.gstPercent;
       const rentGst = (baseRent * gstPercent) / 100;
       
       const extraCopyAmount = a4TotalCharge + a3TotalCharge;
@@ -190,36 +194,37 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
     
     const newBilling: AMCBilling = {
       id: uuidv4(),
-      contract_id: values.contractId,
-      machine_id: values.machineId,
-      customer_id: values.customerId,
-      customer_name: values.customerName,
-      machine_model: values.machineModel,
-      machine_type: values.machineType,
-      serial_number: values.serialNumber,
+      contractId: values.contractId,
+      machineId: values.machineId,
+      customerId: values.customerId,
+      customerName: values.customerName,
+      machineModel: values.machineModel,
+      machineType: values.machineType,
+      serialNumber: values.serialNumber,
       department: values.department,
-      billing_month: values.billingMonth,
-      a4_opening_reading: a4Opening,
-      a4_closing_reading: a4Closing,
-      a4_total_copies: a4TotalCopies,
-      a4_free_copies: selectedMachine.copy_limit_a4,
-      a4_extra_copies: a4ExtraCopies,
-      a4_extra_copy_rate: selectedContract.extra_a4_copy_charge,
-      a4_extra_copy_charge: a4TotalCharge,
-      a3_opening_reading: a3Opening,
-      a3_closing_reading: a3Closing,
-      a3_total_copies: a3TotalCopies,
-      a3_free_copies: selectedMachine.copy_limit_a3,
-      a3_extra_copies: a3ExtraCopies,
-      a3_extra_copy_rate: selectedContract.extra_a3_copy_charge,
-      a3_extra_copy_charge: a3TotalCharge,
-      gst_percent: selectedContract.gst_percent,
-      gst_amount: (a4TotalCharge + a3TotalCharge) * (selectedContract.gst_percent / 100),
-      rent: selectedContract.monthly_rent,
-      rent_gst: selectedContract.monthly_rent * (selectedContract.gst_percent / 100),
-      total_bill: grandTotal,
-      bill_date: values.billDate,
-      bill_status: "Pending",
+      billingMonth: values.billingMonth,
+      a4OpeningReading: a4Opening,
+      a4ClosingReading: a4Closing,
+      a4TotalCopies: a4TotalCopies,
+      a4FreeCopies: selectedMachine.copyLimitA4,
+      a4ExtraCopies: a4ExtraCopies,
+      a4ExtraCopyRate: selectedContract.extraA4CopyCharge,
+      a4ExtraCopyCharge: a4TotalCharge,
+      a3OpeningReading: a3Opening,
+      a3ClosingReading: a3Closing,
+      a3TotalCopies: a3TotalCopies,
+      a3FreeCopies: selectedMachine.copyLimitA3,
+      a3ExtraCopies: a3ExtraCopies,
+      a3ExtraCopyRate: selectedContract.extraA3CopyCharge,
+      a3ExtraCopyCharge: a3TotalCharge,
+      gstPercent: selectedContract.gstPercent,
+      gstAmount: (a4TotalCharge + a3TotalCharge) * (selectedContract.gstPercent / 100),
+      rent: selectedContract.monthlyRent,
+      rentGst: selectedContract.monthlyRent * (selectedContract.gstPercent / 100),
+      totalBill: grandTotal,
+      billDate: values.billDate,
+      billStatus: "Pending",
+      createdAt: new Date().toISOString()
     };
 
     onMeterReadingAdded(newBilling);

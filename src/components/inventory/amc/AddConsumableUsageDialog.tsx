@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
-import { AMCConsumableUsage, AMCMachine } from "@/types/inventory";
+import { AMCConsumableUsage, AMCMachine, dbAdapter } from "@/types/inventory";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -62,8 +62,9 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
         
         if (error) throw error;
         
-        // Explicitly cast data to AMCMachine[]
-        setMachines(data as AMCMachine[] || []);
+        // Use adapter to convert db format to frontend format
+        const adaptedMachines = data.map(machine => dbAdapter.adaptAMCMachine(machine));
+        setMachines(adaptedMachines);
       } catch (error) {
         console.error('Error fetching machines:', error);
         toast.error('Failed to load machines');
@@ -93,12 +94,12 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
   const handleMachineChange = (machineId: string) => {
     const selectedMachine = machines.find((m) => m.id === machineId);
     if (selectedMachine) {
-      form.setValue("contractId", selectedMachine.contract_id);
-      form.setValue("customerId", selectedMachine.customer_id);
-      form.setValue("customerName", selectedMachine.customer_name);
+      form.setValue("contractId", selectedMachine.contractId);
+      form.setValue("customerId", selectedMachine.customerId);
+      form.setValue("customerName", selectedMachine.customerName);
       form.setValue("machineModel", selectedMachine.model);
-      form.setValue("machineType", selectedMachine.machine_type);
-      form.setValue("serialNumber", selectedMachine.serial_number);
+      form.setValue("machineType", selectedMachine.machineType);
+      form.setValue("serialNumber", selectedMachine.serialNumber);
     }
   };
 
@@ -110,27 +111,28 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
   };
 
   const onSubmit = (values: FormValues) => {
-    const newUsage: AMCConsumableUsage = {
+    const consumableUsage = {
       id: uuidv4(),
-      contract_id: values.contractId,
-      machine_id: values.machineId,
-      customer_id: values.customerId,
-      customer_name: values.customerName,
-      machine_model: values.machineModel,
-      machine_type: values.machineType,
-      serial_number: values.serialNumber,
-      engineer_id: values.engineerId,
-      engineer_name: values.engineerName,
+      contractId: values.contractId,
+      machineId: values.machineId,
+      customerId: values.customerId,
+      customerName: values.customerName,
+      machineModel: values.machineModel,
+      machineType: values.machineType,
+      serialNumber: values.serialNumber,
+      engineerId: values.engineerId,
+      engineerName: values.engineerName,
       date: values.date,
-      item_id: values.itemId,
-      item_name: values.itemName,
+      itemId: values.itemId,
+      itemName: values.itemName,
       quantity: parseInt(values.quantity),
       cost: parseFloat(values.cost),
       remarks: values.remarks,
-      inventory_deducted: false,
+      inventoryDeducted: false,
+      createdAt: new Date().toISOString()
     };
 
-    onUsageAdded(newUsage);
+    onUsageAdded(consumableUsage);
     toast.success("Consumable usage added successfully");
     setOpen(false);
     form.reset();
@@ -171,7 +173,7 @@ const AddConsumableUsageDialog: React.FC<AddConsumableUsageDialogProps> = ({ onU
                     <SelectContent>
                       {machines.map((machine) => (
                         <SelectItem key={machine.id} value={machine.id}>
-                          {machine.customer_name} - {machine.model} ({machine.serial_number})
+                          {machine.customerName} - {machine.model} ({machine.serialNumber})
                         </SelectItem>
                       ))}
                     </SelectContent>

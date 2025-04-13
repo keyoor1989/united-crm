@@ -1,6 +1,26 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PurchaseOrder, PurchaseOrderStatus } from '@/types/sales';
+import { PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus } from '@/types/sales';
+import { Json } from '@/integrations/supabase/types';
+
+/**
+ * Generate a unique purchase order number
+ */
+export const generatePurchaseOrderNumber = async (): Promise<string> => {
+  const datePrefix = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+  const { count, error } = await supabase
+    .from('purchase_orders')
+    .select('*', { count: 'exact', head: true });
+
+  if (error) {
+    console.error('Error getting count of purchase orders:', error);
+    throw error;
+  }
+
+  // Add 1 to current count and pad it to 4 digits
+  const counter = (count !== null ? count + 1 : 1).toString().padStart(4, '0');
+  return `PO-${datePrefix}-${counter}`;
+};
 
 /**
  * Fetches all purchase orders from the database
@@ -26,7 +46,7 @@ export const fetchPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
       poNumber: record.po_number,
       vendorId: record.vendor_id || '',
       vendorName: record.vendor_name,
-      items: JSON.parse(JSON.stringify(record.items)), // Convert JSON to PurchaseOrderItem[]
+      items: record.items as PurchaseOrderItem[],
       subtotal: record.subtotal,
       totalGst: record.total_gst,
       grandTotal: record.grand_total,

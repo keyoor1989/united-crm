@@ -125,6 +125,8 @@ export interface AMCContract {
   billingCycle: string;
   notes?: string;
   createdAt: string;
+  location?: string;
+  department?: string;
 }
 
 export interface AMCMachine {
@@ -234,4 +236,123 @@ export interface AMCConsumableUsage {
 
 export type IssueType = "Engineer" | "Customer" | "Warehouse Transfer";
 export type ReturnReason = "Unused" | "Defective" | "Wrong Part" | "Expired" | "Other";
-export type ReturnStatus = "Good" | "Damaged" | "Expired";
+export type ReturnStatus = "Good" | "Damaged" | "Expired" | "Pending" | "Inspected" | "Restocked" | "Quarantined" | "Returned to Vendor";
+
+// Database to Frontend type adapters (camelCase to snake_case)
+export interface DBToFrontendAdapter {
+  // AMC Machine adapter
+  adaptAMCMachine: (dbMachine: any) => AMCMachine;
+  
+  // AMC Contract adapter
+  adaptAMCContract: (dbContract: any) => AMCContract;
+  
+  // AMC Billing adapter
+  adaptAMCBilling: (dbBilling: any) => AMCBilling;
+  
+  // AMC Consumable Usage adapter
+  adaptAMCConsumableUsage: (dbUsage: any) => AMCConsumableUsage;
+}
+
+// Implementation of the adapter
+export const dbAdapter: DBToFrontendAdapter = {
+  adaptAMCMachine: (dbMachine: any): AMCMachine => ({
+    id: dbMachine.id,
+    contractId: dbMachine.contract_id,
+    customerId: dbMachine.customer_id,
+    customerName: dbMachine.customer_name,
+    serialNumber: dbMachine.serial_number,
+    machineType: dbMachine.machine_type,
+    model: dbMachine.model,
+    location: dbMachine.location,
+    department: dbMachine.department,
+    currentRent: dbMachine.current_rent,
+    copyLimitA4: dbMachine.copy_limit_a4,
+    copyLimitA3: dbMachine.copy_limit_a3,
+    lastA4Reading: dbMachine.last_a4_reading,
+    lastA3Reading: dbMachine.last_a3_reading,
+    lastReadingDate: dbMachine.last_reading_date,
+    startDate: dbMachine.start_date,
+    endDate: dbMachine.end_date,
+    contractType: dbMachine.contract_type,
+    createdAt: dbMachine.created_at
+  }),
+  
+  adaptAMCContract: (dbContract: any): AMCContract => ({
+    id: dbContract.id,
+    customerId: dbContract.customer_id,
+    customerName: dbContract.customer_name,
+    startDate: dbContract.start_date,
+    endDate: dbContract.end_date,
+    contractType: dbContract.contract_type,
+    status: dbContract.status,
+    monthlyRent: dbContract.monthly_rent,
+    gstPercent: dbContract.gst_percent,
+    copyLimitA4: dbContract.copy_limit_a4,
+    copyLimitA3: dbContract.copy_limit_a3,
+    extraA4CopyCharge: dbContract.extra_a4_copy_charge,
+    extraA3CopyCharge: dbContract.extra_a3_copy_charge,
+    billingCycle: dbContract.billing_cycle,
+    notes: dbContract.notes,
+    location: dbContract.location,
+    department: dbContract.department,
+    createdAt: dbContract.created_at
+  }),
+  
+  adaptAMCBilling: (dbBilling: any): AMCBilling => ({
+    id: dbBilling.id,
+    contractId: dbBilling.contract_id,
+    machineId: dbBilling.machine_id,
+    customerId: dbBilling.customer_id,
+    customerName: dbBilling.customer_name,
+    department: dbBilling.department,
+    serialNumber: dbBilling.serial_number,
+    machineType: dbBilling.machine_type,
+    machineModel: dbBilling.machine_model,
+    billingMonth: dbBilling.billing_month,
+    billDate: dbBilling.bill_date,
+    a4OpeningReading: dbBilling.a4_opening_reading,
+    a4ClosingReading: dbBilling.a4_closing_reading,
+    a4TotalCopies: dbBilling.a4_total_copies,
+    a4FreeCopies: dbBilling.a4_free_copies,
+    a4ExtraCopies: dbBilling.a4_extra_copies,
+    a4ExtraCopyRate: dbBilling.a4_extra_copy_rate,
+    a4ExtraCopyCharge: dbBilling.a4_extra_copy_charge,
+    a3OpeningReading: dbBilling.a3_opening_reading || 0,
+    a3ClosingReading: dbBilling.a3_closing_reading || 0,
+    a3TotalCopies: dbBilling.a3_total_copies || 0,
+    a3FreeCopies: dbBilling.a3_free_copies || 0,
+    a3ExtraCopies: dbBilling.a3_extra_copies || 0,
+    a3ExtraCopyRate: dbBilling.a3_extra_copy_rate || 0,
+    a3ExtraCopyCharge: dbBilling.a3_extra_copy_charge || 0,
+    rent: dbBilling.rent,
+    gstPercent: dbBilling.gst_percent,
+    gstAmount: dbBilling.gst_amount,
+    rentGst: dbBilling.rent_gst,
+    totalBill: dbBilling.total_bill,
+    billStatus: dbBilling.bill_status,
+    invoiceNo: dbBilling.invoice_no,
+    createdAt: dbBilling.created_at
+  }),
+  
+  adaptAMCConsumableUsage: (dbUsage: any): AMCConsumableUsage => ({
+    id: dbUsage.id,
+    contractId: dbUsage.contract_id,
+    machineId: dbUsage.machine_id,
+    customerId: dbUsage.customer_id,
+    customerName: dbUsage.customer_name,
+    department: dbUsage.department,
+    serialNumber: dbUsage.serial_number,
+    machineType: dbUsage.machine_type,
+    machineModel: dbUsage.machine_model,
+    date: dbUsage.date,
+    itemId: dbUsage.item_id,
+    itemName: dbUsage.item_name,
+    quantity: dbUsage.quantity,
+    cost: dbUsage.cost,
+    engineerId: dbUsage.engineer_id,
+    engineerName: dbUsage.engineer_name,
+    inventoryDeducted: dbUsage.inventory_deducted,
+    remarks: dbUsage.remarks,
+    createdAt: dbUsage.created_at
+  })
+};

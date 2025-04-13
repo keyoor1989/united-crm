@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { InventoryItem as BaseInventoryItem } from "@/types/inventory";
+import { InventoryItem } from "@/types/inventory";
 import { notifyInventoryAlert } from "@/services/telegramService";
 
 // Define the database schema representation of inventory items
@@ -20,22 +20,26 @@ export interface InventoryItem {
 }
 
 // Function to convert the database schema InventoryItem to the app's BaseInventoryItem type
-export const adaptInventoryItem = (item: InventoryItem): BaseInventoryItem => {
+export const adaptInventoryItem = (item: InventoryItem): InventoryItem => {
   return {
     id: item.id,
-    model: item.model_id || "",
-    brand: item.brand || "",
     name: item.part_name,
     category: item.category,
-    minStockLevel: item.min_stock,
+    brand: item.brand || "",
+    model: item.model_id || "",
     currentStock: item.quantity,
+    minStockLevel: item.min_stock,
+    maxStockLevel: 100, // Default value 
+    reorderPoint: Math.floor(item.min_stock * 0.8), // Default calculation
     unitCost: item.purchase_price,
+    unitPrice: item.purchase_price * 1.3, // Default markup
+    location: "",
     lastRestocked: "",
     createdAt: new Date().toISOString(),
     
-    // Additional properties used throughout the app
-    modelId: item.model_id,
+    // Additional properties
     brandId: item.brand_id,
+    modelId: item.model_id,
     type: item.category,
     minQuantity: item.min_stock,
     currentQuantity: item.quantity,
@@ -51,7 +55,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
     queryFn: async () => {
       let query = supabase
         .from('opening_stock_entries')
-        .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number, warehouse_name')
+        .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number, warehouse_name, brand_id, model_id')
         .order('part_name');
       
       if (warehouseId) {
@@ -73,7 +77,8 @@ export const useInventoryItems = (warehouseId: string | null) => {
         }
       }
       
-      return data as InventoryItem[];
+      // Convert database items to frontend format
+      return data.map(adaptInventoryItem);
     },
   });
 

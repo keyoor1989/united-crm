@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form";
@@ -61,25 +60,23 @@ const AddContractDialog: React.FC<AddContractDialogProps> = ({ onContractAdded }
   const onSubmit = (values: FormValues) => {
     const newContract: AMCContract = {
       id: uuidv4(),
-      customer_id: values.customerId,
-      customer_name: values.customerName,
-      machine_model: values.machineModel,
-      machine_type: values.machineType,
-      serial_number: values.serialNumber,
-      contract_type: values.contractType,
-      start_date: values.startDate,
-      end_date: values.endDate,
-      monthly_rent: parseFloat(values.monthlyRent),
-      gst_percent: parseFloat(values.gstPercent),
-      copy_limit_a4: parseInt(values.copyLimitA4),
-      copy_limit_a3: parseInt(values.copyLimitA3 || "0"),
-      extra_a4_copy_charge: parseFloat(values.extraA4CopyCharge),
-      extra_a3_copy_charge: parseFloat(values.extraA3CopyCharge || "0"),
-      billing_cycle: values.billingCycle,
+      customerId: values.customerId,
+      customerName: values.customerName,
+      startDate: values.startDate,
+      endDate: values.endDate,
+      contractType: values.contractType,
       status: "Active",
+      monthlyRent: parseFloat(values.monthlyRent),
+      gstPercent: parseFloat(values.gstPercent),
+      copyLimitA4: parseInt(values.copyLimitA4),
+      copyLimitA3: parseInt(values.copyLimitA3 || "0"),
+      extraA4CopyCharge: parseFloat(values.extraA4CopyCharge),
+      extraA3CopyCharge: parseFloat(values.extraA3CopyCharge || "0"),
+      billingCycle: values.billingCycle,
       location: values.location,
       department: values.department,
       notes: values.notes,
+      createdAt: new Date().toISOString()
     };
 
     onContractAdded(newContract);

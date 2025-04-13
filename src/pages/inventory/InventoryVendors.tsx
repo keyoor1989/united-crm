@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -76,7 +75,6 @@ const InventoryVendors = () => {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [vendorToDelete, setVendorToDelete] = useState<string | null>(null);
   
-  // Convert from sales vendors to inventory vendors
   const vendors: Vendor[] = salesVendors.map(vendor => ({
     id: vendor.id,
     name: vendor.name,
@@ -148,7 +146,6 @@ const InventoryVendors = () => {
     }
     
     if (selectedVendor) {
-      // Convert from inventory vendor to sales vendor format
       const salesVendor = {
         id: selectedVendor.id,
         name: formData.name,
@@ -156,18 +153,20 @@ const InventoryVendors = () => {
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
+        createdAt: selectedVendor.createdAt
       };
       
       updateVendor(salesVendor);
       toast.success("Vendor updated successfully");
     } else {
-      // Convert from form data to sales vendor format for adding
       const newSalesVendor = {
         name: formData.name,
         contactPerson: "",
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
+        gstNo: formData.gstNo,
+        createdAt: new Date().toISOString().split('T')[0]
       };
       
       addVendor(newSalesVendor);
