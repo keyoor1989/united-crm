@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,31 +24,34 @@ import { toast } from "sonner";
 // Mock vendors data
 const mockVendors: Vendor[] = [
   {
-    id: "1",
+    id: "vendor1",
     name: "Ajanta Traders",
-    gstNo: "23AABCT1234Q1Z5",
+    contactPerson: "Rajesh Kumar",
+    gstNo: "24AAKCS9636Q1ZX",
     phone: "9876543210",
-    email: "info@ajantatraders.com",
-    address: "123 Market Road, Indore, MP",
-    createdAt: "2025-01-15"
+    email: "info@ajanta.com",
+    address: "142, Industrial Area, Indore, MP",
+    createdAt: "2024-01-15"
   },
   {
-    id: "2",
+    id: "vendor2",
     name: "Ravi Distributors",
-    gstNo: "23AADCR5678Q1Z6",
-    phone: "9876543211",
-    email: "contact@ravidistributors.com",
-    address: "456 Commercial Street, Bhopal, MP",
-    createdAt: "2025-02-10"
+    contactPerson: "Sunil Ravi",
+    gstNo: "08AAQCS5896P1Z0",
+    phone: "8765432109",
+    email: "sales@ravidistributors.com",
+    address: "278, MIDC Area, Nagpur, MH",
+    createdAt: "2024-01-20"
   },
   {
-    id: "3",
-    name: "Precision Equipments",
-    gstNo: "23AABCP9012Q1Z7",
-    phone: "9876543212",
-    email: "service@precisionequipments.com",
-    address: "789 Industrial Area, Jabalpur, MP",
-    createdAt: "2025-03-05"
+    id: "vendor3",
+    name: "Mehta Enterprises",
+    contactPerson: "Amit Mehta",
+    gstNo: "33AAICS4599Q2ZX",
+    phone: "7654321098",
+    email: "contact@mehtaenterprises.com",
+    address: "56, Electronic City, Bangalore, KA",
+    createdAt: "2024-02-05"
   }
 ];
 

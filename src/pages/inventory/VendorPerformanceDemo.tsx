@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +10,7 @@ const mockVendors: Vendor[] = [
   {
     id: "vendor1",
     name: "Ajanta Traders",
+    contactPerson: "Rajesh Kumar",
     gstNo: "24AAKCS9636Q1ZX",
     phone: "9876543210",
     email: "info@ajanta.com",
@@ -20,20 +20,22 @@ const mockVendors: Vendor[] = [
   {
     id: "vendor2",
     name: "Ravi Distributors",
-    gstNo: "27AAVCS8142M1Z5",
-    phone: "9988776655",
-    email: "sales@ravidist.com",
-    address: "78, Tech Park, Bhopal, MP",
-    createdAt: "2024-02-20"
+    contactPerson: "Sunil Ravi",
+    gstNo: "08AAQCS5896P1Z0",
+    phone: "8765432109",
+    email: "sales@ravidistributors.com",
+    address: "278, MIDC Area, Nagpur, MH",
+    createdAt: "2024-01-20"
   },
   {
     id: "vendor3",
     name: "Mehta Enterprises",
-    gstNo: "06AABCU9603R1ZP",
-    phone: "9865432109",
-    email: "contact@mehta.co.in",
-    address: "23, Old Market, Jabalpur, MP",
-    createdAt: "2023-11-05"
+    contactPerson: "Amit Mehta",
+    gstNo: "33AAICS4599Q2ZX",
+    phone: "7654321098",
+    email: "contact@mehtaenterprises.com",
+    address: "56, Electronic City, Bangalore, KA",
+    createdAt: "2024-02-05"
   }
 ];
 

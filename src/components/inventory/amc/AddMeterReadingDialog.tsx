@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form";
@@ -268,7 +267,7 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
                     <SelectContent>
                       {machines.map((machine) => (
                         <SelectItem key={machine.id} value={machine.id}>
-                          {machine.customer_name} - {machine.model} ({machine.serial_number})
+                          {machine.customerName} - {machine.model} ({machine.serialNumber})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -344,7 +343,7 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
                 </div>
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Free Copies:</span>
-                  <span className="ml-2">{selectedMachine?.copy_limit_a4 || 0}</span>
+                  <span className="ml-2">{selectedMachine?.copyLimitA4 || 0}</span>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Extra Copies:</span>
@@ -357,7 +356,7 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
               </div>
             </div>
 
-            {selectedMachine?.machine_type === "Color" && (
+            {selectedMachine?.machineType === "Color" && (
               <div className="rounded-md border p-4 mb-4">
                 <h3 className="font-medium mb-2">A3 Readings</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -395,7 +394,7 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
                   </div>
                   <div>
                     <span className="text-sm font-medium text-muted-foreground">Free Copies:</span>
-                    <span className="ml-2">{selectedMachine?.copy_limit_a3 || 0}</span>
+                    <span className="ml-2">{selectedMachine?.copyLimitA3 || 0}</span>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-muted-foreground">Extra Copies:</span>
@@ -414,19 +413,19 @@ const AddMeterReadingDialog: React.FC<AddMeterReadingDialogProps> = ({ onMeterRe
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Monthly Rent:</span>
-                  <span className="ml-2">₹{selectedContract?.monthly_rent.toFixed(2) || '0.00'}</span>
+                  <span className="ml-2">₹{selectedContract?.monthlyRent.toFixed(2) || '0.00'}</span>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Rent GST ({selectedContract?.gst_percent || 0}%):</span>
-                  <span className="ml-2">₹{selectedContract ? (selectedContract.monthly_rent * selectedContract.gst_percent / 100).toFixed(2) : '0.00'}</span>
+                  <span className="text-sm font-medium text-muted-foreground">Rent GST ({selectedContract?.gstPercent || 0}%):</span>
+                  <span className="ml-2">₹{selectedContract ? (selectedContract.monthlyRent * selectedContract.gstPercent / 100).toFixed(2) : '0.00'}</span>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">Extra Copy Charges:</span>
                   <span className="ml-2">₹{(a4TotalCharge + a3TotalCharge).toFixed(2)}</span>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Extra Charges GST ({selectedContract?.gst_percent || 0}%):</span>
-                  <span className="ml-2">₹{selectedContract ? ((a4TotalCharge + a3TotalCharge) * selectedContract.gst_percent / 100).toFixed(2) : '0.00'}</span>
+                  <span className="text-sm font-medium text-muted-foreground">Extra Charges GST ({selectedContract?.gstPercent || 0}%):</span>
+                  <span className="ml-2">₹{selectedContract ? ((a4TotalCharge + a3TotalCharge) * selectedContract.gstPercent / 100).toFixed(2) : '0.00'}</span>
                 </div>
                 <div className="col-span-2 mt-2 pt-2 border-t border-gray-200">
                   <span className="text-base font-bold">Total Bill:</span>

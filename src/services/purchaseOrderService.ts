@@ -46,7 +46,7 @@ export const fetchPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
       poNumber: record.po_number,
       vendorId: record.vendor_id || '',
       vendorName: record.vendor_name,
-      items: record.items as PurchaseOrderItem[],
+      items: Array.isArray(record.items) ? record.items as PurchaseOrderItem[] : [],
       subtotal: record.subtotal,
       totalGst: record.total_gst,
       grandTotal: record.grand_total,
@@ -93,7 +93,10 @@ export const fetchPurchaseOrderById = async (id: string): Promise<PurchaseOrder 
       poNumber: data.po_number,
       vendorId: data.vendor_id || '',
       vendorName: data.vendor_name,
-      items: JSON.parse(JSON.stringify(data.items)), // Convert JSON to PurchaseOrderItem[]
+      // Safe parsing of the items array
+      items: Array.isArray(data.items) 
+        ? data.items as PurchaseOrderItem[] 
+        : (JSON.parse(JSON.stringify(data.items || '[]')) as PurchaseOrderItem[]),
       subtotal: data.subtotal,
       totalGst: data.total_gst,
       grandTotal: data.grand_total,

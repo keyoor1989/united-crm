@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,15 +67,15 @@ const mockPurchaseHistory = [
   },
 ];
 
-// Mock vendor for performance metrics
+// Update the mockVendor to include all required fields
 const mockVendor: Vendor = {
   id: "vendor1",
   name: "Ajanta Traders",
+  contactPerson: "Rajesh Kumar",
   gstNo: "24AAKCS9636Q1ZX",
   phone: "9876543210",
   email: "info@ajanta.com",
   address: "142, Industrial Area, Indore, MP",
-  contactPerson: "Rajesh Kumar",
   createdAt: "2024-01-15"
 };
 

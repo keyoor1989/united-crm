@@ -1,10 +1,25 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { InventoryItem } from "@/types/inventory";
 import { notifyInventoryAlert } from "@/services/telegramService";
 
 // Define the database schema representation of inventory items
+export interface DbInventoryItem {
+  id: string;
+  part_name: string;
+  category: string;
+  quantity: number;
+  min_stock: number;
+  purchase_price: number;
+  brand?: string;
+  compatible_models?: string[];
+  part_number?: string;
+  brand_id?: string;
+  model_id?: string;
+  warehouse_name?: string;
+}
+
+// Extended InventoryItem with properly named fields for frontend use
 export interface InventoryItem {
   id: string;
   part_name: string;
@@ -17,15 +32,42 @@ export interface InventoryItem {
   part_number?: string;
   brand_id?: string;
   model_id?: string;
+  
+  // Frontend properties used in the application
+  name: string;
+  currentStock: number;
+  minStockLevel: number;
+  maxStockLevel: number;
+  reorderPoint: number;
+  unitCost: number;
+  unitPrice: number;
+  location: string;
+  lastRestocked: string;
+  createdAt: string;
+  
+  // Additional properties
+  brandId?: string;
+  modelId?: string;
+  type?: string;
+  minQuantity?: number;
+  currentQuantity?: number;
+  lastPurchasePrice?: number;
+  lastVendor?: string;
+  barcode?: string;
 }
 
-// Function to convert the database schema InventoryItem to the app's BaseInventoryItem type
-export const adaptInventoryItem = (item: InventoryItem): InventoryItem => {
+// Function to convert the database schema InventoryItem to the app's InventoryItem type
+export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
   return {
     id: item.id,
+    part_name: item.part_name,
     name: item.part_name,
     category: item.category,
+    quantity: item.quantity,
+    min_stock: item.min_stock,
+    purchase_price: item.purchase_price,
     brand: item.brand || "",
+    model_id: item.model_id || "",
     model: item.model_id || "",
     currentStock: item.quantity,
     minStockLevel: item.min_stock,
@@ -46,6 +88,9 @@ export const adaptInventoryItem = (item: InventoryItem): InventoryItem => {
     lastPurchasePrice: item.purchase_price,
     lastVendor: "",
     barcode: item.part_number || "",
+    part_number: item.part_number,
+    compatible_models: item.compatible_models,
+    brand_id: item.brand_id,
   };
 };
 
@@ -78,7 +123,8 @@ export const useInventoryItems = (warehouseId: string | null) => {
       }
       
       // Convert database items to frontend format
-      return data.map(adaptInventoryItem);
+      // Cast to handle type compatibility with the database schema
+      return data.map((item) => adaptInventoryItem(item as DbInventoryItem));
     },
   });
 
