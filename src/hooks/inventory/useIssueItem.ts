@@ -46,8 +46,13 @@ export const useIssueItem = () => {
           
         if (itemError) throw itemError;
         
-        // Calculate new quantity
-        const newQuantity = (itemData.quantity - params.quantity);
+        // Ensure itemData is not null and has quantity property before calculating
+        if (!itemData || typeof itemData.quantity !== 'number') {
+          throw new Error('Invalid item data received');
+        }
+        
+        // Calculate new quantity, ensuring we don't go below zero
+        const newQuantity = Math.max(0, itemData.quantity - params.quantity);
         
         // Update the quantity
         const { error: updateError } = await supabase

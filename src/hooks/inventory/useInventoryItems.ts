@@ -110,8 +110,10 @@ export const useInventoryItems = (warehouseId: string | null) => {
         
         // Check for low stock items and send alerts
         const lowStockItems = data.filter(item => {
+          // Rigorous null check before using the item
           if (!item) return false;
           
+          // Type-safe checks for required properties
           return (
             typeof item === 'object' && 
             'quantity' in item && 
@@ -151,13 +153,14 @@ export const useInventoryItems = (warehouseId: string | null) => {
             }
             
             // Check if dbItem has an error property which would indicate it's an error object
-            if ('error' in dbItem && dbItem.error === true) {
+            if (dbItem && 'error' in dbItem && dbItem.error === true) {
               console.error("Error object received instead of item:", dbItem);
               return null;
             }
             
             try {
               // Use our type guard to ensure we have a valid item
+              // This is safe because we've already checked that dbItem is non-null above
               if (isValidDbInventoryItem(dbItem)) {
                 return adaptInventoryItem(dbItem);
               } else {
