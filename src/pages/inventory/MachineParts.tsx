@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import OpeningStockEntryForm from "@/components/inventory/OpeningStockEntryForm";
 import { mockInventoryItems } from "@/components/service/inventory/mockData";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 interface MachinePart {
   id: string;
@@ -31,14 +31,6 @@ interface MachinePart {
   warehouseId?: string;
   warehouseName?: string;
 }
-
-const queryClient = new QueryClient();
-
-const MachinePartsWithQueryClient = () => (
-  <QueryClientProvider client={queryClient}>
-    <MachineParts />
-  </QueryClientProvider>
-);
 
 const MachineParts = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -466,4 +458,4 @@ const MachineParts = () => {
   );
 };
 
-export default MachinePartsWithQueryClient;
+export default MachineParts;
