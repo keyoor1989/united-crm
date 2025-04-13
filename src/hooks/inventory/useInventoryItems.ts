@@ -77,8 +77,8 @@ export const useInventoryItems = (warehouseId: string | null) => {
           // Only send the first low stock alert to avoid spamming
           try {
             const firstLowStockItem = lowStockItems[0];
-            // Add null check before using the item
-            if (firstLowStockItem !== null) {
+            // Make sure the item exists before sending alert
+            if (firstLowStockItem && typeof firstLowStockItem === 'object') {
               notifyInventoryAlert(firstLowStockItem as DbInventoryItem);
             }
           } catch (error) {
@@ -91,14 +91,14 @@ export const useInventoryItems = (warehouseId: string | null) => {
       // Add proper type checking to handle potential errors
       return (data || []).map((item) => {
         // Skip items that might be error objects
-        if (typeof item !== 'object' || item === null || 'error' in item) {
+        if (!item || typeof item !== 'object' || 'error' in item) {
           console.error("Invalid item data:", item);
           return null;
         }
         
         // Cast to handle type compatibility with the database schema
         try {
-          // Safe type assertion after explicit check
+          // Use type assertion with unknown as intermediate step for safety
           return adaptInventoryItem(item as unknown as DbInventoryItem);
         } catch (err) {
           console.error("Error adapting item:", item, err);
