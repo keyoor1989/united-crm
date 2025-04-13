@@ -21,121 +21,58 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, MessageSquareText, Pencil, Trash, X } from "lucide-react";
+import { Check, MessageSquareText, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  AuthorizedChat, 
-  MessageLog, 
-  NotificationPreference, 
-  TelegramConfig, 
-  WebhookInfo, 
-  TelegramGenericResponse 
-} from "@/types/telegram";
+import { useTelegram } from "@/contexts/TelegramContext";
 
 const TelegramAdmin = () => {
   const [activeTab, setActiveTab] = useState("setup");
   const [botToken, setBotToken] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
-  const [webhookInfo, setWebhookInfo] = useState<WebhookInfo | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [authorizedChats, setAuthorizedChats] = useState<AuthorizedChat[]>([]);
-  const [messageLogs, setMessageLogs] = useState<MessageLog[]>([]);
-  const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
   const [newChatId, setNewChatId] = useState("");
   const [newChatName, setNewChatName] = useState("");
   const [isAddingChat, setIsAddingChat] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [testMessage, setTestMessage] = useState("");
   const [selectedChatId, setSelectedChatId] = useState("");
   const [isSendingTest, setIsSendingTest] = useState(false);
 
+  const {
+    config, 
+    chats,
+    preferences,
+    isLoading,
+    refreshData,
+    updateWebhook,
+    deleteWebhook,
+    addAuthorizedChat,
+    toggleChatStatus,
+    updateNotificationPreference,
+    sendTestMessage
+  } = useTelegram();
+
   // Load initial data
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        // Using the text() method to query tables that are not in the types yet
-        const [configResult, chatsResult, logsResult, prefsResult] = await Promise.all([
-          supabase.from('telegram_config').select('*').single(),
-          supabase.from('telegram_authorized_chats').select('*').order('created_at', { ascending: false }),
-          supabase.from('telegram_message_logs').select('*').order('created_at', { ascending: false }).limit(50),
-          supabase.from('telegram_notification_preferences').select('*'),
-        ]);
-
-        if (configResult.data) {
-          setBotToken(configResult.data.bot_token || "");
-          setWebhookUrl(configResult.data.webhook_url || "");
-          // await fetchWebhookInfo(configResult.data.bot_token);
-        }
-
-        if (chatsResult.data) {
-          setAuthorizedChats(chatsResult.data as unknown as AuthorizedChat[]);
-        }
-        
-        if (logsResult.data) {
-          setMessageLogs(logsResult.data as unknown as MessageLog[]);
-        }
-        
-        if (prefsResult.data) {
-          setPreferences(prefsResult.data as unknown as NotificationPreference[]);
-        }
-
-        if (chatsResult.data && chatsResult.data.length > 0) {
-          setSelectedChatId(chatsResult.data[0].chat_id);
-        }
-      } catch (error) {
-        console.error("Error loading Telegram data:", error);
-        toast.error("Failed to load Telegram configuration");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  const fetchWebhookInfo = async (token: string) => {
-    try {
-      const { data } = await supabase.functions.invoke("telegram-setup", {
-        body: { action: "getWebhookInfo" },
-      });
-      setWebhookInfo(data);
-    } catch (error) {
-      console.error("Error fetching webhook info:", error);
+    if (config) {
+      setBotToken(config.bot_token || "");
+      setWebhookUrl(config.webhook_url || "");
     }
-  };
+
+    if (chats && chats.length > 0) {
+      setSelectedChatId(chats[0].chat_id);
+    }
+  }, [config, chats]);
 
   const saveWebhookSettings = async () => {
     setIsSaving(true);
     try {
-      // Mock function for now, will be replaced with real edge function
-      /*
-      const { data, error } = await supabase.functions.invoke("telegram-setup", {
-        body: {
-          action: "setWebhook",
-          webhook_url: webhookUrl,
-        },
-      });
-      */
+      const success = await updateWebhook(webhookUrl);
       
-      // Simulating a successful webhook setup
-      const data = { ok: true };
-      
-      if (data && data.ok) {
-        await supabase.from('telegram_config').upsert({
-          bot_token: botToken,
-          webhook_url: webhookUrl,
-          updated_at: new Date().toISOString(),
-        });
-        
+      if (success) {
         toast.success("Webhook configured successfully");
-        // await fetchWebhookInfo(botToken);
       } else {
-        // Fix: Handle case when description may not exist
-        const errorMessage = data && 'description' in data ? data.description : "Unknown error";
-        toast.error(`Failed to set webhook: ${errorMessage}`);
+        toast.error("Failed to set webhook");
       }
     } catch (error) {
       console.error("Error saving webhook settings:", error);
@@ -145,32 +82,16 @@ const TelegramAdmin = () => {
     }
   };
 
-  const deleteWebhook = async () => {
+  const handleDeleteWebhook = async () => {
     setIsSaving(true);
     try {
-      // Mock function for now
-      /*
-      const { data, error } = await supabase.functions.invoke("telegram-setup", {
-        body: { action: "deleteWebhook" },
-      });
-      */
+      const success = await deleteWebhook();
       
-      // Simulating a successful webhook deletion
-      const data = { ok: true };
-      
-      if (data && data.ok) {
-        await supabase.from('telegram_config').update({
-          webhook_url: "",
-          updated_at: new Date().toISOString(),
-        }).eq("bot_token", botToken);
-        
+      if (success) {
         setWebhookUrl("");
         toast.success("Webhook deleted successfully");
-        // await fetchWebhookInfo(botToken);
       } else {
-        // Fix: Handle case when description may not exist
-        const errorMessage = data && 'description' in data ? data.description : "Unknown error";
-        toast.error(`Failed to delete webhook: ${errorMessage}`);
+        toast.error("Failed to delete webhook");
       }
     } catch (error) {
       console.error("Error deleting webhook:", error);
@@ -180,7 +101,7 @@ const TelegramAdmin = () => {
     }
   };
 
-  const addAuthorizedChat = async () => {
+  const handleAddAuthorizedChat = async () => {
     if (!newChatId) {
       toast.error("Please enter a Chat ID");
       return;
@@ -188,31 +109,18 @@ const TelegramAdmin = () => {
 
     setIsAddingChat(true);
     try {
-      // For now just add to database directly
-      const { data, error } = await supabase.from('telegram_authorized_chats').insert({
-        chat_id: newChatId,
-        chat_name: newChatName || `Chat ${newChatId}`,
-        is_active: true
-      });
-
-      if (error) throw error;
+      const success = await addAuthorizedChat(
+        newChatId, 
+        newChatName || `Chat ${newChatId}`
+      );
       
-      toast.success("Chat authorized successfully");
-      
-      // Reload the chats list
-      const { data: chatsData, error: chatsError } = await supabase
-        .from('telegram_authorized_chats')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (chatsError) throw chatsError;
-      
-      if (chatsData) {
-        setAuthorizedChats(chatsData as unknown as AuthorizedChat[]);
+      if (success) {
+        toast.success("Chat authorized successfully");
+        setNewChatId("");
+        setNewChatName("");
+      } else {
+        toast.error("Failed to authorize chat");
       }
-      
-      setNewChatId("");
-      setNewChatName("");
     } catch (error) {
       console.error("Error authorizing chat:", error);
       toast.error("Failed to authorize chat");
@@ -221,61 +129,41 @@ const TelegramAdmin = () => {
     }
   };
 
-  const toggleChatStatus = async (chatId: string, isActive: boolean) => {
+  const handleToggleChatStatus = async (chatId: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('telegram_authorized_chats')
-        .update({ is_active: !isActive })
-        .eq("chat_id", chatId);
+      const success = await toggleChatStatus(chatId, isActive);
       
-      if (error) throw error;
-      
-      // Update local state
-      setAuthorizedChats(
-        authorizedChats.map(chat => 
-          chat.chat_id === chatId 
-            ? { ...chat, is_active: !isActive } 
-            : chat
-        )
-      );
-      
-      toast.success(`Chat ${isActive ? "deactivated" : "activated"} successfully`);
+      if (success) {
+        toast.success(`Chat ${isActive ? "deactivated" : "activated"} successfully`);
+      } else {
+        toast.error("Failed to update chat status");
+      }
     } catch (error) {
       console.error("Error toggling chat status:", error);
       toast.error("Failed to update chat status");
     }
   };
 
-  const toggleNotificationPreference = async (
+  const handleToggleNotificationPreference = async (
     chatId: string, 
-    field: "service_calls" | "customer_followups" | "inventory_alerts",
+    field: 'service_calls' | 'customer_followups' | 'inventory_alerts',
     currentValue: boolean
   ) => {
     try {
-      const { error } = await supabase
-        .from('telegram_notification_preferences')
-        .update({ [field]: !currentValue })
-        .eq("chat_id", chatId);
+      const success = await updateNotificationPreference(chatId, field, !currentValue);
       
-      if (error) throw error;
-      
-      // Update local state
-      setPreferences(
-        preferences.map(pref => 
-          pref.chat_id === chatId 
-            ? { ...pref, [field]: !currentValue } 
-            : pref
-        )
-      );
-      
-      toast.success("Notification preference updated");
+      if (success) {
+        toast.success("Notification preference updated");
+      } else {
+        toast.error("Failed to update notification preference");
+      }
     } catch (error) {
       console.error("Error updating notification preference:", error);
       toast.error("Failed to update notification preference");
     }
   };
 
-  const sendTestMessage = async () => {
+  const handleSendTestMessage = async () => {
     if (!testMessage || !selectedChatId) {
       toast.error("Please enter a message and select a chat");
       return;
@@ -283,50 +171,13 @@ const TelegramAdmin = () => {
 
     setIsSendingTest(true);
     try {
-      // Mock sending a test message
-      /*
-      const { data, error } = await supabase.functions.invoke("telegram-send-message", {
-        body: {
-          chat_id: selectedChatId,
-          text: testMessage,
-        },
-      });
-      */
+      const success = await sendTestMessage(selectedChatId, testMessage);
       
-      // Simulate success
-      const data = { ok: true };
-      
-      if (data && data.ok) {
-        // Add to message logs
-        const { error: logError } = await supabase.from('telegram_message_logs').insert({
-          chat_id: selectedChatId,
-          message_text: testMessage,
-          message_type: "test",
-          direction: "outgoing",
-          processed_status: "sent"
-        });
-        
-        if (logError) throw logError;
-        
+      if (success) {
         toast.success("Test message sent successfully");
         setTestMessage("");
-        
-        // Reload message logs
-        const { data: logsData, error: logsError } = await supabase
-          .from('telegram_message_logs')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(50);
-        
-        if (logsError) throw logsError;
-        
-        if (logsData) {
-          setMessageLogs(logsData as unknown as MessageLog[]);
-        }
       } else {
-        // Fix: Handle case when description may not exist
-        const errorMessage = data && 'description' in data ? data.description : "Unknown error";
-        toast.error(`Failed to send message: ${errorMessage}`);
+        toast.error("Failed to send message");
       }
     } catch (error) {
       console.error("Error sending test message:", error);
@@ -355,6 +206,19 @@ const TelegramAdmin = () => {
     }).format(date);
   };
 
+  if (isLoading) {
+    return (
+      <div className="container py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-lg font-medium mb-2">Loading Telegram configuration...</h2>
+            <div className="w-8 h-8 border-t-2 border-b-2 border-primary rounded-full animate-spin mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-8">
       <div className="flex items-center justify-between mb-8">
@@ -371,7 +235,6 @@ const TelegramAdmin = () => {
           <TabsTrigger value="setup">Bot Setup</TabsTrigger>
           <TabsTrigger value="chats">Authorized Chats</TabsTrigger>
           <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
-          <TabsTrigger value="logs">Message Logs</TabsTrigger>
           <TabsTrigger value="test">Test Bot</TabsTrigger>
         </TabsList>
 
@@ -411,32 +274,12 @@ const TelegramAdmin = () => {
                     URL that Telegram will use to send messages to your bot
                   </p>
                 </div>
-
-                {webhookInfo && (
-                  <div className="space-y-2 rounded-md border p-4">
-                    <h3 className="font-medium">Current Webhook Status</h3>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>URL:</div>
-                      <div>{webhookInfo.result.url || "Not set"}</div>
-                      
-                      <div>Pending updates:</div>
-                      <div>{webhookInfo.result.pending_update_count}</div>
-                      
-                      {webhookInfo.result.last_error_message && (
-                        <>
-                          <div>Last error:</div>
-                          <div className="text-red-500">{webhookInfo.result.last_error_message}</div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button 
                 variant="outline" 
-                onClick={deleteWebhook}
+                onClick={handleDeleteWebhook}
                 disabled={isSaving || !webhookUrl}
               >
                 Delete Webhook
@@ -482,7 +325,7 @@ const TelegramAdmin = () => {
                   </div>
                 </div>
                 <Button 
-                  onClick={addAuthorizedChat} 
+                  onClick={handleAddAuthorizedChat} 
                   disabled={isAddingChat || !newChatId}
                 >
                   {isAddingChat ? "Adding..." : "Add Chat"}
@@ -501,14 +344,14 @@ const TelegramAdmin = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {authorizedChats.length === 0 ? (
+                    {chats.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center py-4">
                           No authorized chats yet
                         </TableCell>
                       </TableRow>
                     ) : (
-                      authorizedChats.map((chat) => (
+                      chats.map((chat) => (
                         <TableRow key={chat.id}>
                           <TableCell>{chat.chat_id}</TableCell>
                           <TableCell>{chat.chat_name}</TableCell>
@@ -522,7 +365,7 @@ const TelegramAdmin = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => toggleChatStatus(chat.chat_id, chat.is_active)}
+                              onClick={() => handleToggleChatStatus(chat.chat_id, chat.is_active)}
                             >
                               {chat.is_active ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                             </Button>
@@ -557,14 +400,14 @@ const TelegramAdmin = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {authorizedChats.length === 0 ? (
+                    {chats.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={4} className="text-center py-4">
                           No authorized chats to configure
                         </TableCell>
                       </TableRow>
                     ) : (
-                      authorizedChats.filter(chat => chat.is_active).map((chat) => {
+                      chats.filter(chat => chat.is_active).map((chat) => {
                         const prefs = getPreferencesForChat(chat.chat_id);
                         return (
                           <TableRow key={chat.id}>
@@ -572,7 +415,7 @@ const TelegramAdmin = () => {
                             <TableCell>
                               <Switch 
                                 checked={prefs.service_calls} 
-                                onCheckedChange={() => toggleNotificationPreference(
+                                onCheckedChange={() => handleToggleNotificationPreference(
                                   chat.chat_id, 
                                   "service_calls", 
                                   prefs.service_calls
@@ -582,7 +425,7 @@ const TelegramAdmin = () => {
                             <TableCell>
                               <Switch 
                                 checked={prefs.customer_followups} 
-                                onCheckedChange={() => toggleNotificationPreference(
+                                onCheckedChange={() => handleToggleNotificationPreference(
                                   chat.chat_id, 
                                   "customer_followups", 
                                   prefs.customer_followups
@@ -592,7 +435,7 @@ const TelegramAdmin = () => {
                             <TableCell>
                               <Switch 
                                 checked={prefs.inventory_alerts} 
-                                onCheckedChange={() => toggleNotificationPreference(
+                                onCheckedChange={() => handleToggleNotificationPreference(
                                   chat.chat_id, 
                                   "inventory_alerts", 
                                   prefs.inventory_alerts
@@ -602,67 +445,6 @@ const TelegramAdmin = () => {
                           </TableRow>
                         );
                       })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="logs">
-          <Card>
-            <CardHeader>
-              <CardTitle>Message Logs</CardTitle>
-              <CardDescription>
-                Recent message activity with your bot
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Chat ID</TableHead>
-                      <TableHead>Direction</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Message</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {messageLogs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4">
-                          No message logs yet
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      messageLogs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell>{formatDateTime(log.created_at)}</TableCell>
-                          <TableCell>{log.chat_id}</TableCell>
-                          <TableCell>
-                            <Badge variant={log.direction === "incoming" ? "default" : "secondary"}>
-                              {log.direction === "incoming" ? "Received" : "Sent"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              log.processed_status === "sent" || log.processed_status === "customer_created" || log.processed_status === "valid_customer" 
-                                ? "success" 
-                                : log.processed_status === "unauthorized" || log.processed_status === "invalid_customer"
-                                ? "destructive"
-                                : "outline"
-                            }>
-                              {log.processed_status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="max-w-[300px] truncate">
-                            {log.message_text}
-                          </TableCell>
-                        </TableRow>
-                      ))
                     )}
                   </TableBody>
                 </Table>
@@ -689,7 +471,7 @@ const TelegramAdmin = () => {
                     onChange={(e) => setSelectedChatId(e.target.value)}
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {authorizedChats
+                    {chats
                       .filter(chat => chat.is_active)
                       .map((chat) => (
                         <option key={chat.id} value={chat.chat_id}>
@@ -710,7 +492,7 @@ const TelegramAdmin = () => {
                 </div>
                 
                 <Button 
-                  onClick={sendTestMessage}
+                  onClick={handleSendTestMessage}
                   disabled={isSendingTest || !testMessage || !selectedChatId}
                 >
                   {isSendingTest ? "Sending..." : "Send Test Message"}

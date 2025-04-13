@@ -1,15 +1,24 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
-const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
-const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     const update = await req.json();
     
@@ -82,7 +91,7 @@ serve(async (req) => {
 
 async function sendTelegramMessage(chat_id: string, text: string) {
   try {
-    const response = await fetch(`${TELEGRAM_API}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

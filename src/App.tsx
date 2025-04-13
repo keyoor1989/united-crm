@@ -5,6 +5,7 @@ import AppRoutes from './AppRoutes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { VendorProvider } from '@/contexts/VendorContext';
 import { TaskProvider } from '@/contexts/TaskContext';
+import { TelegramProvider } from '@/contexts/TelegramContext';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -14,8 +15,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <VendorProvider>
         <TaskProvider>
-          <Toaster />
-          <AppRoutes />
+          <TelegramProvider>
+            <Toaster />
+            <AppRoutes />
+          </TelegramProvider>
         </TaskProvider>
       </VendorProvider>
     </QueryClientProvider>

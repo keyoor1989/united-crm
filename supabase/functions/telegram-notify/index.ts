@@ -127,9 +127,7 @@ function formatFollowUpNotification(data) {
     `Customer: ${data.customer_name}\n` +
     `Type: ${data.type || 'General'}\n` +
     `Date: ${new Date(data.date).toLocaleDateString()}\n` +
-    `Notes: ${data.notes || 'None'}\n` +
-    `Location: ${data.location || 'Not specified'}\n` +
-    `Phone: ${data.contact_phone || 'Not specified'}`;
+    `Notes: ${data.notes || 'None'}\n`;
 }
 
 function formatInventoryAlertNotification(data) {
@@ -148,8 +146,7 @@ function formatNewCustomerNotification(data) {
     `Phone: ${data.phone}\n` +
     `Location: ${data.area || data.location || 'Not specified'}\n` +
     (data.email ? `Email: ${data.email}\n` : '') +
-    `Source: ${data.source || 'Telegram'}\n` +
-    (data.machines && data.machines.length > 0 ? `Interested in: ${data.machines.join(', ')}` : '');
+    `Source: ${data.source || 'Direct Entry'}`;
 }
 
 async function sendTelegramMessage(chatId: string, text: string) {
@@ -179,7 +176,7 @@ async function sendTelegramMessage(chatId: string, text: string) {
       .insert({
         chat_id: chatId,
         message_text: text,
-        message_type: 'text',
+        message_type: 'notification',
         direction: 'outgoing',
         processed_status: 'sent'
       });
@@ -187,6 +184,18 @@ async function sendTelegramMessage(chatId: string, text: string) {
     return true;
   } catch (error) {
     console.error('Error sending Telegram message:', error);
+    
+    // Log the failed attempt
+    await supabase
+      .from('telegram_message_logs')
+      .insert({
+        chat_id: chatId,
+        message_text: text,
+        message_type: 'notification',
+        direction: 'outgoing',
+        processed_status: 'failed'
+      });
+      
     throw error;
   }
 }
