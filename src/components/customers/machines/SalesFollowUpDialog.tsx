@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -21,7 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "@radix-ui/react-icons";
+import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -95,12 +96,20 @@ const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
       // Send notification via Telegram
       await notifyFollowUp(followUpData);
       
-      toast.success("Follow-up scheduled successfully");
+      toast({
+        title: "Success",
+        description: "Follow-up scheduled successfully"
+      });
+      
       onSave?.(data);
       setOpen(false);
     } catch (error) {
       console.error("Error creating follow-up:", error);
-      toast.error("Failed to schedule follow-up");
+      toast({
+        title: "Error",
+        description: "Failed to schedule follow-up",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }

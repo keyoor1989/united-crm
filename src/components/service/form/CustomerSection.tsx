@@ -1,16 +1,20 @@
-
 import React from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
-import { Clock } from "lucide-react";
-import { CustomerType } from "@/types/customer";
-import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { UseFormReturn } from "react-hook-form";
-import { ServiceCallFormValues } from "@/hooks/useServiceCallForm";
+import { ServiceCallFormData } from "@/hooks/useServiceCallForm";
+import { CustomerType } from "@/types/customer";
 
 interface CustomerSectionProps {
-  form: UseFormReturn<ServiceCallFormValues>;
+  form: UseFormReturn<ServiceCallFormData>;
   selectedCustomer: CustomerType | null;
   showCustomerSearch: boolean;
   slaTime: number | null;

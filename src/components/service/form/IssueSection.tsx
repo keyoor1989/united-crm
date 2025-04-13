@@ -1,27 +1,27 @@
-
-import React, { useEffect } from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import React from "react";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Loader2, Save } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
-import { ServiceCallFormValues } from "@/hooks/useServiceCallForm";
-import { Engineer } from "@/types/service";
-import { useNavigate } from "react-router-dom";
+import { ServiceCallFormData } from "@/hooks/useServiceCallForm";
+import { Card } from "@/components/ui/card";
+import { CustomerType } from "@/types/customer";
 
 interface IssueSectionProps {
-  form: UseFormReturn<ServiceCallFormValues>;
+  form: UseFormReturn<ServiceCallFormData>;
   isSubmitting: boolean;
-  selectedCustomer: any;
-  engineers: Engineer[];
+  selectedCustomer: CustomerType;
+  engineers: any[];
   assignEngineerNow: boolean;
   setAssignEngineerNow: (value: boolean) => void;
   autoAssignEngineer: () => void;
-  onSubmit: (data: ServiceCallFormValues) => void;
+  onSubmit: (data: ServiceCallFormData) => void;
 }
 
 const IssueSection: React.FC<IssueSectionProps> = ({

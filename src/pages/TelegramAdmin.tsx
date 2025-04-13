@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +13,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Settings, Bell, MessageSquare, ShieldAlert, Check, X, AlertTriangle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+
+interface TelegramConfig {
+  id: string;
+  bot_token: string;
+  webhook_url: string;
+  created_at: string;
+  updated_at: string;
+}
 
 interface AuthorizedChat {
   id: string;
@@ -75,7 +82,6 @@ const TelegramAdmin = () => {
   const loadTelegramData = async () => {
     setIsLoading(true);
     try {
-      // Load config
       const { data: configData } = await supabase
         .from('telegram_config')
         .select('*')
@@ -83,33 +89,33 @@ const TelegramAdmin = () => {
         .single();
 
       if (configData) {
-        setBotToken(configData.bot_token);
-        setWebhookUrl(configData.webhook_url);
+        const config = configData as unknown as TelegramConfig;
+        setBotToken(config.bot_token);
+        setWebhookUrl(config.webhook_url);
       }
 
-      // Load authorized chats
       const { data: chatsData } = await supabase
         .from('telegram_authorized_chats')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (chatsData) {
-        setAuthorizedChats(chatsData);
-        if (chatsData.length > 0) {
-          setSelectedChatId(chatsData[0].chat_id);
+        const chats = chatsData as unknown as AuthorizedChat[];
+        setAuthorizedChats(chats);
+        if (chats.length > 0) {
+          setSelectedChatId(chats[0].chat_id);
         }
       }
 
-      // Load notification preferences
       const { data: prefsData } = await supabase
         .from('telegram_notification_preferences')
         .select('*');
 
       if (prefsData) {
-        setPreferences(prefsData);
+        const prefs = prefsData as unknown as NotificationPreference[];
+        setPreferences(prefs);
       }
 
-      // Load message logs
       const { data: logsData } = await supabase
         .from('telegram_message_logs')
         .select('*')
@@ -117,11 +123,11 @@ const TelegramAdmin = () => {
         .limit(100);
 
       if (logsData) {
-        setMessageLogs(logsData);
+        const logs = logsData as unknown as MessageLog[];
+        setMessageLogs(logs);
       }
 
-      // Get webhook info
-      if (configData?.bot_token) {
+      if (configData) {
         await getWebhookInfo();
       }
     } catch (error) {
@@ -165,42 +171,18 @@ const TelegramAdmin = () => {
         toast.success("Webhook set successfully");
         await getWebhookInfo();
         
-        // Save the bot token and webhook URL to the database
         await supabase
           .from('telegram_config')
           .upsert({
             bot_token: botToken,
             webhook_url: webhookUrl,
-          });
+          } as any);
       } else {
         toast.error(`Failed to set webhook: ${data.description}`);
       }
     } catch (error) {
       console.error("Error setting webhook:", error);
       toast.error("Failed to set webhook");
-    } finally {
-      setIsLoadingWebhook(false);
-    }
-  };
-
-  const deleteWebhook = async () => {
-    setIsLoadingWebhook(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('telegram-setup', {
-        body: { action: 'deleteWebhook' },
-      });
-
-      if (error) throw error;
-      
-      if (data.ok) {
-        toast.success("Webhook deleted successfully");
-        await getWebhookInfo();
-      } else {
-        toast.error(`Failed to delete webhook: ${data.description}`);
-      }
-    } catch (error) {
-      console.error("Error deleting webhook:", error);
-      toast.error("Failed to delete webhook");
     } finally {
       setIsLoadingWebhook(false);
     }

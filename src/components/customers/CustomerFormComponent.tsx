@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,7 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CustomerType, CustomerStatus } from "@/types/customer";
+import { CustomerType } from "@/types/customer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCustomerForm } from "./CustomerFormContext";
@@ -30,7 +31,7 @@ const formSchema = z.object({
   leadSource: z.string().min(2, {
     message: "Lead source must be at least 2 characters.",
   }),
-  leadStatus: z.enum(["Prospect", "Active", "Contract Renewal", "Need Toner", "Inactive"]),
+  leadStatus: z.enum(["New", "Quoted", "Follow-up", "Converted", "Lost"]),
   address: z.string().optional(),
   area: z.string().optional(),
   customerType: z.enum(["individual", "government", "corporate"]).optional(),
@@ -44,10 +45,10 @@ type CustomerFormValues = z.infer<typeof formSchema>;
 
 const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer: selectedCustomer }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
-  // 1. Define your form.
+  // Define your form.
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -55,7 +56,7 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
       phone: selectedCustomer?.phone || "",
       email: selectedCustomer?.email || "",
       leadSource: "Website",
-      leadStatus: selectedCustomer?.status || "Prospect",
+      leadStatus: (selectedCustomer?.status as any) || "New",
       address: selectedCustomer?.location || "",
       area: selectedCustomer?.location || "",
       customerType: "individual"
@@ -77,7 +78,7 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
         location: values.area || "",
         lastContact: "Just now",
         machines: [],
-        status: values.leadStatus as CustomerStatus
+        status: values.leadStatus as any
       };
       
       // Save to Supabase
@@ -102,14 +103,19 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
         await notifyNewCustomer(customer);
       }
       
-      toast.success(
-        selectedCustomer ? "Customer updated successfully" : "Customer added successfully"
-      );
+      toast({
+        title: selectedCustomer ? "Customer updated" : "Customer added",
+        description: selectedCustomer ? "Customer updated successfully" : "Customer added successfully"
+      });
       
-      router.push("/customers");
+      navigate("/customers");
     } catch (error) {
       console.error("Error saving customer:", error);
-      toast.error("Failed to save customer");
+      toast({
+        title: "Error",
+        description: "Failed to save customer",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }

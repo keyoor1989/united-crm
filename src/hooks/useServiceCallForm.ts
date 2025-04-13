@@ -1,9 +1,10 @@
+
 import { useState, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerType } from "@/types/customer";
@@ -35,9 +36,15 @@ export type ServiceCallFormData = z.infer<typeof serviceCallFormSchema>;
 
 export const useServiceCallForm = () => {
   const [isSubmitting, setSubmitting] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | null>(null);
+  const [selectedMachine, setSelectedMachine] = useState<any | null>(null);
+  const [customerMachines, setCustomerMachines] = useState([]);
+  const [slaTime, setSlaTime] = useState<string | null>(null);
+  const [showCustomerSearch, setShowCustomerSearch] = useState(true);
+  const [assignEngineerNow, setAssignEngineerNow] = useState(false);
+  const [engineers, setEngineers] = useState([]);
 
   const form = useForm<ServiceCallFormData>({
     resolver: zodResolver(serviceCallFormSchema),
@@ -66,9 +73,22 @@ export const useServiceCallForm = () => {
       location: customer.location,
     });
     setSelectedCustomer(customer);
+    
+    // Fetch customer machines and engineers
+    // This would be implemented here
   }, [form]);
 
-  const handleFormSubmit = async (formData: ServiceCallFormData) => {
+  const handleMachineChange = useCallback((machineId: string) => {
+    // Handle machine selection
+    // This would be implemented here
+  }, []);
+
+  const autoAssignEngineer = useCallback(() => {
+    // Auto assign engineer logic
+    // This would be implemented here
+  }, []);
+
+  const onSubmit = async (formData: ServiceCallFormData) => {
     setSubmitting(true);
     try {
       const serviceCallData = {
@@ -97,11 +117,19 @@ export const useServiceCallForm = () => {
       // Send notification via Telegram
       await notifyServiceCall(serviceCallData);
 
-      toast.success("Service call created successfully");
-      router.push("/service");
+      toast({
+        title: "Success",
+        description: "Service call created successfully"
+      });
+      
+      navigate("/service");
     } catch (error) {
       console.error("Error creating service call:", error);
-      toast.error("Failed to create service call");
+      toast({
+        title: "Error",
+        description: "Failed to create service call",
+        variant: "destructive"
+      });
     } finally {
       setSubmitting(false);
     }
@@ -110,9 +138,19 @@ export const useServiceCallForm = () => {
   return {
     form,
     isSubmitting,
-    handleFormSubmit,
-    handleCustomerSelect,
     selectedCustomer,
-    setSelectedCustomer,
+    selectedMachine,
+    customerMachines,
+    slaTime,
+    showCustomerSearch,
+    assignEngineerNow,
+    engineers,
+    handleCustomerSelect,
+    handleMachineChange,
+    autoAssignEngineer,
+    setShowCustomerSearch,
+    setAssignEngineerNow,
+    onSubmit,
+    setSelectedCustomer
   };
 };

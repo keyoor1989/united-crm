@@ -1,17 +1,20 @@
-
 import React from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Card } from "@/components/ui/card";
+import { ServiceCallFormData } from "@/hooks/useServiceCallForm";
 import { UseFormReturn } from "react-hook-form";
-import { ServiceCallFormValues } from "@/hooks/useServiceCallForm";
-import { Machine } from "@/types/service";
+import { CustomerType } from "@/types/customer";
 
 interface MachineSectionProps {
-  form: UseFormReturn<ServiceCallFormValues>;
-  customerMachines: Machine[];
-  selectedCustomer: any;
+  form: UseFormReturn<ServiceCallFormData>;
+  customerMachines: any[];
+  selectedCustomer: CustomerType | null;
   handleMachineChange: (machineId: string) => void;
 }
 
@@ -19,68 +22,64 @@ const MachineSection: React.FC<MachineSectionProps> = ({
   form,
   customerMachines,
   selectedCustomer,
-  handleMachineChange,
+  handleMachineChange
 }) => {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Machine Details</CardTitle>
-        <CardDescription>
-          Select machine details for this service call
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-4 p-4">
+        <h2 className="text-lg font-medium">Machine Details</h2>
+        <p className="text-sm text-muted-foreground">
+          Enter the details of the machine requiring service.
+        </p>
+
+        {selectedCustomer ? (
           <FormField
             control={form.control}
-            name="machineId"
+            name="machine.model"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Machine Model</FormLabel>
-                <Select
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    handleMachineChange(value);
-                  }}
-                  defaultValue={field.value}
-                  disabled={!selectedCustomer || customerMachines.length === 0}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select machine" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {customerMachines.map((machine) => (
-                      <SelectItem key={machine.id} value={machine.id}>
-                        {machine.model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="serialNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Serial Number</FormLabel>
                 <FormControl>
-                  <Input
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     {...field}
-                    placeholder="Enter serial number (optional)"
-                  />
+                    onChange={(e) => {
+                      field.onChange(e);
+                      handleMachineChange(e.target.value);
+                    }}
+                  >
+                    <option value="">Select Machine</option>
+                    {customerMachines.map((machine: any) => (
+                      <option key={machine.id} value={machine.machine_name}>
+                        {machine.machine_name}
+                      </option>
+                    ))}
+                  </select>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
-      </CardContent>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Select a customer to load their machines.
+          </p>
+        )}
+
+        <FormField
+          control={form.control}
+          name="machine.serial"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Serial Number (Optional)</FormLabel>
+              <FormControl>
+                <input type="text" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" placeholder="Enter serial number" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </Card>
   );
 };
