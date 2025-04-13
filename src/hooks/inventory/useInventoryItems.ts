@@ -73,11 +73,11 @@ export const useInventoryItems = (warehouseId: string | null) => {
           (item.quantity as number) < (item.min_stock as number)
         );
         
-        if (lowStockItems.length > 0 && lowStockItems[0] !== null) {
+        if (lowStockItems.length > 0) {
           // Only send the first low stock alert to avoid spamming
           try {
-            // Type assertion after null check is safe
             const firstLowStockItem = lowStockItems[0];
+            // Add null check before using the item
             if (firstLowStockItem !== null) {
               notifyInventoryAlert(firstLowStockItem as DbInventoryItem);
             }

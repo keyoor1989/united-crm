@@ -135,10 +135,9 @@ const InventoryVendors = () => {
     try {
       const newVendor = {
         id: uuidv4(),
-        createdAt: new Date().toISOString(),
         name: values.name,
-        contactPerson: values.contactPerson || '',
-        gstNo: values.gstNo || '',
+        contact_person: values.contactPerson || '',
+        gst_no: values.gstNo || '',
         phone: values.phone,
         email: values.email || '',
         address: values.address || ''
@@ -158,13 +157,24 @@ const InventoryVendors = () => {
         return;
       }
 
-      setVendors([...vendors, newVendor]);
+      const adaptedVendor: Vendor = {
+        id: newVendor.id,
+        name: newVendor.name,
+        contactPerson: newVendor.contact_person,
+        gstNo: newVendor.gst_no,
+        phone: newVendor.phone,
+        email: newVendor.email,
+        address: newVendor.address,
+        createdAt: new Date().toISOString()
+      };
+
+      setVendors([...vendors, adaptedVendor]);
       setOpen(false);
       form.reset();
       toast({
         title: "Success",
         description: "Vendor created successfully."
-      })
+      });
     } catch (error) {
       console.error('Error creating vendor:', error);
       toast({
@@ -173,7 +183,7 @@ const InventoryVendors = () => {
         description: "There was an error creating the vendor. Please try again."
       });
     }
-  }
+  };
 
   const onEditSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!selectedVendorId) {
@@ -210,9 +220,18 @@ const InventoryVendors = () => {
         return;
       }
 
+      const adaptedVendor: Partial<Vendor> = {
+        name: updatedVendor.name,
+        contactPerson: updatedVendor.contact_person,
+        gstNo: updatedVendor.gst_no,
+        phone: updatedVendor.phone,
+        email: updatedVendor.email,
+        address: updatedVendor.address
+      };
+
       setVendors(
         vendors.map(vendor =>
-          vendor.id === selectedVendorId ? { ...vendor, ...updatedVendor } : vendor
+          vendor.id === selectedVendorId ? { ...vendor, ...adaptedVendor } : vendor
         )
       );
       setEditOpen(false);
@@ -220,7 +239,7 @@ const InventoryVendors = () => {
       toast({
         title: "Success",
         description: "Vendor updated successfully."
-      })
+      });
     } catch (error) {
       console.error('Error updating vendor:', error);
       toast({
@@ -229,7 +248,7 @@ const InventoryVendors = () => {
         description: "There was an error updating the vendor. Please try again."
       });
     }
-  }
+  };
 
   const handleEdit = (vendor: Vendor) => {
     setSelectedVendorId(vendor.id);
