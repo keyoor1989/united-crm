@@ -82,6 +82,11 @@ const isValidDbInventoryItem = (item: any): item is DbInventoryItem => {
   );
 };
 
+// Helper function to check if an item has low stock
+const hasLowStock = (item: DbInventoryItem): boolean => {
+  return item.quantity < item.min_stock;
+};
+
 export const useInventoryItems = (warehouseId: string | null) => {
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: ['inventory_items', warehouseId],
@@ -110,33 +115,20 @@ export const useInventoryItems = (warehouseId: string | null) => {
         
         // Check for low stock items and send alerts
         const lowStockItems = data.filter(item => {
-          // Skip null items entirely
-          if (item === null) return false;
+          // Use our type guard to validate the item before checking stock levels
+          if (!isValidDbInventoryItem(item)) {
+            return false;
+          }
           
-          // Type-safe checks for required properties
-          if (typeof item !== 'object') return false;
-          
-          if (!('quantity' in item) || !('min_stock' in item)) return false;
-          
-          const quantity = item.quantity;
-          const minStock = item.min_stock;
-          
-          // Ensure both values are numbers before comparison
-          if (typeof quantity !== 'number' || typeof minStock !== 'number') return false;
-          
-          // Now it's safe to perform the comparison
-          return quantity < minStock;
+          // Once we've verified it's a valid item, we can safely check stock levels
+          return hasLowStock(item);
         });
         
         if (lowStockItems.length > 0) {
           // Only send the first low stock alert to avoid spamming
           try {
             const firstLowStockItem = lowStockItems[0];
-            
-            // Use the type guard to ensure we have a valid item before sending an alert
-            if (firstLowStockItem && isValidDbInventoryItem(firstLowStockItem)) {
-              notifyInventoryAlert(firstLowStockItem);
-            }
+            notifyInventoryAlert(firstLowStockItem);
           } catch (error) {
             console.error("Error sending alert:", error);
           }
@@ -157,15 +149,13 @@ export const useInventoryItems = (warehouseId: string | null) => {
             }
             
             // Check if dbItem has an error property which would indicate it's an error object
-            // First verify dbItem is not null, then check for error property
-            if (dbItem && 'error' in dbItem && (dbItem as any).error === true) {
+            if ('error' in dbItem && (dbItem as any).error === true) {
               console.error("Error object received instead of item:", dbItem);
               return null;
             }
             
             try {
               // Use our type guard to ensure we have a valid item
-              // This is safe because we've already checked that dbItem is non-null above
               if (isValidDbInventoryItem(dbItem)) {
                 return adaptInventoryItem(dbItem);
               } else {
