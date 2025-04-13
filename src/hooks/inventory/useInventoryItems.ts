@@ -87,6 +87,11 @@ const hasLowStock = (item: DbInventoryItem): boolean => {
   return item.quantity < item.min_stock;
 };
 
+// Helper to check if an object is an error object
+const isErrorObject = (obj: any): boolean => {
+  return obj !== null && typeof obj === 'object' && 'error' in obj && obj.error === true;
+};
+
 export const useInventoryItems = (warehouseId: string | null) => {
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: ['inventory_items', warehouseId],
@@ -149,7 +154,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
             }
             
             // Check if dbItem has an error property which would indicate it's an error object
-            if ('error' in dbItem && (dbItem as any).error === true) {
+            if (isErrorObject(dbItem)) {
               console.error("Error object received instead of item:", dbItem);
               return null;
             }
