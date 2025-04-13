@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MachinesList from "./machines/MachinesList";
-import AddMachineDialog from "./machines/AddMachineDialog";
+import { AddMachineDialog } from "./machines/AddMachineDialog";
 import SalesFollowUpList from "./machines/SalesFollowUpList";
-import FollowUpDialog from "./machines/FollowUpDialog";
+import { FollowUpDialog } from "./machines/FollowUpDialog";
 import SalesFollowUpDialog from "./machines/SalesFollowUpDialog";
-import { Machine } from "./machines/types";
+import { Machine, MachineFormData } from "./machines/types";
 
 interface CustomerMachinesProps {
   customerId?: string;
@@ -20,6 +20,14 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isSalesFollowUpOpen, setIsSalesFollowUpOpen] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [newMachineData, setNewMachineData] = useState<MachineFormData>({
+    model: "",
+    machineType: "copier",
+    status: "active"
+  });
+  const [followUpDate, setFollowUpDate] = useState<Date | undefined>(undefined);
+  const [followUpNotes, setFollowUpNotes] = useState("");
 
   const handleAddMachine = () => {
     setIsAddMachineOpen(true);
@@ -59,6 +67,11 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
     setIsSalesFollowUpOpen(false);
   };
 
+  const onSaveFollowUp = () => {
+    // Implement save logic here
+    handleFollowUpAdded();
+  };
+
   if (!customerId) {
     return (
       <div className="p-6 text-center">
@@ -95,25 +108,33 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
 
       {/* Dialogs */}
       <AddMachineDialog 
-        isOpen={isAddMachineOpen} 
-        onClose={() => setIsAddMachineOpen(false)}
-        onMachineAdded={handleMachineAdded}
-        customerId={customerId}
+        open={isAddMachineOpen} 
+        isLoading={isLoading}
+        onOpenChange={setIsAddMachineOpen}
+        onAddMachine={handleMachineAdded}
+        newMachineData={newMachineData}
+        setNewMachineData={setNewMachineData}
       />
       
       <FollowUpDialog
-        isOpen={isFollowUpOpen}
-        onClose={() => setIsFollowUpOpen(false)}
-        onFollowUpAdded={handleFollowUpAdded}
-        machine={selectedMachine}
-        customerId={customerId}
+        open={isFollowUpOpen}
+        onOpenChange={setIsFollowUpOpen}
+        followUpMachine={selectedMachine}
+        followUpDate={followUpDate}
+        setFollowUpDate={setFollowUpDate}
+        followUpNotes={followUpNotes}
+        setFollowUpNotes={setFollowUpNotes}
+        onSaveFollowUp={onSaveFollowUp}
       />
       
       <SalesFollowUpDialog
-        isOpen={isSalesFollowUpOpen}
-        onClose={() => setIsSalesFollowUpOpen(false)}
-        onFollowUpAdded={handleSalesFollowUpAdded}
+        open={isSalesFollowUpOpen}
+        setOpen={setIsSalesFollowUpOpen}
         customerId={customerId}
+        customerName=""
+        location=""
+        phone=""
+        onSave={handleSalesFollowUpAdded}
       />
     </div>
   );
