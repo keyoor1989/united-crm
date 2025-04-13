@@ -28,8 +28,6 @@ export const useEngineerInventory = () => {
         
       if (error) throw error;
       
-      console.log("Issued items raw:", data);
-      
       // Transform the data to match the expected format
       const transformedData = data.map(item => ({
         id: item.id,
@@ -38,15 +36,13 @@ export const useEngineerInventory = () => {
         itemId: item.item_id,
         itemName: item.item_name,
         assignedQuantity: item.quantity,
-        remainingQuantity: item.quantity, // In a real app, this would be calculated from usage
+        remainingQuantity: item.quantity,
         modelNumber: item.model_number,
         modelBrand: item.model_brand,
         lastUpdated: item.assigned_date,
         createdAt: item.created_at,
         warehouseSource: item.warehouse_source
       }));
-      
-      console.log("Transformed issued items:", transformedData);
       
       return transformedData as EngineerInventoryItem[];
     }
