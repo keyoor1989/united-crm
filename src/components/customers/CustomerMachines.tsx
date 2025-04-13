@@ -12,9 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCustomerDetails } from "@/hooks/useCustomerDetails";
 import { Badge } from "@/components/ui/badge";
 import MachineForm from "./machines/MachineForm";
-import { MachinesList } from "./machines/MachinesList";
+import MachinesList from "./machines/MachinesList";
 import SalesFollowUpDialog from "./machines/SalesFollowUpDialog";
 import { SalesFollowUpList } from "./machines/SalesFollowUpList";
+import { Machine } from "./machines/types";
 
 interface CustomerMachinesProps {
   customerId?: string;
@@ -23,7 +24,7 @@ interface CustomerMachinesProps {
 const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
   const [open, setOpen] = useState(false);
   const [isNewMachine, setIsNewMachine] = useState(false);
-  const [selectedMachine, setSelectedMachine] = useState<any>(null);
+  const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [followUps, setFollowUps] = useState([]);
 
   const { customer, isLoading, error } = useCustomerDetails();
@@ -38,6 +39,11 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
 
   const handleSaveFollowUp = (newFollowUp: any) => {
     setFollowUps(prevFollowUps => [...prevFollowUps, newFollowUp]);
+  };
+
+  const handleScheduleFollowUp = (machine: Machine) => {
+    setSelectedMachine(machine);
+    setOpen(true);
   };
 
   return (
@@ -78,7 +84,11 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
             setOpen={setIsNewMachine}
             customerId={customer?.id || ""}
           />
-          <MachinesList customerId={customer?.id || ""} />
+          <MachinesList 
+            customerId={customer?.id || ""} 
+            onScheduleFollowUp={handleScheduleFollowUp}
+            onAddMachine={() => setIsNewMachine(true)}
+          />
         </TabsContent>
         <TabsContent value="followups" className="mt-4">
           <h3 className="text-xl font-medium mb-4">Follow-ups</h3>
