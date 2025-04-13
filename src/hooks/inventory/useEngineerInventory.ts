@@ -28,6 +28,8 @@ export const useEngineerInventory = () => {
         
       if (error) throw error;
       
+      console.log("Raw engineer inventory data:", data);
+      
       // Transform the data to match the expected format
       const transformedData = data.map(item => ({
         id: item.id,
@@ -43,6 +45,8 @@ export const useEngineerInventory = () => {
         createdAt: item.created_at,
         warehouseSource: item.warehouse_source
       }));
+      
+      console.log("Transformed engineer inventory data:", transformedData);
       
       return transformedData as EngineerInventoryItem[];
     }

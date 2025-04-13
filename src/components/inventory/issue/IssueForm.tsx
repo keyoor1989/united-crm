@@ -103,6 +103,13 @@ const IssueForm = () => {
 
     const warehouseInfo = warehouses.find(w => w.id === selectedWarehouse);
     
+    console.log("Issuing item with model and brand:", {
+      itemId: selectedItemId,
+      modelNumber,
+      modelBrand,
+      quantity
+    });
+    
     issueMutation.mutate({
       itemId: selectedItemId,
       engineerId: selectedReceiver,

@@ -21,6 +21,8 @@ export const useIssueItem = () => {
   
   return useMutation({
     mutationFn: async (params: IssueItemParams) => {
+      console.log("Issuing item with params:", params);
+      
       // Insert into engineer_inventory table
       const { data, error } = await supabase
         .from('engineer_inventory')
@@ -37,7 +39,12 @@ export const useIssueItem = () => {
         })
         .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting into engineer_inventory:", error);
+        throw error;
+      }
+      
+      console.log("Successfully inserted into engineer_inventory:", data);
       
       // Update the stock in the opening_stock_entries table
       if (params.itemId) {
@@ -48,7 +55,10 @@ export const useIssueItem = () => {
           .eq('id', params.itemId)
           .single();
           
-        if (itemError) throw itemError;
+        if (itemError) {
+          console.error("Error fetching item quantity:", itemError);
+          throw itemError;
+        }
         
         // Ensure itemData is not null and has quantity property before calculating
         if (!itemData || typeof itemData.quantity !== 'number') {
@@ -64,7 +74,12 @@ export const useIssueItem = () => {
           .update({ quantity: newQuantity })
           .eq('id', params.itemId);
         
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error("Error updating stock quantity:", updateError);
+          throw updateError;
+        }
+        
+        console.log("Successfully updated stock quantity to:", newQuantity);
       }
       
       return data;
