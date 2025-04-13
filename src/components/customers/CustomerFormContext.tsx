@@ -4,6 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
 export const formSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   phone: z.string().min(10, { message: "Please enter a valid phone number" }),
   email: z.string().email({ message: "Please enter a valid email" }).optional().or(z.literal("")),
@@ -15,7 +16,7 @@ export const formSchema = z.object({
   dateOfBirth: z.string().optional(),
   machineInterest: z.string().optional(),
   machineType: z.string().optional(),
-  source: z.string().min(1, { message: "Please select a source" }),
+  leadSource: z.string().min(1, { message: "Please select a source" }),
   notes: z.string().optional(),
   leadStatus: z.enum(["New", "Quoted", "Follow-up", "Converted", "Lost"]),
   isNewCustomer: z.boolean().default(true),
@@ -24,6 +25,7 @@ export const formSchema = z.object({
 export type CustomerFormValues = z.infer<typeof formSchema>;
 
 export const defaultValues: Partial<CustomerFormValues> = {
+  id: "",
   name: "",
   phone: "",
   email: "",
@@ -31,7 +33,7 @@ export const defaultValues: Partial<CustomerFormValues> = {
   area: "",
   customerType: "individual",
   machineType: "",
-  source: "",
+  leadSource: "Website",
   notes: "",
   leadStatus: "New",
   isNewCustomer: true,

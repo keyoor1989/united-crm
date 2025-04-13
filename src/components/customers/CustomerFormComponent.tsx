@@ -26,7 +26,7 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Define form
+  // Define form with the proper type
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,7 +38,7 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
       leadStatus: (selectedCustomer?.status as any) || "New",
       address: selectedCustomer?.location || "",
       area: selectedCustomer?.location || "",
-      customerType: "individual"
+      customerType: "individual" as "individual" | "government" | "corporate"
     },
   });
 
@@ -100,23 +100,22 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
 
   const isNewCustomer = !selectedCustomer;
 
+  // Use form directly, don't create a new provider here
   return (
-    <CustomerFormProvider form={form} isNewCustomer={isNewCustomer} isSubmitting={isSubmitting}>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <BasicInfoForm />
-            <AddressForm />
-            <LeadInfoForm />
-            <NotesForm />
-          </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <BasicInfoForm />
+          <AddressForm />
+          <LeadInfoForm />
+          <NotesForm />
+        </div>
 
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Submitting..." : selectedCustomer ? "Update Customer" : "Add Customer"}
-          </Button>
-        </form>
-      </Form>
-    </CustomerFormProvider>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : selectedCustomer ? "Update Customer" : "Add Customer"}
+        </Button>
+      </form>
+    </Form>
   );
 };
 

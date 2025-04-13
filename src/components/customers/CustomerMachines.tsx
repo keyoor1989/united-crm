@@ -11,11 +11,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCustomerDetails } from "@/hooks/useCustomerDetails";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import MachineForm from "./machines/MachineForm";
 import MachinesList from "./machines/MachinesList";
 import SalesFollowUpDialog from "./machines/SalesFollowUpDialog";
 import { SalesFollowUpList } from "./machines/SalesFollowUpList";
 import { Machine } from "./machines/types";
+import { useCustomerForm } from "./CustomerFormContext";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface CustomerMachinesProps {
   customerId?: string;
@@ -28,14 +32,57 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
   const [followUps, setFollowUps] = useState([]);
   const [activeTab, setActiveTab] = useState("machines");
 
+  // Get the customer context if we're in the form
+  const { form } = useCustomerForm();
+  const formCustomerId = form.getValues("id");
+  
+  // Use customer details hook
   const { customer, isLoading, error } = useCustomerDetails();
 
+  const currentCustomer = customer || {
+    id: formCustomerId || "",
+    name: form.getValues("name") || "New Customer",
+    phone: form.getValues("phone") || "",
+    location: form.getValues("area") || "",
+    status: "New",
+    email: form.getValues("email") || "",
+    lastContact: "Just now",
+    machines: []
+  };
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-[125px] w-full" />
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-[250px] w-full" />
+      </div>
+    );
   }
 
   if (error) {
-    return <div>Error: {error.message}</div>;
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error loading customer details</AlertTitle>
+        <AlertDescription>
+          There was an error loading the customer details. Please try again later or contact support.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Check if we have a valid customer (either from the database or from the form)
+  if (!currentCustomer || (!currentCustomer.id && !formCustomerId)) {
+    return (
+      <Alert className="bg-amber-50 border-amber-200">
+        <AlertCircle className="h-4 w-4 text-amber-500" />
+        <AlertTitle>Customer information needed</AlertTitle>
+        <AlertDescription>
+          Please fill out the customer information in the "Customer Form" tab first.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   const handleSaveFollowUp = (newFollowUp: any) => {
@@ -59,11 +106,11 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-medium">{customer?.name}</h2>
+              <h2 className="text-lg font-medium">{currentCustomer?.name}</h2>
               <p className="text-sm text-muted-foreground">
-                {customer?.location} | {customer?.phone}
+                {currentCustomer?.location} | {currentCustomer?.phone}
               </p>
-              <Badge variant="secondary">{customer?.status}</Badge>
+              <Badge variant="secondary">{currentCustomer?.status}</Badge>
             </div>
             <Button onClick={() => setOpen(true)}>Schedule Follow-up</Button>
           </div>
@@ -83,27 +130,27 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
           <MachineForm
             open={isNewMachine}
             setOpen={setIsNewMachine}
-            customerId={customer?.id || ""}
+            customerId={currentCustomer?.id || ""}
           />
           <MachinesList 
-            customerId={customer?.id || ""} 
+            customerId={currentCustomer?.id || ""} 
             onScheduleFollowUp={handleScheduleFollowUp}
             onAddMachine={() => setIsNewMachine(true)}
           />
         </TabsContent>
         <TabsContent value="followups">
           <h3 className="text-xl font-medium mb-4">Follow-ups</h3>
-          <SalesFollowUpList customerId={customer?.id || ""} />
+          <SalesFollowUpList customerId={currentCustomer?.id || ""} />
         </TabsContent>
       </Tabs>
 
       <SalesFollowUpDialog
         open={open}
         setOpen={setOpen}
-        customerId={customer?.id || ""}
-        customerName={customer?.name || ""}
-        location={customer?.location || ""}
-        phone={customer?.phone || ""}
+        customerId={currentCustomer?.id || ""}
+        customerName={currentCustomer?.name || ""}
+        location={currentCustomer?.location || ""}
+        phone={currentCustomer?.phone || ""}
         onSave={handleSaveFollowUp}
       />
     </div>
