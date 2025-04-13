@@ -37,6 +37,17 @@ import InventoryHistory from "@/pages/inventory/InventoryHistory";
 import EngineerForm from "@/pages/EngineerForm";
 import AmcTracker from "@/pages/inventory/AmcTracker";
 import TelegramAdmin from "@/pages/TelegramAdmin";
+import SmartAssistant from "@/pages/SmartAssistant";
+// Quotation pages
+import Quotations from "@/pages/sales/Quotations";
+import QuotationForm from "@/pages/sales/QuotationForm";
+import SentQuotations from "@/pages/sales/SentQuotations";
+import QuotationProducts from "@/pages/sales/QuotationProducts";
+import ContractUpload from "@/pages/sales/ContractUpload";
+import PurchaseOrders from "@/pages/sales/PurchaseOrders";
+import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
+import SentOrders from "@/pages/sales/SentOrders";
+import OrderHistory from "@/pages/sales/OrderHistory";
 
 const AppRoutes = () => {
   return (
@@ -81,6 +92,20 @@ const AppRoutes = () => {
         <Route path="/engineer/:id" element={<ProtectedRoute><EngineerDetail /></ProtectedRoute>} />
         <Route path="/engineer/new" element={<ProtectedRoute><EngineerForm /></ProtectedRoute>} />
         <Route path="/engineer-performance" element={<ProtectedRoute><EngineerPerformanceDashboard /></ProtectedRoute>} />
+
+        {/* Quotation Routes */}
+        <Route path="/quotations" element={<ProtectedRoute><Quotations /></ProtectedRoute>} />
+        <Route path="/quotation-form" element={<ProtectedRoute><QuotationForm /></ProtectedRoute>} />
+        <Route path="/sent-quotations" element={<ProtectedRoute><SentQuotations /></ProtectedRoute>} />
+        <Route path="/quotation-products" element={<ProtectedRoute><QuotationProducts /></ProtectedRoute>} />
+        <Route path="/contract-upload" element={<ProtectedRoute><ContractUpload /></ProtectedRoute>} />
+        <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
+        <Route path="/purchase-order-form" element={<ProtectedRoute><PurchaseOrderForm /></ProtectedRoute>} />
+        <Route path="/sent-orders" element={<ProtectedRoute><SentOrders /></ProtectedRoute>} />
+        <Route path="/order-history" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+        
+        {/* Smart Assistant */}
+        <Route path="/smart-assistant" element={<ProtectedRoute><SmartAssistant /></ProtectedRoute>} />
 
         {/* Telegram Admin */}
         <Route path="/telegram-admin" element={<ProtectedRoute><TelegramAdmin /></ProtectedRoute>} />

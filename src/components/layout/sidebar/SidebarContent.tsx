@@ -11,7 +11,8 @@ import {
   reportsSection,
   locationNavItems,
   taskSection,
-  customersSection
+  customersSection,
+  sidebarSections
 } from "./config";
 import { useFilteredMainNavItems } from "@/utils/sidebar/permissionHelpers";
 import MainNavItems from "./sections/MainNavItems";
@@ -52,7 +53,8 @@ const SidebarContent = () => {
     location.pathname === "/order-history" || location.pathname === "/quotation-products" ||
     location.pathname === "/contract-upload") && hasPermission("quotations") ? "quotations" : "",
     (location.pathname.startsWith("/tasks")) && (hasPermission("task_system") || hasPermission("assigned_tasks")) ? "tasks" : "",
-    (location.pathname.startsWith("/reports")) && hasPermission("reports") ? "reports" : ""
+    (location.pathname.startsWith("/reports")) && hasPermission("reports") ? "reports" : "",
+    (location.pathname === "/telegram-admin") ? "settings" : ""
   ].filter(Boolean);
 
   const [openSections, setOpenSections] = React.useState<string[]>(initialSections);
@@ -62,6 +64,29 @@ const SidebarContent = () => {
       prev.includes(section) 
         ? prev.filter(s => s !== section) 
         : [...prev, section]
+    );
+  };
+
+  // Handle rendering settings section
+  const renderSettingsSection = () => {
+    const settingsSection = sidebarSections[sidebarSections.length - 1];
+    return (
+      <SectionGroup 
+        section={{
+          key: "settings",
+          label: settingsSection.title,
+          items: settingsSection.items.map(item => ({
+            to: item.href,
+            label: item.title,
+            icon: item.icon
+          }))
+        }}
+        isOpen={openSections.includes("settings")}
+        toggleSection={() => toggleSection("settings")}
+        isSectionActive={isSectionActive}
+        isActive={isActive}
+        isCollapsed={isCollapsed}
+      />
     );
   };
 
@@ -164,6 +189,9 @@ const SidebarContent = () => {
           isCollapsed={isCollapsed}
         />
       )}
+      
+      {/* Settings Section (always visible) */}
+      {renderSettingsSection()}
       
       {/* Locations section (only show if user has CRM or service permissions) */}
       {(hasPermission("crm") || hasPermission("service_calls")) && (

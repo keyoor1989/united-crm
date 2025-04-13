@@ -1,665 +1,568 @@
+
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Settings, Bell, MessageSquare, ShieldAlert, Check, X, AlertTriangle, Send } from "lucide-react";
-import { toast } from "sonner";
+import { Check, MessageSquareText, Pencil, Trash, X } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { 
-  TelegramConfig, 
   AuthorizedChat, 
-  NotificationPreference, 
   MessageLog, 
+  NotificationPreference, 
+  TelegramConfig, 
   WebhookInfo, 
   TelegramGenericResponse 
 } from "@/types/telegram";
 
 const TelegramAdmin = () => {
+  const [activeTab, setActiveTab] = useState("setup");
   const [botToken, setBotToken] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookInfo, setWebhookInfo] = useState<WebhookInfo | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [authorizedChats, setAuthorizedChats] = useState<AuthorizedChat[]>([]);
-  const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
   const [messageLogs, setMessageLogs] = useState<MessageLog[]>([]);
+  const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
   const [newChatId, setNewChatId] = useState("");
-  const [chatName, setChatName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingWebhook, setIsLoadingWebhook] = useState(false);
+  const [newChatName, setNewChatName] = useState("");
+  const [isAddingChat, setIsAddingChat] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [testMessage, setTestMessage] = useState("");
   const [selectedChatId, setSelectedChatId] = useState("");
+  const [isSendingTest, setIsSendingTest] = useState(false);
 
+  // Load initial data
   useEffect(() => {
-    loadTelegramData();
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const [configResult, chatsResult, logsResult, prefsResult] = await Promise.all([
+          supabase.from("telegram_config").select("*").single(),
+          supabase.from("telegram_authorized_chats").select("*").order("created_at", { ascending: false }),
+          supabase.from("telegram_message_logs").select("*").order("created_at", { ascending: false }).limit(50),
+          supabase.from("telegram_notification_preferences").select("*"),
+        ]);
+
+        if (configResult.data) {
+          setBotToken(configResult.data.bot_token || "");
+          setWebhookUrl(configResult.data.webhook_url || "");
+          await fetchWebhookInfo(configResult.data.bot_token);
+        }
+
+        if (chatsResult.data) setAuthorizedChats(chatsResult.data);
+        if (logsResult.data) setMessageLogs(logsResult.data);
+        if (prefsResult.data) setPreferences(prefsResult.data);
+
+        if (chatsResult.data && chatsResult.data.length > 0) {
+          setSelectedChatId(chatsResult.data[0].chat_id);
+        }
+      } catch (error) {
+        console.error("Error loading Telegram data:", error);
+        toast.error("Failed to load Telegram configuration");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
 
-  const loadTelegramData = async () => {
-    setIsLoading(true);
+  const fetchWebhookInfo = async (token: string) => {
     try {
-      const { data: configData } = await supabase
-        .from('telegram_config' as any)
-        .select('*')
-        .limit(1)
-        .single();
-
-      if (configData) {
-        const config = configData as unknown as TelegramConfig;
-        setBotToken(config.bot_token);
-        setWebhookUrl(config.webhook_url);
-      }
-
-      const { data: chatsData } = await supabase
-        .from('telegram_authorized_chats' as any)
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (chatsData) {
-        const chats = chatsData as unknown as AuthorizedChat[];
-        setAuthorizedChats(chats);
-        if (chats.length > 0) {
-          setSelectedChatId(chats[0].chat_id);
-        }
-      }
-
-      const { data: prefsData } = await supabase
-        .from('telegram_notification_preferences' as any)
-        .select('*');
-
-      if (prefsData) {
-        const prefs = prefsData as unknown as NotificationPreference[];
-        setPreferences(prefs);
-      }
-
-      const { data: logsData } = await supabase
-        .from('telegram_message_logs' as any)
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (logsData) {
-        const logs = logsData as unknown as MessageLog[];
-        setMessageLogs(logs);
-      }
-
-      if (configData) {
-        await getWebhookInfo();
-      }
-    } catch (error) {
-      console.error("Error loading Telegram data:", error);
-      toast.error("Failed to load Telegram data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getWebhookInfo = async () => {
-    setIsLoadingWebhook(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('telegram-setup', {
-        body: { action: 'getWebhookInfo' },
+      const { data } = await supabase.functions.invoke("telegram-setup", {
+        body: { action: "getWebhookInfo" },
       });
-
-      if (error) throw error;
-      setWebhookInfo(data as WebhookInfo);
-    } catch (error: any) {
-      console.error("Error getting webhook info:", error);
-      toast.error("Failed to get webhook info");
-    } finally {
-      setIsLoadingWebhook(false);
+      setWebhookInfo(data);
+    } catch (error) {
+      console.error("Error fetching webhook info:", error);
     }
   };
 
-  const setWebhook = async () => {
-    setIsLoadingWebhook(true);
+  const saveWebhookSettings = async () => {
+    setIsSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke('telegram-setup', {
-        body: { 
-          action: 'setWebhook', 
-          webhook_url: webhookUrl 
+      const { data, error } = await supabase.functions.invoke("telegram-setup", {
+        body: {
+          action: "setWebhook",
+          webhook_url: webhookUrl,
         },
       });
 
       if (error) throw error;
-      
-      const response = data as TelegramGenericResponse;
-      if (response.ok) {
-        toast.success("Webhook set successfully");
-        await getWebhookInfo();
+
+      if (data && data.ok) {
+        await supabase.from("telegram_config").upsert({
+          bot_token: botToken,
+          webhook_url: webhookUrl,
+          updated_at: new Date().toISOString(),
+        });
         
-        await supabase
-          .from('telegram_config' as any)
-          .upsert({
-            bot_token: botToken,
-            webhook_url: webhookUrl,
-          });
+        toast.success("Webhook configured successfully");
+        await fetchWebhookInfo(botToken);
       } else {
-        toast.error(`Failed to set webhook: ${response.description}`);
+        toast.error(`Failed to set webhook: ${data?.description || "Unknown error"}`);
       }
-    } catch (error: any) {
-      console.error("Error setting webhook:", error);
-      toast.error("Failed to set webhook");
+    } catch (error) {
+      console.error("Error saving webhook settings:", error);
+      toast.error("Failed to save webhook settings");
     } finally {
-      setIsLoadingWebhook(false);
+      setIsSaving(false);
     }
   };
 
   const deleteWebhook = async () => {
-    setIsLoadingWebhook(true);
+    setIsSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke('telegram-setup', {
-        body: { action: 'deleteWebhook' },
+      const { data, error } = await supabase.functions.invoke("telegram-setup", {
+        body: { action: "deleteWebhook" },
       });
 
       if (error) throw error;
-      
-      const response = data as TelegramGenericResponse;
-      if (response.ok) {
+
+      if (data && data.ok) {
+        await supabase.from("telegram_config").update({
+          webhook_url: "",
+          updated_at: new Date().toISOString(),
+        }).eq("bot_token", botToken);
+        
+        setWebhookUrl("");
         toast.success("Webhook deleted successfully");
-        await getWebhookInfo();
+        await fetchWebhookInfo(botToken);
       } else {
-        toast.error(`Failed to delete webhook: ${response.description}`);
+        toast.error(`Failed to delete webhook: ${data?.description || "Unknown error"}`);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting webhook:", error);
       toast.error("Failed to delete webhook");
     } finally {
-      setIsLoadingWebhook(false);
+      setIsSaving(false);
     }
   };
 
-  const authorizeChat = async () => {
+  const addAuthorizedChat = async () => {
     if (!newChatId) {
-      toast.error("Chat ID is required");
+      toast.error("Please enter a Chat ID");
       return;
     }
 
-    setIsLoading(true);
+    setIsAddingChat(true);
     try {
-      const { data, error } = await supabase.functions.invoke('telegram-setup', {
-        body: { 
-          action: 'authorizeChat', 
+      const { data, error } = await supabase.functions.invoke("telegram-setup", {
+        body: {
+          action: "authorizeChat",
           chat_id: newChatId,
-          chat_name: chatName || 'Unknown'
+          chat_name: newChatName || `Chat ${newChatId}`,
         },
       });
 
       if (error) throw error;
-      
-      const response = data as TelegramGenericResponse;
-      if (response.ok) {
+
+      if (data && data.ok) {
         toast.success("Chat authorized successfully");
+        
+        // Reload the chats list
+        const { data: chatsData } = await supabase
+          .from("telegram_authorized_chats")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (chatsData) setAuthorizedChats(chatsData);
+        
         setNewChatId("");
-        setChatName("");
-        await loadTelegramData();
+        setNewChatName("");
       } else {
-        toast.error(`Failed to authorize chat: ${response.description || 'Unknown error'}`);
+        toast.error(`Failed to authorize chat: ${data?.description || "Unknown error"}`);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error authorizing chat:", error);
       toast.error("Failed to authorize chat");
     } finally {
-      setIsLoading(false);
+      setIsAddingChat(false);
     }
   };
 
-  const toggleChatActive = async (chatId: string, isActive: boolean) => {
-    setIsLoading(true);
+  const toggleChatStatus = async (chatId: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('telegram_authorized_chats' as any)
+      await supabase
+        .from("telegram_authorized_chats")
         .update({ is_active: !isActive })
-        .eq('chat_id', chatId);
-
-      if (error) throw error;
+        .eq("chat_id", chatId);
       
-      toast.success(`Chat ${isActive ? 'deactivated' : 'activated'} successfully`);
-      await loadTelegramData();
-    } catch (error: any) {
-      console.error("Error toggling chat active status:", error);
+      // Update local state
+      setAuthorizedChats(
+        authorizedChats.map(chat => 
+          chat.chat_id === chatId 
+            ? { ...chat, is_active: !isActive } 
+            : chat
+        )
+      );
+      
+      toast.success(`Chat ${isActive ? "deactivated" : "activated"} successfully`);
+    } catch (error) {
+      console.error("Error toggling chat status:", error);
       toast.error("Failed to update chat status");
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const updateNotificationPreference = async (chatId: string, field: string, value: boolean) => {
-    setIsLoading(true);
+  const toggleNotificationPreference = async (
+    chatId: string, 
+    field: "service_calls" | "customer_followups" | "inventory_alerts",
+    currentValue: boolean
+  ) => {
     try {
-      const { error } = await supabase
-        .from('telegram_notification_preferences' as any)
-        .update({ [field]: value })
-        .eq('chat_id', chatId);
-
-      if (error) throw error;
+      await supabase
+        .from("telegram_notification_preferences")
+        .update({ [field]: !currentValue })
+        .eq("chat_id", chatId);
+      
+      // Update local state
+      setPreferences(
+        preferences.map(pref => 
+          pref.chat_id === chatId 
+            ? { ...pref, [field]: !currentValue } 
+            : pref
+        )
+      );
       
       toast.success("Notification preference updated");
-      await loadTelegramData();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error updating notification preference:", error);
       toast.error("Failed to update notification preference");
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const sendTestMessage = async () => {
-    if (!selectedChatId || !testMessage) {
-      toast.error("Chat ID and message are required");
+    if (!testMessage || !selectedChatId) {
+      toast.error("Please enter a message and select a chat");
       return;
     }
 
-    setIsLoading(true);
+    setIsSendingTest(true);
     try {
-      const { data, error } = await supabase.functions.invoke('telegram-notify', {
-        body: { 
-          notification_type: 'custom',
-          data: {
-            message: testMessage
-          },
-          chat_id: selectedChatId
+      const { data, error } = await supabase.functions.invoke("telegram-send-message", {
+        body: {
+          chat_id: selectedChatId,
+          text: testMessage,
         },
       });
 
       if (error) throw error;
-      
-      toast.success("Test message sent successfully");
-      setTestMessage("");
-      await loadTelegramData();
-    } catch (error: any) {
+
+      if (data && data.ok) {
+        toast.success("Test message sent successfully");
+        setTestMessage("");
+        
+        // Reload message logs
+        const { data: logsData } = await supabase
+          .from("telegram_message_logs")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        
+        if (logsData) setMessageLogs(logsData);
+      } else {
+        toast.error(`Failed to send message: ${data?.description || "Unknown error"}`);
+      }
+    } catch (error) {
       console.error("Error sending test message:", error);
       toast.error("Failed to send test message");
     } finally {
-      setIsLoading(false);
+      setIsSendingTest(false);
     }
   };
 
+  const getPreferencesForChat = (chatId: string) => {
+    return preferences.find(pref => pref.chat_id === chatId) || {
+      service_calls: false,
+      customer_followups: false,
+      inventory_alerts: false,
+    };
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  };
+
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Telegram Bot Administration</h1>
-        <p className="text-muted-foreground">
-          Configure and manage your Telegram bot integration
-        </p>
+    <div className="container py-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold">Telegram Bot Administration</h1>
+          <p className="text-muted-foreground">
+            Configure and manage your Telegram integration
+          </p>
+        </div>
       </div>
 
-      <Tabs defaultValue="settings">
-        <TabsList className="mb-4">
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Bot Settings
-          </TabsTrigger>
-          <TabsTrigger value="chats" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Authorized Chats
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notification Settings
-          </TabsTrigger>
-          <TabsTrigger value="logs" className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4" />
-            Message Logs
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="setup">Bot Setup</TabsTrigger>
+          <TabsTrigger value="chats">Authorized Chats</TabsTrigger>
+          <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
+          <TabsTrigger value="logs">Message Logs</TabsTrigger>
+          <TabsTrigger value="test">Test Bot</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="settings">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bot Configuration</CardTitle>
-                <CardDescription>
-                  Configure your Telegram bot settings and webhook URL
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="bot-token">Bot Token (from BotFather)</Label>
-                    <Input 
-                      id="bot-token" 
-                      type="password" 
-                      placeholder="Enter your Telegram bot token" 
-                      value={botToken} 
-                      onChange={(e) => setBotToken(e.target.value)} 
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="webhook-url">Webhook URL</Label>
-                    <Input 
-                      id="webhook-url" 
-                      type="text" 
-                      placeholder="https://your-project.supabase.co/functions/v1/telegram-webhook" 
-                      value={webhookUrl} 
-                      onChange={(e) => setWebhookUrl(e.target.value)} 
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
+        <TabsContent value="setup">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bot Configuration</CardTitle>
+              <CardDescription>
+                Configure your bot token and webhook settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Webhook Status</h3>
-                  {isLoadingWebhook ? (
-                    <div className="flex items-center space-x-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Loading webhook info...</span>
-                    </div>
-                  ) : webhookInfo ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">Status:</span>
-                        {webhookInfo.result.url ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            Active
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                            Not Set
-                          </Badge>
-                        )}
-                      </div>
-                      {webhookInfo.result.url && (
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">Current URL:</span>
-                          <span className="text-sm">{webhookInfo.result.url}</span>
-                        </div>
-                      )}
-                      {webhookInfo.result.last_error_message && (
-                        <Alert variant="destructive">
-                          <AlertTriangle className="h-4 w-4" />
-                          <AlertTitle>Webhook Error</AlertTitle>
-                          <AlertDescription>
-                            {webhookInfo.result.last_error_message}
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground">
-                      No webhook information available
-                    </div>
-                  )}
+                  <Label htmlFor="botToken">Bot Token</Label>
+                  <Input 
+                    id="botToken" 
+                    value={botToken} 
+                    onChange={(e) => setBotToken(e.target.value)}
+                    placeholder="Enter your Telegram bot token"
+                    disabled
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Bot token is managed through environment variables for security
+                  </p>
                 </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={deleteWebhook}
-                  disabled={isLoadingWebhook || !webhookInfo?.result?.url}
-                >
-                  {isLoadingWebhook ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <X className="h-4 w-4 mr-2" />
-                  )}
-                  Delete Webhook
-                </Button>
-                <Button 
-                  onClick={setWebhook}
-                  disabled={isLoadingWebhook || !botToken || !webhookUrl}
-                >
-                  {isLoadingWebhook ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4 mr-2" />
-                  )}
-                  Set Webhook
-                </Button>
-              </CardFooter>
-            </Card>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="webhookUrl">Webhook URL</Label>
+                  <Input 
+                    id="webhookUrl" 
+                    value={webhookUrl} 
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://your-supabase-function-url/telegram-webhook"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    URL that Telegram will use to send messages to your bot
+                  </p>
+                </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Getting Started</CardTitle>
-                <CardDescription>
-                  Follow these steps to set up your Telegram bot
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ol className="list-decimal list-inside space-y-2">
-                  <li>Create a new bot on Telegram by messaging <strong>@BotFather</strong> on Telegram</li>
-                  <li>Use the <strong>/newbot</strong> command and follow the instructions</li>
-                  <li>Copy the bot token provided by BotFather and paste it in the Bot Token field above</li>
-                  <li>Enter the webhook URL for your Supabase function (should end with <strong>/telegram-webhook</strong>)</li>
-                  <li>Click "Set Webhook" to activate the webhook</li>
-                  <li>Start a conversation with your bot on Telegram</li>
-                  <li>Add the chat ID to the Authorized Chats tab to enable notifications</li>
-                </ol>
-              </CardContent>
-            </Card>
-          </div>
+                {webhookInfo && (
+                  <div className="space-y-2 rounded-md border p-4">
+                    <h3 className="font-medium">Current Webhook Status</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>URL:</div>
+                      <div>{webhookInfo.result.url || "Not set"}</div>
+                      
+                      <div>Pending updates:</div>
+                      <div>{webhookInfo.result.pending_update_count}</div>
+                      
+                      {webhookInfo.result.last_error_message && (
+                        <>
+                          <div>Last error:</div>
+                          <div className="text-red-500">{webhookInfo.result.last_error_message}</div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button 
+                variant="outline" 
+                onClick={deleteWebhook}
+                disabled={isSaving || !webhookUrl}
+              >
+                Delete Webhook
+              </Button>
+              <Button 
+                onClick={saveWebhookSettings}
+                disabled={isSaving || !webhookUrl}
+              >
+                {isSaving ? "Saving..." : "Save Settings"}
+              </Button>
+            </CardFooter>
+          </Card>
         </TabsContent>
 
         <TabsContent value="chats">
-          <div className="grid gap-6 grid-cols-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Authorized Chats</CardTitle>
-                <CardDescription>
-                  Manage the Telegram chats that can interact with your bot
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="new-chat-id">New Chat ID</Label>
-                      <Input 
-                        id="new-chat-id" 
-                        type="text" 
-                        placeholder="Enter Telegram chat ID" 
-                        value={newChatId} 
-                        onChange={(e) => setNewChatId(e.target.value)} 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="chat-name">Chat Name (Optional)</Label>
-                      <Input 
-                        id="chat-name" 
-                        type="text" 
-                        placeholder="Enter a name for this chat" 
-                        value={chatName} 
-                        onChange={(e) => setChatName(e.target.value)} 
-                      />
-                    </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Authorized Chats</CardTitle>
+              <CardDescription>
+                Manage chats that are allowed to use your bot
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="newChatId">Chat ID</Label>
+                    <Input 
+                      id="newChatId" 
+                      value={newChatId} 
+                      onChange={(e) => setNewChatId(e.target.value)}
+                      placeholder="Enter chat ID to authorize"
+                    />
                   </div>
-                  <Button 
-                    onClick={authorizeChat}
-                    disabled={isLoading || !newChatId}
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Check className="h-4 w-4 mr-2" />
-                    )}
-                    Authorize Chat
-                  </Button>
+                  <div>
+                    <Label htmlFor="newChatName">Chat Name (optional)</Label>
+                    <Input 
+                      id="newChatName" 
+                      value={newChatName} 
+                      onChange={(e) => setNewChatName(e.target.value)}
+                      placeholder="Enter a name for this chat"
+                    />
+                  </div>
                 </div>
+                <Button 
+                  onClick={addAuthorizedChat} 
+                  disabled={isAddingChat || !newChatId}
+                >
+                  {isAddingChat ? "Adding..." : "Add Chat"}
+                </Button>
+              </div>
 
-                <Separator className="my-4" />
-
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Chat ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Added On</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[100px] text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {authorizedChats.length === 0 ? (
                       <TableRow>
-                        <TableHead>Chat ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Added On</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableCell colSpan={5} className="text-center py-4">
+                          No authorized chats yet
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {authorizedChats.length > 0 ? (
-                        authorizedChats.map((chat) => (
-                          <TableRow key={chat.id}>
-                            <TableCell className="font-mono">{chat.chat_id}</TableCell>
-                            <TableCell>{chat.chat_name}</TableCell>
-                            <TableCell>{new Date(chat.created_at).toLocaleDateString()}</TableCell>
-                            <TableCell>
-                              {chat.is_active ? (
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  Active
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                  Inactive
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleChatActive(chat.chat_id, chat.is_active)}
-                                disabled={isLoading}
-                              >
-                                {chat.is_active ? 'Deactivate' : 'Activate'}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-4">
-                            No authorized chats found
+                    ) : (
+                      authorizedChats.map((chat) => (
+                        <TableRow key={chat.id}>
+                          <TableCell>{chat.chat_id}</TableCell>
+                          <TableCell>{chat.chat_name}</TableCell>
+                          <TableCell>{formatDateTime(chat.created_at)}</TableCell>
+                          <TableCell>
+                            <Badge variant={chat.is_active ? "success" : "destructive"}>
+                              {chat.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleChatStatus(chat.chat_id, chat.is_active)}
+                            >
+                              {chat.is_active ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                            </Button>
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="notifications">
-          <div className="grid gap-6 grid-cols-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>
-                  Configure which types of notifications each chat should receive
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>
+                Configure which notifications each chat receives
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Chat</TableHead>
+                      <TableHead>Service Calls</TableHead>
+                      <TableHead>Customer Follow-ups</TableHead>
+                      <TableHead>Inventory Alerts</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {authorizedChats.length === 0 ? (
                       <TableRow>
-                        <TableHead>Chat</TableHead>
-                        <TableHead>Service Calls</TableHead>
-                        <TableHead>Customer Follow-ups</TableHead>
-                        <TableHead>Inventory Alerts</TableHead>
+                        <TableCell colSpan={4} className="text-center py-4">
+                          No authorized chats to configure
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {authorizedChats.length > 0 ? (
-                        authorizedChats.map((chat) => {
-                          const pref = preferences.find(p => p.chat_id === chat.chat_id);
-                          return (
-                            <TableRow key={chat.id}>
-                              <TableCell className="font-medium">
-                                {chat.chat_name || chat.chat_id}
-                                {!chat.is_active && (
-                                  <Badge variant="outline" className="ml-2 bg-red-50 text-red-700 border-red-200">
-                                    Inactive
-                                  </Badge>
+                    ) : (
+                      authorizedChats.filter(chat => chat.is_active).map((chat) => {
+                        const prefs = getPreferencesForChat(chat.chat_id);
+                        return (
+                          <TableRow key={chat.id}>
+                            <TableCell>{chat.chat_name}</TableCell>
+                            <TableCell>
+                              <Switch 
+                                checked={prefs.service_calls} 
+                                onCheckedChange={() => toggleNotificationPreference(
+                                  chat.chat_id, 
+                                  "service_calls", 
+                                  prefs.service_calls
                                 )}
-                              </TableCell>
-                              <TableCell>
-                                <Switch
-                                  checked={pref?.service_calls || false}
-                                  onCheckedChange={(checked) => updateNotificationPreference(chat.chat_id, 'service_calls', checked)}
-                                  disabled={isLoading || !chat.is_active}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Switch
-                                  checked={pref?.customer_followups || false}
-                                  onCheckedChange={(checked) => updateNotificationPreference(chat.chat_id, 'customer_followups', checked)}
-                                  disabled={isLoading || !chat.is_active}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Switch
-                                  checked={pref?.inventory_alerts || false}
-                                  onCheckedChange={(checked) => updateNotificationPreference(chat.chat_id, 'inventory_alerts', checked)}
-                                  disabled={isLoading || !chat.is_active}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-center py-4">
-                            No authorized chats found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                <Separator className="my-4" />
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Send Test Message</h3>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="space-y-2 col-span-1">
-                      <Label htmlFor="chat-select">Select Chat</Label>
-                      <select
-                        id="chat-select"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={selectedChatId}
-                        onChange={(e) => setSelectedChatId(e.target.value)}
-                      >
-                        <option value="">Select a chat</option>
-                        {authorizedChats
-                          .filter(chat => chat.is_active)
-                          .map((chat) => (
-                            <option key={chat.id} value={chat.chat_id}>
-                              {chat.chat_name || chat.chat_id}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2 col-span-3">
-                      <Label htmlFor="test-message">Message</Label>
-                      <div className="flex space-x-2">
-                        <Input
-                          id="test-message"
-                          placeholder="Enter a test message"
-                          value={testMessage}
-                          onChange={(e) => setTestMessage(e.target.value)}
-                        />
-                        <Button
-                          onClick={sendTestMessage}
-                          disabled={isLoading || !selectedChatId || !testMessage}
-                        >
-                          {isLoading ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4 mr-2" />
-                          )}
-                          Send
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Switch 
+                                checked={prefs.customer_followups} 
+                                onCheckedChange={() => toggleNotificationPreference(
+                                  chat.chat_id, 
+                                  "customer_followups", 
+                                  prefs.customer_followups
+                                )}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Switch 
+                                checked={prefs.inventory_alerts} 
+                                onCheckedChange={() => toggleNotificationPreference(
+                                  chat.chat_id, 
+                                  "inventory_alerts", 
+                                  prefs.inventory_alerts
+                                )}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="logs">
@@ -667,66 +570,107 @@ const TelegramAdmin = () => {
             <CardHeader>
               <CardTitle>Message Logs</CardTitle>
               <CardDescription>
-                View recent messages sent to and from your Telegram bot
+                Recent message activity with your bot
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[500px]">
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Time</TableHead>
+                      <TableHead>Chat ID</TableHead>
+                      <TableHead>Direction</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Message</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {messageLogs.length === 0 ? (
                       <TableRow>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>Chat ID</TableHead>
-                        <TableHead>Direction</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="w-[40%]">Message</TableHead>
+                        <TableCell colSpan={5} className="text-center py-4">
+                          No message logs yet
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {messageLogs.length > 0 ? (
-                        messageLogs.map((log) => (
-                          <TableRow key={log.id}>
-                            <TableCell>{new Date(log.created_at).toLocaleString()}</TableCell>
-                            <TableCell className="font-mono">{log.chat_id}</TableCell>
-                            <TableCell>
-                              {log.direction === 'incoming' ? (
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  Incoming
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  Outgoing
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={
-                                log.processed_status === 'customer_created' 
-                                  ? "bg-green-50 text-green-700 border-green-200" 
-                                  : log.processed_status === 'unauthorized' || log.processed_status === 'invalid_customer'
-                                  ? "bg-red-50 text-red-700 border-red-200"
-                                  : "bg-gray-50 text-gray-700 border-gray-200"
-                              }>
-                                {log.processed_status.replace(/_/g, ' ')}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="max-w-xs break-words">
-                              {log.message_text}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-4">
-                            No message logs found
+                    ) : (
+                      messageLogs.map((log) => (
+                        <TableRow key={log.id}>
+                          <TableCell>{formatDateTime(log.created_at)}</TableCell>
+                          <TableCell>{log.chat_id}</TableCell>
+                          <TableCell>
+                            <Badge variant={log.direction === "incoming" ? "default" : "secondary"}>
+                              {log.direction === "incoming" ? "Received" : "Sent"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              log.processed_status === "sent" || log.processed_status === "customer_created" || log.processed_status === "valid_customer" 
+                                ? "success" 
+                                : log.processed_status === "unauthorized" || log.processed_status === "invalid_customer"
+                                ? "destructive"
+                                : "outline"
+                            }>
+                              {log.processed_status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[300px] truncate">
+                            {log.message_text}
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="test">
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Bot</CardTitle>
+              <CardDescription>
+                Send test messages to your Telegram bot
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="selectChat">Select Chat</Label>
+                  <select
+                    id="selectChat"
+                    value={selectedChatId}
+                    onChange={(e) => setSelectedChatId(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {authorizedChats
+                      .filter(chat => chat.is_active)
+                      .map((chat) => (
+                        <option key={chat.id} value={chat.chat_id}>
+                          {chat.chat_name} ({chat.chat_id})
+                        </option>
+                      ))}
+                  </select>
                 </div>
-              </ScrollArea>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="testMessage">Message</Label>
+                  <Input 
+                    id="testMessage" 
+                    value={testMessage} 
+                    onChange={(e) => setTestMessage(e.target.value)}
+                    placeholder="Enter a test message to send"
+                  />
+                </div>
+                
+                <Button 
+                  onClick={sendTestMessage}
+                  disabled={isSendingTest || !testMessage || !selectedChatId}
+                >
+                  {isSendingTest ? "Sending..." : "Send Test Message"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
