@@ -36,6 +36,7 @@ import InventoryHistory from "@/pages/inventory/InventoryHistory";
 import EngineerForm from "@/pages/EngineerForm";
 import AmcTracker from "@/pages/inventory/AmcTracker";
 import TelegramAdmin from "@/pages/TelegramAdmin";
+import Settings from "@/pages/Settings";
 import SmartAssistant from "@/pages/SmartAssistant";
 // Quotation pages
 import Quotations from "@/pages/sales/Quotations";
@@ -110,7 +111,8 @@ const AppRoutes = () => {
         {/* Smart Assistant */}
         <Route path="/smart-assistant" element={<ProtectedRoute><SmartAssistant /></ProtectedRoute>} />
 
-        {/* Telegram Admin */}
+        {/* Settings & Admin Routes */}
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/telegram-admin" element={<ProtectedRoute><TelegramAdmin /></ProtectedRoute>} />
       </Route>
     </Routes>
