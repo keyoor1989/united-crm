@@ -65,7 +65,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
       // Check for low stock items and send alerts
       if (data && data.length > 0) {
         // Safely check for low stock items with type checking
-        const lowStockItems = data.filter(item => 
+        const lowStockItems = data.filter((item): item is (typeof data)[0] => 
           typeof item === 'object' && 
           item !== null && 
           'quantity' in item && 

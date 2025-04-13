@@ -52,11 +52,7 @@ const InventoryBrands = () => {
 
         if (error) {
           console.error("Error fetching brands:", error);
-          toast({
-            variant: "destructive",
-            title: "Failed to fetch brands",
-            description: "There was an error loading brands. Please try again."
-          });
+          toast.error("Failed to fetch brands. Please try again.");
         } else {
           const brandData = (data || []).map(brand => dbAdapter.adaptBrand(brand));
           setBrands(brandData);
@@ -76,11 +72,7 @@ const InventoryBrands = () => {
 
         if (error) {
           console.error("Error fetching models:", error);
-          toast({
-            title: "Error",
-            description: "Failed to fetch models. Please try again.",
-            variant: "destructive",
-          });
+          toast.error("Failed to fetch models. Please try again.");
         } else {
           const modelData = (data || []).map(model => dbAdapter.adaptModel(model));
           setModels(modelData);
