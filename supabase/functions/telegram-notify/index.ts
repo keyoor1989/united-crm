@@ -7,15 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Initialize Supabase client
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const telegramBotToken = Deno.env.get('telegram_key') || '';
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Get the Telegram bot token from environment variables
-const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
-
-serve(async (req: Request) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,178 +22,228 @@ serve(async (req: Request) => {
   try {
     const { notification_type, data } = await req.json();
 
-    if (!telegramBotToken) {
-      return new Response(JSON.stringify({ error: 'Telegram bot token not configured' }), {
-        status: 400,
+    if (!notification_type || !data) {
+      return new Response(JSON.stringify({ 
+        error: 'notification_type and data are required' 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400
       });
     }
 
-    // Get authorized chats with their notification preferences
-    const { data: authorizedChats, error: chatError } = await supabase
+    // Get all authorized and active chats
+    const { data: chats, error: chatError } = await supabase
       .from('telegram_authorized_chats')
-      .select(`
-        chat_id,
-        telegram_notification_preferences (
-          service_calls,
-          customer_followups,
-          inventory_alerts
-        )
-      `)
+      .select('chat_id')
       .eq('is_active', true);
 
-    if (chatError || !authorizedChats || authorizedChats.length === 0) {
-      return new Response(JSON.stringify({ error: 'No authorized chats found' }), {
-        status: 404,
+    if (chatError) {
+      throw new Error(`Error fetching chats: ${chatError.message}`);
+    }
+
+    if (!chats || chats.length === 0) {
+      return new Response(JSON.stringify({ 
+        message: 'No active chats to notify' 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
       });
     }
 
-    // Prepare the notification message based on the type
-    let message = '';
-    
-    switch (notification_type) {
-      case 'service_call':
-        message = formatServiceCallNotification(data);
-        break;
-      case 'follow_up':
-        message = formatFollowUpNotification(data);
-        break;
-      case 'inventory_alert':
-        message = formatInventoryAlertNotification(data);
-        break;
-      case 'new_customer':
-        message = formatNewCustomerNotification(data);
-        break;
-      default:
-        return new Response(JSON.stringify({ error: 'Invalid notification type' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+    // Get notification preferences for each chat
+    const { data: preferences, error: prefError } = await supabase
+      .from('telegram_notification_preferences')
+      .select('*');
+
+    if (prefError) {
+      throw new Error(`Error fetching preferences: ${prefError.message}`);
     }
 
-    // Send notifications to all authorized chats based on their preferences
-    const sendPromises = authorizedChats.map(async (chat) => {
-      const preferences = chat.telegram_notification_preferences[0] || {
-        service_calls: true,
-        customer_followups: true,
-        inventory_alerts: false
-      };
-
-      // Check if the chat should receive this type of notification
-      let shouldSend = false;
-      if (notification_type === 'service_call' && preferences.service_calls) shouldSend = true;
-      if (notification_type === 'follow_up' && preferences.customer_followups) shouldSend = true;
-      if (notification_type === 'inventory_alert' && preferences.inventory_alerts) shouldSend = true;
-      if (notification_type === 'new_customer') shouldSend = true; // Always send new customer notifications
-
-      if (shouldSend) {
-        await sendTelegramMessage(chat.chat_id, message);
-        return { chat_id: chat.chat_id, sent: true };
-      }
-
-      return { chat_id: chat.chat_id, sent: false };
+    const preferenceMap = new Map();
+    preferences?.forEach(pref => {
+      preferenceMap.set(pref.chat_id, pref);
     });
 
-    const results = await Promise.all(sendPromises);
+    // Generate notification message based on type
+    const { message, prefKey } = generateNotificationMessage(notification_type, data);
 
-    return new Response(JSON.stringify({ ok: true, results }), {
+    // Track successful sends
+    const results = [];
+
+    // Send notification to each eligible chat based on preferences
+    for (const chat of chats) {
+      // Check if chat has preference for this notification type
+      const chatPrefs = preferenceMap.get(chat.chat_id) || {};
+      
+      // Check if notification should be sent to this chat
+      if (chatPrefs[prefKey] === true) {
+        const result = await sendTelegramMessage(chat.chat_id, message);
+        results.push(result);
+      }
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: `Notification sent to ${results.length} chats` 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200
     });
   } catch (error) {
-    console.error('Error in telegram-notify function:', error);
-    
-    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
-      status: 500,
+    console.error('Error in telegram-notify:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
     });
   }
 });
 
-function formatServiceCallNotification(data) {
-  return `🔧 *New Service Call*\n\n` +
-    `Customer: ${data.customer_name}\n` +
-    `Issue: ${data.issue_description || 'Not specified'}\n` +
-    `Priority: ${data.priority || 'Normal'}\n` +
-    `Machine: ${data.machine_model || 'Not specified'}\n` +
-    `Location: ${data.location || 'Not specified'}\n` +
-    `Phone: ${data.phone || 'Not specified'}`;
+// Generate notification message based on type
+function generateNotificationMessage(type: string, data: any): { message: string, prefKey: string } {
+  switch (type) {
+    case 'service_call':
+      return {
+        message: `
+🔧 <b>New Service Call</b>
+
+Customer: ${data.customer_name}
+Location: ${data.location}
+Issue: ${data.issue_description}
+Priority: ${data.priority}
+        `,
+        prefKey: 'service_calls'
+      };
+
+    case 'follow_up':
+      return {
+        message: `
+📝 <b>Customer Follow-up</b>
+
+Customer: ${data.customer_name}
+Type: ${data.type}
+Notes: ${data.notes || 'No notes provided'}
+Due: ${new Date(data.date).toLocaleString()}
+Status: ${data.status}
+        `,
+        prefKey: 'customer_followups'
+      };
+
+    case 'inventory_alert':
+      return {
+        message: `
+⚠️ <b>Inventory Alert</b>
+
+Item: ${data.part_name}
+Current Stock: ${data.quantity}
+Min Stock Level: ${data.min_stock}
+Action Required: Reorder Soon
+        `,
+        prefKey: 'inventory_alerts'
+      };
+      
+    case 'new_customer':
+      return {
+        message: `
+🆕 <b>New Customer Added</b>
+
+Name: ${data.name}
+Location: ${data.location}
+Phone: ${data.phone}
+Source: ${data.source || 'Website'}
+        `,
+        prefKey: 'customer_followups'
+      };
+      
+    case 'task_assignment':
+      return {
+        message: `
+📋 <b>New Task Assigned</b>
+
+Engineer: ${data.engineer_name || 'Not assigned'}
+Customer: ${data.customer_name}
+Task: ${data.description || data.notes}
+Due: ${new Date(data.date || data.deadline).toLocaleString()}
+        `,
+        prefKey: 'service_calls'
+      };
+      
+    case 'quotation_created':
+      return {
+        message: `
+💰 <b>New Quotation Created</b>
+
+Customer: ${data.customer_name}
+Products: ${data.items?.length || 0} items
+Total: ₹${data.grand_total?.toLocaleString() || '0'}
+Status: ${data.status || 'Draft'}
+        `,
+        prefKey: 'customer_followups'
+      };
+
+    default:
+      return {
+        message: `
+📣 <b>Notification</b>
+
+Type: ${type}
+Details: Custom notification
+Time: ${new Date().toLocaleString()}
+        `,
+        prefKey: 'service_calls' // Default preference
+      };
+  }
 }
 
-function formatFollowUpNotification(data) {
-  return `📅 *Reminder: Customer Follow-up*\n\n` +
-    `Customer: ${data.customer_name}\n` +
-    `Type: ${data.type || 'General'}\n` +
-    `Date: ${new Date(data.date).toLocaleDateString()}\n` +
-    `Notes: ${data.notes || 'None'}\n`;
-}
-
-function formatInventoryAlertNotification(data) {
-  return `⚠️ *Inventory Alert: Low Stock*\n\n` +
-    `Item: ${data.part_name}\n` +
-    `Current Quantity: ${data.quantity}\n` +
-    `Minimum Stock: ${data.min_stock}\n` +
-    `Category: ${data.category}\n` +
-    `Brand: ${data.brand || 'Not specified'}\n` +
-    `Warehouse: ${data.warehouse_name || 'Main'}`;
-}
-
-function formatNewCustomerNotification(data) {
-  return `👤 *New Customer Added*\n\n` +
-    `Name: ${data.name}\n` +
-    `Phone: ${data.phone}\n` +
-    `Location: ${data.area || data.location || 'Not specified'}\n` +
-    (data.email ? `Email: ${data.email}\n` : '') +
-    `Source: ${data.source || 'Direct Entry'}`;
-}
-
-async function sendTelegramMessage(chatId: string, text: string) {
+// Send a message to a Telegram chat
+async function sendTelegramMessage(chat_id: string, text: string) {
   try {
-    const apiUrl = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
-    const response = await fetch(apiUrl, {
+    const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        chat_id: chatId,
-        text: text,
-        parse_mode: 'Markdown',
+        chat_id,
+        text,
+        parse_mode: 'HTML',
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Telegram API error:', errorData);
-      throw new Error(`Telegram API error: ${errorData.description}`);
-    }
-
+    const responseData = await response.json();
+    
     // Log the outgoing message
-    await supabase
-      .from('telegram_message_logs')
-      .insert({
-        chat_id: chatId,
+    if (responseData.ok) {
+      await supabase.from('telegram_message_logs').insert({
+        chat_id,
         message_text: text,
         message_type: 'notification',
         direction: 'outgoing',
-        processed_status: 'sent'
+        processed_status: 'sent',
       });
+    } else {
+      console.error('Failed to send Telegram message:', responseData);
+      await supabase.from('telegram_message_logs').insert({
+        chat_id,
+        message_text: text,
+        message_type: 'notification',
+        direction: 'outgoing',
+        processed_status: 'failed',
+      });
+    }
 
-    return true;
+    return responseData;
   } catch (error) {
     console.error('Error sending Telegram message:', error);
     
-    // Log the failed attempt
-    await supabase
-      .from('telegram_message_logs')
-      .insert({
-        chat_id: chatId,
-        message_text: text,
-        message_type: 'notification',
-        direction: 'outgoing',
-        processed_status: 'failed'
-      });
-      
+    // Log error
+    await supabase.from('telegram_message_logs').insert({
+      chat_id,
+      message_text: text,
+      message_type: 'notification',
+      direction: 'outgoing',
+      processed_status: 'error',
+    });
+    
     throw error;
   }
 }

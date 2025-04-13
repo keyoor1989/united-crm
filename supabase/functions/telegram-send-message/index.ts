@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { chat_id, text } = await req.json();
+    const { chat_id, text, parse_mode = 'HTML', disable_notification = false } = await req.json();
 
     if (!chat_id || !text) {
       return new Response(
@@ -70,7 +70,8 @@ serve(async (req) => {
       body: JSON.stringify({
         chat_id,
         text,
-        parse_mode: 'HTML',
+        parse_mode,
+        disable_notification
       }),
     });
 
@@ -90,6 +91,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
+    console.error("Error in telegram-send-message:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
