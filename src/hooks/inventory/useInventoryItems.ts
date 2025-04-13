@@ -127,8 +127,8 @@ export const useInventoryItems = (warehouseId: string | null) => {
           try {
             const firstLowStockItem = lowStockItems[0];
             
-            // Use the type guard to ensure we have a valid item
-            if (isValidDbInventoryItem(firstLowStockItem)) {
+            // Use the type guard to ensure we have a valid item before sending an alert
+            if (firstLowStockItem && isValidDbInventoryItem(firstLowStockItem)) {
               notifyInventoryAlert(firstLowStockItem);
             }
           } catch (error) {
@@ -150,7 +150,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
               return null;
             }
             
-            // Check if dbItem is an error object
+            // Check if dbItem has an error property which would indicate it's an error object
             if ('error' in dbItem && dbItem.error === true) {
               console.error("Error object received instead of item:", dbItem);
               return null;
