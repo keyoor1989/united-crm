@@ -12,7 +12,7 @@ import {
   MoreHorizontal, Eye, FileDown, FilePenLine, 
   Trash2, CheckSquare, X, FileText 
 } from "lucide-react";
-import { PurchaseOrder } from "@/types/sales";
+import { PurchaseOrder, PurchaseOrderStatus } from "@/types/sales";
 import { generatePurchaseOrderPdf } from "@/utils/pdf/purchaseOrderPdfGenerator";
 import { updatePurchaseOrder, deletePurchaseOrder } from "@/services/purchaseOrderService";
 import { useToast } from "@/components/ui/use-toast";

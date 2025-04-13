@@ -76,6 +76,7 @@ const mockVendor: Vendor = {
   phone: "9876543210",
   email: "info@ajanta.com",
   address: "142, Industrial Area, Indore, MP",
+  contactPerson: "Rajesh Kumar",
   createdAt: "2024-01-15"
 };
 
@@ -123,7 +124,7 @@ const mockPerformanceData: VendorPerformanceMetric[] = [
 ];
 
 const VendorPerformance = () => {
-  const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
+  const { vendors: salesVendors, addVendor, updateVendor, deleteVendor } = useVendors();
   const [activeTab, setActiveTab] = useState("management");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
@@ -139,13 +140,25 @@ const VendorPerformance = () => {
     address: "",
   });
   
+  // Convert from sales vendors to inventory vendors
+  const vendors: Vendor[] = salesVendors.map(vendor => ({
+    id: vendor.id,
+    name: vendor.name,
+    contactPerson: vendor.contactPerson,
+    email: vendor.email,
+    phone: vendor.phone,
+    address: vendor.address,
+    gstNo: '',
+    createdAt: new Date().toISOString().split('T')[0]
+  }));
+  
   // Performance tab states
   const mockTimePeriods = ["Q1 2025", "Q4 2024", "Q3 2024"];
   
   const filteredVendors = vendors.filter(vendor => 
     searchQuery ? 
       vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.gstNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vendor.gstNo && vendor.gstNo.toLowerCase().includes(searchQuery.toLowerCase())) ||
       vendor.email.toLowerCase().includes(searchQuery.toLowerCase())
     : true
   );
@@ -193,27 +206,29 @@ const VendorPerformance = () => {
     }
     
     if (selectedVendor) {
-      const updatedVendor = { 
-        ...selectedVendor, 
+      // Convert from inventory vendor to sales vendor format
+      const salesVendor = {
+        id: selectedVendor.id,
         name: formData.name,
-        gstNo: formData.gstNo,
+        contactPerson: selectedVendor.contactPerson,
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
       };
-      updateVendor(updatedVendor);
+      
+      updateVendor(salesVendor);
       toast.success("Vendor updated successfully");
     } else {
-      const newVendor: Vendor = {
-        id: `vendor${Date.now()}`,
+      // Convert from form data to sales vendor format for adding
+      const newSalesVendor = {
         name: formData.name,
-        gstNo: formData.gstNo,
+        contactPerson: "",
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
-        createdAt: new Date().toISOString().split('T')[0],
       };
-      addVendor(newVendor);
+      
+      addVendor(newSalesVendor);
       toast.success("Vendor added successfully");
     }
     

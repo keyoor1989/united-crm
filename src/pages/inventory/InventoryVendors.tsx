@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,13 +68,25 @@ const mockPurchaseHistory = [
 ];
 
 const InventoryVendors = () => {
-  const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
+  const { vendors: salesVendors, addVendor, updateVendor, deleteVendor } = useVendors();
   const [activeTab, setActiveTab] = useState("vendors");
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [vendorToDelete, setVendorToDelete] = useState<string | null>(null);
+  
+  // Convert from sales vendors to inventory vendors
+  const vendors: Vendor[] = salesVendors.map(vendor => ({
+    id: vendor.id,
+    name: vendor.name,
+    contactPerson: vendor.contactPerson,
+    email: vendor.email,
+    phone: vendor.phone,
+    address: vendor.address,
+    gstNo: '',
+    createdAt: new Date().toISOString().split('T')[0]
+  }));
   
   const [formData, setFormData] = useState({
     id: "",
@@ -87,7 +100,7 @@ const InventoryVendors = () => {
   const filteredVendors = vendors.filter(vendor => 
     searchQuery ? 
       vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vendor.gstNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (vendor.gstNo && vendor.gstNo.toLowerCase().includes(searchQuery.toLowerCase())) ||
       vendor.email.toLowerCase().includes(searchQuery.toLowerCase())
     : true
   );
@@ -115,7 +128,7 @@ const InventoryVendors = () => {
     setFormData({
       id: vendor.id,
       name: vendor.name,
-      gstNo: vendor.gstNo,
+      gstNo: vendor.gstNo || "",
       phone: vendor.phone,
       email: vendor.email,
       address: vendor.address,
@@ -135,27 +148,29 @@ const InventoryVendors = () => {
     }
     
     if (selectedVendor) {
-      const updatedVendor = { 
-        ...selectedVendor, 
+      // Convert from inventory vendor to sales vendor format
+      const salesVendor = {
+        id: selectedVendor.id,
         name: formData.name,
-        gstNo: formData.gstNo,
+        contactPerson: selectedVendor.contactPerson,
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
       };
-      updateVendor(updatedVendor);
+      
+      updateVendor(salesVendor);
       toast.success("Vendor updated successfully");
     } else {
-      const newVendor: Vendor = {
-        id: `vendor${Date.now()}`,
+      // Convert from form data to sales vendor format for adding
+      const newSalesVendor = {
         name: formData.name,
-        gstNo: formData.gstNo,
+        contactPerson: "",
         phone: formData.phone,
         email: formData.email,
         address: formData.address,
-        createdAt: new Date().toISOString().split('T')[0],
       };
-      addVendor(newVendor);
+      
+      addVendor(newSalesVendor);
       toast.success("Vendor added successfully");
     }
     

@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Quotation, QuotationStatus } from '@/types/sales';
 import { v4 as uuidv4 } from 'uuid';
 
+// Type for JSON serialization
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
+
 // Fetch all quotations
 export const fetchQuotations = async (): Promise<Quotation[]> => {
   const { data, error } = await supabase
@@ -21,7 +24,7 @@ export const fetchQuotations = async (): Promise<Quotation[]> => {
     quotationNumber: quotation.quotation_number,
     customerId: quotation.customer_id || '',
     customerName: quotation.customer_name,
-    items: quotation.items || [],
+    items: Array.isArray(quotation.items) ? quotation.items : [],
     subtotal: quotation.subtotal,
     totalGst: quotation.total_gst,
     grandTotal: quotation.grand_total,
@@ -55,7 +58,7 @@ export const fetchQuotationById = async (id: string): Promise<Quotation | null> 
     quotationNumber: data.quotation_number,
     customerId: data.customer_id || '',
     customerName: data.customer_name,
-    items: data.items || [],
+    items: Array.isArray(data.items) ? data.items : [],
     subtotal: data.subtotal,
     totalGst: data.total_gst,
     grandTotal: data.grand_total,
@@ -74,7 +77,7 @@ export const createQuotation = async (quotation: Omit<Quotation, 'id'>): Promise
     quotation_number: quotation.quotationNumber,
     customer_id: quotation.customerId,
     customer_name: quotation.customerName,
-    items: quotation.items,
+    items: quotation.items, // JSON serialization happens automatically
     subtotal: quotation.subtotal,
     total_gst: quotation.totalGst,
     grand_total: quotation.grandTotal,
@@ -102,7 +105,7 @@ export const createQuotation = async (quotation: Omit<Quotation, 'id'>): Promise
     quotationNumber: data.quotation_number,
     customerId: data.customer_id || '',
     customerName: data.customer_name,
-    items: data.items || [],
+    items: Array.isArray(data.items) ? data.items : [],
     subtotal: data.subtotal,
     totalGst: data.total_gst,
     grandTotal: data.grand_total,
@@ -150,7 +153,7 @@ export const updateQuotation = async (id: string, updates: Partial<Quotation>): 
     quotationNumber: data.quotation_number,
     customerId: data.customer_id || '',
     customerName: data.customer_name,
-    items: data.items || [],
+    items: Array.isArray(data.items) ? data.items : [],
     subtotal: data.subtotal,
     totalGst: data.total_gst,
     grandTotal: data.grand_total,

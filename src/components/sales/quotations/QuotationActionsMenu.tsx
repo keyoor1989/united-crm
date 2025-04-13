@@ -12,7 +12,7 @@ import {
   MoreHorizontal, Eye, FileDown, FilePenLine, 
   Trash2, CheckCircle, X, ShoppingBasket 
 } from "lucide-react";
-import { Quotation } from "@/types/sales";
+import { Quotation, QuotationStatus } from "@/types/sales";
 import { generateQuotationPdf } from "@/utils/pdf/quotationPdfGenerator";
 import { updateQuotation, deleteQuotation } from "@/services/quotationService";
 import { useToast } from "@/components/ui/use-toast";

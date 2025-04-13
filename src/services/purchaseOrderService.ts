@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { PurchaseOrder, PurchaseOrderStatus } from '@/types/sales';
 import { v4 as uuidv4 } from 'uuid';
 
+// Type for JSON serialization
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
+
 // Fetch all purchase orders
 export const fetchPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
   const { data, error } = await supabase
@@ -21,7 +24,7 @@ export const fetchPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
     poNumber: order.po_number,
     vendorId: order.vendor_id || '',
     vendorName: order.vendor_name,
-    items: order.items || [],
+    items: Array.isArray(order.items) ? order.items : [],
     subtotal: order.subtotal,
     totalGst: order.total_gst,
     grandTotal: order.grand_total,
@@ -55,7 +58,7 @@ export const fetchPurchaseOrderById = async (id: string): Promise<PurchaseOrder 
     poNumber: data.po_number,
     vendorId: data.vendor_id || '',
     vendorName: data.vendor_name,
-    items: data.items || [],
+    items: Array.isArray(data.items) ? data.items : [],
     subtotal: data.subtotal,
     totalGst: data.total_gst,
     grandTotal: data.grand_total,
@@ -74,7 +77,7 @@ export const createPurchaseOrder = async (order: Omit<PurchaseOrder, 'id'>): Pro
     po_number: order.poNumber,
     vendor_id: order.vendorId,
     vendor_name: order.vendorName,
-    items: order.items,
+    items: order.items, // JSON serialization happens automatically
     subtotal: order.subtotal,
     total_gst: order.totalGst,
     grand_total: order.grandTotal,
@@ -102,7 +105,7 @@ export const createPurchaseOrder = async (order: Omit<PurchaseOrder, 'id'>): Pro
     poNumber: data.po_number,
     vendorId: data.vendor_id || '',
     vendorName: data.vendor_name,
-    items: data.items || [],
+    items: Array.isArray(data.items) ? data.items : [],
     subtotal: data.subtotal,
     totalGst: data.total_gst,
     grandTotal: data.grand_total,
@@ -150,7 +153,7 @@ export const updatePurchaseOrder = async (id: string, updates: Partial<PurchaseO
     poNumber: data.po_number,
     vendorId: data.vendor_id || '',
     vendorName: data.vendor_name,
-    items: data.items || [],
+    items: Array.isArray(data.items) ? data.items : [],
     subtotal: data.subtotal,
     totalGst: data.total_gst,
     grandTotal: data.grand_total,
