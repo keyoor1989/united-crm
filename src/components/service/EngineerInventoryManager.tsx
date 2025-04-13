@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,6 @@ const EngineerInventoryManager = ({
   const [returnCondition, setReturnCondition] = useState<string>("Good");
   const [returnNotes, setReturnNotes] = useState<string>("");
   
-  // Handle issuing an item to an engineer
   const handleIssueItem = async () => {
     try {
       if (!selectedEngineerId || !selectedItemId || quantity <= 0) {
@@ -72,12 +70,11 @@ const EngineerInventoryManager = ({
         return;
       }
       
-      // Prepare the data for insertion
       const issueData = {
         engineer_id: selectedEngineerId,
         engineer_name: engineer.name,
         item_id: selectedItemId,
-        item_name: item.part_name,
+        item_name: item.part_name || item.name,
         quantity: quantity,
         assigned_date: new Date().toISOString(),
         warehouse_id: selectedWarehouse,
@@ -88,7 +85,8 @@ const EngineerInventoryManager = ({
         model_brand: modelBrand || null
       };
       
-      // Insert into database
+      console.log("Issuing item with data:", issueData);
+      
       const { error } = await supabase
         .from('engineer_inventory')
         .insert(issueData);
@@ -97,10 +95,9 @@ const EngineerInventoryManager = ({
       
       toast({
         title: "Success",
-        description: `${quantity} ${item.part_name} issued to ${engineer.name}`,
+        description: `${quantity} ${item.part_name || item.name} issued to ${engineer.name}`,
       });
       
-      // Reset form
       setSelectedEngineerId("");
       setSelectedItemId("");
       setQuantity(1);
@@ -118,7 +115,6 @@ const EngineerInventoryManager = ({
     }
   };
   
-  // Handle returning an item to warehouse
   const handleReturnItem = async () => {
     try {
       if (!returnItemId || returnQuantity <= 0) {
@@ -150,7 +146,6 @@ const EngineerInventoryManager = ({
         return;
       }
       
-      // Prepare return data
       const returnData = {
         engineer_id: inventoryItem.engineerId,
         engineer_name: inventoryItem.engineerName,
@@ -167,7 +162,6 @@ const EngineerInventoryManager = ({
           : "Main Warehouse"
       };
       
-      // Insert return record
       const { error: returnError } = await supabase
         .from('inventory_returns')
         .insert(returnData);
@@ -179,7 +173,6 @@ const EngineerInventoryManager = ({
         description: `${returnQuantity} ${inventoryItem.itemName} returned to warehouse`,
       });
       
-      // Reset form
       setReturnItemId("");
       setReturnQuantity(1);
       setReturnReason("Unused");
@@ -197,7 +190,6 @@ const EngineerInventoryManager = ({
     }
   };
   
-  // Group inventory items by engineer
   const groupedInventory = engineers
     .filter(engineer => engineerInventory.some(item => item.engineerId === engineer.id))
     .map(engineer => {
@@ -307,7 +299,6 @@ const EngineerInventoryManager = ({
         )}
       </CardContent>
       
-      {/* Issue Items Dialog */}
       <Dialog open={showIssueDialog} onOpenChange={setShowIssueDialog}>
         <DialogContent>
           <DialogHeader>
@@ -349,7 +340,7 @@ const EngineerInventoryManager = ({
                 <SelectContent>
                   {inventoryItems.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.part_name} (Stock: {item.quantity})
+                      {item.part_name || item.name} (Stock: {item.quantity || item.currentStock})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -400,7 +391,6 @@ const EngineerInventoryManager = ({
         </DialogContent>
       </Dialog>
       
-      {/* Return Items Dialog */}
       <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
         <DialogContent>
           <DialogHeader>

@@ -69,7 +69,7 @@ const IssuedItemsTable = ({ items, isLoading }: IssuedItemsTableProps) => {
               <TableCell>{new Date(issue.lastUpdated).toLocaleDateString()}</TableCell>
               <TableCell>
                 <Badge variant="outline">
-                  Main Warehouse
+                  {issue.warehouseSource || "Main Warehouse"}
                 </Badge>
               </TableCell>
             </TableRow>

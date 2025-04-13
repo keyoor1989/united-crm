@@ -14,6 +14,7 @@ export interface EngineerInventoryItem {
   modelBrand: string | null;
   lastUpdated: string;
   createdAt: string;
+  warehouseSource?: string;
 }
 
 export const useEngineerInventory = () => {
@@ -27,6 +28,8 @@ export const useEngineerInventory = () => {
         
       if (error) throw error;
       
+      console.log("Issued items raw:", data);
+      
       // Transform the data to match the expected format
       const transformedData = data.map(item => ({
         id: item.id,
@@ -39,8 +42,11 @@ export const useEngineerInventory = () => {
         modelNumber: item.model_number,
         modelBrand: item.model_brand,
         lastUpdated: item.assigned_date,
-        createdAt: item.created_at
+        createdAt: item.created_at,
+        warehouseSource: item.warehouse_source
       }));
+      
+      console.log("Transformed issued items:", transformedData);
       
       return transformedData as EngineerInventoryItem[];
     }
