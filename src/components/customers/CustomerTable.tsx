@@ -191,8 +191,10 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                     <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
                     <Badge variant="outline" className="bg-slate-50">+{customer.machines.length - 1} more</Badge>
                   </>
-                ) : (
+                ) : customer.machines.length === 1 ? (
                   <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">No machines</span>
                 )}
               </div>
             </TableCell>
@@ -231,7 +233,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white">
+                  <DropdownMenuContent align="end" className="bg-white z-50">
                     <DropdownMenuItem onClick={() => handleViewDetails(customer.id)}>
                       View Details
                     </DropdownMenuItem>
