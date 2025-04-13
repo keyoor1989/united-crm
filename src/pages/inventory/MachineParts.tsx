@@ -29,10 +29,17 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Filter, Download, Printer, MoreHorizontal, Trash } from "lucide-react";
+import { Search, Plus, Filter, Download, Printer, MoreHorizontal, Trash, Edit } from "lucide-react";
 import { InventoryItem } from "@/types/inventory";
 import OpeningStockEntryForm from "@/components/inventory/OpeningStockEntryForm";
 import { useInventoryItems, useDeleteInventoryItem } from "@/hooks/inventory/useInventoryItems";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 const MachineParts = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,6 +47,8 @@ const MachineParts = () => {
   const [selectedBrand, setSelectedBrand] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
   
   const { items, isLoading, error } = useInventoryItems(null);
   const deleteItemMutation = useDeleteInventoryItem();
@@ -49,8 +58,17 @@ const MachineParts = () => {
     setIsAddDialogOpen(false);
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    deleteItemMutation.mutate(itemId);
+  const openDeleteDialog = (item: InventoryItem) => {
+    setItemToDelete(item);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteItem = () => {
+    if (itemToDelete) {
+      deleteItemMutation.mutate(itemToDelete.id);
+      setIsDeleteDialogOpen(false);
+      setItemToDelete(null);
+    }
   };
 
   const filteredItems = items.filter(item => {
@@ -207,9 +225,26 @@ const MachineParts = () => {
                         </TableCell>
                         <TableCell>₹{item.unitCost?.toLocaleString() || "0"}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => openDeleteDialog(item)}
+                              >
+                                <Trash className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
@@ -287,6 +322,31 @@ const MachineParts = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <OpeningStockEntryForm
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onAddPart={handleAddItem}
+      />
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {itemToDelete?.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteItem}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
