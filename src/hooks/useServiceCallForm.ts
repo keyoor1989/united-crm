@@ -12,23 +12,25 @@ import { notifyServiceCall } from "@/services/telegramService";
 
 const serviceCallFormSchema = z.object({
   customer: z.object({
-    id: z.string(),
-    name: z.string(),
-    phone: z.string(),
+    id: z.string().optional(),
+    name: z.string().optional(),
+    phone: z.string().optional(),
     location: z.string().optional(),
   }),
   machine: z.object({
-    model: z.string(),
+    model: z.string().optional(),
     serial: z.string().optional(),
   }),
   issueType: z.string().min(1, {
     message: "Please select an issue type.",
-  }),
+  }).optional(),
   issueDetails: z.string().min(10, {
     message: "Issue details must be at least 10 characters.",
-  }),
-  callType: z.string(),
-  priority: z.string(),
+  }).optional(),
+  callType: z.string().optional(),
+  priority: z.string().optional(),
+  serviceCharge: z.number().optional().default(0),
+  engineerId: z.string().optional(),
   id: z.string().optional(),
 });
 
@@ -40,11 +42,11 @@ export const useServiceCallForm = () => {
   const { toast } = useToast();
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | null>(null);
   const [selectedMachine, setSelectedMachine] = useState<any | null>(null);
-  const [customerMachines, setCustomerMachines] = useState([]);
-  const [slaTime, setSlaTime] = useState<string | null>(null);
+  const [customerMachines, setCustomerMachines] = useState<any[]>([]);
+  const [slaTime, setSlaTime] = useState<number | null>(null);
   const [showCustomerSearch, setShowCustomerSearch] = useState(true);
   const [assignEngineerNow, setAssignEngineerNow] = useState(false);
-  const [engineers, setEngineers] = useState([]);
+  const [engineers, setEngineers] = useState<any[]>([]);
 
   const form = useForm<ServiceCallFormData>({
     resolver: zodResolver(serviceCallFormSchema),
@@ -53,6 +55,7 @@ export const useServiceCallForm = () => {
         id: "",
         name: "",
         phone: "",
+        location: "",
       },
       machine: {
         model: "",
@@ -62,6 +65,7 @@ export const useServiceCallForm = () => {
       issueDetails: "",
       callType: "On-Site",
       priority: "Medium",
+      serviceCharge: 0,
     },
   });
 
@@ -74,19 +78,67 @@ export const useServiceCallForm = () => {
     });
     setSelectedCustomer(customer);
     
-    // Fetch customer machines and engineers
-    // This would be implemented here
+    // Fetch customer machines
+    const fetchCustomerMachines = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("customer_machines")
+          .select("*")
+          .eq("customer_id", customer.id);
+        
+        if (error) throw error;
+        setCustomerMachines(data || []);
+      } catch (err) {
+        console.error("Error fetching customer machines:", err);
+      }
+    };
+
+    // Fetch available engineers
+    const fetchEngineers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("engineers")
+          .select("*")
+          .eq("status", "Available");
+        
+        if (error) throw error;
+        setEngineers(data || []);
+      } catch (err) {
+        console.error("Error fetching engineers:", err);
+      }
+    };
+
+    fetchCustomerMachines();
+    fetchEngineers();
+    
+    // Set default SLA time based on customer type/priority
+    setSlaTime(4); // Default 4 hours SLA
   }, [form]);
 
   const handleMachineChange = useCallback((machineId: string) => {
-    // Handle machine selection
-    // This would be implemented here
-  }, []);
+    const machine = customerMachines.find(m => m.machine_name === machineId);
+    if (machine) {
+      form.setValue("machine.model", machine.machine_name);
+      form.setValue("machine.serial", machine.machine_serial || "");
+      setSelectedMachine(machine);
+    }
+  }, [customerMachines, form]);
 
   const autoAssignEngineer = useCallback(() => {
-    // Auto assign engineer logic
-    // This would be implemented here
-  }, []);
+    if (engineers.length > 0) {
+      // Simple auto-assignment - just picks the first available engineer
+      const engineer = engineers[0];
+      form.setValue("engineerId", engineer.id);
+      toast({
+        description: `Auto-assigned to ${engineer.name}`
+      });
+    } else {
+      toast({
+        description: "No available engineers found",
+        variant: "destructive"
+      });
+    }
+  }, [engineers, form, toast]);
 
   const onSubmit = async (formData: ServiceCallFormData) => {
     setSubmitting(true);
@@ -104,6 +156,8 @@ export const useServiceCallForm = () => {
         location: formData.customer?.location,
         status: "Open",
         serial_number: formData.machine?.serial || null,
+        service_charge: formData.serviceCharge || 0,
+        engineer_id: assignEngineerNow ? formData.engineerId : null,
       };
 
       const { data, error } = await supabase
@@ -118,15 +172,13 @@ export const useServiceCallForm = () => {
       await notifyServiceCall(serviceCallData);
 
       toast({
-        title: "Success",
         description: "Service call created successfully"
       });
       
       navigate("/service");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating service call:", error);
       toast({
-        title: "Error",
         description: "Failed to create service call",
         variant: "destructive"
       });

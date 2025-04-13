@@ -1,22 +1,35 @@
-import React from "react";
+
+import React, { useEffect } from "react";
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UseFormReturn } from "react-hook-form";
 import { ServiceCallFormData } from "@/hooks/useServiceCallForm";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CustomerType } from "@/types/customer";
+import { useNavigate } from "react-router-dom";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Loader2, Save } from "lucide-react";
 
 interface IssueSectionProps {
   form: UseFormReturn<ServiceCallFormData>;
   isSubmitting: boolean;
-  selectedCustomer: CustomerType;
+  selectedCustomer: CustomerType | null;
   engineers: any[];
   assignEngineerNow: boolean;
   setAssignEngineerNow: (value: boolean) => void;
@@ -230,7 +243,7 @@ const IssueSection: React.FC<IssueSectionProps> = ({
 
         <FormField
           control={form.control}
-          name="issueDescription"
+          name="issueDetails"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Issue Description</FormLabel>

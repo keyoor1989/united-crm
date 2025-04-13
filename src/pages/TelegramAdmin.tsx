@@ -13,53 +13,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Settings, Bell, MessageSquare, ShieldAlert, Check, X, AlertTriangle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-interface TelegramConfig {
-  id: string;
-  bot_token: string;
-  webhook_url: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface AuthorizedChat {
-  id: string;
-  chat_id: string;
-  chat_name: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-interface NotificationPreference {
-  id: string;
-  chat_id: string;
-  service_calls: boolean;
-  customer_followups: boolean;
-  inventory_alerts: boolean;
-}
-
-interface MessageLog {
-  id: string;
-  chat_id: string;
-  message_text: string;
-  message_type: string;
-  direction: string;
-  processed_status: string;
-  created_at: string;
-}
-
-interface WebhookInfo {
-  ok: boolean;
-  result: {
-    url: string;
-    has_custom_certificate: boolean;
-    pending_update_count: number;
-    last_error_date?: number;
-    last_error_message?: string;
-    max_connections?: number;
-    allowed_updates?: string[];
-  };
-}
+import { 
+  TelegramConfig, 
+  AuthorizedChat, 
+  NotificationPreference, 
+  MessageLog, 
+  WebhookInfo, 
+  TelegramGenericResponse 
+} from "@/types/telegram";
 
 const TelegramAdmin = () => {
   const [botToken, setBotToken] = useState("");
@@ -83,7 +44,7 @@ const TelegramAdmin = () => {
     setIsLoading(true);
     try {
       const { data: configData } = await supabase
-        .from('telegram_config')
+        .from('telegram_config' as any)
         .select('*')
         .limit(1)
         .single();
@@ -95,7 +56,7 @@ const TelegramAdmin = () => {
       }
 
       const { data: chatsData } = await supabase
-        .from('telegram_authorized_chats')
+        .from('telegram_authorized_chats' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -108,7 +69,7 @@ const TelegramAdmin = () => {
       }
 
       const { data: prefsData } = await supabase
-        .from('telegram_notification_preferences')
+        .from('telegram_notification_preferences' as any)
         .select('*');
 
       if (prefsData) {
@@ -117,7 +78,7 @@ const TelegramAdmin = () => {
       }
 
       const { data: logsData } = await supabase
-        .from('telegram_message_logs')
+        .from('telegram_message_logs' as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
@@ -146,8 +107,8 @@ const TelegramAdmin = () => {
       });
 
       if (error) throw error;
-      setWebhookInfo(data);
-    } catch (error) {
+      setWebhookInfo(data as WebhookInfo);
+    } catch (error: any) {
       console.error("Error getting webhook info:", error);
       toast.error("Failed to get webhook info");
     } finally {
@@ -167,22 +128,47 @@ const TelegramAdmin = () => {
 
       if (error) throw error;
       
-      if (data.ok) {
+      const response = data as TelegramGenericResponse;
+      if (response.ok) {
         toast.success("Webhook set successfully");
         await getWebhookInfo();
         
         await supabase
-          .from('telegram_config')
+          .from('telegram_config' as any)
           .upsert({
             bot_token: botToken,
             webhook_url: webhookUrl,
-          } as any);
+          });
       } else {
-        toast.error(`Failed to set webhook: ${data.description}`);
+        toast.error(`Failed to set webhook: ${response.description}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error setting webhook:", error);
       toast.error("Failed to set webhook");
+    } finally {
+      setIsLoadingWebhook(false);
+    }
+  };
+
+  const deleteWebhook = async () => {
+    setIsLoadingWebhook(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('telegram-setup', {
+        body: { action: 'deleteWebhook' },
+      });
+
+      if (error) throw error;
+      
+      const response = data as TelegramGenericResponse;
+      if (response.ok) {
+        toast.success("Webhook deleted successfully");
+        await getWebhookInfo();
+      } else {
+        toast.error(`Failed to delete webhook: ${response.description}`);
+      }
+    } catch (error: any) {
+      console.error("Error deleting webhook:", error);
+      toast.error("Failed to delete webhook");
     } finally {
       setIsLoadingWebhook(false);
     }
@@ -206,15 +192,16 @@ const TelegramAdmin = () => {
 
       if (error) throw error;
       
-      if (data.ok) {
+      const response = data as TelegramGenericResponse;
+      if (response.ok) {
         toast.success("Chat authorized successfully");
         setNewChatId("");
         setChatName("");
         await loadTelegramData();
       } else {
-        toast.error(`Failed to authorize chat: ${data.message}`);
+        toast.error(`Failed to authorize chat: ${response.description || 'Unknown error'}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error authorizing chat:", error);
       toast.error("Failed to authorize chat");
     } finally {
@@ -226,7 +213,7 @@ const TelegramAdmin = () => {
     setIsLoading(true);
     try {
       const { error } = await supabase
-        .from('telegram_authorized_chats')
+        .from('telegram_authorized_chats' as any)
         .update({ is_active: !isActive })
         .eq('chat_id', chatId);
 
@@ -234,7 +221,7 @@ const TelegramAdmin = () => {
       
       toast.success(`Chat ${isActive ? 'deactivated' : 'activated'} successfully`);
       await loadTelegramData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error toggling chat active status:", error);
       toast.error("Failed to update chat status");
     } finally {
@@ -246,7 +233,7 @@ const TelegramAdmin = () => {
     setIsLoading(true);
     try {
       const { error } = await supabase
-        .from('telegram_notification_preferences')
+        .from('telegram_notification_preferences' as any)
         .update({ [field]: value })
         .eq('chat_id', chatId);
 
@@ -254,7 +241,7 @@ const TelegramAdmin = () => {
       
       toast.success("Notification preference updated");
       await loadTelegramData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating notification preference:", error);
       toast.error("Failed to update notification preference");
     } finally {
@@ -285,7 +272,7 @@ const TelegramAdmin = () => {
       toast.success("Test message sent successfully");
       setTestMessage("");
       await loadTelegramData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending test message:", error);
       toast.error("Failed to send test message");
     } finally {

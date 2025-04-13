@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,15 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCustomerDetails } from "@/hooks/useCustomerDetails";
 import { Badge } from "@/components/ui/badge";
 import MachineForm from "./machines/MachineForm";
-import MachinesList from "./machines/MachinesList";
+import { MachinesList } from "./machines/MachinesList";
 import SalesFollowUpDialog from "./machines/SalesFollowUpDialog";
-import SalesFollowUpList from "./machines/SalesFollowUpList";
+import { SalesFollowUpList } from "./machines/SalesFollowUpList";
 
 interface CustomerMachinesProps {
-  customerId: string;
+  customerId?: string;
 }
 
-const CustomerMachines: React.FC = () => {
+const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
   const [open, setOpen] = useState(false);
   const [isNewMachine, setIsNewMachine] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<any>(null);
@@ -75,23 +76,23 @@ const CustomerMachines: React.FC = () => {
           <MachineForm
             open={isNewMachine}
             setOpen={setIsNewMachine}
-            customerId={customer?.id}
+            customerId={customer?.id || ""}
           />
-          <MachinesList customerId={customer?.id} />
+          <MachinesList customerId={customer?.id || ""} />
         </TabsContent>
         <TabsContent value="followups" className="mt-4">
           <h3 className="text-xl font-medium mb-4">Follow-ups</h3>
-          <SalesFollowUpList customerId={customer?.id} />
+          <SalesFollowUpList customerId={customer?.id || ""} />
         </TabsContent>
       </Tabs>
 
       <SalesFollowUpDialog
         open={open}
         setOpen={setOpen}
-        customerId={customer?.id}
-        customerName={customer?.name}
-        location={customer?.location}
-        phone={customer?.phone}
+        customerId={customer?.id || ""}
+        customerName={customer?.name || ""}
+        location={customer?.location || ""}
+        phone={customer?.phone || ""}
         onSave={handleSaveFollowUp}
       />
     </div>

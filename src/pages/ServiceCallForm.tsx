@@ -11,7 +11,6 @@ const ServiceCallForm = () => {
     form,
     isSubmitting,
     selectedCustomer,
-    selectedMachine,
     customerMachines,
     slaTime,
     showCustomerSearch,
@@ -40,14 +39,14 @@ const ServiceCallForm = () => {
             form={form}
             selectedCustomer={selectedCustomer}
             showCustomerSearch={showCustomerSearch}
-            slaTime={slaTime}
+            slaTime={slaTime || 0}
             setShowCustomerSearch={setShowCustomerSearch}
             handleCustomerSelect={handleCustomerSelect}
           />
 
           <MachineSection
             form={form}
-            customerMachines={customerMachines}
+            customerMachines={customerMachines || []}
             selectedCustomer={selectedCustomer}
             handleMachineChange={handleMachineChange}
           />
@@ -56,7 +55,7 @@ const ServiceCallForm = () => {
             form={form}
             isSubmitting={isSubmitting}
             selectedCustomer={selectedCustomer}
-            engineers={engineers}
+            engineers={engineers || []}
             assignEngineerNow={assignEngineerNow}
             setAssignEngineerNow={setAssignEngineerNow}
             autoAssignEngineer={autoAssignEngineer}
