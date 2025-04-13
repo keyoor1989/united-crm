@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -54,6 +55,18 @@ const formSchema = z.object({
   address: z.string().optional(),
 })
 
+// Database vendor type to match actual database schema
+interface DbVendor {
+  id: string;
+  name: string;
+  contact_person?: string;
+  gst_no?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  created_at: string;
+}
+
 const InventoryVendors = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [open, setOpen] = useState(false);
@@ -87,6 +100,20 @@ const InventoryVendors = () => {
     },
   })
 
+  // Convert database vendor to frontend vendor type
+  const adaptVendor = (dbVendor: DbVendor): Vendor => {
+    return {
+      id: dbVendor.id,
+      name: dbVendor.name,
+      contactPerson: dbVendor.contact_person || '',
+      gstNo: dbVendor.gst_no || '',
+      phone: dbVendor.phone || '',
+      email: dbVendor.email || '',
+      address: dbVendor.address || '',
+      createdAt: dbVendor.created_at
+    };
+  };
+
   useEffect(() => {
     const fetchVendors = async () => {
       try {
@@ -106,16 +133,7 @@ const InventoryVendors = () => {
         }
 
         if (data) {
-          const adaptedVendors: Vendor[] = data.map(item => ({
-            id: item.id,
-            name: item.name,
-            contactPerson: item.contact_person || '',
-            gstNo: item.gst_no || '',
-            phone: item.phone || '',
-            email: item.email || '',
-            address: item.address || '',
-            createdAt: item.created_at
-          }));
+          const adaptedVendors: Vendor[] = data.map(item => adaptVendor(item as DbVendor));
           setVendors(adaptedVendors);
         }
       } catch (error) {

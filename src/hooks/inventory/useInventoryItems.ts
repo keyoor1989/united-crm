@@ -65,22 +65,21 @@ export const useInventoryItems = (warehouseId: string | null) => {
       // Check for low stock items and send alerts
       if (data && data.length > 0) {
         // Safely check for low stock items with type checking
-        const lowStockItems = data.filter((item): item is (typeof data)[0] => 
-          typeof item === 'object' && 
+        const lowStockItems = data.filter((item): item is NonNullable<typeof item> => 
           item !== null && 
+          typeof item === 'object' && 
           'quantity' in item && 
           'min_stock' in item && 
-          (item.quantity as number) < (item.min_stock as number)
+          typeof item.quantity === 'number' && 
+          typeof item.min_stock === 'number' &&
+          item.quantity < item.min_stock
         );
         
         if (lowStockItems.length > 0) {
           // Only send the first low stock alert to avoid spamming
           try {
             const firstLowStockItem = lowStockItems[0];
-            // Make sure the item exists and has the required properties before sending alert
-            if (firstLowStockItem && 
-                typeof firstLowStockItem === 'object' && 
-                firstLowStockItem !== null) {
+            if (firstLowStockItem) {
               notifyInventoryAlert(firstLowStockItem as DbInventoryItem);
             }
           } catch (error) {
@@ -91,19 +90,18 @@ export const useInventoryItems = (warehouseId: string | null) => {
       
       // Convert database items to frontend format
       // Add proper type checking to handle potential errors
-      return (data || []).map((item) => {
-        // Skip items that might be error objects or null
-        if (!item || typeof item !== 'object' || 'error' in item) {
-          console.error("Invalid item data:", item);
+      return (data || []).map((dbItem) => {
+        // Skip items that might be null, error objects, or have an invalid structure
+        if (!dbItem || typeof dbItem !== 'object' || 'error' in dbItem) {
+          console.error("Invalid item data:", dbItem);
           return null;
         }
         
-        // Cast to handle type compatibility with the database schema
+        // Use type assertion with unknown as intermediate step for safety
         try {
-          // Use type assertion with unknown as intermediate step for safety
-          return adaptInventoryItem(item as unknown as DbInventoryItem);
+          return adaptInventoryItem(dbItem as DbInventoryItem);
         } catch (err) {
-          console.error("Error adapting item:", item, err);
+          console.error("Error adapting item:", dbItem, err);
           return null;
         }
       }).filter((item): item is InventoryItem => item !== null); // Type predicate to filter out null values
