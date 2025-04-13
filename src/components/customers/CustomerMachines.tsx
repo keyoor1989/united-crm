@@ -26,6 +26,7 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
   const [isNewMachine, setIsNewMachine] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [followUps, setFollowUps] = useState([]);
+  const [activeTab, setActiveTab] = useState("machines");
 
   const { customer, isLoading, error } = useCustomerDetails();
 
@@ -69,12 +70,12 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="machines" className="w-full mt-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
         <TabsList className="bg-secondary">
           <TabsTrigger value="machines" className="data-[state=active]:bg-background">Machines</TabsTrigger>
           <TabsTrigger value="followups" className="data-[state=active]:bg-background">Follow-ups</TabsTrigger>
         </TabsList>
-        <TabsContent value="machines" className="mt-4">
+        <TabsContent value="machines">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-medium">Machines</h3>
             <Button onClick={() => setIsNewMachine(true)}>Add Machine</Button>
@@ -90,7 +91,7 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
             onAddMachine={() => setIsNewMachine(true)}
           />
         </TabsContent>
-        <TabsContent value="followups" className="mt-4">
+        <TabsContent value="followups">
           <h3 className="text-xl font-medium mb-4">Follow-ups</h3>
           <SalesFollowUpList customerId={customer?.id || ""} />
         </TabsContent>

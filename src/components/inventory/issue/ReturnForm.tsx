@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +35,7 @@ const ReturnForm = () => {
   const { warehouses, isLoadingWarehouses } = useWarehouses();
   const { engineers, isLoading: isLoadingEngineers } = useEngineers();
   const { items: engineerItems, isLoading: isLoadingEngineerItems } = useEngineerItems(selectedEngineer);
-  const { items: returnedItems, isLoading: isLoadingReturnHistory } = useReturnedItems();
+  const { items: returnedItems, isLoading: isLoadingReturnedItems } = useReturnedItems();
   const returnMutation = useReturnItem();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -248,7 +247,7 @@ const ReturnForm = () => {
       </TabsContent>
       
       <TabsContent value="history">
-        <ReturnHistoryTable returns={returnedItems} isLoading={isLoadingReturnHistory} />
+        <ReturnHistoryTable returns={returnedItems} isLoading={isLoadingReturnedItems} />
       </TabsContent>
     </Tabs>
   );

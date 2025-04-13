@@ -72,39 +72,75 @@ const TodaysFollowUps = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="today">Today</TabsTrigger>
-                <TabsTrigger value="week">This Week</TabsTrigger>
-                <TabsTrigger value="all">All Pending</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-          
-          {activeTab === "today" && (
-            <div className="mb-4">
-              <div className="flex justify-between items-center text-sm mb-1">
-                <span>Today's progress</span>
-                <span>{todayCompleted} of {todayTotal} completed</span>
-              </div>
-              <Progress value={todayProgress} className="h-2" />
-            </div>
-          )}
-          
-          {filteredFollowUps.length === 0 ? (
-            <EmptyFollowUps activeTab={activeTab} />
-          ) : (
-            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-              {filteredFollowUps.map((followUp) => (
-                <FollowUpItem 
-                  key={followUp.id}
-                  followUp={followUp} 
-                  onMarkComplete={handleMarkComplete} 
-                />
-              ))}
-            </div>
-          )}
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="today">Today</TabsTrigger>
+              <TabsTrigger value="week">This Week</TabsTrigger>
+              <TabsTrigger value="all">All Pending</TabsTrigger>
+            </TabsList>
+            
+            {activeTab === "today" && (
+              <TabsContent value="today">
+                <div className="mb-4">
+                  <div className="flex justify-between items-center text-sm mb-1">
+                    <span>Today's progress</span>
+                    <span>{todayCompleted} of {todayTotal} completed</span>
+                  </div>
+                  <Progress value={todayProgress} className="h-2" />
+                </div>
+                
+                {filteredFollowUps.length === 0 ? (
+                  <EmptyFollowUps activeTab={activeTab} />
+                ) : (
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {filteredFollowUps.map((followUp) => (
+                      <FollowUpItem 
+                        key={followUp.id}
+                        followUp={followUp} 
+                        onMarkComplete={handleMarkComplete} 
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
+            
+            {activeTab === "week" && (
+              <TabsContent value="week">
+                {filteredFollowUps.length === 0 ? (
+                  <EmptyFollowUps activeTab={activeTab} />
+                ) : (
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {filteredFollowUps.map((followUp) => (
+                      <FollowUpItem 
+                        key={followUp.id}
+                        followUp={followUp} 
+                        onMarkComplete={handleMarkComplete} 
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
+            
+            {activeTab === "all" && (
+              <TabsContent value="all">
+                {filteredFollowUps.length === 0 ? (
+                  <EmptyFollowUps activeTab={activeTab} />
+                ) : (
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {filteredFollowUps.map((followUp) => (
+                      <FollowUpItem 
+                        key={followUp.id}
+                        followUp={followUp} 
+                        onMarkComplete={handleMarkComplete} 
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
+          </Tabs>
         </div>
       </CardContent>
     </Card>
