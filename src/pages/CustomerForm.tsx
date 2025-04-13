@@ -5,7 +5,6 @@ import LeadPipeline from "@/components/customers/LeadPipeline";
 import CustomerMachines from "@/components/customers/CustomerMachines";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Removed the Layout component import and wrapper since it's already being handled by AppRoutes.tsx
 const CustomerForm = () => {
   return (
     <div className="flex flex-col gap-6">
