@@ -77,8 +77,10 @@ export const useInventoryItems = (warehouseId: string | null) => {
           // Only send the first low stock alert to avoid spamming
           try {
             const firstLowStockItem = lowStockItems[0];
-            // Make sure the item exists before sending alert
-            if (firstLowStockItem && typeof firstLowStockItem === 'object') {
+            // Make sure the item exists and has the required properties before sending alert
+            if (firstLowStockItem && 
+                typeof firstLowStockItem === 'object' && 
+                firstLowStockItem !== null) {
               notifyInventoryAlert(firstLowStockItem as DbInventoryItem);
             }
           } catch (error) {
@@ -90,7 +92,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
       // Convert database items to frontend format
       // Add proper type checking to handle potential errors
       return (data || []).map((item) => {
-        // Skip items that might be error objects
+        // Skip items that might be error objects or null
         if (!item || typeof item !== 'object' || 'error' in item) {
           console.error("Invalid item data:", item);
           return null;

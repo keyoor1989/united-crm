@@ -196,18 +196,16 @@ const InventoryVendors = () => {
     }
 
     try {
-      const updatedVendor = {
-        name: values.name,
-        contact_person: values.contactPerson || '',
-        gst_no: values.gstNo || '',
-        phone: values.phone,
-        email: values.email || '',
-        address: values.address || ''
-      };
-
       const { error } = await supabase
         .from('vendors')
-        .update(updatedVendor)
+        .update({
+          name: values.name,
+          contact_person: values.contactPerson || '',
+          gst_no: values.gstNo || '',
+          phone: values.phone,
+          email: values.email || '',
+          address: values.address || ''
+        })
         .eq('id', selectedVendorId);
 
       if (error) {
@@ -221,12 +219,12 @@ const InventoryVendors = () => {
       }
 
       const adaptedVendor: Partial<Vendor> = {
-        name: updatedVendor.name,
-        contactPerson: updatedVendor.contact_person,
-        gstNo: updatedVendor.gst_no,
-        phone: updatedVendor.phone,
-        email: updatedVendor.email,
-        address: updatedVendor.address
+        name: values.name,
+        contactPerson: values.contactPerson,
+        gstNo: values.gstNo,
+        phone: values.phone,
+        email: values.email,
+        address: values.address
       };
 
       setVendors(
