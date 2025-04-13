@@ -7,8 +7,8 @@ const inventoryItems: Partial<InventoryItem>[] = [
   {
     id: "INV001",
     name: "Ricoh 2014 Drum Unit",
-    type: "Drum",
-    brandId: "BRAND001",
+    category: "Drum",
+    brand: "BRAND001",
     currentQuantity: 8,
     minQuantity: 5,
     lastPurchasePrice: 3500,
@@ -18,8 +18,8 @@ const inventoryItems: Partial<InventoryItem>[] = [
   {
     id: "INV002",
     name: "Kyocera 2554ci Toner Black",
-    type: "Toner",
-    brandId: "BRAND002",
+    category: "Toner",
+    brand: "BRAND002",
     currentQuantity: 12,
     minQuantity: 4,
     lastPurchasePrice: 5200,
@@ -29,8 +29,8 @@ const inventoryItems: Partial<InventoryItem>[] = [
   {
     id: "INV003",
     name: "Sharp 261 Developer",
-    type: "Developer",
-    brandId: "BRAND003",
+    category: "Developer",
+    brand: "BRAND003",
     currentQuantity: 0,
     minQuantity: 2,
     lastPurchasePrice: 2800,
@@ -40,8 +40,8 @@ const inventoryItems: Partial<InventoryItem>[] = [
   {
     id: "INV004",
     name: "Canon IR2525 Toner",
-    type: "Toner",
-    brandId: "BRAND004",
+    category: "Toner",
+    brand: "BRAND004",
     currentQuantity: 3,
     minQuantity: 3,
     lastPurchasePrice: 4200,
@@ -51,8 +51,8 @@ const inventoryItems: Partial<InventoryItem>[] = [
   {
     id: "INV005",
     name: "HP LaserJet Pro M428 Toner",
-    type: "Toner",
-    brandId: "BRAND005",
+    category: "Toner",
+    brand: "BRAND005",
     currentQuantity: 6,
     minQuantity: 4,
     lastPurchasePrice: 3900,
@@ -62,8 +62,8 @@ const inventoryItems: Partial<InventoryItem>[] = [
   {
     id: "INV006",
     name: "Kyocera 2040 Drum Unit",
-    type: "Drum",
-    brandId: "BRAND002",
+    category: "Drum",
+    brand: "BRAND002",
     currentQuantity: 4,
     minQuantity: 2,
     lastPurchasePrice: 5500,
@@ -73,8 +73,8 @@ const inventoryItems: Partial<InventoryItem>[] = [
   {
     id: "INV007",
     name: "Ricoh MP2014 Toner",
-    type: "Toner",
-    brandId: "BRAND001",
+    category: "Toner",
+    brand: "BRAND001",
     currentQuantity: 2,
     minQuantity: 3,
     lastPurchasePrice: 2800,
@@ -84,8 +84,8 @@ const inventoryItems: Partial<InventoryItem>[] = [
   {
     id: "INV008",
     name: "Sharp MX3070 Developer",
-    type: "Developer",
-    brandId: "BRAND003",
+    category: "Developer",
+    brand: "BRAND003",
     currentQuantity: 5,
     minQuantity: 2,
     lastPurchasePrice: 6500,
@@ -174,7 +174,7 @@ export const parseInventoryCommand = (message: string): ParsedInventoryQuery => 
       matches = false;
     }
     
-    if (result.itemType && item.type?.toLowerCase() !== result.itemType.toLowerCase()) {
+    if (result.itemType && item.category?.toLowerCase() !== result.itemType.toLowerCase()) {
       matches = false;
     }
     
@@ -192,7 +192,7 @@ export const parseInventoryCommand = (message: string): ParsedInventoryQuery => 
     // If item type is specified but no other criteria, return all items of that type
     else if (result.itemType) {
       result.matchedItems = inventoryItems.filter(item => 
-        item.type?.toLowerCase() === result.itemType?.toLowerCase()
+        item.category?.toLowerCase() === result.itemType?.toLowerCase()
       );
     }
   }

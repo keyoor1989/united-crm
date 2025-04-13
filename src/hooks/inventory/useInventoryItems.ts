@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { InventoryItem as BaseInventoryItem } from "@/types/inventory";
@@ -14,24 +15,33 @@ export interface InventoryItem {
   brand?: string;
   compatible_models?: string[];
   part_number?: string;
-  brandId?: string;
-  modelId?: string;
+  brand_id?: string;
+  model_id?: string;
 }
 
 // Function to convert the database schema InventoryItem to the app's BaseInventoryItem type
 export const adaptInventoryItem = (item: InventoryItem): BaseInventoryItem => {
   return {
     id: item.id,
-    modelId: item.modelId || "",
-    brandId: item.brandId || item.brand || "",
+    model: item.model_id || "",
+    brand: item.brand || "",
     name: item.part_name,
-    type: item.category as any,
+    category: item.category,
+    minStockLevel: item.min_stock,
+    currentStock: item.quantity,
+    unitCost: item.purchase_price,
+    lastRestocked: "",
+    createdAt: new Date().toISOString(),
+    
+    // Additional properties used throughout the app
+    modelId: item.model_id,
+    brandId: item.brand_id,
+    type: item.category,
     minQuantity: item.min_stock,
     currentQuantity: item.quantity,
     lastPurchasePrice: item.purchase_price,
     lastVendor: "",
     barcode: item.part_number || "",
-    createdAt: new Date().toISOString()
   };
 };
 

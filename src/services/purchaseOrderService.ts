@@ -1,215 +1,200 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { PurchaseOrder, PurchaseOrderStatus } from '@/types/sales';
-import { v4 as uuidv4 } from 'uuid';
 
-// Type for JSON serialization
-type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
-
-// Fetch all purchase orders
+/**
+ * Fetches all purchase orders from the database
+ */
 export const fetchPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
-  const { data, error } = await supabase
-    .from('purchase_orders')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
+    if (error) {
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Transform database records to match our PurchaseOrder type
+    const purchaseOrders: PurchaseOrder[] = data.map(record => ({
+      id: record.id,
+      poNumber: record.po_number,
+      vendorId: record.vendor_id || '',
+      vendorName: record.vendor_name,
+      items: JSON.parse(JSON.stringify(record.items)), // Convert JSON to PurchaseOrderItem[]
+      subtotal: record.subtotal,
+      totalGst: record.total_gst,
+      grandTotal: record.grand_total,
+      createdAt: record.created_at,
+      deliveryDate: record.delivery_date || '',
+      status: record.status as PurchaseOrderStatus,
+      notes: record.notes || '',
+      terms: record.terms || ''
+    }));
+
+    return purchaseOrders;
+  } catch (error) {
     console.error('Error fetching purchase orders:', error);
     throw error;
   }
-
-  // Convert from DB format to our app's format
-  return data.map((order: any) => ({
-    id: order.id,
-    poNumber: order.po_number,
-    vendorId: order.vendor_id || '',
-    vendorName: order.vendor_name,
-    items: Array.isArray(order.items) ? order.items : [],
-    subtotal: order.subtotal,
-    totalGst: order.total_gst,
-    grandTotal: order.grand_total,
-    createdAt: order.created_at,
-    deliveryDate: order.delivery_date,
-    status: order.status as PurchaseOrderStatus,
-    notes: order.notes || '',
-    terms: order.terms || '',
-  }));
 };
 
-// Fetch a specific purchase order by ID
+/**
+ * Fetches a specific purchase order by ID
+ */
 export const fetchPurchaseOrderById = async (id: string): Promise<PurchaseOrder | null> => {
-  const { data, error } = await supabase
-    .from('purchase_orders')
-    .select('*')
-    .eq('id', id)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null; // No order found
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // PGRST116 is the error code for "no rows returned"
+        return null;
+      }
+      throw error;
     }
+
+    if (!data) {
+      return null;
+    }
+
+    // Transform database record to match our PurchaseOrder type
+    const purchaseOrder: PurchaseOrder = {
+      id: data.id,
+      poNumber: data.po_number,
+      vendorId: data.vendor_id || '',
+      vendorName: data.vendor_name,
+      items: JSON.parse(JSON.stringify(data.items)), // Convert JSON to PurchaseOrderItem[]
+      subtotal: data.subtotal,
+      totalGst: data.total_gst,
+      grandTotal: data.grand_total,
+      createdAt: data.created_at,
+      deliveryDate: data.delivery_date || '',
+      status: data.status as PurchaseOrderStatus,
+      notes: data.notes || '',
+      terms: data.terms || ''
+    };
+
+    return purchaseOrder;
+  } catch (error) {
     console.error('Error fetching purchase order:', error);
     throw error;
   }
-
-  // Convert from DB format to our app's format
-  return {
-    id: data.id,
-    poNumber: data.po_number,
-    vendorId: data.vendor_id || '',
-    vendorName: data.vendor_name,
-    items: Array.isArray(data.items) ? data.items : [],
-    subtotal: data.subtotal,
-    totalGst: data.total_gst,
-    grandTotal: data.grand_total,
-    createdAt: data.created_at,
-    deliveryDate: data.delivery_date,
-    status: data.status as PurchaseOrderStatus,
-    notes: data.notes || '',
-    terms: data.terms || '',
-  };
 };
 
-// Create a new purchase order
-export const createPurchaseOrder = async (order: Omit<PurchaseOrder, 'id'>): Promise<PurchaseOrder> => {
-  // Convert from our app's format to DB format
-  const dbOrder = {
-    po_number: order.poNumber,
-    vendor_id: order.vendorId,
-    vendor_name: order.vendorName,
-    items: order.items, // JSON serialization happens automatically
-    subtotal: order.subtotal,
-    total_gst: order.totalGst,
-    grand_total: order.grandTotal,
-    created_at: order.createdAt,
-    delivery_date: order.deliveryDate,
-    status: order.status,
-    notes: order.notes,
-    terms: order.terms,
-  };
+/**
+ * Creates a new purchase order
+ */
+export const createPurchaseOrder = async (purchaseOrder: Omit<PurchaseOrder, 'id'>): Promise<PurchaseOrder> => {
+  try {
+    const { data, error } = await supabase
+      .from('purchase_orders')
+      .insert({
+        po_number: purchaseOrder.poNumber,
+        vendor_id: purchaseOrder.vendorId,
+        vendor_name: purchaseOrder.vendorName,
+        items: JSON.stringify(purchaseOrder.items), // Convert PurchaseOrderItem[] to JSON
+        subtotal: purchaseOrder.subtotal,
+        total_gst: purchaseOrder.totalGst,
+        grand_total: purchaseOrder.grandTotal,
+        created_at: purchaseOrder.createdAt,
+        delivery_date: purchaseOrder.deliveryDate,
+        status: purchaseOrder.status,
+        notes: purchaseOrder.notes,
+        terms: purchaseOrder.terms
+      })
+      .select();
 
-  const { data, error } = await supabase
-    .from('purchase_orders')
-    .insert(dbOrder)
-    .select()
-    .single();
+    if (error) {
+      throw error;
+    }
 
-  if (error) {
+    if (!data || data.length === 0) {
+      throw new Error('No data returned from insert operation');
+    }
+
+    // Transform database record to match our PurchaseOrder type
+    const newPurchaseOrder: PurchaseOrder = {
+      id: data[0].id,
+      poNumber: data[0].po_number,
+      vendorId: data[0].vendor_id || '',
+      vendorName: data[0].vendor_name,
+      items: JSON.parse(JSON.stringify(data[0].items)), // Convert JSON to PurchaseOrderItem[]
+      subtotal: data[0].subtotal,
+      totalGst: data[0].total_gst,
+      grandTotal: data[0].grand_total,
+      createdAt: data[0].created_at,
+      deliveryDate: data[0].delivery_date || '',
+      status: data[0].status as PurchaseOrderStatus,
+      notes: data[0].notes || '',
+      terms: data[0].terms || ''
+    };
+
+    return newPurchaseOrder;
+  } catch (error) {
     console.error('Error creating purchase order:', error);
     throw error;
   }
-
-  // Convert from DB format to our app's format
-  return {
-    id: data.id,
-    poNumber: data.po_number,
-    vendorId: data.vendor_id || '',
-    vendorName: data.vendor_name,
-    items: Array.isArray(data.items) ? data.items : [],
-    subtotal: data.subtotal,
-    totalGst: data.total_gst,
-    grandTotal: data.grand_total,
-    createdAt: data.created_at,
-    deliveryDate: data.delivery_date,
-    status: data.status as PurchaseOrderStatus,
-    notes: data.notes || '',
-    terms: data.terms || '',
-  };
 };
 
-// Update an existing purchase order
-export const updatePurchaseOrder = async (id: string, updates: Partial<PurchaseOrder>): Promise<PurchaseOrder> => {
-  // Convert from our app's format to DB format
-  const dbUpdates: any = {};
-  
-  if (updates.poNumber !== undefined) dbUpdates.po_number = updates.poNumber;
-  if (updates.vendorId !== undefined) dbUpdates.vendor_id = updates.vendorId;
-  if (updates.vendorName !== undefined) dbUpdates.vendor_name = updates.vendorName;
-  if (updates.items !== undefined) dbUpdates.items = updates.items;
-  if (updates.subtotal !== undefined) dbUpdates.subtotal = updates.subtotal;
-  if (updates.totalGst !== undefined) dbUpdates.total_gst = updates.totalGst;
-  if (updates.grandTotal !== undefined) dbUpdates.grand_total = updates.grandTotal;
-  if (updates.createdAt !== undefined) dbUpdates.created_at = updates.createdAt;
-  if (updates.deliveryDate !== undefined) dbUpdates.delivery_date = updates.deliveryDate;
-  if (updates.status !== undefined) dbUpdates.status = updates.status;
-  if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-  if (updates.terms !== undefined) dbUpdates.terms = updates.terms;
+/**
+ * Updates an existing purchase order
+ */
+export const updatePurchaseOrder = async (id: string, updates: Partial<PurchaseOrder>): Promise<void> => {
+  try {
+    // Prepare update object converting from camelCase to snake_case
+    const updateData: any = {};
+    
+    if (updates.poNumber) updateData.po_number = updates.poNumber;
+    if (updates.vendorId) updateData.vendor_id = updates.vendorId;
+    if (updates.vendorName) updateData.vendor_name = updates.vendorName;
+    if (updates.items) updateData.items = JSON.stringify(updates.items); // Convert PurchaseOrderItem[] to JSON
+    if (updates.subtotal !== undefined) updateData.subtotal = updates.subtotal;
+    if (updates.totalGst !== undefined) updateData.total_gst = updates.totalGst;
+    if (updates.grandTotal !== undefined) updateData.grand_total = updates.grandTotal;
+    if (updates.deliveryDate) updateData.delivery_date = updates.deliveryDate;
+    if (updates.status) updateData.status = updates.status;
+    if (updates.notes !== undefined) updateData.notes = updates.notes;
+    if (updates.terms !== undefined) updateData.terms = updates.terms;
 
-  const { data, error } = await supabase
-    .from('purchase_orders')
-    .update(dbUpdates)
-    .eq('id', id)
-    .select()
-    .single();
+    const { error } = await supabase
+      .from('purchase_orders')
+      .update(updateData)
+      .eq('id', id);
 
-  if (error) {
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
     console.error('Error updating purchase order:', error);
     throw error;
   }
-
-  // Convert from DB format to our app's format
-  return {
-    id: data.id,
-    poNumber: data.po_number,
-    vendorId: data.vendor_id || '',
-    vendorName: data.vendor_name,
-    items: Array.isArray(data.items) ? data.items : [],
-    subtotal: data.subtotal,
-    totalGst: data.total_gst,
-    grandTotal: data.grand_total,
-    createdAt: data.created_at,
-    deliveryDate: data.delivery_date,
-    status: data.status as PurchaseOrderStatus,
-    notes: data.notes || '',
-    terms: data.terms || '',
-  };
 };
 
-// Delete a purchase order
-export const deletePurchaseOrder = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('purchase_orders')
-    .delete()
-    .eq('id', id);
+/**
+ * Deletes a purchase order
+ */
+export const deletePurchaseOrder = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('purchase_orders')
+      .delete()
+      .eq('id', id);
 
-  if (error) {
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
     console.error('Error deleting purchase order:', error);
     throw error;
   }
-
-  return true;
-};
-
-// Generate a purchase order number
-export const generatePurchaseOrderNumber = async (): Promise<string> => {
-  const prefix = 'PO';
-  const year = new Date().getFullYear().toString();
-  
-  // Get the latest purchase order to determine the next number
-  const { data, error } = await supabase
-    .from('purchase_orders')
-    .select('po_number')
-    .order('created_at', { ascending: false })
-    .limit(1);
-    
-  if (error) {
-    console.error('Error generating PO number:', error);
-    // Fallback to random number generation
-    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `${prefix}-${year}-${randomNum}`;
-  }
-  
-  if (data && data.length > 0) {
-    const lastPO = data[0].po_number;
-    // Try to extract the last number and increment
-    const match = lastPO.match(/(\d+)$/);
-    if (match) {
-      const lastNum = parseInt(match[1]);
-      const nextNum = (lastNum + 1).toString().padStart(3, '0');
-      return `${prefix}-${year}-${nextNum}`;
-    }
-  }
-  
-  // Default if no previous PO or pattern doesn't match
-  return `${prefix}-${year}-001`;
 };

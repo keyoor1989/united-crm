@@ -1,13 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Vendor } from "@/types/sales";
+import { Vendor } from "@/types/inventory";
 import { useToast } from "@/components/ui/use-toast";
 
 // Define the context shape
 interface VendorContextValue {
   vendors: Vendor[];
-  addVendor: (vendor: Omit<Vendor, "id" | "created_at">) => Promise<void>;
+  addVendor: (vendor: Omit<Vendor, "id" | "createdAt">) => Promise<void>;
   updateVendor: (vendor: Vendor) => Promise<void>;
   deleteVendor: (id: string) => Promise<void>;
   loading: boolean;
@@ -44,6 +44,8 @@ export const VendorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           email: vendor.email || '',
           phone: vendor.phone || '',
           address: vendor.address || '',
+          gstNo: vendor.gst_no || '',
+          createdAt: vendor.created_at
         }));
 
         setVendors(formattedVendors);
@@ -60,10 +62,10 @@ export const VendorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     fetchVendors();
-  }, []);
+  }, [toast]);
 
   // Add a new vendor
-  const addVendor = async (vendorData: Omit<Vendor, "id" | "created_at">) => {
+  const addVendor = async (vendorData: Omit<Vendor, "id" | "createdAt">) => {
     try {
       // Convert to DB format
       const { data, error } = await supabase
@@ -74,6 +76,7 @@ export const VendorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           email: vendorData.email,
           phone: vendorData.phone,
           address: vendorData.address,
+          gst_no: vendorData.gstNo
         })
         .select();
 
@@ -90,6 +93,8 @@ export const VendorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           email: data[0].email || '',
           phone: data[0].phone || '',
           address: data[0].address || '',
+          gstNo: data[0].gst_no || '',
+          createdAt: data[0].created_at
         };
         
         setVendors((prev) => [...prev, newVendor]);
@@ -119,6 +124,7 @@ export const VendorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           email: vendor.email,
           phone: vendor.phone,
           address: vendor.address,
+          gst_no: vendor.gstNo
         })
         .eq('id', vendor.id);
 
