@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { 
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import ItemHistoryDialog from "@/components/inventory/ItemHistoryDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 const MachineParts = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,12 +55,16 @@ const MachineParts = () => {
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   
+  const queryClient = useQueryClient();
   const { items, isLoading, error } = useInventoryItems(null);
   const deleteItemMutation = useDeleteInventoryItem();
 
   const handleAddItem = (newPart: any) => {
     console.log("New part added:", newPart);
+    // Invalidate the query to refresh the items list
+    queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
     setIsAddDialogOpen(false);
+    toast.success("Part added successfully");
   };
 
   const openDeleteDialog = (item: InventoryItem) => {
@@ -96,6 +102,11 @@ const MachineParts = () => {
     return matchesSearch && matchesCategory && matchesBrand;
   });
 
+  // For debugging
+  useEffect(() => {
+    console.log("Current items in list:", items);
+  }, [items]);
+
   const categories = Array.from(new Set(items.map(item => item.category)));
   const brands = Array.from(new Set(items.map(item => item.brand)));
 
@@ -128,12 +139,6 @@ const MachineParts = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add Part
           </Button>
-          
-          <OpeningStockEntryForm
-            open={isAddDialogOpen}
-            onOpenChange={setIsAddDialogOpen}
-            onAddPart={handleAddItem}
-          />
         </div>
       </div>
 

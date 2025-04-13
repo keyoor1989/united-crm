@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyInventoryAlert } from "@/services/telegramService";
@@ -96,6 +97,8 @@ export const useInventoryItems = (warehouseId: string | null) => {
     queryKey: ['inventory_items', warehouseId],
     queryFn: async () => {
       try {
+        console.log("Fetching inventory items for warehouse:", warehouseId);
+        
         let query = supabase
           .from('opening_stock_entries')
           .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number, warehouse_name, warehouse_id')
@@ -116,6 +119,8 @@ export const useInventoryItems = (warehouseId: string | null) => {
           console.error("Invalid data format received:", data);
           return [];
         }
+        
+        console.log("Raw data from Supabase:", data);
         
         // Check for low stock items and send alerts
         const lowStockItems = data.filter(item => {
@@ -139,7 +144,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
         }
         
         // Convert database items to frontend format with careful type handling
-        return data
+        const adaptedItems = data
           .map(dbItem => {
             // Skip items that might be null or have an invalid structure
             if (dbItem === null) {
@@ -172,11 +177,16 @@ export const useInventoryItems = (warehouseId: string | null) => {
             }
           })
           .filter((item): item is InventoryItem => item !== null); // Type predicate to filter out null values
+          
+        console.log("Adapted items:", adaptedItems);
+        return adaptedItems;
       } catch (err) {
         console.error("Error in useInventoryItems query:", err);
         throw err;
       }
     },
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   return { items, isLoading, error };
