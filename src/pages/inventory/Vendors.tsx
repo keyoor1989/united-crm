@@ -22,7 +22,6 @@ import { Vendor } from "@/types/inventory";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from 'uuid';
 
-// Mock vendors data
 const mockVendors: Vendor[] = [
   {
     id: "vendor1",
@@ -63,6 +62,7 @@ type VendorFormData = {
   phone: string;
   email: string;
   address: string;
+  contactPerson: string;
 };
 
 const Vendors = () => {
@@ -76,10 +76,10 @@ const Vendors = () => {
     gstNo: "",
     phone: "",
     email: "",
-    address: ""
+    address: "",
+    contactPerson: ""
   });
   
-  // Filter vendors based on search query
   const filteredVendors = vendors.filter(vendor => 
     vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     vendor.gstNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -88,20 +88,19 @@ const Vendors = () => {
   
   const selectedVendor = vendors.find(v => v.id === selectedVendorId);
   
-  // Open vendor form dialog for creating a new vendor
   const handleAddVendor = () => {
     setVendorForm({
       name: "",
       gstNo: "",
       phone: "",
       email: "",
-      address: ""
+      address: "",
+      contactPerson: ""
     });
     setSelectedVendorId(null);
     setVendorDialog(true);
   };
   
-  // Open vendor form dialog for editing a vendor
   const handleEditVendor = (vendor: Vendor) => {
     setVendorForm({
       id: vendor.id,
@@ -109,37 +108,32 @@ const Vendors = () => {
       gstNo: vendor.gstNo,
       phone: vendor.phone,
       email: vendor.email,
-      address: vendor.address
+      address: vendor.address,
+      contactPerson: vendor.contactPerson
     });
     setSelectedVendorId(vendor.id);
     setVendorDialog(true);
   };
   
-  // Open purchase history dialog for a vendor
   const handleViewPurchaseHistory = (vendorId: string) => {
     setSelectedVendorId(vendorId);
     setPurchaseHistoryDialog(true);
   };
   
-  // Handle deleting a vendor
   const handleDeleteVendor = (vendorId: string) => {
-    // In a real app, you'd call an API to delete the vendor
     setVendors(prevVendors => prevVendors.filter(v => v.id !== vendorId));
     toast.success("Vendor deleted successfully");
   };
   
-  // Handle form input changes
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setVendorForm(prev => ({ ...prev, [name]: value }));
   };
   
-  // Handle form submission for adding/editing a vendor
   const handleSubmitVendor = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (selectedVendorId) {
-      // Edit existing vendor
       setVendors(prevVendors => 
         prevVendors.map(v => 
           v.id === selectedVendorId 
@@ -153,13 +147,12 @@ const Vendors = () => {
       );
       toast.success("Vendor updated successfully");
     } else {
-      // Add new vendor
       const formData = vendorForm;
-      const newVendor = {
+      const newVendor: Vendor = {
         id: uuidv4(),
         createdAt: new Date().toISOString(),
         name: formData.name,
-        contactPerson: formData.contactPerson || '',
+        contactPerson: formData.contactPerson,
         gstNo: formData.gstNo || '',
         phone: formData.phone,
         email: formData.email || '',
@@ -281,7 +274,6 @@ const Vendors = () => {
         </TabsContent>
       </Tabs>
       
-      {/* Vendor Add/Edit Dialog */}
       <Dialog open={vendorDialog} onOpenChange={setVendorDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -355,6 +347,17 @@ const Vendors = () => {
               />
             </div>
             
+            <div className="space-y-2">
+              <Label htmlFor="contactPerson">Contact Person</Label>
+              <Input
+                id="contactPerson"
+                name="contactPerson"
+                value={vendorForm.contactPerson}
+                onChange={handleFormChange}
+                placeholder="Enter contact person"
+              />
+            </div>
+            
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setVendorDialog(false)}>
                 Cancel
@@ -367,7 +370,6 @@ const Vendors = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Vendor Purchase History Dialog */}
       <Dialog open={purchaseHistoryDialog} onOpenChange={setPurchaseHistoryDialog}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
@@ -392,7 +394,6 @@ const Vendors = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Mock purchase history - this would be fetched from an API in a real app */}
                 <TableRow>
                   <TableCell>10-Mar-2025</TableCell>
                   <TableCell>Ricoh 1015 Drum</TableCell>
@@ -424,14 +425,12 @@ const Vendors = () => {
   );
 };
 
-// Vendor Report Component
 const VendorReportComponent = () => {
   const [brandFilter, setBrandFilter] = useState("all");
   const [modelFilter, setModelFilter] = useState("all");
   const [itemFilter, setItemFilter] = useState("all");
   const [vendorFilter, setVendorFilter] = useState("all");
   
-  // This would be fetched from an API in a real app
   const reportData = [
     {
       vendor: "Ajanta Traders", 

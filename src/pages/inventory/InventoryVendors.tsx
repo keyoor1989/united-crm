@@ -106,7 +106,17 @@ const InventoryVendors = () => {
         }
 
         if (data) {
-          setVendors(data);
+          const adaptedVendors: Vendor[] = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            contactPerson: item.contact_person || '',
+            gstNo: item.gst_no || '',
+            phone: item.phone || '',
+            email: item.email || '',
+            address: item.address || '',
+            createdAt: item.created_at
+          }));
+          setVendors(adaptedVendors);
         }
       } catch (error) {
         console.error('Error fetching vendors:', error);

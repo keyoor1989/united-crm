@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Vendor } from "@/types/inventory";
 import { toast } from "sonner";
 
-// Mock vendors data
+// Mock vendors data with contactPerson property
 const mockVendors: Vendor[] = [
   {
     id: '1',
@@ -62,6 +62,7 @@ type VendorFormData = {
   phone: string;
   email: string;
   address: string;
+  contactPerson: string;
 };
 
 const EngineerInventory = () => {
@@ -75,7 +76,8 @@ const EngineerInventory = () => {
     gstNo: "",
     phone: "",
     email: "",
-    address: ""
+    address: "",
+    contactPerson: ""
   });
   
   const filteredVendors = vendors.filter(vendor => 
@@ -92,7 +94,8 @@ const EngineerInventory = () => {
       gstNo: "",
       phone: "",
       email: "",
-      address: ""
+      address: "",
+      contactPerson: ""
     });
     setSelectedVendorId(null);
     setVendorDialog(true);
@@ -105,7 +108,8 @@ const EngineerInventory = () => {
       gstNo: vendor.gstNo,
       phone: vendor.phone,
       email: vendor.email,
-      address: vendor.address
+      address: vendor.address,
+      contactPerson: vendor.contactPerson
     });
     setSelectedVendorId(vendor.id);
     setVendorDialog(true);

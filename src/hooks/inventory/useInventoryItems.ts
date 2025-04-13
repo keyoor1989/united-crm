@@ -95,12 +95,13 @@ export const useInventoryItems = (warehouseId: string | null) => {
         // Cast to handle type compatibility with the database schema
         try {
           // Use type assertion after explicit check to convert error objects safely
+          // First convert to unknown then to DbInventoryItem for type safety
           return adaptInventoryItem(item as unknown as DbInventoryItem);
         } catch (err) {
           console.error("Error adapting item:", item, err);
           return null;
         }
-      }).filter(Boolean) as InventoryItem[]; // Filter out null values
+      }).filter((item): item is InventoryItem => item !== null); // Type predicate to filter out null values
     },
   });
 
