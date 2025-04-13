@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import CustomerFormComponent from "@/components/customers/CustomerFormComponent";
 import LeadPipeline from "@/components/customers/LeadPipeline";
@@ -9,10 +9,15 @@ import CustomerMachines from "@/components/customers/CustomerMachines";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomerFormProvider, defaultValues, formSchema } from "@/components/customers/CustomerFormContext";
 import { useCustomerDetails } from "@/hooks/useCustomerDetails";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const CustomerForm = () => {
   const [activeTab, setActiveTab] = useState("form");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const { customer, isLoading, error } = useCustomerDetails();
   
   // Create form at this level to provide context for all tabs
@@ -31,6 +36,7 @@ const CustomerForm = () => {
         phone: customer.phone || "",
         email: customer.email || "",
         area: customer.location || "",
+        address: customer.location || "", // Make sure address is set too
         leadStatus: customer.status as any || "New",
         // Add other fields as needed
       });
@@ -38,7 +44,6 @@ const CustomerForm = () => {
   }, [customer, form]);
   
   const isNewCustomer = !id;
-  const isSubmitting = false;
 
   if (isLoading) {
     return <div className="p-8">Loading customer details...</div>;
@@ -61,6 +66,11 @@ const CustomerForm = () => {
               : "Update customer details, track machines, and manage follow-ups"}
           </p>
         </div>
+        {!isNewCustomer && (
+          <Button variant="outline" onClick={() => navigate("/customers")}>
+            Back to Customers
+          </Button>
+        )}
       </div>
 
       <CustomerFormProvider form={form} isNewCustomer={isNewCustomer} isSubmitting={isSubmitting}>
@@ -72,18 +82,26 @@ const CustomerForm = () => {
         >
           <TabsList className="w-full bg-muted mb-2">
             <TabsTrigger value="form" className="flex-1">Customer Form</TabsTrigger>
-            <TabsTrigger value="machines" className="flex-1">Machines & Follow-ups</TabsTrigger>
-            <TabsTrigger value="pipeline" className="flex-1">Lead Pipeline</TabsTrigger>
+            {!isNewCustomer && (
+              <>
+                <TabsTrigger value="machines" className="flex-1">Machines & Follow-ups</TabsTrigger>
+                <TabsTrigger value="pipeline" className="flex-1">Lead Pipeline</TabsTrigger>
+              </>
+            )}
           </TabsList>
           <TabsContent value="form" className="mt-4">
             <CustomerFormComponent customer={customer} />
           </TabsContent>
-          <TabsContent value="machines" className="mt-4">
-            <CustomerMachines customerId={id} />
-          </TabsContent>
-          <TabsContent value="pipeline" className="mt-4">
-            <LeadPipeline customerId={id} />
-          </TabsContent>
+          {!isNewCustomer && (
+            <>
+              <TabsContent value="machines" className="mt-4">
+                <CustomerMachines customerId={id} />
+              </TabsContent>
+              <TabsContent value="pipeline" className="mt-4">
+                <LeadPipeline customerId={id} />
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </CustomerFormProvider>
     </div>

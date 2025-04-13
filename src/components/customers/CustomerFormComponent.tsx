@@ -1,8 +1,6 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { v4 as uuidv4 } from "uuid";
 
 import { Form } from "@/components/ui/form";
@@ -12,7 +10,7 @@ import { CustomerType } from "@/types/customer";
 import AddressForm from "./form-sections/AddressForm";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyNewCustomer } from "@/services/telegramService";
-import { CustomerFormProvider, defaultValues, formSchema } from "./CustomerFormContext";
+import { useCustomerForm } from "./CustomerFormContext";
 import BasicInfoForm from "./form-sections/BasicInfoForm";
 import LeadInfoForm from "./form-sections/LeadInfoForm";
 import NotesForm from "./form-sections/NotesForm";
@@ -25,22 +23,7 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // Define form with the proper type
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      ...defaultValues,
-      name: selectedCustomer?.name || "",
-      phone: selectedCustomer?.phone || "",
-      email: selectedCustomer?.email || "",
-      leadSource: "Website",
-      leadStatus: (selectedCustomer?.status as any) || "New",
-      address: selectedCustomer?.location || "",
-      area: selectedCustomer?.location || "",
-      customerType: "individual" as "individual" | "government" | "corporate"
-    },
-  });
+  const { form, isNewCustomer } = useCustomerForm();
 
   const handleSubmit = async (values: any) => {
     try {
@@ -54,7 +37,7 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
         email: values.email || "",
         location: values.area || "",
         lastContact: "Just now",
-        machines: [],
+        machines: selectedCustomer?.machines || [],
         status: values.leadStatus as any
       };
       
@@ -98,9 +81,6 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
     }
   };
 
-  const isNewCustomer = !selectedCustomer;
-
-  // Use form directly, don't create a new provider here
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
