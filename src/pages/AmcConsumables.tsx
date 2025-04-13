@@ -319,118 +319,120 @@ const AmcConsumables = () => {
             </div>
           </div>
 
-          <TabsContent value="usage" className="mt-0">
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Machine</TableHead>
-                    <TableHead>Serial No.</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead>Cost (₹)</TableHead>
-                    <TableHead>Engineer</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsage.length === 0 ? (
+          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+            <TabsContent value="usage" className="mt-0">
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-6">
-                        <div className="flex flex-col items-center justify-center text-muted-foreground">
-                          <Printer className="h-8 w-8 mb-2" />
-                          <p>No consumable usage records found</p>
-                        </div>
-                      </TableCell>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Serial No.</TableHead>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Qty</TableHead>
+                      <TableHead>Cost (₹)</TableHead>
+                      <TableHead>Engineer</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredUsage.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.date}</TableCell>
-                        <TableCell>
-                          <div className="font-medium">{item.customerName}</div>
-                          <div className="text-xs text-muted-foreground">{item.department}</div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsage.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-6">
+                          <div className="flex flex-col items-center justify-center text-muted-foreground">
+                            <Printer className="h-8 w-8 mb-2" />
+                            <p>No consumable usage records found</p>
+                          </div>
                         </TableCell>
-                        <TableCell>
-                          <div>{item.machineModel}</div>
-                          <div className="text-xs text-muted-foreground">{item.machineType}</div>
-                        </TableCell>
-                        <TableCell>{item.serialNumber}</TableCell>
-                        <TableCell>{item.itemName}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>₹{item.cost.toLocaleString()}</TableCell>
-                        <TableCell>{item.engineerName}</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
+                    ) : (
+                      filteredUsage.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{item.date}</TableCell>
+                          <TableCell>
+                            <div className="font-medium">{item.customerName}</div>
+                            <div className="text-xs text-muted-foreground">{item.department}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div>{item.machineModel}</div>
+                            <div className="text-xs text-muted-foreground">{item.machineType}</div>
+                          </TableCell>
+                          <TableCell>{item.serialNumber}</TableCell>
+                          <TableCell>{item.itemName}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                          <TableCell>₹{item.cost.toLocaleString()}</TableCell>
+                          <TableCell>{item.engineerName}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="contracts" className="mt-0">
-            <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Machine</TableHead>
-                    <TableHead>Serial No.</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Monthly Rent</TableHead>
-                    <TableHead>Copy Limit</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockContracts.length === 0 ? (
+            <TabsContent value="contracts" className="mt-0">
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-6">
-                        <div className="flex flex-col items-center justify-center text-muted-foreground">
-                          <Printer className="h-8 w-8 mb-2" />
-                          <p>No AMC contracts found</p>
-                        </div>
-                      </TableCell>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Machine</TableHead>
+                      <TableHead>Serial No.</TableHead>
+                      <TableHead>Period</TableHead>
+                      <TableHead>Monthly Rent</TableHead>
+                      <TableHead>Copy Limit</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
-                  ) : (
-                    mockContracts.map((contract) => (
-                      <TableRow key={contract.id}>
-                        <TableCell>
-                          <div className="font-medium">{contract.customerName}</div>
-                          <div className="text-xs text-muted-foreground">{contract.department}</div>
-                        </TableCell>
-                        <TableCell>{contract.machineModel}</TableCell>
-                        <TableCell>{contract.serialNumber}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {contract.startDate.split('-')[0]}-{contract.endDate.split('-')[0]}
+                  </TableHeader>
+                  <TableBody>
+                    {mockContracts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-6">
+                          <div className="flex flex-col items-center justify-center text-muted-foreground">
+                            <Printer className="h-8 w-8 mb-2" />
+                            <p>No AMC contracts found</p>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            {contract.startDate} - {contract.endDate}
-                          </div>
-                        </TableCell>
-                        <TableCell>₹{contract.monthlyRent.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <div>{contract.copyLimitA4.toLocaleString()} A4</div>
-                          <div className="text-xs text-muted-foreground">
-                            ₹{contract.extraA4CopyCharge} per extra copy
-                          </div>
-                        </TableCell>
-                        <TableCell>{contract.contractType}</TableCell>
-                        <TableCell>
-                          <Badge variant={contract.status === "Active" ? "success" : "secondary"}>
-                            {contract.status}
-                          </Badge>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
+                    ) : (
+                      mockContracts.map((contract) => (
+                        <TableRow key={contract.id}>
+                          <TableCell>
+                            <div className="font-medium">{contract.customerName}</div>
+                            <div className="text-xs text-muted-foreground">{contract.department}</div>
+                          </TableCell>
+                          <TableCell>{contract.machineModel}</TableCell>
+                          <TableCell>{contract.serialNumber}</TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {contract.startDate.split('-')[0]}-{contract.endDate.split('-')[0]}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {contract.startDate} - {contract.endDate}
+                            </div>
+                          </TableCell>
+                          <TableCell>₹{contract.monthlyRent.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <div>{contract.copyLimitA4.toLocaleString()} A4</div>
+                            <div className="text-xs text-muted-foreground">
+                              ₹{contract.extraA4CopyCharge} per extra copy
+                            </div>
+                          </TableCell>
+                          <TableCell>{contract.contractType}</TableCell>
+                          <TableCell>
+                            <Badge variant={contract.status === "Active" ? "success" : "secondary"}>
+                              {contract.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
