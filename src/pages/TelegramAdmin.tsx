@@ -133,7 +133,9 @@ const TelegramAdmin = () => {
         toast.success("Webhook configured successfully");
         // await fetchWebhookInfo(botToken);
       } else {
-        toast.error(`Failed to set webhook: ${data?.description || "Unknown error"}`);
+        // Fix: Handle case when description may not exist
+        const errorMessage = data && 'description' in data ? data.description : "Unknown error";
+        toast.error(`Failed to set webhook: ${errorMessage}`);
       }
     } catch (error) {
       console.error("Error saving webhook settings:", error);
@@ -166,7 +168,9 @@ const TelegramAdmin = () => {
         toast.success("Webhook deleted successfully");
         // await fetchWebhookInfo(botToken);
       } else {
-        toast.error(`Failed to delete webhook: ${data?.description || "Unknown error"}`);
+        // Fix: Handle case when description may not exist
+        const errorMessage = data && 'description' in data ? data.description : "Unknown error";
+        toast.error(`Failed to delete webhook: ${errorMessage}`);
       }
     } catch (error) {
       console.error("Error deleting webhook:", error);
@@ -320,7 +324,9 @@ const TelegramAdmin = () => {
           setMessageLogs(logsData as unknown as MessageLog[]);
         }
       } else {
-        toast.error(`Failed to send message: ${data?.description || "Unknown error"}`);
+        // Fix: Handle case when description may not exist
+        const errorMessage = data && 'description' in data ? data.description : "Unknown error";
+        toast.error(`Failed to send message: ${errorMessage}`);
       }
     } catch (error) {
       console.error("Error sending test message:", error);

@@ -28,8 +28,8 @@ const SectionGroup = ({
   isActive, 
   isCollapsed 
 }: SectionGroupProps) => {
-  // Get the section label based on type
-  const sectionLabel = 'label' in section ? section.label : section.title;
+  // Get the section label based on type, checking for both label and title properties
+  const sectionLabel = 'label' in section ? section.label : ('title' in section ? section.title : '');
   
   return (
     <SidebarGroup>

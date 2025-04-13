@@ -48,6 +48,6 @@ export interface WebhookInfo {
 
 export interface TelegramGenericResponse {
   ok: boolean;
-  description?: string;
+  description?: string; // Make description optional
   result?: any;
 }

@@ -1,3 +1,4 @@
+
 import { LucideIcon } from "lucide-react";
 
 export type NavItem = {
@@ -12,10 +13,11 @@ export type SidebarSectionConfig = {
   items: NavItem[];
 };
 
-// Keep backward compatibility with the NavSection type
+// Update NavSection to include both label and title properties for compatibility
 export type NavSection = {
   key: string;
   icon: LucideIcon;
   label: string;
+  title?: string; // Add title property for compatibility with SidebarSectionConfig
   items: NavItem[];
 };
