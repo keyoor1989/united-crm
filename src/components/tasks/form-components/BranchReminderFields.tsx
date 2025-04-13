@@ -1,8 +1,8 @@
 
 import React from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { FormValues } from "./types";
 
@@ -40,12 +40,9 @@ const BranchReminderFields: React.FC<BranchReminderFieldsProps> = ({ form }) => 
         control={form.control}
         name="hasReminder"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between space-x-2 rounded-md border p-4">
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
             <div className="space-y-0.5">
-              <FormLabel>Enable Reminder</FormLabel>
-              <FormDescription>
-                Reminder 2 hours before due time
-              </FormDescription>
+              <FormLabel>Set Reminder</FormLabel>
             </div>
             <FormControl>
               <Switch

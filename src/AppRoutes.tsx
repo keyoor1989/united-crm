@@ -47,6 +47,7 @@ import PurchaseOrders from "@/pages/sales/PurchaseOrders";
 import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
 import SentOrders from "@/pages/sales/SentOrders";
 import OrderHistory from "@/pages/sales/OrderHistory";
+import TaskDashboard from "@/pages/tasks/TaskDashboard";
 
 const AppRoutes = () => {
   return (
@@ -102,6 +103,9 @@ const AppRoutes = () => {
         <Route path="/purchase-order-form" element={<ProtectedRoute><PurchaseOrderForm /></ProtectedRoute>} />
         <Route path="/sent-orders" element={<ProtectedRoute><SentOrders /></ProtectedRoute>} />
         <Route path="/order-history" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
+        
+        {/* Task Routes */}
+        <Route path="/tasks" element={<ProtectedRoute><TaskDashboard /></ProtectedRoute>} />
         
         {/* Smart Assistant */}
         <Route path="/smart-assistant" element={<ProtectedRoute><SmartAssistant /></ProtectedRoute>} />

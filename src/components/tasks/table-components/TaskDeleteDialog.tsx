@@ -8,7 +8,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 
 interface TaskDeleteDialogProps {
@@ -22,21 +22,23 @@ const TaskDeleteDialog: React.FC<TaskDeleteDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  taskTitle,
+  taskTitle
 }) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+          <AlertDialogTitle>Delete Task</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete the task "{taskTitle}". 
-            This action cannot be undone.
+            Are you sure you want to delete the task "{taskTitle}"? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className="bg-red-600">
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-red-500 hover:bg-red-600"
+          >
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

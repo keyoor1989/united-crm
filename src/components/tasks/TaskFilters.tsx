@@ -1,29 +1,29 @@
 
 import React from "react";
-import { CalendarDays, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Calendar, ListFilter, X } from "lucide-react";
 import { TaskDepartment, TaskPriority, TaskStatus } from "@/types/task";
 
 interface TaskFiltersProps {
   statusFilter: TaskStatus | "All";
-  setStatusFilter: (status: TaskStatus | "All") => void;
+  setStatusFilter: (value: TaskStatus | "All") => void;
   priorityFilter: TaskPriority | "All";
-  setPriorityFilter: (priority: TaskPriority | "All") => void;
+  setPriorityFilter: (value: TaskPriority | "All") => void;
   departmentFilter: TaskDepartment | "All";
-  setDepartmentFilter: (department: TaskDepartment | "All") => void;
+  setDepartmentFilter: (value: TaskDepartment | "All") => void;
   showDueToday: boolean;
-  setShowDueToday: (show: boolean) => void;
+  setShowDueToday: (value: boolean) => void;
   showOverdue: boolean;
-  setShowOverdue: (show: boolean) => void;
+  setShowOverdue: (value: boolean) => void;
   onClearFilters: () => void;
   onViewCalendar?: () => void;
   showCalendarView?: boolean;
@@ -42,38 +42,57 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
   setShowOverdue,
   onClearFilters,
   onViewCalendar,
-  showCalendarView,
+  showCalendarView
 }) => {
+  const hasActiveFilters = 
+    statusFilter !== "All" || 
+    priorityFilter !== "All" || 
+    departmentFilter !== "All" || 
+    showDueToday || 
+    showOverdue;
+
   return (
-    <div className="bg-muted/40 rounded-lg p-4 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium flex items-center">
-          <Filter className="h-5 w-5 mr-2" />
-          Filter Tasks
-        </h3>
-        <div className="flex gap-2">
-          {onViewCalendar && (
+    <div className="mb-6 space-y-4">
+      <div className="flex flex-col sm:flex-row justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <ListFilter className="h-5 w-5 text-muted-foreground" />
+          <h3 className="font-medium">Filters</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          {hasActiveFilters && (
             <Button 
-              variant={showCalendarView ? "default" : "outline"} 
-              size="sm"
-              onClick={onViewCalendar}
+              variant="ghost" 
+              size="sm" 
+              onClick={onClearFilters}
+              className="h-8 gap-1"
             >
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Calendar View
+              <X className="h-4 w-4" />
+              Clear Filters
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={onClearFilters}>
-            Clear Filters
-          </Button>
+          
+          {onViewCalendar && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onViewCalendar}
+              className="h-8 gap-1"
+            >
+              <Calendar className="h-4 w-4" />
+              {showCalendarView ? "List View" : "Calendar View"}
+            </Button>
+          )}
         </div>
       </div>
-
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
+        <div className="space-y-1">
           <Label htmlFor="status-filter">Status</Label>
           <Select
             value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value as TaskStatus | "All")}
+            onValueChange={(value) => 
+              setStatusFilter(value as TaskStatus | "All")
+            }
           >
             <SelectTrigger id="status-filter">
               <SelectValue placeholder="Filter by status" />
@@ -87,12 +106,14 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
             </SelectContent>
           </Select>
         </div>
-
-        <div>
+        
+        <div className="space-y-1">
           <Label htmlFor="priority-filter">Priority</Label>
           <Select
             value={priorityFilter}
-            onValueChange={(value) => setPriorityFilter(value as TaskPriority | "All")}
+            onValueChange={(value) => 
+              setPriorityFilter(value as TaskPriority | "All")
+            }
           >
             <SelectTrigger id="priority-filter">
               <SelectValue placeholder="Filter by priority" />
@@ -105,12 +126,14 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
             </SelectContent>
           </Select>
         </div>
-
-        <div>
+        
+        <div className="space-y-1">
           <Label htmlFor="department-filter">Department</Label>
           <Select
             value={departmentFilter}
-            onValueChange={(value) => setDepartmentFilter(value as TaskDepartment | "All")}
+            onValueChange={(value) => 
+              setDepartmentFilter(value as TaskDepartment | "All")
+            }
           >
             <SelectTrigger id="department-filter">
               <SelectValue placeholder="Filter by department" />
@@ -126,24 +149,24 @@ const TaskFilters: React.FC<TaskFiltersProps> = ({
           </Select>
         </div>
       </div>
-
-      <div className="flex flex-wrap gap-6 mt-4">
+      
+      <div className="flex flex-wrap gap-6">
         <div className="flex items-center space-x-2">
-          <Checkbox
+          <Switch
             id="due-today"
             checked={showDueToday}
-            onCheckedChange={(checked) => setShowDueToday(checked === true)}
+            onCheckedChange={setShowDueToday}
           />
           <Label htmlFor="due-today">Due Today</Label>
         </div>
-
+        
         <div className="flex items-center space-x-2">
-          <Checkbox
+          <Switch
             id="overdue"
             checked={showOverdue}
-            onCheckedChange={(checked) => setShowOverdue(checked === true)}
+            onCheckedChange={setShowOverdue}
           />
-          <Label htmlFor="overdue">Show Overdue</Label>
+          <Label htmlFor="overdue">Overdue Tasks</Label>
         </div>
       </div>
     </div>
