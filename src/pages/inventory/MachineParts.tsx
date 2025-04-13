@@ -29,7 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Filter, Download, Printer, MoreHorizontal, Trash, Edit } from "lucide-react";
+import { Search, Plus, Filter, Download, Printer, MoreHorizontal, Trash, Edit, History } from "lucide-react";
 import { InventoryItem } from "@/types/inventory";
 import OpeningStockEntryForm from "@/components/inventory/OpeningStockEntryForm";
 import { useInventoryItems, useDeleteInventoryItem } from "@/hooks/inventory/useInventoryItems";
@@ -40,6 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import ItemHistoryDialog from "@/components/inventory/ItemHistoryDialog";
 
 const MachineParts = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,6 +50,8 @@ const MachineParts = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<InventoryItem | null>(null);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   
   const { items, isLoading, error } = useInventoryItems(null);
   const deleteItemMutation = useDeleteInventoryItem();
@@ -69,6 +72,11 @@ const MachineParts = () => {
       setIsDeleteDialogOpen(false);
       setItemToDelete(null);
     }
+  };
+
+  const openHistoryDialog = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setIsHistoryDialogOpen(true);
   };
 
   const filteredItems = items.filter(item => {
@@ -232,16 +240,20 @@ const MachineParts = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openHistoryDialog(item)}>
+                                <History className="h-4 w-4 mr-2" />
+                                View History
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="text-destructive"
                                 onClick={() => openDeleteDialog(item)}
                               >
                                 <Trash className="h-4 w-4 mr-2" />
                                 Delete
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -347,6 +359,12 @@ const MachineParts = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ItemHistoryDialog
+        open={isHistoryDialogOpen}
+        onOpenChange={setIsHistoryDialogOpen}
+        item={selectedItem}
+      />
     </div>
   );
 };
