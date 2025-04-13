@@ -1,8 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Vendor, dbAdapter } from '@/types/inventory';
+import { Vendor } from '@/types/inventory';
 import { toast } from 'sonner';
+import { dbAdapter } from '@/types/inventory';
 
 interface VendorContextType {
   vendors: Vendor[];
@@ -30,18 +31,7 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (error) throw new Error(error.message);
         
         // Convert snake_case to camelCase using the adapter
-        const vendorsData: Vendor[] = data.map(vendor => {
-          return {
-            id: vendor.id,
-            name: vendor.name,
-            contactPerson: vendor.contact_person || "",
-            email: vendor.email || "",
-            phone: vendor.phone || "",
-            address: vendor.address || "",
-            gstNo: vendor.gst_no || "",
-            createdAt: vendor.created_at
-          };
-        });
+        const vendorsData: Vendor[] = (data || []).map(vendor => dbAdapter.adaptVendor(vendor));
         
         setVendors(vendorsData);
       } catch (err) {
@@ -60,7 +50,7 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       // Convert camelCase to snake_case for database
       const { data, error } = await supabase.from('vendors').insert({
         name: vendor.name,
-        contact_person: vendor.contactPerson,
+        contact_person: vendor.contactPerson || '',
         email: vendor.email,
         phone: vendor.phone,
         address: vendor.address,
@@ -71,16 +61,7 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       
       if (data && data.length > 0) {
         // Use our adapter to convert from DB format to frontend format
-        const newVendor: Vendor = {
-          id: data[0].id,
-          name: data[0].name,
-          contactPerson: data[0].contact_person || "",
-          email: data[0].email || "",
-          phone: data[0].phone || "",
-          address: data[0].address || "",
-          gstNo: data[0].gst_no || "",
-          createdAt: data[0].created_at
-        };
+        const newVendor = dbAdapter.adaptVendor(data[0]);
         
         setVendors([...vendors, newVendor]);
         toast.success('Vendor added successfully');

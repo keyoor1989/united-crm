@@ -40,174 +40,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AMCMachine, AMCBilling, AMCProfitReport } from "@/types/inventory";
-
-interface DbAMCMachine {
-  id: string;
-  contract_id: string;
-  customer_id: string;
-  customer_name: string;
-  model: string;
-  machine_type: string;
-  serial_number: string;
-  location: string;
-  department?: string;
-  contract_type: string;
-  start_date: string;
-  end_date: string;
-  current_rent: number;
-  copy_limit_a4: number;
-  copy_limit_a3: number;
-  last_a4_reading: number;
-  last_a3_reading: number;
-  last_reading_date?: string;
-  created_at?: string;
-}
-
-interface DbAMCBilling {
-  id: string;
-  contract_id: string;
-  machine_id: string;
-  customer_id: string;
-  customer_name: string;
-  machine_model: string;
-  machine_type: string;
-  serial_number: string;
-  department?: string;
-  billing_month: string;
-  a4_opening_reading: number;
-  a4_closing_reading: number;
-  a4_total_copies: number;
-  a4_free_copies: number;
-  a4_extra_copies: number;
-  a4_extra_copy_rate: number;
-  a4_extra_copy_charge: number;
-  a3_opening_reading: number;
-  a3_closing_reading: number;
-  a3_total_copies: number;
-  a3_free_copies: number;
-  a3_extra_copies: number;
-  a3_extra_copy_rate: number;
-  a3_extra_copy_charge: number;
-  gst_percent: number;
-  gst_amount: number;
-  rent: number;
-  rent_gst: number;
-  total_bill: number;
-  bill_date: string;
-  bill_status: string;
-  invoice_no?: string;
-  created_at: string;
-}
-
-interface DbAMCConsumableUsage {
-  id: string;
-  contract_id: string;
-  machine_id: string;
-  customer_id: string;
-  customer_name: string;
-  machine_model: string;
-  machine_type: string;
-  serial_number: string;
-  engineer_id?: string;
-  engineer_name?: string;
-  date: string;
-  item_id?: string;
-  item_name: string;
-  quantity: number;
-  cost: number;
-  inventory_deducted?: boolean;
-  department?: string;
-  remarks?: string;
-  created_at?: string;
-}
-
-interface DbAMCProfitReport {
-  id: string;
-  contract_id: string;
-  machine_id: string;
-  customer_id: string;
-  customer_name: string;
-  machine_model: string;
-  machine_type: string;
-  serial_number: string;
-  department?: string;
-  month: string;
-  rent_received: number;
-  extra_copy_income: number;
-  total_income: number;
-  consumables_cost: number;
-  engineer_visit_cost: number;
-  travel_expense: number;
-  food_expense: number;
-  other_expense: number;
-  total_expense: number;
-  profit: number;
-  profit_margin: number;
-  created_at?: string;
-}
-
-const convertToAMCMachine = (dbMachine: DbAMCMachine): AMCMachine => {
-  return {
-    id: dbMachine.id,
-    contract_id: dbMachine.contract_id,
-    customer_id: dbMachine.customer_id,
-    customer_name: dbMachine.customer_name,
-    model: dbMachine.model,
-    machine_type: dbMachine.machine_type,
-    serial_number: dbMachine.serial_number,
-    location: dbMachine.location,
-    department: dbMachine.department,
-    contract_type: dbMachine.contract_type,
-    start_date: dbMachine.start_date,
-    end_date: dbMachine.end_date,
-    current_rent: dbMachine.current_rent,
-    copy_limit_a4: dbMachine.copy_limit_a4,
-    copy_limit_a3: dbMachine.copy_limit_a3,
-    last_a4_reading: dbMachine.last_a4_reading,
-    last_a3_reading: dbMachine.last_a3_reading,
-    last_reading_date: dbMachine.last_reading_date,
-    created_at: dbMachine.created_at
-  };
-};
-
-const convertToAMCBilling = (dbBilling: DbAMCBilling): AMCBilling => {
-  return {
-    id: dbBilling.id,
-    contract_id: dbBilling.contract_id,
-    machine_id: dbBilling.machine_id,
-    customer_id: dbBilling.customer_id,
-    customer_name: dbBilling.customer_name,
-    machine_model: dbBilling.machine_model,
-    machine_type: dbBilling.machine_type,
-    serial_number: dbBilling.serial_number,
-    department: dbBilling.department,
-    billing_month: dbBilling.billing_month,
-    a4_opening_reading: dbBilling.a4_opening_reading,
-    a4_closing_reading: dbBilling.a4_closing_reading,
-    a4_total_copies: dbBilling.a4_total_copies,
-    a4_free_copies: dbBilling.a4_free_copies,
-    a4_extra_copies: dbBilling.a4_extra_copies,
-    a4_extra_copy_rate: dbBilling.a4_extra_copy_rate,
-    a4_extra_copy_charge: dbBilling.a4_extra_copy_charge,
-    a3_opening_reading: dbBilling.a3_opening_reading,
-    a3_closing_reading: dbBilling.a3_closing_reading,
-    a3_total_copies: dbBilling.a3_total_copies,
-    a3_free_copies: dbBilling.a3_free_copies,
-    a3_extra_copies: dbBilling.a3_extra_copies,
-    a3_extra_copy_rate: dbBilling.a3_extra_copy_rate,
-    a3_extra_copy_charge: dbBilling.a3_extra_copy_charge,
-    gst_percent: dbBilling.gst_percent,
-    gst_amount: dbBilling.gst_amount,
-    rent: dbBilling.rent,
-    rent_gst: dbBilling.rent_gst,
-    total_bill: dbBilling.total_bill,
-    bill_date: dbBilling.bill_date,
-    bill_status: dbBilling.bill_status,
-    invoice_no: dbBilling.invoice_no,
-    created_at: dbBilling.created_at
-  };
-};
+import { AMCMachine, AMCBilling, DbAMCMachine, DbAMCBilling, dbAdapter } from "@/types/inventory";
 
 const AmcTracker: React.FC = () => {
   const { toast } = useToast();
@@ -220,10 +53,10 @@ const AmcTracker: React.FC = () => {
   const [isBillingDialogOpen, setIsBillingDialogOpen] = useState(false);
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
   const [newBilling, setNewBilling] = useState({
-    contract_id: "",
-    customer_id: "",
-    customer_name: "",
-    machine_id: "",
+    contractId: "",
+    customerId: "",
+    customerName: "",
+    machineId: "",
     billing_date: new Date().toISOString().split('T')[0],
     billing_amount: 0,
     gst_percentage: 0,
@@ -252,7 +85,7 @@ const AmcTracker: React.FC = () => {
             variant: "destructive",
           });
         } else {
-          const amcMachines = (data || []).map(convertToAMCMachine);
+          const amcMachines = (data || []).map(machine => dbAdapter.adaptAMCMachine(machine as DbAMCMachine));
           setMachines(amcMachines);
         }
       } finally {
@@ -276,7 +109,7 @@ const AmcTracker: React.FC = () => {
             variant: "destructive",
           });
         } else {
-          const amcBillings = (data || []).map(convertToAMCBilling);
+          const amcBillings = (data || []).map(billing => dbAdapter.adaptAMCBilling(billing as DbAMCBilling));
           setBillingData(amcBillings);
         }
       } finally {
@@ -290,9 +123,9 @@ const AmcTracker: React.FC = () => {
 
   useEffect(() => {
     const filtered = machines.filter(machine =>
-      machine.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      machine.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       machine.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      machine.serial_number.toLowerCase().includes(searchQuery.toLowerCase())
+      machine.serialNumber.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredMachines(filtered);
   }, [searchQuery, machines]);
@@ -307,14 +140,14 @@ const AmcTracker: React.FC = () => {
 
   const handleBillingDialogOpen = (contractId: string) => {
     setSelectedContractId(contractId);
-    const selectedMachine = machines.find(machine => machine.contract_id === contractId);
+    const selectedMachine = machines.find(machine => machine.contractId === contractId);
     if (selectedMachine) {
       setNewBilling(prev => ({
         ...prev,
-        contract_id: selectedMachine.contract_id,
-        customer_id: selectedMachine.customer_id,
-        customer_name: selectedMachine.customer_name,
-        machine_id: selectedMachine.id,
+        contractId: selectedMachine.contractId,
+        customerId: selectedMachine.customerId,
+        customerName: selectedMachine.customerName,
+        machineId: selectedMachine.id,
       }));
     }
     setIsBillingDialogOpen(true);
@@ -324,10 +157,10 @@ const AmcTracker: React.FC = () => {
     setIsBillingDialogOpen(false);
     setSelectedContractId(null);
     setNewBilling({
-      contract_id: "",
-      customer_id: "",
-      customer_name: "",
-      machine_id: "",
+      contractId: "",
+      customerId: "",
+      customerName: "",
+      machineId: "",
       billing_date: new Date().toISOString().split('T')[0],
       billing_amount: 0,
       gst_percentage: 0,
@@ -377,7 +210,7 @@ const AmcTracker: React.FC = () => {
 
       const totalAmount = calculateTotalAmount();
 
-      const selectedMachine = machines.find(m => m.contract_id === selectedContractId);
+      const selectedMachine = machines.find(m => m.contractId === selectedContractId);
       
       if (!selectedMachine) {
         toast({
@@ -389,26 +222,26 @@ const AmcTracker: React.FC = () => {
       }
       
       const billingDataToInsert = {
-        contract_id: newBilling.contract_id,
-        machine_id: newBilling.machine_id,
-        customer_id: newBilling.customer_id,
-        customer_name: newBilling.customer_name,
+        contract_id: newBilling.contractId,
+        machine_id: newBilling.machineId,
+        customer_id: newBilling.customerId,
+        customer_name: newBilling.customerName,
         machine_model: selectedMachine.model,
-        machine_type: selectedMachine.machine_type,
-        serial_number: selectedMachine.serial_number,
+        machine_type: selectedMachine.machineType,
+        serial_number: selectedMachine.serialNumber,
         billing_month: newBilling.billing_date,
         department: selectedMachine.department,
         a4_opening_reading: 0,
         a4_closing_reading: 0,
         a4_total_copies: 0,
-        a4_free_copies: selectedMachine.copy_limit_a4,
+        a4_free_copies: selectedMachine.copyLimitA4,
         a4_extra_copies: 0,
         a4_extra_copy_rate: 0,
         a4_extra_copy_charge: 0,
         a3_opening_reading: 0,
         a3_closing_reading: 0,
         a3_total_copies: 0,
-        a3_free_copies: selectedMachine.copy_limit_a3,
+        a3_free_copies: selectedMachine.copyLimitA3,
         a3_extra_copies: 0,
         a3_extra_copy_rate: 0,
         a3_extra_copy_charge: 0,
@@ -448,7 +281,7 @@ const AmcTracker: React.FC = () => {
           .order('billing_month', { ascending: false });
         
         if (data) {
-          const amcBillings = data.map(convertToAMCBilling);
+          const amcBillings = data.map(billing => dbAdapter.adaptAMCBilling(billing as DbAMCBilling));
           setBillingData(amcBillings);
         }
       }
@@ -513,15 +346,15 @@ const AmcTracker: React.FC = () => {
               ) : (
                 filteredMachines.map((machine) => (
                   <TableRow key={machine.id}>
-                    <TableCell className="font-medium">{machine.contract_id}</TableCell>
+                    <TableCell className="font-medium">{machine.contractId}</TableCell>
                     <TableCell className="text-center">{machine.id}</TableCell>
-                    <TableCell className="whitespace-nowrap">{machine.customer_name}</TableCell>
+                    <TableCell className="whitespace-nowrap">{machine.customerName}</TableCell>
                     <TableCell>{machine.model}</TableCell>
-                    <TableCell>{machine.serial_number}</TableCell>
-                    <TableCell>{new Date(machine.start_date).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(machine.end_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{machine.serialNumber}</TableCell>
+                    <TableCell>{new Date(machine.startDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(machine.endDate).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <Button size="sm" onClick={() => handleBillingDialogOpen(machine.contract_id)}>Add Billing</Button>
+                      <Button size="sm" onClick={() => handleBillingDialogOpen(machine.contractId)}>Add Billing</Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -567,33 +400,33 @@ const AmcTracker: React.FC = () => {
               ) : (
                 billingData.map((billing, index) => (
                   <TableRow key={billing.id}>
-                    <TableCell key={`cell-${index}-0`} className="font-medium">{billing.contract_id}</TableCell>
+                    <TableCell key={`cell-${index}-0`} className="font-medium">{billing.contractId}</TableCell>
                     <TableCell key={`cell-${index}-1`} className="text-center">
-                      {billing.machine_id}
+                      {billing.machineId}
                     </TableCell>
                     <TableCell key={`cell-${index}-2`} className="whitespace-nowrap text-center">
-                      {billing.customer_name}
+                      {billing.customerName}
                     </TableCell>
                     <TableCell key={`cell-${index}-3`} className="text-center">
-                      {new Date(billing.billing_month).toLocaleDateString()}
+                      {new Date(billing.billingMonth).toLocaleDateString()}
                     </TableCell>
                     <TableCell key={`cell-${index}-4`} className="text-center">
                       {billing.rent}
                     </TableCell>
                     <TableCell key={`cell-${index}-5`} className="text-center">
-                      {billing.gst_percent}
+                      {billing.gstPercent}
                     </TableCell>
                     <TableCell key={`cell-${index}-6`} className="text-center">
-                      {billing.total_bill}
+                      {billing.totalBill}
                     </TableCell>
                     <TableCell key={`cell-${index}-7`} className="text-center">
-                      {billing.bill_date ? new Date(billing.bill_date).toLocaleDateString() : "N/A"}
+                      {billing.billDate ? new Date(billing.billDate).toLocaleDateString() : "N/A"}
                     </TableCell>
                     <TableCell key={`cell-${index}-8`} className="text-center">
-                      {billing.bill_status || "N/A"}
+                      {billing.billStatus || "N/A"}
                     </TableCell>
                     <TableCell key={`cell-${index}-9`} className="text-center">
-                      {billing.invoice_no || "N/A"}
+                      {billing.invoiceNo || "N/A"}
                     </TableCell>
                     <TableCell key={`cell-${index}-10`} className="text-center">
                       N/A

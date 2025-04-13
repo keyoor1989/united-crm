@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import {
@@ -25,27 +26,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Brand {
-  id: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Model {
-  id: string;
-  brandId: string;
-  name: string;
-  type: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { Brand, Model, dbAdapter } from "@/types/inventory";
 
 const InventoryBrands = () => {
-  const { toast } = useToast();
   const [brands, setBrands] = useState<Brand[]>([]);
   const [models, setModels] = useState<Model[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(true);
@@ -62,7 +47,7 @@ const InventoryBrands = () => {
       setLoadingBrands(true);
       try {
         const { data, error } = await supabase
-          .from('brands')
+          .from('inventory_brands')
           .select('*')
           .order('created_at', { ascending: false });
 
@@ -74,7 +59,9 @@ const InventoryBrands = () => {
             variant: "destructive",
           });
         } else {
-          setBrands(data || []);
+          // Convert data to Brand type with proper adapters
+          const brandData = (data || []).map(brand => dbAdapter.adaptBrand(brand));
+          setBrands(brandData);
         }
       } finally {
         setLoadingBrands(false);
@@ -85,7 +72,7 @@ const InventoryBrands = () => {
       setLoadingModels(true);
       try {
         const { data, error } = await supabase
-          .from('models')
+          .from('inventory_models')
           .select('*')
           .order('created_at', { ascending: false });
 
@@ -97,7 +84,9 @@ const InventoryBrands = () => {
             variant: "destructive",
           });
         } else {
-          setModels(data || []);
+          // Convert data to Model type with proper adapters
+          const modelData = (data || []).map(model => dbAdapter.adaptModel(model));
+          setModels(modelData);
         }
       } finally {
         setLoadingModels(false);
@@ -106,7 +95,7 @@ const InventoryBrands = () => {
 
     fetchBrands();
     fetchModels();
-  }, [toast]);
+  }, []);
 
   const handleAddBrand = async () => {
     if (!brandName) {
@@ -116,37 +105,30 @@ const InventoryBrands = () => {
 
     try {
       const { error } = await supabase
-        .from('brands')
+        .from('inventory_brands')
         .insert([{ name: brandName }]);
 
       if (error) {
         console.error("Error adding brand:", error);
-        toast({
-          title: "Error",
-          description: "Failed to add brand. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("Failed to add brand. Please try again.");
       } else {
-        toast({
-          title: "Success",
-          description: "Brand added successfully.",
-        });
+        toast.success("Brand added successfully.");
         setBrandDialogOpen(false);
         setBrandName("");
         // Refresh brands
         const { data } = await supabase
-          .from('brands')
+          .from('inventory_brands')
           .select('*')
           .order('created_at', { ascending: false });
-        setBrands(data || []);
+        
+        if (data) {
+          const brandData = data.map(brand => dbAdapter.adaptBrand(brand));
+          setBrands(brandData);
+        }
       }
     } catch (error) {
       console.error("Unexpected error:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      toast.error("An unexpected error occurred. Please try again.");
     }
   };
 
@@ -167,37 +149,30 @@ const InventoryBrands = () => {
     const addModel = async () => {
       try {
         const { error } = await supabase
-          .from('models')
+          .from('inventory_models')
           .insert([{ brand_id: selectedBrand, name: modelName, type: typedModelType }]);
   
         if (error) {
           console.error("Error adding model:", error);
-          toast({
-            title: "Error",
-            description: "Failed to add model. Please try again.",
-            variant: "destructive",
-          });
+          toast.error("Failed to add model. Please try again.");
         } else {
-          toast({
-            title: "Success",
-            description: "Model added successfully.",
-          });
+          toast.success("Model added successfully.");
           setModelDialogOpen(false);
           setModelName("");
           // Refresh models
           const { data } = await supabase
-            .from('models')
+            .from('inventory_models')
             .select('*')
             .order('created_at', { ascending: false });
-          setModels(data || []);
+          
+          if (data) {
+            const modelData = data.map(model => dbAdapter.adaptModel(model));
+            setModels(modelData);
+          }
         }
       } catch (error) {
         console.error("Unexpected error:", error);
-        toast({
-          title: "Error",
-          description: "An unexpected error occurred. Please try again.",
-          variant: "destructive",
-        });
+        toast.error("An unexpected error occurred. Please try again.");
       }
     };
 

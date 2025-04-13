@@ -30,12 +30,12 @@ export const useFilteredItems = (
       // Extract unique models (considering the selected brand if applicable)
       let itemsToFilterForModels = items;
       if (selectedBrand && selectedBrand !== 'all_brands') {
-        itemsToFilterForModels = items.filter(item => item.brand_id === selectedBrand);
+        itemsToFilterForModels = items.filter(item => item.brandId === selectedBrand || item.brand_id === selectedBrand);
       }
       
       const uniqueModels = Array.from(new Set(itemsToFilterForModels.map(item => {
         // Try to get the model from compatible_models array or use model_id as fallback
-        return item.model_id || '';
+        return item.modelId || item.model_id || '';
       }).filter(Boolean)));
       
       setModels(uniqueModels as string[]);
@@ -53,7 +53,8 @@ export const useFilteredItems = (
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(item => 
-        item.part_name.toLowerCase().includes(query) || 
+        (item.name && item.name.toLowerCase().includes(query)) || 
+        (item.part_name && item.part_name.toLowerCase().includes(query)) ||
         (item.brand && item.brand.toLowerCase().includes(query)) ||
         (item.type && item.type.toLowerCase().includes(query)) ||
         (item.barcode && item.barcode.toLowerCase().includes(query))
@@ -62,12 +63,12 @@ export const useFilteredItems = (
     
     // Filter by brand
     if (selectedBrand && selectedBrand !== 'all_brands') {
-      filtered = filtered.filter(item => item.brand_id === selectedBrand);
+      filtered = filtered.filter(item => item.brandId === selectedBrand || item.brand_id === selectedBrand);
     }
     
     // Filter by model
     if (selectedModel && selectedModel !== 'all_models') {
-      filtered = filtered.filter(item => item.model_id === selectedModel);
+      filtered = filtered.filter(item => item.modelId === selectedModel || item.model_id === selectedModel);
     }
     
     setFilteredItems(filtered);
@@ -75,11 +76,25 @@ export const useFilteredItems = (
   
   // Calculate some useful stats from the filtered items
   const totalItems = filteredItems.length;
-  const totalStock = filteredItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
-  const lowStockItems = filteredItems.filter(item => 
-    (item.quantity !== undefined && item.min_stock !== undefined) && 
-    item.quantity < item.min_stock
-  ).length;
+  
+  const totalStock = filteredItems.reduce((sum, item) => {
+    const quantity = item.quantity !== undefined 
+      ? item.quantity 
+      : (item.currentStock !== undefined ? item.currentStock : 0);
+    return sum + quantity;
+  }, 0);
+  
+  const lowStockItems = filteredItems.filter(item => {
+    const currentQuantity = item.quantity !== undefined 
+      ? item.quantity 
+      : (item.currentStock !== undefined ? item.currentStock : 0);
+    
+    const minQuantity = item.min_stock !== undefined 
+      ? item.min_stock 
+      : (item.minStockLevel !== undefined ? item.minStockLevel : 0);
+    
+    return currentQuantity < minQuantity;
+  }).length;
   
   return {
     filteredItems,

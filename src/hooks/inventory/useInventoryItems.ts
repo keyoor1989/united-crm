@@ -2,59 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyInventoryAlert } from "@/services/telegramService";
-
-// Define the database schema representation of inventory items
-export interface DbInventoryItem {
-  id: string;
-  part_name: string;
-  category: string;
-  quantity: number;
-  min_stock: number;
-  purchase_price: number;
-  brand?: string;
-  compatible_models?: string[];
-  part_number?: string;
-  brand_id?: string;
-  model_id?: string;
-  warehouse_name?: string;
-}
-
-// Extended InventoryItem with properly named fields for frontend use
-export interface InventoryItem {
-  id: string;
-  part_name: string;
-  category: string;
-  quantity: number;
-  min_stock: number;
-  purchase_price: number;
-  brand?: string;
-  compatible_models?: string[];
-  part_number?: string;
-  brand_id?: string;
-  model_id?: string;
-  
-  // Frontend properties used in the application
-  name: string;
-  currentStock: number;
-  minStockLevel: number;
-  maxStockLevel: number;
-  reorderPoint: number;
-  unitCost: number;
-  unitPrice: number;
-  location: string;
-  lastRestocked: string;
-  createdAt: string;
-  
-  // Additional properties
-  brandId?: string;
-  modelId?: string;
-  type?: string;
-  minQuantity?: number;
-  currentQuantity?: number;
-  lastPurchasePrice?: number;
-  lastVendor?: string;
-  barcode?: string;
-}
+import { InventoryItem, DbInventoryItem, dbAdapter } from "@/types/inventory";
 
 // Function to convert the database schema InventoryItem to the app's InventoryItem type
 export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
@@ -68,6 +16,7 @@ export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
     purchase_price: item.purchase_price,
     brand: item.brand || "",
     model_id: item.model_id || "",
+    modelId: item.model_id || "",
     model: item.model_id || "",
     currentStock: item.quantity,
     minStockLevel: item.min_stock,
@@ -81,7 +30,7 @@ export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
     
     // Additional properties
     brandId: item.brand_id,
-    modelId: item.model_id,
+    brand_id: item.brand_id,
     type: item.category,
     minQuantity: item.min_stock,
     currentQuantity: item.quantity,
@@ -90,7 +39,6 @@ export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
     barcode: item.part_number || "",
     part_number: item.part_number,
     compatible_models: item.compatible_models,
-    brand_id: item.brand_id,
   };
 };
 
@@ -112,19 +60,38 @@ export const useInventoryItems = (warehouseId: string | null) => {
       if (error) throw error;
       
       // Check for low stock items and send alerts
-      if (data) {
-        const lowStockItems = data.filter(item => item.quantity < item.min_stock);
+      if (data && data.length > 0) {
+        // Safely check for low stock items with type checking
+        const lowStockItems = data.filter(item => 
+          typeof item === 'object' && 
+          item !== null && 
+          'quantity' in item && 
+          'min_stock' in item && 
+          (item.quantity as number) < (item.min_stock as number)
+        );
+        
         if (lowStockItems.length > 0) {
           // Only send the first low stock alert to avoid spamming
-          if (lowStockItems.length > 0) {
-            notifyInventoryAlert(lowStockItems[0]);
+          try {
+            notifyInventoryAlert(lowStockItems[0] as DbInventoryItem);
+          } catch (error) {
+            console.error("Error sending alert:", error);
           }
         }
       }
       
       // Convert database items to frontend format
-      // Cast to handle type compatibility with the database schema
-      return data.map((item) => adaptInventoryItem(item as DbInventoryItem));
+      // Add proper type checking to handle potential errors
+      return (data || []).map((item) => {
+        // Skip items that might be error objects
+        if (typeof item !== 'object' || item === null || 'error' in item) {
+          console.error("Invalid item data:", item);
+          return null;
+        }
+        
+        // Cast to handle type compatibility with the database schema
+        return adaptInventoryItem(item as DbInventoryItem);
+      }).filter(Boolean) as InventoryItem[]; // Filter out null values
     },
   });
 
