@@ -78,7 +78,6 @@ export const useServiceCallForm = () => {
     setSelectedCustomer(customer);
     setShowCustomerSearch(false);
     
-    // Fetch customer machines
     const fetchCustomerMachines = async () => {
       try {
         const { data, error } = await supabase
@@ -93,7 +92,6 @@ export const useServiceCallForm = () => {
       }
     };
 
-    // Fetch available engineers
     const fetchEngineers = async () => {
       try {
         const { data, error } = await supabase
@@ -111,8 +109,7 @@ export const useServiceCallForm = () => {
     fetchCustomerMachines();
     fetchEngineers();
     
-    // Set default SLA time based on customer type/priority
-    setSlaTime(4); // Default 4 hours SLA
+    setSlaTime(4);
   }, [form]);
 
   const handleMachineChange = useCallback((machineId: string) => {
@@ -126,7 +123,6 @@ export const useServiceCallForm = () => {
 
   const autoAssignEngineer = useCallback(() => {
     if (engineers.length > 0) {
-      // Simple auto-assignment - just picks the first available engineer
       const engineer = engineers[0];
       form.setValue("engineerId", engineer.id);
       toast({
@@ -154,7 +150,7 @@ export const useServiceCallForm = () => {
         call_type: formData.callType,
         priority: formData.priority,
         location: formData.customer?.location,
-        status: "Open",
+        status: "Pending",
         serial_number: formData.machine?.serial || null,
         service_charge: formData.serviceCharge || 0,
         engineer_id: assignEngineerNow ? formData.engineerId : null,
@@ -168,7 +164,6 @@ export const useServiceCallForm = () => {
 
       if (error) throw error;
 
-      // Send notification via Telegram
       await notifyServiceCall(serviceCallData);
 
       toast({
