@@ -37,10 +37,22 @@ export const useIssueItem = () => {
       
       // Update the stock in the opening_stock_entries table
       if (params.itemId) {
-        // Update using direct query rather than using PostgrestFilterBuilder
+        // Get the current item
+        const { data: itemData, error: itemError } = await supabase
+          .from('opening_stock_entries')
+          .select('quantity')
+          .eq('id', params.itemId)
+          .single();
+          
+        if (itemError) throw itemError;
+        
+        // Calculate new quantity
+        const newQuantity = (itemData.quantity - params.quantity);
+        
+        // Update the quantity
         const { error: updateError } = await supabase
           .from('opening_stock_entries')
-          .update({ quantity: supabase.rpc('decrement', { x: params.quantity }) })
+          .update({ quantity: newQuantity })
           .eq('id', params.itemId);
         
         if (updateError) throw updateError;

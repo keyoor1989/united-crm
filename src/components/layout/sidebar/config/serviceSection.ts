@@ -1,5 +1,5 @@
 
-import { BarChart3, HelpingHand, PhoneCall, Settings, Wrench, Package, ClipboardList } from "lucide-react";
+import { BarChart3, HelpingHand, PhoneCall, Settings, Wrench, ClipboardList } from "lucide-react";
 import { SidebarSectionConfig } from "../types/navTypes";
 
 const serviceSection: SidebarSectionConfig = {
@@ -20,11 +20,6 @@ const serviceSection: SidebarSectionConfig = {
       to: "/service-billing",
       icon: Wrench,
       label: "Service Billing"
-    },
-    {
-      to: "/amc-consumables",
-      icon: Package,
-      label: "AMC Consumables"
     },
     {
       to: "/service-inventory",
