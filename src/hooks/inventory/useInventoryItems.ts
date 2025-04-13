@@ -1,8 +1,9 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyInventoryAlert } from "@/services/telegramService";
 import { InventoryItem } from "@/types/inventory";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 // Database object type that matches the actual database schema
 export interface DbInventoryItem {
@@ -179,4 +180,31 @@ export const useInventoryItems = (warehouseId: string | null) => {
   });
 
   return { items, isLoading, error };
+};
+
+export const useDeleteInventoryItem = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase
+        .from('opening_stock_entries')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) {
+        console.error('Error deleting inventory item:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch inventory items
+      queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
+      toast.success("Inventory item deleted successfully");
+    },
+    onError: (error) => {
+      console.error('Deletion failed:', error);
+      toast.error("Failed to delete inventory item");
+    }
+  });
 };

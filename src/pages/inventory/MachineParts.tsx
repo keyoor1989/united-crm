@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { 
@@ -30,10 +29,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Filter, Download, Printer, MoreHorizontal } from "lucide-react";
+import { Search, Plus, Filter, Download, Printer, MoreHorizontal, Trash } from "lucide-react";
 import { InventoryItem } from "@/types/inventory";
 import OpeningStockEntryForm from "@/components/inventory/OpeningStockEntryForm";
-import { useInventoryItems } from "@/hooks/inventory/useInventoryItems";
+import { useInventoryItems, useDeleteInventoryItem } from "@/hooks/inventory/useInventoryItems";
 
 const MachineParts = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,10 +41,18 @@ const MachineParts = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   
-  // Use the hook to fetch inventory items
   const { items, isLoading, error } = useInventoryItems(null);
+  const deleteItemMutation = useDeleteInventoryItem();
 
-  // Filter items based on search term, category, and brand
+  const handleAddItem = (newPart: any) => {
+    console.log("New part added:", newPart);
+    setIsAddDialogOpen(false);
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    deleteItemMutation.mutate(itemId);
+  };
+
   const filteredItems = items.filter(item => {
     const matchesSearch = 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,7 +63,6 @@ const MachineParts = () => {
     const matchesCategory = selectedCategory === "all" || item.category === selectedCategory;
     const matchesBrand = selectedBrand === "all" || item.brand === selectedBrand;
     
-    // Filter by tab
     if (activeTab === "low_stock") {
       return matchesSearch && matchesCategory && matchesBrand && item.currentStock < item.minStockLevel;
     }
@@ -64,15 +70,8 @@ const MachineParts = () => {
     return matchesSearch && matchesCategory && matchesBrand;
   });
 
-  // Get unique categories and brands for filters
   const categories = Array.from(new Set(items.map(item => item.category)));
   const brands = Array.from(new Set(items.map(item => item.brand)));
-
-  // Add new item handler
-  const handleAddItem = (newPart: any) => {
-    console.log("New part added:", newPart);
-    setIsAddDialogOpen(false);
-  };
 
   return (
     <div className="container mx-auto py-6">
