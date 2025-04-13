@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { Printer } from "lucide-react";
+import { Printer, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MachineItem } from "./MachineItem";
 import { Machine } from "./types";
@@ -63,15 +64,16 @@ export const MachinesList: React.FC<MachinesListProps> = ({
 
   if (machines.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-40 border rounded-md border-dashed">
-        <Printer className="h-8 w-8 text-muted-foreground mb-2" />
-        <p className="text-muted-foreground text-sm">No machines added yet</p>
+      <div className="flex flex-col items-center justify-center h-60 border rounded-md border-dashed bg-muted/20">
+        <Printer className="h-12 w-12 text-muted-foreground mb-3" />
+        <p className="text-muted-foreground mb-2">No machines added yet</p>
         <Button 
           variant="outline" 
           size="sm" 
-          className="h-8 gap-1 mt-4"
+          className="gap-1"
           onClick={onAddMachine}
         >
+          <Plus className="h-4 w-4" />
           <span>Add First Machine</span>
         </Button>
       </div>

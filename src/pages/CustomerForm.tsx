@@ -38,10 +38,10 @@ const CustomerForm = () => {
           value={activeTab}
           onValueChange={setActiveTab}
         >
-          <TabsList className="bg-secondary">
-            <TabsTrigger value="form" className="data-[state=active]:bg-background">Customer Form</TabsTrigger>
-            <TabsTrigger value="machines" className="data-[state=active]:bg-background">Machines & Follow-ups</TabsTrigger>
-            <TabsTrigger value="pipeline" className="data-[state=active]:bg-background">Lead Pipeline</TabsTrigger>
+          <TabsList className="w-full bg-muted mb-2">
+            <TabsTrigger value="form" className="flex-1">Customer Form</TabsTrigger>
+            <TabsTrigger value="machines" className="flex-1">Machines & Follow-ups</TabsTrigger>
+            <TabsTrigger value="pipeline" className="flex-1">Lead Pipeline</TabsTrigger>
           </TabsList>
           <TabsContent value="form" className="mt-4">
             <CustomerFormComponent />

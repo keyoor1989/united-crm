@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCustomerDetails } from "@/hooks/useCustomerDetails";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +18,7 @@ import { SalesFollowUpList } from "./machines/SalesFollowUpList";
 import { Machine } from "./machines/types";
 import { useCustomerForm } from "./CustomerFormContext";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Plus } from "lucide-react";
 
 interface CustomerMachinesProps {
   customerId?: string;
@@ -30,7 +29,6 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
   const [isNewMachine, setIsNewMachine] = useState(false);
   const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
   const [followUps, setFollowUps] = useState([]);
-  const [activeTab, setActiveTab] = useState("machines");
 
   // Get the customer context if we're in the form
   const { form } = useCustomerForm();
@@ -96,12 +94,17 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
 
   return (
     <div className="w-full">
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Customer Details</CardTitle>
-          <CardDescription>
-            View and manage customer machines and follow-ups
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Customer Details</CardTitle>
+              <CardDescription>
+                View and manage customer machines and follow-ups
+              </CardDescription>
+            </div>
+            <Button onClick={() => setOpen(true)}>Schedule Follow-up</Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
@@ -110,22 +113,20 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
               <p className="text-sm text-muted-foreground">
                 {currentCustomer?.location} | {currentCustomer?.phone}
               </p>
-              <Badge variant="secondary">{currentCustomer?.status}</Badge>
+              <Badge variant="secondary" className="mt-2">{currentCustomer?.status}</Badge>
             </div>
-            <Button onClick={() => setOpen(true)}>Schedule Follow-up</Button>
           </div>
         </CardContent>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
-        <TabsList className="bg-secondary">
-          <TabsTrigger value="machines" className="data-[state=active]:bg-background">Machines</TabsTrigger>
-          <TabsTrigger value="followups" className="data-[state=active]:bg-background">Follow-ups</TabsTrigger>
-        </TabsList>
-        <TabsContent value="machines">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-medium">Machines</h3>
-            <Button onClick={() => setIsNewMachine(true)}>Add Machine</Button>
+            <Button onClick={() => setIsNewMachine(true)} size="sm" className="gap-1">
+              <Plus className="h-4 w-4" />
+              <span>Add Machine</span>
+            </Button>
           </div>
           <MachineForm
             open={isNewMachine}
@@ -137,12 +138,13 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
             onScheduleFollowUp={handleScheduleFollowUp}
             onAddMachine={() => setIsNewMachine(true)}
           />
-        </TabsContent>
-        <TabsContent value="followups">
+        </div>
+
+        <div>
           <h3 className="text-xl font-medium mb-4">Follow-ups</h3>
           <SalesFollowUpList customerId={currentCustomer?.id || ""} />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
 
       <SalesFollowUpDialog
         open={open}
