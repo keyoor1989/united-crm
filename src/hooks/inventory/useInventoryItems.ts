@@ -16,9 +16,7 @@ export interface DbInventoryItem {
   compatible_models?: string[];
   part_number?: string;
   warehouse_name?: string;
-  warehouse_id?: string; // Added this field to match the database schema
-  brand_id?: string;
-  model_id?: string;
+  warehouse_id?: string;
 }
 
 // Export the InventoryItem type for use in other files
@@ -35,9 +33,9 @@ export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
     min_stock: item.min_stock,
     purchase_price: item.purchase_price,
     brand: item.brand || "",
-    model_id: item.model_id || "",
-    modelId: item.model_id || "",
-    model: item.model_id || "",
+    model_id: "",
+    modelId: "",
+    model: "",
     currentStock: item.quantity,
     minStockLevel: item.min_stock,
     maxStockLevel: 100, // Default value 
@@ -49,8 +47,8 @@ export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
     createdAt: new Date().toISOString(),
     
     // Additional properties
-    brandId: item.brand_id,
-    brand_id: item.brand_id,
+    brandId: "",
+    brand_id: "",
     type: item.category,
     minQuantity: item.min_stock,
     currentQuantity: item.quantity,
@@ -99,7 +97,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
       try {
         let query = supabase
           .from('opening_stock_entries')
-          .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number, warehouse_name, warehouse_id, brand_id, model_id')
+          .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number, warehouse_name, warehouse_id')
           .order('part_name');
         
         if (warehouseId) {
