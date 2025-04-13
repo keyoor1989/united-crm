@@ -26,15 +26,20 @@ async function setWebhook(url: string): Promise<Response> {
     // Set allowed updates to messages and edited messages only
     const allowedUpdates = ['message', 'edited_message'];
     
+    // Use Telegram's setWebhook API
     const response = await fetch(
       `${TELEGRAM_API}/setWebhook?url=${encodeURIComponent(url)}&allowed_updates=${JSON.stringify(allowedUpdates)}`
     );
     const data = await response.json();
+    
+    console.log(`Webhook set response:`, data);
+    
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
   } catch (error) {
+    console.error(`Error setting webhook:`, error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
@@ -59,7 +64,7 @@ async function deleteWebhook(): Promise<Response> {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight request
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -56,12 +55,11 @@ const TelegramAdmin = () => {
 
   // Generate the webhook URL based on the project's public URL
   useEffect(() => {
-    // Base URL is the app URL, we need to replace the web URL with the Supabase function URL
-    const baseProjectUrl = "https://united-crm.lovable.app";
-    const supabaseFunctionUrl = baseProjectUrl.replace(".lovable.app", ".supabase.co/functions/v1/telegram-webhook");
+    // Use the proxy URL instead of the direct webhook URL
+    const proxyUrl = "https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy";
     
     if (!webhookUrl && !config?.webhook_url) {
-      setWebhookUrl(supabaseFunctionUrl);
+      setWebhookUrl(proxyUrl);
     } else if (config?.webhook_url) {
       setWebhookUrl(config.webhook_url);
     }
@@ -294,8 +292,8 @@ const TelegramAdmin = () => {
                     placeholder="Enter your webhook URL"
                   />
                   <p className="text-sm text-muted-foreground">
-                    This is the URL that Telegram will use to send messages to your bot. 
-                    The webhook URL should point to your Supabase Edge Function.
+                    This is the URL that Telegram will use to send messages to your bot.
+                    We're using a proxy endpoint to ensure proper DNS resolution.
                   </p>
                 </div>
 
