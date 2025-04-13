@@ -128,3 +128,6 @@ export const AddMachineDialog: React.FC<AddMachineDialogProps> = ({
     </Dialog>
   );
 };
+
+// Add default export for the component
+export default AddMachineDialog;

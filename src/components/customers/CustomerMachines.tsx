@@ -1,14 +1,15 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import MachinesList from "./machines/MachinesList";
-import { AddMachineDialog } from "./machines/AddMachineDialog";
-import SalesFollowUpList from "./machines/SalesFollowUpList";
+import AddMachineDialog from "./machines/AddMachineDialog";
 import { FollowUpDialog } from "./machines/FollowUpDialog";
 import SalesFollowUpDialog from "./machines/SalesFollowUpDialog";
+import SalesFollowUpList from "./machines/SalesFollowUpList";
 import { Machine, MachineFormData } from "./machines/types";
+import { addMachine } from "./machines/MachineService";
 
 interface CustomerMachinesProps {
   customerId?: string;
@@ -28,17 +29,68 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
   });
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>(undefined);
   const [followUpNotes, setFollowUpNotes] = useState("");
+  const [machinesKey, setMachinesKey] = useState(Date.now()); // For refreshing the machines list
 
   const handleAddMachine = () => {
     setIsAddMachineOpen(true);
+    // Reset form when opening
+    setNewMachineData({
+      model: "",
+      machineType: "copier",
+      status: "active"
+    });
   };
 
-  const handleMachineAdded = () => {
-    toast({
-      title: "Machine Added",
-      description: "The machine has been added successfully."
-    });
-    setIsAddMachineOpen(false);
+  const handleMachineAdded = async () => {
+    if (!customerId) {
+      toast({
+        title: "Error",
+        description: "Customer ID is required to add a machine.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!newMachineData.model || !newMachineData.machineType) {
+      toast({
+        title: "Missing Information",
+        description: "Please provide machine model and type.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      await addMachine(customerId, newMachineData);
+      
+      toast({
+        title: "Machine Added",
+        description: "The machine has been added successfully."
+      });
+      
+      // Reset form data
+      setNewMachineData({
+        model: "",
+        machineType: "copier",
+        status: "active"
+      });
+      
+      // Close dialog
+      setIsAddMachineOpen(false);
+      
+      // Refresh machines list
+      setMachinesKey(Date.now());
+    } catch (error: any) {
+      console.error("Error adding machine:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add machine",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleScheduleFollowUp = (machine: Machine) => {
@@ -90,6 +142,7 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
           </Button>
         </div>
         <MachinesList 
+          key={machinesKey}
           customerId={customerId} 
           onAddMachine={handleAddMachine}
           onScheduleFollowUp={handleScheduleFollowUp}
