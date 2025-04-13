@@ -19,8 +19,6 @@ interface IssuedItemsTableProps {
 }
 
 const IssuedItemsTable = ({ items, isLoading }: IssuedItemsTableProps) => {
-  console.log("IssuedItemsTable received items:", items);
-  
   if (isLoading) {
     return (
       <div className="space-y-2">

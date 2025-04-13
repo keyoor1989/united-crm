@@ -12,6 +12,8 @@ interface IssueItemParams {
   quantity: number;
   warehouseId: string | null;
   warehouseName: string | null;
+  modelNumber: string | null;
+  modelBrand: string | null;
 }
 
 export const useIssueItem = () => {
@@ -29,7 +31,9 @@ export const useIssueItem = () => {
           item_name: params.itemName,
           quantity: params.quantity,
           warehouse_id: params.warehouseId,
-          warehouse_source: params.warehouseName
+          warehouse_source: params.warehouseName,
+          model_number: params.modelNumber,
+          model_brand: params.modelBrand
         })
         .select();
       

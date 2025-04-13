@@ -46,6 +46,8 @@ const IssueForm = () => {
   const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [modelNumber, setModelNumber] = useState<string>("");
+  const [modelBrand, setModelBrand] = useState<string>("");
 
   // Hooks
   const { warehouses, isLoadingWarehouses } = useWarehouses();
@@ -70,6 +72,15 @@ const IssueForm = () => {
 
   const handleItemSelect = (itemId: string) => {
     setSelectedItemId(itemId);
+    
+    // Auto-fill brand and model based on selected item
+    const selectedItem = items.find(item => item.id === itemId);
+    if (selectedItem) {
+      setModelBrand(selectedItem.brand || "");
+      setModelNumber(Array.isArray(selectedItem.compatible_models) && selectedItem.compatible_models.length > 0 
+        ? selectedItem.compatible_models[0] 
+        : "");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -99,7 +110,9 @@ const IssueForm = () => {
       itemName: selectedItem.part_name,
       quantity,
       warehouseId: selectedWarehouse,
-      warehouseName: warehouseInfo?.name || null
+      warehouseName: warehouseInfo?.name || null,
+      modelNumber: modelNumber || null,
+      modelBrand: modelBrand || null
     }, {
       onSuccess: () => {
         // Reset form
@@ -107,6 +120,8 @@ const IssueForm = () => {
         setQuantity(1);
         setSelectedReceiver("");
         setReceiverName("");
+        setModelNumber("");
+        setModelBrand("");
       }
     });
   };
@@ -268,6 +283,33 @@ const IssueForm = () => {
                   Status: {selectedItem.quantity < selectedItem.min_stock ? "Low Stock" : "In Stock"}
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Model and Brand Information */}
+        {selectedItem && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="modelNumber">Model Number</Label>
+              <Input
+                id="modelNumber"
+                placeholder="e.g., TK-8115"
+                value={modelNumber}
+                onChange={(e) => setModelNumber(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="modelBrand">Brand</Label>
+              <Input
+                id="modelBrand"
+                placeholder="e.g., Kyocera"
+                value={modelBrand}
+                onChange={(e) => setModelBrand(e.target.value)}
+                className="h-11"
+              />
             </div>
           </div>
         )}
