@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for converting between database (snake_case) 
  * and frontend (camelCase) data formats
