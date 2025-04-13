@@ -1,7 +1,7 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { InventoryItem as BaseInventoryItem } from "@/types/inventory";
+import { notifyInventoryAlert } from "@/services/telegramService";
 
 // Define the database schema representation of inventory items
 export interface InventoryItem {
@@ -41,7 +41,7 @@ export const useInventoryItems = (warehouseId: string | null) => {
     queryFn: async () => {
       let query = supabase
         .from('opening_stock_entries')
-        .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number')
+        .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number, warehouse_name')
         .order('part_name');
       
       if (warehouseId) {
@@ -51,6 +51,18 @@ export const useInventoryItems = (warehouseId: string | null) => {
       const { data, error } = await query;
       
       if (error) throw error;
+      
+      // Check for low stock items and send alerts
+      if (data) {
+        const lowStockItems = data.filter(item => item.quantity < item.min_stock);
+        if (lowStockItems.length > 0) {
+          // Only send the first low stock alert to avoid spamming
+          if (lowStockItems.length > 0) {
+            notifyInventoryAlert(lowStockItems[0]);
+          }
+        }
+      }
+      
       return data as InventoryItem[];
     },
   });

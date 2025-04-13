@@ -1,388 +1,215 @@
-import React, { useState, useEffect } from "react";
-import { format } from "date-fns";
-import { CalendarClock, Search, X, Phone, MapPin, Printer } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import React, { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { format } from 'date-fns';
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { SalesFollowUpFormData } from "./types";
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "@radix-ui/react-icons";
+import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CustomerType } from "@/types/customer";
-import { toast } from "sonner";
+import { notifyFollowUp } from "@/services/telegramService";
+
+const formSchema = z.object({
+  date: z.date({
+    required_error: "A date is required.",
+  }),
+  type: z.string().min(2, {
+    message: "Type must be at least 2 characters.",
+  }),
+  notes: z.string().optional(),
+});
 
 interface SalesFollowUpDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  newSalesFollowUp: SalesFollowUpFormData;
-  setNewSalesFollowUp: React.Dispatch<React.SetStateAction<SalesFollowUpFormData>>;
-  onAddSalesFollowUp: () => void;
+  setOpen: (open: boolean) => void;
+  customerId: string;
+  customerName: string;
+  location: string;
+  phone: string;
+  onSave?: (data: any) => void;
 }
 
-export const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
-  open,
-  onOpenChange,
-  newSalesFollowUp,
-  setNewSalesFollowUp,
-  onAddSalesFollowUp,
+const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({ 
+  open, 
+  setOpen, 
+  customerId, 
+  customerName,
+  location,
+  phone,
+  onSave
 }) => {
-  const [showCustomerSearch, setShowCustomerSearch] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<CustomerType[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const toggleCustomerSearch = () => {
-    setShowCustomerSearch(!showCustomerSearch);
-    if (!showCustomerSearch) {
-      setSearchTerm("");
-      setSearchResults([]);
-    }
-  };
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      date: new Date(),
+      type: "",
+      notes: "",
+    },
+  });
 
-  const selectCustomer = (customer: CustomerType) => {
-    setNewSalesFollowUp({
-      ...newSalesFollowUp,
-      customerName: customer.name,
-      customerId: customer.id,
-      contactPhone: customer.phone,
-      location: customer.location
-    });
-    setShowCustomerSearch(false);
-    
-    toast.success(`Customer "${customer.name}" selected`, {
-      description: "Customer information has been added to the follow-up"
-    });
-  };
-
-  const searchCustomers = async (term: string) => {
-    if (term.length < 1) {
-      setSearchResults([]);
-      return;
-    }
-    
-    setIsSearching(true);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
     try {
-      console.log("Searching for term:", term);
-      
-      const { data: nameData, error: nameError } = await supabase
-        .from('customers')
-        .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
-        .ilike('name', `%${term}%`)
-        .order('name')
-        .limit(10);
-      
-      const { data: phoneData, error: phoneError } = await supabase
-        .from('customers')
-        .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
-        .or(`phone.ilike.%${term}%,phone.eq.${term}`)
-        .order('name')
-        .limit(10);
-      
-      const { data: areaData, error: areaError } = await supabase
-        .from('customers')
-        .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
-        .ilike('area', `%${term}%`)
-        .order('name')
-        .limit(10);
-      
-      const { data: machineData, error: machineError } = await supabase
-        .from('customers')
-        .select('id, name, phone, email, area, lead_status, customer_machines!inner(machine_name)')
-        .filter('customer_machines.machine_name', 'ilike', `%${term}%`)
-        .order('name')
-        .limit(10);
-        
-      if (nameError || phoneError || areaError || machineError) {
-        console.error("Error searching customers:", nameError || phoneError || areaError || machineError);
-        toast.error("Failed to search customers");
-        return;
-      }
-      
-      const combinedResults = [...(nameData || []), ...(phoneData || []), ...(areaData || []), ...(machineData || [])];
-      
-      console.log("Search results:", {
-        nameData,
-        phoneData,
-        areaData,
-        machineData,
-        combinedResults
-      });
-      
-      const uniqueCustomers = combinedResults.filter((customer, index, self) => 
-        index === self.findIndex(c => c.id === customer.id)
-      );
-      
-      const customers: CustomerType[] = uniqueCustomers.map(customer => ({
-        id: customer.id,
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email || "",
-        location: customer.area,
-        lastContact: "N/A",
-        machines: customer.customer_machines ? customer.customer_machines.map((m: any) => m.machine_name).filter(Boolean) : [],
-        status: "Active"
-      }));
-      
-      setSearchResults(customers);
-    } catch (error) {
-      console.error("Error in search process:", error);
-      toast.error("An error occurred while searching");
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const clearCustomerSelection = () => {
-    setNewSalesFollowUp({
-      ...newSalesFollowUp,
-      customerName: "",
-      customerId: undefined,
-      contactPhone: undefined,
-      location: undefined
-    });
-    toast.info("Customer selection cleared");
-  };
-
-  const handleSaveFollowUp = async () => {
-    if (!newSalesFollowUp.customerName) {
-      toast.error("Please select a customer");
-      return;
-    }
-    
-    if (!newSalesFollowUp.date) {
-      toast.error("Please select a follow-up date");
-      return;
-    }
-    
-    if (!newSalesFollowUp.type) {
-      toast.error("Please select a follow-up type");
-      return;
-    }
-    
-    try {
-      console.log("Saving follow-up to database:", newSalesFollowUp);
-      
       const followUpData = {
-        customer_id: newSalesFollowUp.customerId ? String(newSalesFollowUp.customerId) : '',
-        customer_name: newSalesFollowUp.customerName,
-        date: newSalesFollowUp.date?.toISOString(),
-        notes: newSalesFollowUp.notes || "",
-        type: newSalesFollowUp.type,
-        status: "pending",
-        contact_phone: newSalesFollowUp.contactPhone || "",
-        location: newSalesFollowUp.location || ""
+        customer_id: customerId,
+        customer_name: customerName,
+        date: new Date(values.date).toISOString(),
+        type: values.type,
+        notes: values.notes,
+        location: location,
+        contact_phone: phone,
+        status: "pending"
       };
       
       const { data, error } = await supabase
-        .from('sales_followups')
+        .from("sales_followups")
         .insert(followUpData)
-        .select('*')
+        .select()
         .single();
       
-      if (error) {
-        console.error("Error saving follow-up:", error);
-        toast.error("Failed to save follow-up: " + error.message);
-        return;
-      }
+      if (error) throw error;
       
-      console.log("Follow-up saved successfully:", data);
+      // Send notification via Telegram
+      await notifyFollowUp(followUpData);
       
-      onAddSalesFollowUp();
-      
-      const formattedDate = newSalesFollowUp.date ? format(newSalesFollowUp.date, "dd MMM yyyy") : "Unknown date";
-      toast.success(`Follow-up scheduled for ${formattedDate}`, {
-        description: `A ${newSalesFollowUp.type} follow-up has been scheduled for ${newSalesFollowUp.customerName}`,
-        action: {
-          label: "View Calendar",
-          onClick: () => {
-            console.log("Navigate to calendar view");
-          }
-        }
-      });
-    } catch (err) {
-      console.error("Unexpected error saving follow-up:", err);
-      toast.error("An unexpected error occurred. Please try again.");
+      toast.success("Follow-up scheduled successfully");
+      onSave?.(data);
+      setOpen(false);
+    } catch (error) {
+      console.error("Error creating follow-up:", error);
+      toast.error("Failed to schedule follow-up");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Schedule Sales Follow-up</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="customer-name">Customer Name</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="customer-name"
-                placeholder="Enter customer name"
-                value={newSalesFollowUp.customerName || ''}
-                readOnly
-                className="flex-1"
-              />
-              {newSalesFollowUp.customerName ? (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={clearCustomerSelection}
-                  title="Clear selection"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={toggleCustomerSearch}
-                  title={showCustomerSearch ? "Close search" : "Search customers"}
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-            
-            {showCustomerSearch && (
-              <div className="p-3 border rounded-md bg-background mt-2">
-                <div className="flex items-center gap-2 mb-2">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search by name, phone, city, machine..." 
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      searchCustomers(e.target.value);
-                    }}
-                    className="flex-1"
-                    autoFocus
-                  />
-                </div>
-                
-                <div className="flex gap-3 text-xs text-muted-foreground mb-2">
-                  <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</span>
-                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> City</span>
-                  <span className="flex items-center gap-1"><Printer className="h-3 w-3" /> Machine</span>
-                </div>
-                
-                {isSearching ? (
-                  <div className="py-2 text-center text-sm text-muted-foreground">
-                    Searching...
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div className="max-h-60 overflow-y-auto">
-                    {searchResults.map((customer) => (
-                      <div 
-                        key={customer.id}
-                        className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center gap-2"
-                        onClick={() => selectCustomer(customer)}
-                      >
-                        <div className="flex-1">
-                          <div className="font-medium">{customer.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {customer.phone}
-                            {customer.location && ` • ${customer.location}`}
-                          </div>
-                        </div>
-                        {customer.machines.length > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            {customer.machines.length} {customer.machines.length === 1 ? 'machine' : 'machines'}
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : searchTerm.length > 0 ? (
-                  <div className="py-2 text-center text-sm text-muted-foreground">
-                    No customers found
-                  </div>
-                ) : (
-                  <div className="py-2 text-center text-sm text-muted-foreground">
-                    Type to search customers
-                  </div>
+    <div className={cn(open ? "block" : "hidden", "fixed inset-0 z-50 overflow-auto bg-black/50")}>
+      <div className="relative m-auto h-fit w-full max-w-2xl p-6">
+        <div className="rounded-lg bg-white p-4">
+          <h2 className="text-lg font-medium">Schedule Follow-up</h2>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[240px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < new Date()
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="followup-type">Follow-up Type</Label>
-            <Select
-              value={newSalesFollowUp.type}
-              onValueChange={(value) => setNewSalesFollowUp({...newSalesFollowUp, type: value as any})}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select follow-up type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="quotation">Quotation</SelectItem>
-                <SelectItem value="demo">Demo</SelectItem>
-                <SelectItem value="negotiation">Negotiation</SelectItem>
-                <SelectItem value="closure">Closure</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="followup-date">Follow-up Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !newSalesFollowUp.date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarClock className="mr-2 h-4 w-4" />
-                  {newSalesFollowUp.date ? format(newSalesFollowUp.date, "PPP") : <span>Select date</span>}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger className="w-[240px]">
+                          <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Call">Call</SelectItem>
+                          <SelectItem value="Meeting">Meeting</SelectItem>
+                          <SelectItem value="Email">Email</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormDescription>
+                      What type of follow-up is this?
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Add any notes about this follow-up." className="resize-none" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Add any notes about this follow-up.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end">
+                <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                  Cancel
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={newSalesFollowUp.date}
-                  onSelect={(date) => setNewSalesFollowUp({...newSalesFollowUp, date})}
-                  initialFocus
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="followup-notes">Notes</Label>
-            <Textarea
-              id="followup-notes"
-              placeholder="Add details about this sales follow-up"
-              value={newSalesFollowUp.notes || ''}
-              onChange={(e) => setNewSalesFollowUp({...newSalesFollowUp, notes: e.target.value})}
-              className="min-h-[100px]"
-            />
-          </div>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Loading..." : "Save"}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </div>
-        <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} variant="outline">Cancel</Button>
-          <Button onClick={handleSaveFollowUp}>Save Follow-up</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
+
+export default SalesFollowUpDialog;

@@ -36,6 +36,7 @@ import InventoryWarehouses from "@/pages/inventory/InventoryWarehouses";
 import InventoryHistory from "@/pages/inventory/InventoryHistory";
 import EngineerForm from "@/pages/EngineerForm";
 import AmcTracker from "@/pages/inventory/AmcTracker";
+import TelegramAdmin from "@/pages/TelegramAdmin";
 
 const AppRoutes = () => {
   return (
@@ -80,6 +81,9 @@ const AppRoutes = () => {
         <Route path="/engineer/:id" element={<ProtectedRoute><EngineerDetail /></ProtectedRoute>} />
         <Route path="/engineer/new" element={<ProtectedRoute><EngineerForm /></ProtectedRoute>} />
         <Route path="/engineer-performance" element={<ProtectedRoute><EngineerPerformanceDashboard /></ProtectedRoute>} />
+
+        {/* Telegram Admin */}
+        <Route path="/telegram-admin" element={<ProtectedRoute><TelegramAdmin /></ProtectedRoute>} />
       </Route>
     </Routes>
   );

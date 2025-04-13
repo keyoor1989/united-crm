@@ -1,314 +1,226 @@
 import React, { useState, useEffect } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Form } from "@/components/ui/form";
-import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
-import { Check, Loader2 } from "lucide-react";
-import CustomerNotes from "./CustomerNotes";
-import CustomerMachines from "./CustomerMachines";
-import CustomerHistory from "./CustomerHistory";
-import { useNavigate, useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { 
-  CustomerFormProvider, 
-  formSchema, 
-  defaultValues, 
-  CustomerFormValues 
-} from "./CustomerFormContext";
-import BasicInfoForm from "./form-sections/BasicInfoForm";
-import AddressForm from "./form-sections/AddressForm";
-import LeadInfoForm from "./form-sections/LeadInfoForm";
-import NotesForm from "./form-sections/NotesForm";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { v4 as uuidv4 } from "uuid";
 
-export default function CustomerFormComponent() {
-  const { id: customerId } = useParams<{ id: string }>();
-  const [isNewCustomer, setIsNewCustomer] = useState<boolean>(!customerId);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [customerData, setCustomerData] = useState<any>(null);
-  const navigate = useNavigate();
-  
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { CustomerType, CustomerStatus } from "@/types/customer";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useCustomerForm } from "./CustomerFormContext";
+import AddressForm from "./form-sections/AddressForm";
+import { supabase } from "@/integrations/supabase/client";
+import { notifyNewCustomer } from "@/services/telegramService";
+
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Customer name must be at least 2 characters.",
+  }),
+  phone: z.string().min(10, {
+    message: "Phone number must be at least 10 characters.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }).optional(),
+  leadSource: z.string().min(2, {
+    message: "Lead source must be at least 2 characters.",
+  }),
+  leadStatus: z.enum(["Prospect", "Active", "Contract Renewal", "Need Toner", "Inactive"]),
+  address: z.string().optional(),
+  area: z.string().optional(),
+  customerType: z.enum(["individual", "government", "corporate"]).optional(),
+});
+
+interface CustomerFormComponentProps {
+  customer?: CustomerType;
+}
+
+type CustomerFormValues = z.infer<typeof formSchema>;
+
+const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer: selectedCustomer }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  // 1. Define your form.
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      name: selectedCustomer?.name || "",
+      phone: selectedCustomer?.phone || "",
+      email: selectedCustomer?.email || "",
+      leadSource: "Website",
+      leadStatus: selectedCustomer?.status || "Prospect",
+      address: selectedCustomer?.location || "",
+      area: selectedCustomer?.location || "",
+      customerType: "individual"
+    },
   });
 
-  // Fetch customer data if editing an existing customer
-  useEffect(() => {
-    if (customerId) {
-      setIsLoading(true);
-      fetchCustomerData(customerId);
-    }
-  }, [customerId]);
+  useCustomerForm().form = form;
 
-  const fetchCustomerData = async (id: string) => {
+  const handleSubmit = async (values: CustomerFormValues) => {
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      if (error) {
-        console.error("Error fetching customer:", error);
-        toast.error("Failed to load customer information");
-        return;
-      }
+      setIsSubmitting(true);
       
-      if (data) {
-        setCustomerData(data);
-        
-        // Safely map returned data to the expected types
-        const customerType = ["individual", "government", "corporate"].includes(data.customer_type) 
-          ? data.customer_type as "individual" | "government" | "corporate" 
-          : "individual";
-          
-        const leadStatus = ["New", "Quoted", "Follow-up", "Converted", "Lost"].includes(data.lead_status)
-          ? data.lead_status as "New" | "Quoted" | "Follow-up" | "Converted" | "Lost"
-          : "New";
-        
-        // The source field is not in the database schema, so we handle it safely
-        // by providing a default empty string
-        const sourceValue = ""; // Default empty string since source field doesn't exist yet
-        
-        // Update form with customer data
-        form.reset({
-          name: data.name,
-          phone: data.phone,
-          email: data.email || "",
-          address: data.address || "",
-          area: data.area,
-          customerType: customerType,
-          dateOfBirth: data.date_of_birth || "",
-          machineInterest: "",
-          machineType: "",
-          source: data.source || "",  // Now safely handling the source field
-          notes: "",
-          leadStatus: leadStatus,
-          isNewCustomer: false
-        });
-      }
-    } catch (err) {
-      console.error("Unexpected error fetching customer:", err);
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  async function onSubmit(data: CustomerFormValues) {
-    setIsSubmitting(true);
-    console.log("Form submission started with data:", data);
-    
-    try {
-      // Prepare the customer data
-      const customerData = {
-        name: data.name,
-        phone: data.phone,
-        email: data.email || null,
-        address: data.address,
-        area: data.area,
-        customer_type: data.customerType,
-        date_of_birth: data.dateOfBirth ? new Date(data.dateOfBirth).toISOString() : null,
-        lead_status: data.leadStatus,
-        last_contact: new Date().toISOString(),
-        source: data.source || null  // Make sure to handle source appropriately
+      // Create the customer object
+      const customer: CustomerType = {
+        id: selectedCustomer?.id || uuidv4(),
+        name: values.name,
+        phone: values.phone,
+        email: values.email || "",
+        location: values.area || "",
+        lastContact: "Just now",
+        machines: [],
+        status: values.leadStatus as CustomerStatus
       };
       
-      let customerId;
+      // Save to Supabase
+      const { error } = await supabase
+        .from("customers")
+        .upsert({
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          area: customer.location,
+          lead_status: values.leadStatus,
+          source: values.leadSource,
+          customer_type: values.customerType,
+          address: values.address
+        });
+        
+      if (error) throw error;
       
-      if (isNewCustomer) {
-        console.log("Attempting to insert customer with data:", customerData);
-        
-        // Insert new customer
-        const { data: insertedCustomer, error: customerError } = await supabase
-          .from('customers')
-          .insert(customerData)
-          .select('id')
-          .single();
-        
-        if (customerError) {
-          console.error("Error saving customer:", customerError);
-          toast.error("Failed to save customer: " + customerError.message);
-          return;
-        }
-        
-        if (!insertedCustomer || !insertedCustomer.id) {
-          console.error("No customer ID returned after insert");
-          toast.error("Failed to save customer: No ID returned");
-          return;
-        }
-        
-        customerId = insertedCustomer.id;
-        console.log("Customer saved successfully with ID:", customerId);
-      } else {
-        // Update existing customer
-        const { error: updateError } = await supabase
-          .from('customers')
-          .update(customerData)
-          .eq('id', customerId);
-          
-        if (updateError) {
-          console.error("Error updating customer:", updateError);
-          toast.error("Failed to update customer: " + updateError.message);
-          return;
-        }
-        
-        console.log("Customer updated successfully:", customerId);
+      // If this is a new customer, notify via Telegram
+      if (!selectedCustomer) {
+        await notifyNewCustomer(customer);
       }
       
-      // Create an array to hold our promises
-      const promises = [];
+      toast.success(
+        selectedCustomer ? "Customer updated successfully" : "Customer added successfully"
+      );
       
-      // Handle machine interest if provided for new customers
-      if (isNewCustomer && data.machineInterest) {
-        const machineData = {
-          customer_id: customerId,
-          machine_name: data.machineInterest,
-          machine_type: data.machineType || null
-        };
-        
-        console.log("Inserting machine data:", machineData);
-        
-        const machinePromise = supabase
-          .from('customer_machines')
-          .insert(machineData)
-          .then(({ error }) => {
-            if (error) {
-              console.error("Error saving machine interest:", error);
-              toast.error("Warning: Machine data not saved - " + error.message);
-            } else {
-              console.log("Machine data saved successfully");
-            }
-          });
-        
-        promises.push(machinePromise);
-      }
-      
-      // Handle notes if provided
-      if (data.notes) {
-        const noteData = {
-          customer_id: customerId,
-          content: data.notes,
-          created_by: "System"
-        };
-        
-        console.log("Inserting note data:", noteData);
-        
-        const notePromise = supabase
-          .from('customer_notes')
-          .insert(noteData)
-          .then(({ error }) => {
-            if (error) {
-              console.error("Error saving customer notes:", error);
-              toast.error("Warning: Notes not saved - " + error.message);
-            } else {
-              console.log("Notes saved successfully");
-            }
-          });
-        
-        promises.push(notePromise);
-      }
-      
-      // Wait for all promises to complete
-      await Promise.all(promises);
-      
-      toast.success(isNewCustomer ? "Customer saved successfully!" : "Customer updated successfully!");
-      
-      // Reset the form if it's a new customer
-      if (isNewCustomer) {
-        form.reset();
-      }
-      
-      // Navigate back to customers list after a short delay
-      setTimeout(() => {
-        navigate("/customers");
-      }, 1500);
-      
+      router.push("/customers");
     } catch (error) {
-      console.error("Unexpected error in form submission:", error);
-      toast.error("Failed to save customer. Please try again.");
+      console.error("Error saving customer:", error);
+      toast.error("Failed to save customer");
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading customer data...</span>
-      </div>
-    );
-  }
+  };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4 mb-6">
-            <Button 
-              type="button" 
-              variant={isNewCustomer ? "default" : "outline"}
-              onClick={() => setIsNewCustomer(true)}
-              disabled={!!customerId}
-            >
-              New Customer
-            </Button>
-            <Button 
-              type="button" 
-              variant={isNewCustomer ? "outline" : "default"}
-              onClick={() => setIsNewCustomer(false)}
-              disabled={!!customerId}
-            >
-              Existing Customer
-            </Button>
-          </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Customer Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter customer name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <CustomerFormProvider form={form} isNewCustomer={isNewCustomer} isSubmitting={isSubmitting}>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <BasicInfoForm />
-                  <AddressForm />
-                </div>
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone Number</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter phone number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <LeadInfoForm />
-                  <NotesForm />
-                </div>
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email Address (Optional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter email address" type="email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                <Button 
-                  type="submit" 
-                  className="w-full gap-2" 
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Saving...
-                    </>
-                  ) : (
-                    <>
-                      {isNewCustomer ? "Save Customer" : "Update Customer"} <Check className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </Form>
-          </CustomerFormProvider>
-        </CardContent>
-      </Card>
+          <FormField
+            control={form.control}
+            name="leadSource"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Lead Source</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a lead source" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Website">Website</SelectItem>
+                    <SelectItem value="Referral">Referral</SelectItem>
+                    <SelectItem value="Advertisement">Advertisement</SelectItem>
+                    <SelectItem value="Cold Call">Cold Call</SelectItem>
+                    <SelectItem value="Chatbot">Chatbot</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-      {!isNewCustomer && customerId && (
-        <div className="grid md:grid-cols-2 gap-6">
-          <CustomerMachines />
-          <CustomerHistory />
+          <FormField
+            control={form.control}
+            name="leadStatus"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Lead Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a lead status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Prospect">Prospect</SelectItem>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Contract Renewal">Contract Renewal</SelectItem>
+                    <SelectItem value="Need Toner">Need Toner</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      )}
 
-      {!isNewCustomer && customerId && <CustomerNotes />}
-    </div>
+        <AddressForm />
+
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Submitting..." : selectedCustomer ? "Update Customer" : "Add Customer"}
+        </Button>
+      </form>
+    </Form>
   );
-}
+};
+
+export default CustomerFormComponent;
