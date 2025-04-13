@@ -16,6 +16,7 @@ export interface DbInventoryItem {
   compatible_models?: string[];
   part_number?: string;
   warehouse_name?: string;
+  warehouse_id?: string; // Added this field to match the database schema
   brand_id?: string;
   model_id?: string;
 }
@@ -61,27 +62,54 @@ export const adaptInventoryItem = (item: DbInventoryItem): InventoryItem => {
   };
 };
 
+// A type guard to ensure we have a valid DbInventoryItem
+const isValidDbInventoryItem = (item: any): item is DbInventoryItem => {
+  return (
+    item !== null &&
+    typeof item === 'object' &&
+    'id' in item &&
+    typeof item.id === 'string' &&
+    'part_name' in item &&
+    typeof item.part_name === 'string' &&
+    'category' in item &&
+    typeof item.category === 'string' &&
+    'quantity' in item &&
+    typeof item.quantity === 'number' &&
+    'min_stock' in item &&
+    typeof item.min_stock === 'number' &&
+    'purchase_price' in item &&
+    typeof item.purchase_price === 'number'
+  );
+};
+
 export const useInventoryItems = (warehouseId: string | null) => {
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: ['inventory_items', warehouseId],
     queryFn: async () => {
-      let query = supabase
-        .from('opening_stock_entries')
-        .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number, warehouse_name, brand_id, model_id')
-        .order('part_name');
-      
-      if (warehouseId) {
-        query = query.eq('warehouse_id', warehouseId);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      // Check for low stock items and send alerts
-      if (data && data.length > 0) {
-        // Safely check for low stock items with type checking
-        const lowStockItems = data.filter((item) => {
+      try {
+        let query = supabase
+          .from('opening_stock_entries')
+          .select('id, part_name, category, quantity, min_stock, purchase_price, brand, compatible_models, part_number, warehouse_name, warehouse_id, brand_id, model_id')
+          .order('part_name');
+        
+        if (warehouseId) {
+          query = query.eq('warehouse_id', warehouseId);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Supabase query error:", error);
+          throw error;
+        }
+        
+        if (!data || !Array.isArray(data)) {
+          console.error("Invalid data format received:", data);
+          return [];
+        }
+        
+        // Check for low stock items and send alerts
+        const lowStockItems = data.filter(item => {
           if (!item) return false;
           
           return (
@@ -94,66 +122,58 @@ export const useInventoryItems = (warehouseId: string | null) => {
           );
         });
         
-        if (lowStockItems.length > 0 && lowStockItems[0]) {
+        if (lowStockItems.length > 0) {
           // Only send the first low stock alert to avoid spamming
           try {
             const firstLowStockItem = lowStockItems[0];
-            // Explicitly validate the item before passing it to the notification function
-            if (
-              firstLowStockItem && 
-              typeof firstLowStockItem.id === 'string' &&
-              typeof firstLowStockItem.part_name === 'string'
-            ) {
-              notifyInventoryAlert(firstLowStockItem as DbInventoryItem);
+            
+            // Use the type guard to ensure we have a valid item
+            if (isValidDbInventoryItem(firstLowStockItem)) {
+              notifyInventoryAlert(firstLowStockItem);
             }
           } catch (error) {
             console.error("Error sending alert:", error);
           }
         }
-      }
-      
-      // Convert database items to frontend format with careful type handling
-      return (data || [])
-        .map((dbItem) => {
-          // Skip items that might be null, error objects, or have an invalid structure
-          if (!dbItem) {
-            console.error("Invalid item data (null)");
-            return null;
-          }
-          
-          if (typeof dbItem !== 'object') {
-            console.error("Invalid item data (not an object):", dbItem);
-            return null;
-          }
-          
-          if ('error' in dbItem) {
-            console.error("Error object received instead of item:", dbItem);
-            return null;
-          }
-          
-          // Use type assertion with safety checks
-          try {
-            // Make sure required fields exist before adapting
-            if (
-              'id' in dbItem &&
-              'part_name' in dbItem &&
-              'category' in dbItem &&
-              'quantity' in dbItem &&
-              'min_stock' in dbItem &&
-              'purchase_price' in dbItem
-            ) {
-              const safeDbItem = dbItem as DbInventoryItem;
-              return adaptInventoryItem(safeDbItem);
-            } else {
-              console.error("Item missing required fields:", dbItem);
+        
+        // Convert database items to frontend format with careful type handling
+        return data
+          .map(dbItem => {
+            // Skip items that might be null or have an invalid structure
+            if (!dbItem) {
+              console.error("Invalid item data (null)");
               return null;
             }
-          } catch (err) {
-            console.error("Error adapting item:", dbItem, err);
-            return null;
-          }
-        })
-        .filter((item): item is InventoryItem => item !== null); // Type predicate to filter out null values
+            
+            if (typeof dbItem !== 'object') {
+              console.error("Invalid item data (not an object):", dbItem);
+              return null;
+            }
+            
+            // Check if dbItem is an error object
+            if ('error' in dbItem && dbItem.error === true) {
+              console.error("Error object received instead of item:", dbItem);
+              return null;
+            }
+            
+            try {
+              // Use our type guard to ensure we have a valid item
+              if (isValidDbInventoryItem(dbItem)) {
+                return adaptInventoryItem(dbItem);
+              } else {
+                console.error("Item failed validation:", dbItem);
+                return null;
+              }
+            } catch (err) {
+              console.error("Error adapting item:", dbItem, err);
+              return null;
+            }
+          })
+          .filter((item): item is InventoryItem => item !== null); // Type predicate to filter out null values
+      } catch (err) {
+        console.error("Error in useInventoryItems query:", err);
+        throw err;
+      }
     },
   });
 
