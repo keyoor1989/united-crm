@@ -75,6 +75,7 @@ const SidebarContent = () => {
         section={{
           key: "settings",
           label: settingsSection.title,
+          icon: settingsSection.items[0].icon,
           items: settingsSection.items.map(item => ({
             to: item.href,
             label: item.title,

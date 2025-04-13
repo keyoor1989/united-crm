@@ -2,7 +2,7 @@
 export interface TelegramConfig {
   id: string;
   bot_token: string;
-  webhook_url: string;
+  webhook_url: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -1136,6 +1136,116 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_authorized_chats: {
+        Row: {
+          chat_id: string
+          chat_name: string
+          created_at: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          chat_id: string
+          chat_name: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          chat_id?: string
+          chat_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
+      telegram_config: {
+        Row: {
+          bot_token: string
+          created_at: string
+          id: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          bot_token: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          bot_token?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      telegram_message_logs: {
+        Row: {
+          chat_id: string
+          created_at: string
+          direction: string
+          id: string
+          message_text: string
+          message_type: string
+          processed_status: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          direction: string
+          id?: string
+          message_text: string
+          message_type: string
+          processed_status: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          direction?: string
+          id?: string
+          message_text?: string
+          message_type?: string
+          processed_status?: string
+        }
+        Relationships: []
+      }
+      telegram_notification_preferences: {
+        Row: {
+          chat_id: string
+          customer_followups: boolean
+          id: string
+          inventory_alerts: boolean
+          service_calls: boolean
+        }
+        Insert: {
+          chat_id: string
+          customer_followups?: boolean
+          id?: string
+          inventory_alerts?: boolean
+          service_calls?: boolean
+        }
+        Update: {
+          chat_id?: string
+          customer_followups?: boolean
+          id?: string
+          inventory_alerts?: boolean
+          service_calls?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "telegram_notification_preferences_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: true
+            referencedRelation: "telegram_authorized_chats"
+            referencedColumns: ["chat_id"]
+          },
+        ]
+      }
       warehouse_stock: {
         Row: {
           id: string
