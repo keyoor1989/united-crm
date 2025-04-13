@@ -1,17 +1,43 @@
 
-import React, { useState } from "react";
-import { purchaseOrders } from "@/data/salesData";
+import React, { useState, useEffect } from "react";
 import { PurchaseOrderStatus } from "@/types/sales";
 import PurchaseOrderHeader from "@/components/sales/purchase-orders/PurchaseOrderHeader";
 import PurchaseOrderFilters from "@/components/sales/purchase-orders/PurchaseOrderFilters";
 import PurchaseOrderTable from "@/components/sales/purchase-orders/PurchaseOrderTable";
+import { fetchPurchaseOrders } from "@/services/purchaseOrderService";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 const PurchaseOrders = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<PurchaseOrderStatus | "All">("All");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const loadPurchaseOrders = async () => {
+      try {
+        setLoading(true);
+        const data = await fetchPurchaseOrders();
+        setOrders(data);
+      } catch (error) {
+        console.error("Error loading purchase orders:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load purchase orders. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadPurchaseOrders();
+  }, [toast]);
   
   // Filter purchase orders based on search term and status
-  const filteredOrders = purchaseOrders.filter(order => {
+  const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.poNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.vendorName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -30,7 +56,15 @@ const PurchaseOrders = () => {
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
       />
-      <PurchaseOrderTable orders={filteredOrders} />
+      
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading purchase orders...</span>
+        </div>
+      ) : (
+        <PurchaseOrderTable orders={filteredOrders} />
+      )}
     </div>
   );
 };

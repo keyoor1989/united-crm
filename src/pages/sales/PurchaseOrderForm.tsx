@@ -13,19 +13,25 @@ import {
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from '@/components/ui/table';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/use-toast';
 import { 
   PlusCircle, Trash2, ArrowLeft, Save, SendIcon, 
-  CheckSquare, Building, Calendar, TruckIcon 
+  CheckSquare, Building, Calendar, TruckIcon, Loader2
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { 
-  products, purchaseOrders, vendors, createPurchaseOrderItem, 
-  generatePurchaseOrderNumber 
+  products, createPurchaseOrderItem
 } from '@/data/salesData';
+import { useVendors } from '@/contexts/VendorContext';
+import {
+  fetchPurchaseOrderById,
+  createPurchaseOrder,
+  updatePurchaseOrder,
+  generatePurchaseOrderNumber
+} from '@/services/purchaseOrderService';
 import { 
   ProductCategory, Product, PurchaseOrder, PurchaseOrderItem, 
-  PurchaseOrderStatus, Vendor 
+  PurchaseOrderStatus
 } from '@/types/sales';
 
 interface PurchaseOrderFormValues {
@@ -51,25 +57,15 @@ const PurchaseOrderForm = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
-
-  // Find purchase order if in edit mode
-  const existingOrder = isEditMode 
-    ? purchaseOrders.find(po => po.id === id) 
-    : null;
+  const { toast } = useToast();
+  const { vendors } = useVendors();
 
   // Form state
-  const [items, setItems] = useState<PurchaseOrderItem[]>(
-    existingOrder?.items || []
-  );
-  const [subtotal, setSubtotal] = useState<number>(
-    existingOrder?.subtotal || 0
-  );
-  const [totalGst, setTotalGst] = useState<number>(
-    existingOrder?.totalGst || 0
-  );
-  const [grandTotal, setGrandTotal] = useState<number>(
-    existingOrder?.grandTotal || 0
-  );
+  const [items, setItems] = useState<PurchaseOrderItem[]>([]);
+  const [subtotal, setSubtotal] = useState<number>(0);
+  const [totalGst, setTotalGst] = useState<number>(0);
+  const [grandTotal, setGrandTotal] = useState<number>(0);
+  const [loading, setLoading] = useState(isEditMode);
   
   // New item form state
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | ''>('');
@@ -91,30 +87,89 @@ const PurchaseOrderForm = () => {
   
   // Setup form
   const form = useForm<PurchaseOrderFormValues>({
-    defaultValues: existingOrder 
-      ? {
-          poNumber: existingOrder.poNumber,
-          vendorId: existingOrder.vendorId,
-          vendorName: existingOrder.vendorName,
-          createdAt: existingOrder.createdAt,
-          deliveryDate: existingOrder.deliveryDate,
-          notes: existingOrder.notes,
-          terms: existingOrder.terms,
-          status: existingOrder.status,
-        } 
-      : {
-          poNumber: generatePurchaseOrderNumber(),
-          vendorId: '',
-          vendorName: '',
-          createdAt: new Date().toISOString().split('T')[0],
-          deliveryDate: new Date(
-            new Date().setDate(new Date().getDate() + 14)
-          ).toISOString().split('T')[0],
-          notes: 'Please confirm receipt of this purchase order.',
-          terms: 'Payment will be processed upon delivery and inspection.',
-          status: 'Draft',
-        }
+    defaultValues: {
+      poNumber: '',
+      vendorId: '',
+      vendorName: '',
+      createdAt: new Date().toISOString().split('T')[0],
+      deliveryDate: new Date(
+        new Date().setDate(new Date().getDate() + 14)
+      ).toISOString().split('T')[0],
+      notes: 'Please confirm receipt of this purchase order.',
+      terms: 'Payment will be processed upon delivery and inspection.',
+      status: 'Draft' as PurchaseOrderStatus,
+    }
   });
+  
+  // Load purchase order data if in edit mode
+  useEffect(() => {
+    const loadPurchaseOrder = async () => {
+      if (isEditMode && id) {
+        try {
+          setLoading(true);
+          const order = await fetchPurchaseOrderById(id);
+          
+          if (order) {
+            // Set form values
+            form.reset({
+              poNumber: order.poNumber,
+              vendorId: order.vendorId,
+              vendorName: order.vendorName,
+              createdAt: new Date(order.createdAt).toISOString().split('T')[0],
+              deliveryDate: new Date(order.deliveryDate).toISOString().split('T')[0],
+              notes: order.notes,
+              terms: order.terms,
+              status: order.status,
+            });
+            
+            // Set items and totals
+            setItems(order.items);
+            setSubtotal(order.subtotal);
+            setTotalGst(order.totalGst);
+            setGrandTotal(order.grandTotal);
+          } else {
+            toast({
+              title: "Error",
+              description: "Purchase order not found",
+              variant: "destructive",
+            });
+            navigate('/purchase-orders');
+          }
+        } catch (error) {
+          console.error("Error loading purchase order:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load purchase order data",
+            variant: "destructive",
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadPurchaseOrder();
+  }, [id, isEditMode, navigate, form, toast]);
+  
+  // Generate PO number for new orders
+  useEffect(() => {
+    if (!isEditMode) {
+      const generatePONumber = async () => {
+        try {
+          const poNumber = await generatePurchaseOrderNumber();
+          form.setValue('poNumber', poNumber);
+        } catch (error) {
+          console.error("Error generating PO number:", error);
+          // Fallback to a simple format if generation fails
+          const date = new Date();
+          const fallbackNumber = `PO-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+          form.setValue('poNumber', fallbackNumber);
+        }
+      };
+      
+      generatePONumber();
+    }
+  }, [isEditMode, form]);
   
   // Handle vendor selection
   const handleVendorChange = (vendorId: string) => {
@@ -163,7 +218,11 @@ const PurchaseOrderForm = () => {
     if (isCustomItem) {
       // Validate custom item inputs
       if (!customName) {
-        toast.error('Please enter a name for the custom item');
+        toast({
+          title: "Error",
+          description: "Please enter a name for the custom item",
+          variant: "destructive",
+        });
         return;
       }
       
@@ -182,14 +241,22 @@ const PurchaseOrderForm = () => {
     } else {
       // Validate product selection
       if (!selectedProductId) {
-        toast.error('Please select a product');
+        toast({
+          title: "Error",
+          description: "Please select a product",
+          variant: "destructive",
+        });
         return;
       }
       
       const product = products.find(p => p.id === selectedProductId);
       
       if (!product) {
-        toast.error('Selected product not found');
+        toast({
+          title: "Error",
+          description: "Selected product not found",
+          variant: "destructive",
+        });
         return;
       }
       
@@ -236,44 +303,78 @@ const PurchaseOrderForm = () => {
   };
   
   // Save purchase order
-  const onSubmit = (data: PurchaseOrderFormValues) => {
+  const onSubmit = async (data: PurchaseOrderFormValues) => {
     if (!data.vendorId) {
-      toast.error('Please select a vendor');
+      toast({
+        title: "Error",
+        description: "Please select a vendor",
+        variant: "destructive",
+      });
       return;
     }
     
     if (items.length === 0) {
-      toast.error('Please add at least one item to the purchase order');
+      toast({
+        title: "Error",
+        description: "Please add at least one item to the purchase order",
+        variant: "destructive",
+      });
       return;
     }
     
-    const savedOrder: PurchaseOrder = {
-      id: existingOrder?.id || Math.random().toString(36).substring(2, 11),
-      poNumber: data.poNumber,
-      vendorId: data.vendorId,
-      vendorName: data.vendorName,
-      items,
-      subtotal,
-      totalGst,
-      grandTotal,
-      createdAt: data.createdAt,
-      deliveryDate: data.deliveryDate,
-      status: data.status,
-      notes: data.notes,
-      terms: data.terms
-    };
-    
-    // In a real app, this would save to a database
-    console.log('Saved purchase order:', savedOrder);
-    
-    toast.success(
-      isEditMode ? 'Purchase order updated successfully' : 'Purchase order created successfully'
-    );
-    
-    setTimeout(() => {
+    try {
+      setLoading(true);
+      
+      const orderData: Omit<PurchaseOrder, 'id'> = {
+        poNumber: data.poNumber,
+        vendorId: data.vendorId,
+        vendorName: data.vendorName,
+        items,
+        subtotal,
+        totalGst,
+        grandTotal,
+        createdAt: data.createdAt,
+        deliveryDate: data.deliveryDate,
+        status: data.status,
+        notes: data.notes,
+        terms: data.terms
+      };
+      
+      if (isEditMode && id) {
+        await updatePurchaseOrder(id, orderData);
+        toast({
+          title: "Success",
+          description: "Purchase order updated successfully!"
+        });
+      } else {
+        await createPurchaseOrder(orderData);
+        toast({
+          title: "Success",
+          description: "Purchase order created successfully!"
+        });
+      }
+      
       navigate('/purchase-orders');
-    }, 1500);
+    } catch (error) {
+      console.error("Error saving purchase order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save purchase order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+  
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6 flex justify-center items-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <p>Loading purchase order data...</p>
+      </div>
+    );
+  }
   
   return (
     <div className="container mx-auto py-6">
@@ -292,7 +393,7 @@ const PurchaseOrderForm = () => {
           </h1>
           <p className="text-muted-foreground">
             {isEditMode 
-              ? `Editing PO ${existingOrder?.poNumber}` 
+              ? `Editing PO ${form.getValues().poNumber}` 
               : 'Create a new purchase order for your vendor'}
           </p>
         </div>
@@ -757,9 +858,19 @@ const PurchaseOrderForm = () => {
                 <Button
                   type="submit"
                   onClick={() => form.setValue('status', 'Draft')}
+                  disabled={loading}
                 >
-                  <Save className="mr-2 h-4 w-4" />
-                  Save as Draft
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save as Draft
+                    </>
+                  )}
                 </Button>
                 
                 <Button
@@ -769,9 +880,19 @@ const PurchaseOrderForm = () => {
                     form.handleSubmit(onSubmit)();
                   }}
                   variant="default"
+                  disabled={loading}
                 >
-                  <SendIcon className="mr-2 h-4 w-4" />
-                  Save & Send
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <SendIcon className="mr-2 h-4 w-4" />
+                      Save & Send
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

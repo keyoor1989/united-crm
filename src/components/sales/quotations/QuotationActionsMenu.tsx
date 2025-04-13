@@ -10,11 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { 
   MoreHorizontal, Eye, FileDown, FilePenLine, 
-  Trash2, CheckSquare, X, FileText 
+  Trash2, CheckCircle, X, ShoppingBasket 
 } from "lucide-react";
-import { PurchaseOrder } from "@/types/sales";
-import { generatePurchaseOrderPdf } from "@/utils/pdf/purchaseOrderPdfGenerator";
-import { updatePurchaseOrder, deletePurchaseOrder } from "@/services/purchaseOrderService";
+import { Quotation } from "@/types/sales";
+import { generateQuotationPdf } from "@/utils/pdf/quotationPdfGenerator";
+import { updateQuotation, deleteQuotation } from "@/services/quotationService";
 import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
@@ -27,29 +27,29 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface PurchaseOrderActionsMenuProps {
-  order: PurchaseOrder;
+interface QuotationActionsMenuProps {
+  quotation: Quotation;
 }
 
-const PurchaseOrderActionsMenu: React.FC<PurchaseOrderActionsMenuProps> = ({ order }) => {
+const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const { toast } = useToast();
 
   const handleViewDetails = () => {
-    navigate(`/purchase-order/${order.id}`);
+    navigate(`/quotation/${quotation.id}`);
   };
 
   const handleEdit = () => {
-    navigate(`/purchase-order-form/${order.id}`);
+    navigate(`/quotation-form/${quotation.id}`);
   };
 
   const handleDownloadPdf = () => {
     try {
-      generatePurchaseOrderPdf(order);
+      generateQuotationPdf(quotation);
       toast({
         title: "PDF Generated",
-        description: `Purchase Order ${order.poNumber} has been downloaded.`
+        description: `Quotation ${quotation.quotationNumber} has been downloaded.`
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -61,12 +61,17 @@ const PurchaseOrderActionsMenu: React.FC<PurchaseOrderActionsMenuProps> = ({ ord
     }
   };
 
-  const handleUpdateStatus = async (newStatus: PurchaseOrderStatus) => {
+  const handleCreatePurchaseOrder = () => {
+    // Navigate to purchase order form with quotation data
+    navigate(`/purchase-order-form?from-quotation=${quotation.id}`);
+  };
+
+  const handleUpdateStatus = async (newStatus: QuotationStatus) => {
     try {
-      await updatePurchaseOrder(order.id, { status: newStatus });
+      await updateQuotation(quotation.id, { status: newStatus });
       toast({
         title: "Status Updated",
-        description: `Purchase Order ${order.poNumber} is now ${newStatus}.`
+        description: `Quotation ${quotation.quotationNumber} is now ${newStatus}.`
       });
       // Refresh the page to show the updated status
       window.location.reload();
@@ -82,18 +87,18 @@ const PurchaseOrderActionsMenu: React.FC<PurchaseOrderActionsMenuProps> = ({ ord
 
   const handleDelete = async () => {
     try {
-      await deletePurchaseOrder(order.id);
+      await deleteQuotation(quotation.id);
       toast({
-        title: "Purchase Order Deleted",
-        description: `Purchase Order ${order.poNumber} has been deleted.`
+        title: "Quotation Deleted",
+        description: `Quotation ${quotation.quotationNumber} has been deleted.`
       });
       // Refresh the page to show the updated list
       window.location.reload();
     } catch (error) {
-      console.error("Error deleting purchase order:", error);
+      console.error("Error deleting quotation:", error);
       toast({
         title: "Error",
-        description: "Failed to delete purchase order. Please try again.",
+        description: "Failed to delete quotation. Please try again.",
         variant: "destructive"
       });
     }
@@ -122,24 +127,24 @@ const PurchaseOrderActionsMenu: React.FC<PurchaseOrderActionsMenuProps> = ({ ord
             Download PDF
           </DropdownMenuItem>
           
-          {order.status !== "Confirmed" && (
-            <DropdownMenuItem onClick={() => handleUpdateStatus("Confirmed")}>
-              <CheckSquare className="mr-2 h-4 w-4" />
-              Mark as Confirmed
+          {quotation.status === "Sent" && (
+            <DropdownMenuItem onClick={() => handleUpdateStatus("Accepted")}>
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Mark as Accepted
             </DropdownMenuItem>
           )}
           
-          {order.status !== "Received" && (
-            <DropdownMenuItem onClick={() => handleUpdateStatus("Received")}>
-              <FileText className="mr-2 h-4 w-4" />
-              Mark as Received
-            </DropdownMenuItem>
-          )}
-          
-          {order.status !== "Cancelled" && (
-            <DropdownMenuItem onClick={() => handleUpdateStatus("Cancelled")}>
+          {quotation.status === "Sent" && (
+            <DropdownMenuItem onClick={() => handleUpdateStatus("Rejected")}>
               <X className="mr-2 h-4 w-4" />
-              Mark as Cancelled
+              Mark as Rejected
+            </DropdownMenuItem>
+          )}
+          
+          {quotation.status === "Accepted" && (
+            <DropdownMenuItem onClick={handleCreatePurchaseOrder}>
+              <ShoppingBasket className="mr-2 h-4 w-4" />
+              Create Purchase Order
             </DropdownMenuItem>
           )}
           
@@ -155,7 +160,7 @@ const PurchaseOrderActionsMenu: React.FC<PurchaseOrderActionsMenuProps> = ({ ord
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete Purchase Order {order.poNumber}. This action cannot be undone.
+              This will permanently delete Quotation {quotation.quotationNumber}. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -170,4 +175,4 @@ const PurchaseOrderActionsMenu: React.FC<PurchaseOrderActionsMenuProps> = ({ ord
   );
 };
 
-export default PurchaseOrderActionsMenu;
+export default QuotationActionsMenu;

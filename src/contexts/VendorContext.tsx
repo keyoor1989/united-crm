@@ -1,100 +1,196 @@
 
-import React, { createContext, useState, useContext, ReactNode } from "react";
-import { Vendor } from "@/types/inventory";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Vendor } from '@/types/sales';
+import { toast } from '@/components/ui/use-toast';
 
-// Mock vendors data as initial state
-const initialVendors: Vendor[] = [
-  {
-    id: "vendor1",
-    name: "Ajanta Traders",
-    gstNo: "24AAKCS9636Q1ZX",
-    phone: "9876543210",
-    email: "info@ajanta.com",
-    address: "142, Industrial Area, Indore, MP",
-    createdAt: "2024-01-15"
-  },
-  {
-    id: "vendor2",
-    name: "Ravi Distributors",
-    gstNo: "27AAVCS8142M1Z5",
-    phone: "9988776655",
-    email: "sales@ravidist.com",
-    address: "78, Tech Park, Bhopal, MP",
-    createdAt: "2024-02-20"
-  },
-  {
-    id: "vendor3",
-    name: "Mehta Enterprises",
-    gstNo: "06AABCU9603R1ZP",
-    phone: "9865432109",
-    email: "contact@mehta.co.in",
-    address: "23, Old Market, Jabalpur, MP",
-    createdAt: "2023-11-05"
-  },
-  {
-    id: "vendor4",
-    name: "Global Supplies",
-    gstNo: "29AAKCG1412Q1Z5",
-    phone: "9889900001",
-    email: "info@globalsupplies.com",
-    address: "56, MG Road, Indore, MP",
-    createdAt: "2024-03-12"
-  },
-  {
-    id: "vendor5",
-    name: "Tech Parts Ltd",
-    gstNo: "23AADFT2613R1ZM",
-    phone: "9870123456",
-    email: "support@techparts.in",
-    address: "110, Industrial Estate, Pithampur, MP",
-    createdAt: "2023-12-10"
-  },
-];
-
-// Create the context
-type VendorContextType = {
+interface VendorContextType {
   vendors: Vendor[];
-  addVendor: (vendor: Vendor) => void;
-  updateVendor: (updatedVendor: Vendor) => void;
-  deleteVendor: (vendorId: string) => void;
-};
+  loading: boolean;
+  error: Error | null;
+  addVendor: (vendor: Omit<Vendor, 'id' | 'created_at'>) => Promise<Vendor | null>;
+  updateVendor: (id: string, updates: Partial<Vendor>) => Promise<boolean>;
+  deleteVendor: (id: string) => Promise<boolean>;
+  refreshVendors: () => Promise<void>;
+}
 
 const VendorContext = createContext<VendorContextType | undefined>(undefined);
 
-// Create a provider component
-export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
-
-  const addVendor = (vendor: Vendor) => {
-    setVendors((prevVendors) => [...prevVendors, vendor]);
-  };
-
-  const updateVendor = (updatedVendor: Vendor) => {
-    setVendors((prevVendors) =>
-      prevVendors.map((vendor) =>
-        vendor.id === updatedVendor.id ? updatedVendor : vendor
-      )
-    );
-  };
-
-  const deleteVendor = (vendorId: string) => {
-    setVendors((prevVendors) =>
-      prevVendors.filter((vendor) => vendor.id !== vendorId)
-    );
-  };
-
-  return (
-    <VendorContext.Provider value={{ vendors, addVendor, updateVendor, deleteVendor }}>
-      {children}
-    </VendorContext.Provider>
-  );
-};
-
-// Create a hook to use the context
-export const useVendors = () => {
+export function useVendors() {
   const context = useContext(VendorContext);
   if (context === undefined) {
-    throw new Error("useVendors must be used within a VendorProvider");
+    throw new Error('useVendors must be used within a VendorProvider');
   }
   return context;
+}
+
+export const VendorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchVendors = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      
+      // Map the data to match our Vendor type
+      const mappedVendors: Vendor[] = data.map(vendor => ({
+        id: vendor.id,
+        name: vendor.name,
+        contactPerson: vendor.contact_person || '',
+        email: vendor.email || '',
+        phone: vendor.phone || '',
+        address: vendor.address || '',
+      }));
+      
+      setVendors(mappedVendors);
+    } catch (err: any) {
+      setError(err);
+      toast({
+        title: 'Error fetching vendors',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVendors();
+  }, []);
+
+  const addVendor = async (vendor: Omit<Vendor, 'id' | 'created_at'>): Promise<Vendor | null> => {
+    try {
+      // Convert from our app's format to database format
+      const dbVendor = {
+        name: vendor.name,
+        contact_person: vendor.contactPerson,
+        email: vendor.email,
+        phone: vendor.phone,
+        address: vendor.address,
+      };
+
+      const { data, error } = await supabase
+        .from('vendors')
+        .insert(dbVendor)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Convert back to our app's format
+      const newVendor: Vendor = {
+        id: data.id,
+        name: data.name,
+        contactPerson: data.contact_person || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        address: data.address || '',
+      };
+
+      setVendors(prev => [...prev, newVendor]);
+      toast({
+        title: 'Vendor added',
+        description: `${vendor.name} has been added successfully.`,
+      });
+      
+      return newVendor;
+    } catch (err: any) {
+      toast({
+        title: 'Error adding vendor',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return null;
+    }
+  };
+
+  const updateVendor = async (id: string, updates: Partial<Vendor>): Promise<boolean> => {
+    try {
+      // Convert from our app's format to database format
+      const dbUpdates: any = {};
+      if (updates.name) dbUpdates.name = updates.name;
+      if (updates.contactPerson !== undefined) dbUpdates.contact_person = updates.contactPerson;
+      if (updates.email !== undefined) dbUpdates.email = updates.email;
+      if (updates.phone !== undefined) dbUpdates.phone = updates.phone;
+      if (updates.address !== undefined) dbUpdates.address = updates.address;
+
+      const { error } = await supabase
+        .from('vendors')
+        .update(dbUpdates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      setVendors(prev => prev.map(vendor => 
+        vendor.id === id ? { ...vendor, ...updates } : vendor
+      ));
+      
+      toast({
+        title: 'Vendor updated',
+        description: 'Vendor information has been updated successfully.',
+      });
+      
+      return true;
+    } catch (err: any) {
+      toast({
+        title: 'Error updating vendor',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const deleteVendor = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      setVendors(prev => prev.filter(vendor => vendor.id !== id));
+      
+      toast({
+        title: 'Vendor deleted',
+        description: 'Vendor has been deleted successfully.',
+      });
+      
+      return true;
+    } catch (err: any) {
+      toast({
+        title: 'Error deleting vendor',
+        description: err.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const refreshVendors = async (): Promise<void> => {
+    await fetchVendors();
+  };
+
+  const value = {
+    vendors,
+    loading,
+    error,
+    addVendor,
+    updateVendor,
+    deleteVendor,
+    refreshVendors,
+  };
+
+  return <VendorContext.Provider value={value}>{children}</VendorContext.Provider>;
 };

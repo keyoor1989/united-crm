@@ -886,6 +886,54 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          delivery_date: string | null
+          grand_total: number
+          id: string
+          items: Json
+          notes: string | null
+          po_number: string
+          status: string
+          subtotal: number
+          terms: string | null
+          total_gst: number
+          vendor_id: string | null
+          vendor_name: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_date?: string | null
+          grand_total: number
+          id?: string
+          items: Json
+          notes?: string | null
+          po_number: string
+          status: string
+          subtotal: number
+          terms?: string | null
+          total_gst: number
+          vendor_id?: string | null
+          vendor_name: string
+        }
+        Update: {
+          created_at?: string
+          delivery_date?: string | null
+          grand_total?: number
+          id?: string
+          items?: Json
+          notes?: string | null
+          po_number?: string
+          status?: string
+          subtotal?: number
+          terms?: string | null
+          total_gst?: number
+          vendor_id?: string | null
+          vendor_name?: string
+        }
+        Relationships: []
+      }
       quotations: {
         Row: {
           created_at: string
@@ -1245,6 +1293,36 @@ export type Database = {
             referencedColumns: ["chat_id"]
           },
         ]
+      }
+      vendors: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
       }
       warehouse_stock: {
         Row: {
