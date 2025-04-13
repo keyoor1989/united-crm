@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 
+// Initialize pdfMake with fonts
 pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 export const exportToCsv = <T extends Record<string, any>>(
@@ -111,5 +112,5 @@ export const exportToPdf = <T extends Record<string, any>>(
   };
   
   // Generate PDF and download
-  pdfMake.createPdf(docDefinition).download(`${title}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+  pdfMake.createPdf(docDefinition as any).download(`${title}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
 };

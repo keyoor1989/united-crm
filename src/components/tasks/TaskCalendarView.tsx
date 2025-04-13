@@ -91,10 +91,10 @@ const TaskCalendarView: React.FC<TaskCalendarViewProps> = ({ tasks, onTaskUpdate
             onSelect={setDate}
             className="rounded-md border"
             components={{
-              DayContent: ({ day }) => (
+              DayContent: ({ date: dayDate }) => (
                 <>
-                  {day.day}
-                  {renderDayContents(day.date)}
+                  {dayDate.getDate()}
+                  {renderDayContents(dayDate)}
                 </>
               ),
             }}
