@@ -29,11 +29,11 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
+    const telegramBotToken = Deno.env.get('telegram_key') || '';
     
     if (!telegramBotToken) {
       return new Response(
-        JSON.stringify({ error: 'TELEGRAM_BOT_TOKEN is not configured' }),
+        JSON.stringify({ error: 'Telegram bot token is not configured' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,

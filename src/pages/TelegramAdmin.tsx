@@ -21,14 +21,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, MessageSquareText, X } from "lucide-react";
+import { Check, Copy, ExternalLink, Info, MessageSquareText, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useTelegram } from "@/contexts/TelegramContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const TelegramAdmin = () => {
   const [activeTab, setActiveTab] = useState("setup");
-  const [botToken, setBotToken] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [newChatId, setNewChatId] = useState("");
@@ -42,6 +43,7 @@ const TelegramAdmin = () => {
     config, 
     chats,
     preferences,
+    webhookInfo,
     isLoading,
     refreshData,
     updateWebhook,
@@ -52,17 +54,25 @@ const TelegramAdmin = () => {
     sendTestMessage
   } = useTelegram();
 
+  // Generate the webhook URL based on the project's public URL
+  useEffect(() => {
+    // Base URL is the app URL, we need to replace the web URL with the Supabase function URL
+    const baseProjectUrl = "https://united-crm.lovable.app";
+    const supabaseFunctionUrl = baseProjectUrl.replace(".lovable.app", ".supabase.co/functions/v1/telegram-webhook");
+    
+    if (!webhookUrl && !config?.webhook_url) {
+      setWebhookUrl(supabaseFunctionUrl);
+    } else if (config?.webhook_url) {
+      setWebhookUrl(config.webhook_url);
+    }
+  }, [config]);
+
   // Load initial data
   useEffect(() => {
-    if (config) {
-      setBotToken(config.bot_token || "");
-      setWebhookUrl(config.webhook_url || "");
-    }
-
     if (chats && chats.length > 0) {
       setSelectedChatId(chats[0].chat_id);
     }
-  }, [config, chats]);
+  }, [chats]);
 
   const saveWebhookSettings = async () => {
     setIsSaving(true);
@@ -206,6 +216,11 @@ const TelegramAdmin = () => {
     }).format(date);
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
   if (isLoading) {
     return (
       <div className="container py-8">
@@ -248,32 +263,54 @@ const TelegramAdmin = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="botToken">Bot Token</Label>
-                  <Input 
-                    id="botToken" 
-                    value={botToken} 
-                    onChange={(e) => setBotToken(e.target.value)}
-                    placeholder="Enter your Telegram bot token"
-                    disabled
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Bot token is managed through environment variables for security
-                  </p>
-                </div>
+                <Alert className="mb-4 bg-blue-50">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Your Telegram bot token is stored securely in Supabase secrets. 
+                    If you need to update it, please go to Supabase and update the 'telegram_key' secret.
+                  </AlertDescription>
+                </Alert>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="webhookUrl">Webhook URL</Label>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label htmlFor="webhookUrl">Webhook URL</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(webhookUrl)}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy webhook URL</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                   <Input 
                     id="webhookUrl" 
                     value={webhookUrl} 
                     onChange={(e) => setWebhookUrl(e.target.value)}
-                    placeholder="https://your-supabase-function-url/telegram-webhook"
+                    placeholder="Enter your webhook URL"
                   />
                   <p className="text-sm text-muted-foreground">
-                    URL that Telegram will use to send messages to your bot
+                    This is the URL that Telegram will use to send messages to your bot. 
+                    The webhook URL should point to your Supabase Edge Function.
                   </p>
                 </div>
+
+                {webhookInfo && (
+                  <div className="rounded-md border p-4 bg-slate-50">
+                    <h3 className="font-medium mb-2">Current Webhook Status:</h3>
+                    <div className="text-sm space-y-1">
+                      <p><span className="font-medium">URL:</span> {webhookInfo.result.url || "Not set"}</p>
+                      <p><span className="font-medium">Pending updates:</span> {webhookInfo.result.pending_update_count}</p>
+                      {webhookInfo.result.last_error_message && (
+                        <p className="text-red-500"><span className="font-medium">Last error:</span> {webhookInfo.result.last_error_message}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">

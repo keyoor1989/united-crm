@@ -2,7 +2,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
+const BOT_TOKEN = Deno.env.get('telegram_key') || '';
 const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
 
 async function getWebhookInfo(): Promise<Response> {

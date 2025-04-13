@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const telegramBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || '';
+const telegramBotToken = Deno.env.get('telegram_key') || '';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
