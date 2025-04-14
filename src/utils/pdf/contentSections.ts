@@ -1,7 +1,6 @@
-
 import { format } from "date-fns";
 import { Content, ContentText } from "pdfmake/interfaces";
-import { styles, logoImagePath, companyInfo, numberToWords } from "./pdfConfig";
+import { styles, logoBase64, companyInfo, numberToWords } from "./pdfConfig";
 
 // Interface for text with margin
 interface TextWithMargin extends ContentText {
@@ -23,12 +22,12 @@ export const createDocumentHeader = (title: string) => {
           { text: `GSTIN: ${companyInfo.gstin}`, style: 'gstin', margin: [0, 2, 0, 0] }
         ]
       },
-      // Logo on the right
+      // Logo on the right or fallback to text if image loading fails
       {
         width: '35%',
         stack: [
           {
-            image: logoImagePath,
+            image: logoBase64,
             width: 150,
             alignment: 'right',
             margin: [0, 0, 0, 5]

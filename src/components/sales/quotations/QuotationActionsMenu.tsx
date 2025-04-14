@@ -47,14 +47,39 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
 
   const handleDownloadPdf = () => {
     try {
-      const quotationCopy = {
-        ...quotation,
-        items: Array.isArray(quotation.items) 
-          ? quotation.items 
-          : (typeof quotation.items === 'string' ? JSON.parse(quotation.items) : [])
-      };
+      // Create a deep copy of the quotation to avoid modifying the original
+      const quotationCopy = JSON.parse(JSON.stringify(quotation));
       
-      generateQuotationPdf(quotationCopy);
+      // Ensure items is properly formatted as an array
+      if (quotationCopy.items) {
+        if (typeof quotationCopy.items === 'string') {
+          try {
+            quotationCopy.items = JSON.parse(quotationCopy.items);
+          } catch (error) {
+            console.error("Failed to parse items string:", error);
+            quotationCopy.items = [];
+          }
+        }
+        
+        // Final check to ensure items is an array
+        if (!Array.isArray(quotationCopy.items)) {
+          console.error("Items is not an array after processing:", quotationCopy.items);
+          quotationCopy.items = [];
+        }
+      } else {
+        quotationCopy.items = [];
+      }
+      
+      // Use the safe generator wrapper
+      safeGeneratePdf(
+        generateQuotationPdf, 
+        quotationCopy, 
+        (error) => {
+          console.error("PDF generation error:", error);
+          toast.error("Failed to generate PDF. Please try again.");
+        }
+      );
+      
       toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
       console.error("Error generating PDF:", error);

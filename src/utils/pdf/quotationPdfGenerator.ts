@@ -28,8 +28,15 @@ const standardQuotationTerms = [
 export const generateQuotationPdf = (quotation: Quotation): void => {
   try {
     console.log("Generating PDF for quotation:", quotation.quotationNumber);
-    console.log("Items data type:", typeof quotation.items);
-    console.log("Items value:", JSON.stringify(quotation.items));
+    
+    // Validate required data
+    if (!quotation) {
+      throw new Error('Quotation data is missing');
+    }
+    
+    if (!quotation.quotationNumber) {
+      throw new Error('Quotation number is missing');
+    }
     
     // Ensure items is always an array
     const items = Array.isArray(quotation.items) 
@@ -41,11 +48,27 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       throw new Error("Invalid items format: items must be an array");
     }
     
+    // Validate dates
+    let createdAtDate = new Date();
+    try {
+      createdAtDate = new Date(quotation.createdAt);
+    } catch (error) {
+      console.warn("Invalid created date format, using current date");
+    }
+    
+    let validUntilDate = new Date();
+    validUntilDate.setDate(validUntilDate.getDate() + 15); // Default 15 days validity
+    try {
+      validUntilDate = new Date(quotation.validUntil);
+    } catch (error) {
+      console.warn("Invalid valid until date format, using default 15 days from now");
+    }
+    
     // Create document details
     const quotationDetails = [
       { label: 'Quotation No', value: quotation.quotationNumber },
-      { label: 'Date', value: format(new Date(quotation.createdAt), "dd/MM/yyyy") },
-      { label: 'Valid Until', value: format(new Date(quotation.validUntil), "dd/MM/yyyy") }
+      { label: 'Date', value: format(createdAtDate, "dd/MM/yyyy") },
+      { label: 'Valid Until', value: format(validUntilDate, "dd/MM/yyyy") }
     ];
 
     // Create an array for content with non-conditional items first
