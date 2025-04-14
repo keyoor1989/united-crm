@@ -73,6 +73,10 @@ serve(async (req) => {
              text.toLowerCase().startsWith('new customer')) {
       await handleAddCustomer(chat_id, text);
     }
+    else if (text.toLowerCase().startsWith('delete customer') || 
+             text.toLowerCase().startsWith('remove customer')) {
+      await handleDeleteCustomer(chat_id, text);
+    }
     else if (text.toLowerCase().startsWith('lookup') || 
              text.match(/^\d{10}$/) || 
              text.toLowerCase().includes('find customer')) {
@@ -97,6 +101,7 @@ serve(async (req) => {
       await sendTelegramMessage(chat_id, 
         "I didn't understand that command. Here's what I can help you with:\n\n" +
         "• Add Customer [details]\n" +
+        "• Delete Customer [name or phone]\n" +
         "• Lookup [mobile number]\n" +
         "• Create Quotation [details]\n" +
         "• Assign Task [details]\n" +
@@ -706,5 +711,142 @@ async function handleDailyReport(chat_id: string) {
   } catch (error) {
     console.error("Error in handleDailyReport:", error);
     await sendTelegramMessage(chat_id, "❌ An error occurred while generating the report.");
+  }
+}
+
+// New function to handle deleting a customer
+async function handleDeleteCustomer(chat_id: string, text: string) {
+  try {
+    // Extract customer identifier (either name or phone number)
+    let customerIdentifier = '';
+    
+    const nameMatch = text.match(/customer\s+([^,\n]+)/i);
+    if (nameMatch && nameMatch[1]) {
+      customerIdentifier = nameMatch[1].trim();
+    }
+    
+    if (!customerIdentifier) {
+      await sendTelegramMessage(chat_id, 
+        "❌ Please specify customer name or phone number.\n\n" +
+        "Example: Delete Customer Anil Yadav\n" +
+        "or: Delete Customer Phone 9876543210"
+      );
+      return;
+    }
+    
+    // Check if it's a phone number
+    const isPhoneNumber = /^\d{10}$/.test(customerIdentifier);
+    
+    // Search for customer
+    let customerQuery = supabase.from('customers').select('*, customer_machines(*)');
+    
+    if (isPhoneNumber) {
+      customerQuery = customerQuery.eq('phone', customerIdentifier);
+    } else {
+      customerQuery = customerQuery.ilike('name', `%${customerIdentifier}%`);
+    }
+    
+    const { data: customers, error: customerError } = await customerQuery;
+    
+    if (customerError) {
+      console.error("Error looking up customer:", customerError);
+      await sendTelegramMessage(chat_id, "❌ Failed to look up customer. Please try again.");
+      return;
+    }
+    
+    if (!customers || customers.length === 0) {
+      await sendTelegramMessage(chat_id, `❌ No customer found with ${isPhoneNumber ? 'phone number' : 'name'} "${customerIdentifier}".`);
+      return;
+    }
+    
+    // If multiple matches found, ask user to be more specific
+    if (customers.length > 1) {
+      const customerList = customers.map((c, i) => `${i+1}. ${c.name} (${c.phone})`).join('\n');
+      await sendTelegramMessage(chat_id, 
+        `⚠️ Multiple customers found. Please be more specific:\n\n${customerList}\n\n` +
+        `Try using a phone number for exact matching.`
+      );
+      return;
+    }
+    
+    const customer = customers[0];
+    
+    // Check if customer has associated machines
+    const hasMachines = customer.customer_machines && customer.customer_machines.length > 0;
+    
+    // If customer has associated records, delete them first
+    if (hasMachines) {
+      // Delete associated machines
+      const { error: machineError } = await supabase
+        .from('customer_machines')
+        .delete()
+        .eq('customer_id', customer.id);
+      
+      if (machineError) {
+        console.error("Error deleting customer machines:", machineError);
+        await sendTelegramMessage(chat_id, 
+          `❌ Failed to delete customer's machines. Please try again or contact administrator.`
+        );
+        return;
+      }
+    }
+    
+    // Check for and delete any associated service calls
+    const { data: serviceCalls } = await supabase
+      .from('service_calls')
+      .select('id')
+      .eq('customer_id', customer.id);
+      
+    if (serviceCalls && serviceCalls.length > 0) {
+      const { error: serviceCallsError } = await supabase
+        .from('service_calls')
+        .delete()
+        .eq('customer_id', customer.id);
+        
+      if (serviceCallsError) {
+        console.error("Error deleting service calls:", serviceCallsError);
+        await sendTelegramMessage(chat_id, 
+          `❌ Failed to delete customer's service calls. Please try again or contact administrator.`
+        );
+        return;
+      }
+    }
+    
+    // Check for and delete any customer notes
+    const { error: notesError } = await supabase
+      .from('customer_notes')
+      .delete()
+      .eq('customer_id', customer.id);
+      
+    if (notesError) {
+      console.error("Error deleting customer notes:", notesError);
+      // Not critical, so continue
+    }
+    
+    // Finally delete the customer
+    const { error: deleteError } = await supabase
+      .from('customers')
+      .delete()
+      .eq('id', customer.id);
+    
+    if (deleteError) {
+      console.error("Error deleting customer:", deleteError);
+      await sendTelegramMessage(chat_id, 
+        `❌ Failed to delete customer. Error: ${deleteError.message}`
+      );
+      return;
+    }
+    
+    // Successful deletion message
+    await sendTelegramMessage(chat_id, 
+      `✅ Customer <b>${customer.name}</b> successfully deleted.\n\n` +
+      `${hasMachines ? `${customer.customer_machines.length} associated machines were also deleted.` : ''}` +
+      `${serviceCalls && serviceCalls.length > 0 ? `\n${serviceCalls.length} service calls were deleted.` : ''}`,
+      'HTML'
+    );
+    
+  } catch (error) {
+    console.error("Error in handleDeleteCustomer:", error);
+    await sendTelegramMessage(chat_id, "❌ An error occurred while processing your request.");
   }
 }

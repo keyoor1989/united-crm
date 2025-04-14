@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -28,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CustomerType } from "@/types/customer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CustomerTableProps {
   customers: CustomerType[];
@@ -71,7 +71,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   };
 
   const handleCreateQuotation = (customer: CustomerType) => {
-    // Pass customer data as URL parameters for auto-filling
     const queryParams = new URLSearchParams({
       customerId: customer.id,
       customerName: customer.name,
@@ -96,7 +95,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
     });
   };
 
-  const handleDeleteCustomer = (customerId: string, customerName: string) => {
+  const handleDeleteCustomer = async (customerId: string, customerName: string) => {
     toast({
       title: "Delete Customer",
       description: `Are you sure you want to delete ${customerName}? This action cannot be undone.`,
@@ -105,7 +104,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
         <Button 
           variant="outline" 
           className="bg-white" 
-          onClick={() => confirmDeleteCustomer(customerId)}
+          onClick={() => confirmDeleteCustomer(customerId, customerName)}
         >
           Confirm
         </Button>
@@ -113,11 +112,67 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
     });
   };
 
-  const confirmDeleteCustomer = (customerId: string) => {
-    toast({
-      title: "Customer Deleted",
-      description: "The customer has been successfully deleted.",
-    });
+  const confirmDeleteCustomer = async (customerId: string, customerName: string) => {
+    try {
+      const { data: machines, error: machinesError } = await supabase
+        .from('customer_machines')
+        .select('id')
+        .eq('customer_id', customerId);
+        
+      if (machinesError) throw machinesError;
+      
+      if (machines && machines.length > 0) {
+        const { error: machineDeleteError } = await supabase
+          .from('customer_machines')
+          .delete()
+          .eq('customer_id', customerId);
+          
+        if (machineDeleteError) throw machineDeleteError;
+      }
+      
+      const { data: serviceCalls, error: serviceCallsError } = await supabase
+        .from('service_calls')
+        .select('id')
+        .eq('customer_id', customerId);
+        
+      if (serviceCallsError) throw serviceCallsError;
+      
+      if (serviceCalls && serviceCalls.length > 0) {
+        const { error: serviceCallDeleteError } = await supabase
+          .from('service_calls')
+          .delete()
+          .eq('customer_id', customerId);
+          
+        if (serviceCallDeleteError) throw serviceCallDeleteError;
+      }
+      
+      const { error: notesError } = await supabase
+        .from('customer_notes')
+        .delete()
+        .eq('customer_id', customerId);
+      
+      const { error: deleteError } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId);
+        
+      if (deleteError) throw deleteError;
+      
+      toast({
+        title: "Customer Deleted",
+        description: `${customerName} has been successfully deleted.`,
+      });
+      
+      window.location.reload();
+      
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+      toast({
+        title: "Error Deleting Customer",
+        description: error.message || "Failed to delete customer. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading) {
