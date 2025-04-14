@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -34,6 +35,7 @@ interface QuotationActionsMenuProps {
 const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const { toast: uiToast } = useToast();
 
   const handleViewDetails = () => {
     navigate(`/quotation/${quotation.id}`);
@@ -67,36 +69,22 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
   const handleUpdateStatus = async (newStatus: QuotationStatus) => {
     try {
       await updateQuotation(quotation.id, { status: newStatus });
-      toast({
-        title: "Status Updated",
-        description: `Quotation ${quotation.quotationNumber} is now ${newStatus}.`
-      });
+      toast.success(`Quotation ${quotation.quotationNumber} is now ${newStatus}.`);
       window.location.reload();
     } catch (error) {
       console.error("Error updating status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update status. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to update status. Please try again.");
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteQuotation(quotation.id);
-      toast({
-        title: "Quotation Deleted",
-        description: `Quotation ${quotation.quotationNumber} has been deleted.`
-      });
+      toast.success(`Quotation ${quotation.quotationNumber} has been deleted.`);
       window.location.reload();
     } catch (error) {
       console.error("Error deleting quotation:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete quotation. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to delete quotation. Please try again.");
     }
     setShowDeleteDialog(false);
   };

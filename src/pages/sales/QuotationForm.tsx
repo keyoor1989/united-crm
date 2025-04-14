@@ -15,7 +15,7 @@ import {
 import { toast } from 'sonner';
 import { 
   PlusCircle, Trash2, ArrowLeft, Save, PrinterIcon, 
-  CheckCircle, Send, Copy, XCircle, Loader2
+  CheckCircle, Send, Copy, XCircle, Loader2 
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { 
@@ -31,6 +31,7 @@ import {
   updateQuotation, 
   fetchQuotationById 
 } from '@/services/quotationService';
+import { generateQuotationPdf } from '@/utils/pdfGenerator';
 
 interface QuotationFormValues {
   quotationNumber: string;
