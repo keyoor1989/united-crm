@@ -1,4 +1,3 @@
-
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { Alignment } from "pdfmake/interfaces";
@@ -150,6 +149,7 @@ export const numberToWords = (num: number): string => {
   const single = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
   const double = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
   const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  
   const formatTens = (num: number): string => {
     if (num < 10) return single[num];
     else if (num < 20) return double[num - 10];
@@ -161,49 +161,50 @@ export const numberToWords = (num: number): string => {
   if (num === 0) return 'Zero';
 
   // Handle decimals
-  const rupees = Math.floor(num);
-  const paise = Math.round((num - rupees) * 100);
+  const totalAmount = Number(num.toFixed(2)); // Ensure precise decimal handling
+  const rupees = Math.floor(totalAmount);
+  const paise = Math.round((totalAmount - rupees) * 100);
   
   let result = '';
   
   // Convert rupees part
-  if (rupees > 0) {
-    let crore = Math.floor(rupees / 10000000);
-    rupees %= 10000000;
-    
-    let lakh = Math.floor(rupees / 100000);
-    rupees %= 100000;
-    
-    let thousand = Math.floor(rupees / 1000);
-    rupees %= 1000;
-    
-    let hundred = Math.floor(rupees / 100);
-    rupees %= 100;
-    
-    let ten = rupees;
-    
-    if (crore > 0) {
-      result += formatTens(crore) + ' Crore ';
-    }
-    
-    if (lakh > 0) {
-      result += formatTens(lakh) + ' Lakh ';
-    }
-    
-    if (thousand > 0) {
-      result += formatTens(thousand) + ' Thousand ';
-    }
-    
-    if (hundred > 0) {
-      result += single[hundred] + ' Hundred ';
-    }
-    
-    if (ten > 0) {
-      result += formatTens(ten);
-    }
-    
-    result += ' Rupees';
+  let remainingRupees = rupees;
+  
+  let crore = Math.floor(remainingRupees / 10000000);
+  remainingRupees %= 10000000;
+  
+  let lakh = Math.floor(remainingRupees / 100000);
+  remainingRupees %= 100000;
+  
+  let thousand = Math.floor(remainingRupees / 1000);
+  remainingRupees %= 1000;
+  
+  let hundred = Math.floor(remainingRupees / 100);
+  remainingRupees %= 100;
+  
+  let ten = remainingRupees;
+  
+  if (crore > 0) {
+    result += formatTens(crore) + ' Crore ';
   }
+  
+  if (lakh > 0) {
+    result += formatTens(lakh) + ' Lakh ';
+  }
+  
+  if (thousand > 0) {
+    result += formatTens(thousand) + ' Thousand ';
+  }
+  
+  if (hundred > 0) {
+    result += single[hundred] + ' Hundred ';
+  }
+  
+  if (ten > 0) {
+    result += formatTens(ten);
+  }
+  
+  result += ' Rupees';
   
   // Convert paise part
   if (paise > 0) {
