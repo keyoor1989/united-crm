@@ -25,6 +25,8 @@ import {
 import { 
   ProductCategory, Product, Quotation, QuotationItem, QuotationStatus 
 } from '@/types/sales';
+import CustomerSearch from '@/components/chat/quotation/CustomerSearch';
+import { CustomerType } from '@/types/customer';
 
 interface QuotationFormValues {
   quotationNumber: string;
@@ -68,6 +70,9 @@ const QuotationForm = () => {
   const [grandTotal, setGrandTotal] = useState<number>(
     existingQuotation?.grandTotal || 0
   );
+  
+  // Customer search state
+  const [showCustomerSearch, setShowCustomerSearch] = useState<boolean>(false);
   
   // New item form state
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | ''>('');
@@ -113,6 +118,19 @@ const QuotationForm = () => {
           status: 'Draft',
         }
   });
+  
+  // Toggle customer search panel
+  const toggleCustomerSearch = () => {
+    setShowCustomerSearch(!showCustomerSearch);
+  };
+  
+  // Handle customer selection from search
+  const handleSelectCustomer = (customer: CustomerType) => {
+    form.setValue('customerName', customer.name);
+    form.setValue('customerId', customer.id);
+    setShowCustomerSearch(false);
+    toast.success(`Selected customer: ${customer.name}`);
+  };
   
   // Handle product selection
   useEffect(() => {
@@ -336,9 +354,14 @@ const QuotationForm = () => {
                   name="customerName"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Customer Name</FormLabel>
+                      <FormLabel>Customer</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Enter customer name" />
+                        <CustomerSearch
+                          onSelectCustomer={handleSelectCustomer}
+                          showSearch={showCustomerSearch}
+                          onToggleSearch={toggleCustomerSearch}
+                          customerName={field.value}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
