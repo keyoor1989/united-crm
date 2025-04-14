@@ -25,6 +25,17 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
   const [searchResults, setSearchResults] = useState<CustomerType[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Format phone number with proper spacing (e.g., 98765 43210)
+  const formatPhoneNumber = (phone: string) => {
+    // Remove any non-digit characters
+    const cleaned = phone.replace(/\D/g, '');
+    // Format as 5 digits space 5 digits if it's a 10-digit number
+    if (cleaned.length === 10) {
+      return cleaned.slice(0, 5) + ' ' + cleaned.slice(5);
+    }
+    return phone;
+  };
+
   const searchCustomers = async (term: string) => {
     if (term.length < 1) {
       setSearchResults([]);
@@ -33,46 +44,60 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
     
     setIsSearching(true);
     try {
-      // Search in Supabase database - can search by name, phone, or location (area)
-      const { data: nameData, error: nameError } = await supabase
+      // Check if search term contains only digits (likely a phone number)
+      const isPhoneSearch = /^\d+$/.test(term);
+      
+      let nameData: any[] = [];
+      let phoneData: any[] = [];
+      let areaData: any[] = [];
+      let machineData: any[] = [];
+      
+      // Search by name
+      const { data: nameResults, error: nameError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
         .ilike('name', `%${term}%`)
         .order('name')
         .limit(10);
       
-      // Search by phone
-      const { data: phoneData, error: phoneError } = await supabase
+      if (!nameError) nameData = nameResults || [];
+      
+      // Search by phone - prioritize this if it seems like a phone search
+      const { data: phoneResults, error: phoneError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
         .ilike('phone', `%${term}%`)
         .order('name')
         .limit(10);
       
+      if (!phoneError) phoneData = phoneResults || [];
+      
       // Search by location/area
-      const { data: areaData, error: areaError } = await supabase
+      const { data: areaResults, error: areaError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines(machine_name)')
         .ilike('area', `%${term}%`)
         .order('name')
         .limit(10);
       
+      if (!areaError) areaData = areaResults || [];
+      
       // Search by machine model via the related table
-      const { data: machineData, error: machineError } = await supabase
+      const { data: machineResults, error: machineError } = await supabase
         .from('customers')
         .select('id, name, phone, email, area, lead_status, customer_machines!inner(machine_name)')
         .filter('customer_machines.machine_name', 'ilike', `%${term}%`)
         .order('name')
         .limit(10);
         
-      if (nameError || phoneError || areaError || machineError) {
-        console.error("Error searching customers:", nameError || phoneError || areaError || machineError);
-        toast.error("Failed to search customers");
-        return;
-      }
+      if (!machineError) machineData = machineResults || [];
       
       // Combine results and remove duplicates
-      const combinedResults = [...(nameData || []), ...(phoneData || []), ...(areaData || []), ...(machineData || [])];
+      // If it's a phone search, prioritize phone results first
+      let combinedResults = isPhoneSearch 
+        ? [...phoneData, ...nameData, ...areaData, ...machineData]
+        : [...nameData, ...phoneData, ...areaData, ...machineData];
+        
       const uniqueCustomers = combinedResults.filter((customer, index, self) => 
         index === self.findIndex(c => c.id === customer.id)
       );
@@ -127,7 +152,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           <div className="flex items-center gap-2 mb-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input 
-              placeholder="Search by name, phone, city, machine..." 
+              placeholder="Search by name, phone, city or machine..." 
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -146,8 +171,10 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           </div>
           
           <div className="flex gap-1.5 text-xs text-muted-foreground mb-2">
-            <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Phone</span>
+            <span className="flex items-center gap-1 font-medium"><Phone className="h-3 w-3" /> Phone</span>
+            <span>•</span>
             <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> City</span>
+            <span>•</span>
             <span className="flex items-center gap-1"><User className="h-3 w-3" /> Name</span>
           </div>
           
@@ -156,27 +183,39 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
               Searching...
             </div>
           ) : searchResults.length > 0 ? (
-            <div className="max-h-60 overflow-y-auto">
+            <div className="max-h-60 overflow-y-auto divide-y divide-muted/20">
               {searchResults.map((customer) => (
                 <div 
                   key={customer.id}
-                  className="p-2 hover:bg-muted rounded-md cursor-pointer flex items-center gap-2"
+                  className="p-2 hover:bg-muted rounded-md cursor-pointer"
                   onClick={() => onSelectCustomer(customer)}
                 >
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <div className="font-medium">{customer.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {customer.phone}
-                      {customer.email && ` • ${customer.email}`}
-                      {customer.location && ` • ${customer.location}`}
+                  <div className="flex items-start gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-primary">{formatPhoneNumber(customer.phone)}</span>
+                        {customer.machines.length > 0 && (
+                          <Badge variant="outline" className="text-xs">
+                            {customer.machines.length} machines
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-sm">{customer.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {customer.location && 
+                          <span className="flex items-center gap-1 inline-block mr-2">
+                            <MapPin className="h-3 w-3" /> {customer.location}
+                          </span>
+                        }
+                        {customer.email && 
+                          <span className="text-xs text-muted-foreground">
+                            {customer.email}
+                          </span>
+                        }
+                      </div>
                     </div>
                   </div>
-                  {customer.machines.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {customer.machines.length} machines
-                    </Badge>
-                  )}
                 </div>
               ))}
             </div>
@@ -186,7 +225,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
             </div>
           ) : (
             <div className="py-2 text-center text-sm text-muted-foreground">
-              Type to search customers
+              Type a name, phone number, or location to search
             </div>
           )}
         </div>
