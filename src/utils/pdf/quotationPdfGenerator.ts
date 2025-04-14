@@ -121,12 +121,16 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
           // Client Information
           {
             width: '60%',
-            ...createEntityInfoSection('Bill To', quotation.customerName)
+            stack: [
+              ...(createEntityInfoSection('Bill To', quotation.customerName) as any).stack
+            ]
           },
           // Quotation Details
           {
             width: '40%',
-            ...createDocumentDetails(quotationDetails)
+            stack: [
+              ...(createDocumentDetails(quotationDetails) as any).stack
+            ]
           }
         ],
         columnGap: 10,
@@ -143,12 +147,12 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       createBankDetailsSection(),
       
       // Terms and conditions
-      ...createTermsSection(standardQuotationTerms, quotation.terms)
+      ...(createTermsSection(standardQuotationTerms, quotation.terms) as any)
     ];
     
     // Add notes section if provided
     if (quotation.notes) {
-      contentItems.push(...createNotesSection(quotation.notes));
+      contentItems.push(...(createNotesSection(quotation.notes) as any));
     }
     
     // Add signature section

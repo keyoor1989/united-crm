@@ -45,12 +45,16 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
           // Vendor Information
           {
             width: '60%',
-            ...createEntityInfoSection('Vendor', order.vendorName)
+            stack: [
+              ...(createEntityInfoSection('Vendor', order.vendorName) as any).stack
+            ]
           },
           // PO Details
           {
             width: '40%',
-            ...createDocumentDetails(orderDetails)
+            stack: [
+              ...(createDocumentDetails(orderDetails) as any).stack
+            ]
           }
         ],
         columnGap: 10,
@@ -67,12 +71,12 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       createBankDetailsSection(),
       
       // Terms and conditions
-      ...createTermsSection(standardPurchaseOrderTerms, order.terms)
+      ...(createTermsSection(standardPurchaseOrderTerms, order.terms) as any)
     ];
     
     // Add notes section if provided
     if (order.notes) {
-      contentItems.push(...createNotesSection(order.notes));
+      contentItems.push(...(createNotesSection(order.notes) as any));
     }
     
     // Add signature section

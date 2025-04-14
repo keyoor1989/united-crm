@@ -1,10 +1,10 @@
 
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
-import { Alignment, Content, TDocumentDefinitions } from "pdfmake/interfaces";
+import { TDocumentDefinitions, Content, Alignment } from "pdfmake/interfaces";
 
 // Register the default fonts
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
+pdfMake.vfs = pdfFonts.vfs;
 
 // Use built-in fonts only - much more reliable than custom fonts
 pdfMake.fonts = {
@@ -118,7 +118,7 @@ export const styles = {
 
 // Common page footer function
 export const getPageFooter = () => {
-  return function(currentPage: number, pageCount: number): Content {
+  return function(currentPage: number, pageCount: number) {
     return {
       columns: [
         { 
@@ -145,7 +145,7 @@ export const downloadPdf = (docDefinition: TDocumentDefinitions, fileName: strin
     
     console.log("Creating PDF with document definition:", JSON.stringify({
       hasContent: !!docDefinition.content,
-      contentLength: docDefinition.content ? docDefinition.content.length : 0,
+      contentItems: Array.isArray(docDefinition.content) ? docDefinition.content.length : 'not an array',
       hasStyles: !!docDefinition.styles,
       hasDefaultStyle: !!docDefinition.defaultStyle,
       fonts: docDefinition.defaultStyle ? docDefinition.defaultStyle.font : 'none'
@@ -155,10 +155,8 @@ export const downloadPdf = (docDefinition: TDocumentDefinitions, fileName: strin
     const pdfDocGenerator = pdfMake.createPdf(docDefinition);
     console.log("PDF document created, initiating download");
     
-    // Use a more reliable download method that's type-safe
-    pdfDocGenerator.download(fileName, () => {
-      console.log("PDF download completed successfully");
-    });
+    // Use a more reliable download method
+    pdfDocGenerator.download(fileName);
   } catch (error) {
     console.error("Fatal error in downloadPdf:", error);
     alert("There was an error generating the PDF. Please try again.");
