@@ -119,14 +119,14 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       createBankDetailsSection(),
     ];
     
-    // Add terms section - correctly handle the array returned by createTermsSection
+    // Add terms section - correctly handle the terms content
     const termsSection = createTermsSection(standardQuotationTerms, quotation.terms);
-    contentItems.push(...termsSection);
+    contentItems.push(termsSection);
     
     // Add notes section if provided
     if (quotation.notes) {
       const notesSection = createNotesSection(quotation.notes);
-      contentItems.push(...notesSection);
+      contentItems.push(notesSection);
     }
     
     // Add signature section

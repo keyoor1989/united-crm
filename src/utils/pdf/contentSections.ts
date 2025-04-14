@@ -136,7 +136,7 @@ export const createBankDetailsSection = (): Content => {
 };
 
 // Create terms and conditions section with explicit return type
-export const createTermsSection = (standardTerms: string[], customTerms?: string): Content[] => {
+export const createTermsSection = (standardTerms: string[], customTerms?: string): Content => {
   const termsContent: (ContentText | TextWithMargin)[] = [
     { text: 'Terms & Conditions', style: 'termsHeader' },
     ...standardTerms.map(term => ({ text: `• ${term}`, style: 'termsList' }))
@@ -150,17 +150,19 @@ export const createTermsSection = (standardTerms: string[], customTerms?: string
     } as TextWithMargin);
   }
   
-  return [{ stack: termsContent }];
+  return { stack: termsContent };
 };
 
 // Create notes section with explicit return type
-export const createNotesSection = (notes?: string): Content[] => {
-  if (!notes) return [];
+export const createNotesSection = (notes?: string): Content => {
+  if (!notes) return { text: '' };
   
-  return [
-    { text: 'Notes', style: 'termsHeader' },
-    { text: notes, style: 'termsList' }
-  ];
+  return {
+    stack: [
+      { text: 'Notes', style: 'termsHeader' },
+      { text: notes, style: 'termsList' }
+    ]
+  };
 };
 
 // Create thank you note
