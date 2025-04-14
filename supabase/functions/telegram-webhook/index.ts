@@ -214,7 +214,7 @@ async function handleAddCustomer(chat_id: string, text: string) {
         "Example: Add Customer\n" +
         "Name Ravi Sharma\n" +
         "Mobile 9876543210\n" +
-        "Address 123 MG Road\n" +
+        "Address 477,Omaxe City 2\n" +
         "City Indore\n" +
         "Interested In Ricoh 2014D"
       );
@@ -276,7 +276,7 @@ async function handleAddCustomer(chat_id: string, text: string) {
         });
     }
     
-    // Enhanced success message
+    // Enhanced success message with full address info
     await sendTelegramMessage(chat_id, 
       `✅ Customer <b>${customerData.name}</b> added successfully to CRM!\n\n` +
       `ID: ${data.id}\n` +

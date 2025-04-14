@@ -33,14 +33,18 @@ export function parseCustomerCommand(text: string) {
     result.email = emailMatch[1].trim();
   }
   
-  // Extract address with more robust matching
-  const addressMatch = text.match(/Address\s+([^,\n]+)/i);
+  // Improved address extraction - handles multi-word addresses and commas
+  // This captures everything between "Address" and either "City", "Email", "Mobile", "Phone", "Interested" or end of line
+  const addressRegex = /Address\s+(.*?)(?=\s+City|\s+Email|\s+Mobile|\s+Phone|\s+Interested|$)/is;
+  const addressMatch = text.match(addressRegex);
   if (addressMatch && addressMatch[1]) {
     result.address = addressMatch[1].trim();
   }
   
-  // Extract city
-  const cityMatch = text.match(/City\s+([^,\n]+)/i);
+  // Improved city extraction - handles multi-word city names
+  // This captures everything between "City" and either "Email", "Mobile", "Phone", "Interested" or end of line
+  const cityRegex = /City\s+(.*?)(?=\s+Email|\s+Mobile|\s+Phone|\s+Interested|$)/is;
+  const cityMatch = text.match(cityRegex);
   if (cityMatch && cityMatch[1]) {
     result.city = cityMatch[1].trim();
   }
