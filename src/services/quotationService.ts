@@ -51,6 +51,8 @@ export const fetchQuotations = async (): Promise<Quotation[]> => {
  */
 export const fetchQuotationById = async (id: string): Promise<Quotation | null> => {
   try {
+    console.log("Fetching quotation by ID:", id);
+    
     const { data, error } = await supabase
       .from('quotations')
       .select('*')
@@ -60,15 +62,21 @@ export const fetchQuotationById = async (id: string): Promise<Quotation | null> 
     if (error) {
       if (error.code === 'PGRST116') {
         // PGRST116 is the error code for "no rows returned"
+        console.log("No quotation found with ID:", id);
         return null;
       }
+      console.error("Supabase error fetching quotation:", error);
       throw error;
     }
 
     if (!data) {
+      console.log("No data returned for quotation ID:", id);
       return null;
     }
 
+    console.log("Raw quotation data from DB:", data);
+    console.log("Items type:", typeof data.items);
+    
     // Check if items is a string and parse it if necessary
     let parsedItems;
     try {
@@ -80,9 +88,12 @@ export const fetchQuotationById = async (id: string): Promise<Quotation | null> 
       if (!Array.isArray(parsedItems)) {
         console.error('Items is not an array after parsing:', parsedItems);
         parsedItems = [];
+      } else {
+        console.log("Successfully parsed items array with length:", parsedItems.length);
       }
     } catch (parseError) {
       console.error('Error parsing items JSON:', parseError);
+      console.log('Original items value:', data.items);
       parsedItems = [];
     }
 
@@ -102,6 +113,14 @@ export const fetchQuotationById = async (id: string): Promise<Quotation | null> 
       notes: data.notes || '',
       terms: data.terms || ''
     };
+
+    console.log("Processed quotation object:", {
+      id: quotation.id,
+      quotationNumber: quotation.quotationNumber,
+      itemsType: typeof quotation.items,
+      itemsIsArray: Array.isArray(quotation.items),
+      itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'not an array'
+    });
 
     return quotation;
   } catch (error) {

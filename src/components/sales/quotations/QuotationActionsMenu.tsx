@@ -47,16 +47,21 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
 
   const handleDownloadPdf = () => {
     try {
+      console.log("Starting PDF generation for quotation:", quotation.quotationNumber);
+      
       // Create a deep copy of the quotation to avoid modifying the original
       const quotationCopy = JSON.parse(JSON.stringify(quotation));
+      console.log("Quotation copy created. Items before processing:", quotationCopy.items);
       
       // Ensure items is properly formatted as an array
       if (quotationCopy.items) {
         if (typeof quotationCopy.items === 'string') {
           try {
+            console.log("Items is a string, attempting to parse");
             quotationCopy.items = JSON.parse(quotationCopy.items);
           } catch (error) {
             console.error("Failed to parse items string:", error);
+            console.log("Original items string:", quotationCopy.items);
             quotationCopy.items = [];
           }
         }
@@ -65,8 +70,11 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
         if (!Array.isArray(quotationCopy.items)) {
           console.error("Items is not an array after processing:", quotationCopy.items);
           quotationCopy.items = [];
+        } else {
+          console.log("Items is now an array with length:", quotationCopy.items.length);
         }
       } else {
+        console.log("No items found in quotation, setting to empty array");
         quotationCopy.items = [];
       }
       
@@ -82,7 +90,7 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
       
       toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Error in handleDownloadPdf:", error);
       toast.error("Failed to generate PDF. Please try again.");
     }
   };

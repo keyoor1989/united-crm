@@ -38,6 +38,16 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       throw new Error('Quotation number is missing');
     }
     
+    // Log quotation data for debugging
+    console.log("Quotation data:", JSON.stringify({
+      id: quotation.id,
+      quotationNumber: quotation.quotationNumber,
+      customerName: quotation.customerName,
+      itemsType: typeof quotation.items,
+      itemsIsArray: Array.isArray(quotation.items),
+      itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'not an array'
+    }));
+    
     // Ensure items is always an array
     const items = Array.isArray(quotation.items) 
       ? quotation.items 
@@ -47,6 +57,8 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       console.error("Items is still not an array after parsing:", items);
       throw new Error("Invalid items format: items must be an array");
     }
+    
+    console.log("Items array is valid with length:", items.length);
     
     // Validate dates
     let createdAtDate = new Date();
@@ -129,6 +141,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       styles: styles
     };
 
+    console.log("PDF document definition created, initiating download");
     downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);
     console.log("PDF generation successful");
   } catch (error) {
