@@ -49,8 +49,9 @@ export function parseCustomerCommand(text: string) {
     result.city = cityMatch[1].trim();
   }
   
-  // Extract product interest
+  // Extract product interest with more variations
   const productMatch = text.match(/Interested\s+In\s+([^,\n]+)/i) || 
+                      text.match(/Intrested\s+In\s+([^,\n]+)/i) ||  // Common misspelling
                       text.match(/Looking\s+For\s+([^,\n]+)/i) || 
                       text.match(/Needs\s+([^,\n]+)/i);
   if (productMatch && productMatch[1]) {

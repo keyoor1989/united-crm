@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -74,7 +75,7 @@ const CustomerCreationView: React.FC<CustomerCreationViewProps> = ({
             <span>{customer.location}</span>
           </div>
           
-          {customer.machines.length > 0 && (
+          {customer.machines && customer.machines.length > 0 && (
             <div className="flex items-center gap-2 text-sm col-span-full">
               <span className="text-muted-foreground">Interested in:</span>
               <span>{customer.machines.join(", ")}</span>
