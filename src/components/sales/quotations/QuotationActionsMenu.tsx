@@ -12,7 +12,7 @@ import {
   Trash2, CheckCircle, X, ShoppingBasket 
 } from "lucide-react";
 import { Quotation, QuotationStatus } from "@/types/sales";
-import { safeGeneratePdf, generateQuotationPdf } from "@/utils/pdfGenerator";
+import { generateQuotationPdf } from "@/utils/pdf/quotationPdfGenerator";
 import { updateQuotation, deleteQuotation } from "@/services/quotationService";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -66,12 +66,8 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
         quotationCopy.items = [];
       }
       
-      // Use improved error handling
-      safeGeneratePdf(generateQuotationPdf, quotationCopy, (error) => {
-        console.error("Error in PDF generation:", error);
-        toast.error(`Failed to generate PDF: ${error.message}`);
-      });
-      
+      // Call the PDF generator directly with proper error handling
+      generateQuotationPdf(quotationCopy);
       toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
       console.error("Error generating PDF:", error);

@@ -34,7 +34,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     
     // Ensure items is always an array
     const items = Array.isArray(order.items) ? order.items : 
-                 (typeof order.items === 'string' ? JSON.parse(order.items) : []);
+                (typeof order.items === 'string' ? JSON.parse(order.items) : []);
     
     // Create document details
     const orderDetails = [
@@ -54,16 +54,12 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
           // Vendor Information
           {
             width: '60%',
-            stack: [
-              ...(createEntityInfoSection('Vendor', order.vendorName) as any).stack
-            ]
+            stack: createEntityInfoSection('Vendor', order.vendorName).stack
           },
           // PO Details
           {
             width: '40%',
-            stack: [
-              ...(createDocumentDetails(orderDetails) as any).stack
-            ]
+            stack: createDocumentDetails(orderDetails).stack
           }
         ],
         columnGap: 10,
@@ -79,13 +75,13 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       // Bank Details
       createBankDetailsSection(),
       
-      // Terms and conditions
-      ...(createTermsSection(standardPurchaseOrderTerms, order.terms) as any)
+      // Terms and conditions - properly use the array returned by createTermsSection
+      ...createTermsSection(standardPurchaseOrderTerms, order.terms)
     ];
     
     // Add notes section if provided
     if (order.notes) {
-      contentItems.push(...(createNotesSection(order.notes) as any));
+      contentItems.push(...createNotesSection(order.notes));
     }
     
     // Add signature section

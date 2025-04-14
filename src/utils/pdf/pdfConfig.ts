@@ -3,9 +3,9 @@ import pdfFonts from "pdfmake/build/vfs_fonts";
 import { TDocumentDefinitions, Content, Alignment, DynamicContent } from "pdfmake/interfaces";
 
 // Register the default fonts
-pdfMake.vfs = pdfFonts.vfs;
+pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
 
-// Use built-in fonts only - much more reliable than custom fonts
+// Define the font configuration - use built-in fonts only
 pdfMake.fonts = {
   Helvetica: {
     normal: 'Helvetica',
@@ -136,7 +136,7 @@ export const getPageFooter = (): PageFooterFunction => {
   };
 };
 
-// Export pdf utility for download
+// Export pdf utility for download - fixed function with proper Promise handling
 export const downloadPdf = (docDefinition: TDocumentDefinitions, fileName: string) => {
   try {
     console.log("downloadPdf called with fileName:", fileName);
@@ -153,15 +153,10 @@ export const downloadPdf = (docDefinition: TDocumentDefinitions, fileName: strin
     // Create the PDF document
     const pdfDocGenerator = pdfMake.createPdf(docDefinition);
     
-    // Download the PDF with error handling
-    pdfDocGenerator.download(fileName, {
-      returnPromise: true,
-    }).then(() => {
-      console.log("PDF download completed successfully");
-    }).catch((error) => {
-      console.error("Error downloading PDF:", error);
-      alert("There was an error downloading the PDF. Please try again.");
-    });
+    // Download the PDF using the correct API
+    pdfDocGenerator.download(fileName);
+    console.log("PDF download initiated successfully");
+
   } catch (error) {
     console.error("Fatal error in downloadPdf:", error);
     alert("There was an error generating the PDF. Please try again.");

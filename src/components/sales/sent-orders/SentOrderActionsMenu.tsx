@@ -23,7 +23,26 @@ const SentOrderActionsMenu: React.FC<SentOrderActionsMenuProps> = ({ order }) =>
 
   const handleDownloadPdf = () => {
     try {
-      generatePurchaseOrderPdf(order);
+      // Create a proper deep copy to avoid reference issues
+      const orderCopy = JSON.parse(JSON.stringify(order));
+      
+      // Ensure items is an array
+      if (typeof orderCopy.items === 'string') {
+        try {
+          orderCopy.items = JSON.parse(orderCopy.items);
+        } catch (e) {
+          console.warn("Could not parse items as JSON, using empty array", e);
+          orderCopy.items = [];
+        }
+      }
+      
+      if (!Array.isArray(orderCopy.items)) {
+        console.warn("Items is not an array after processing, using empty array");
+        orderCopy.items = [];
+      }
+      
+      // Call the PDF generator
+      generatePurchaseOrderPdf(orderCopy);
       toast.success("Purchase order PDF downloaded successfully");
     } catch (error) {
       console.error("Failed to download PDF:", error);

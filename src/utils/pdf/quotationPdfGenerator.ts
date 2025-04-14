@@ -97,16 +97,12 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
           // Client Information
           {
             width: '60%',
-            stack: [
-              ...(createEntityInfoSection('Bill To', quotation.customerName) as any).stack
-            ]
+            stack: createEntityInfoSection('Bill To', quotation.customerName).stack
           },
           // Quotation Details
           {
             width: '40%',
-            stack: [
-              ...(createDocumentDetails(quotationDetails) as any).stack
-            ]
+            stack: createDocumentDetails(quotationDetails).stack
           }
         ],
         columnGap: 10,
@@ -122,13 +118,13 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       // Bank Details
       createBankDetailsSection(),
       
-      // Terms and conditions
-      ...(createTermsSection(standardQuotationTerms, quotation.terms) as any)
+      // Terms and conditions - properly use the array returned by createTermsSection
+      ...createTermsSection(standardQuotationTerms, quotation.terms)
     ];
     
     // Add notes section if provided
     if (quotation.notes) {
-      contentItems.push(...(createNotesSection(quotation.notes) as any));
+      contentItems.push(...createNotesSection(quotation.notes));
     }
     
     // Add signature section
