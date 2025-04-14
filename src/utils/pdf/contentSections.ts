@@ -135,7 +135,7 @@ export const createBankDetailsSection = (): Content => {
   };
 };
 
-// Create terms and conditions section
+// Create terms and conditions section with explicit return type
 export const createTermsSection = (standardTerms: string[], customTerms?: string): Content[] => {
   const termsContent: (ContentText | TextWithMargin)[] = [
     { text: 'Terms & Conditions', style: 'termsHeader' },
@@ -153,7 +153,7 @@ export const createTermsSection = (standardTerms: string[], customTerms?: string
   return [{ stack: termsContent }];
 };
 
-// Create notes section
+// Create notes section with explicit return type
 export const createNotesSection = (notes?: string): Content[] => {
   if (!notes) return [];
   
