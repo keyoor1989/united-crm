@@ -1,43 +1,46 @@
 
 import { format } from "date-fns";
 import { Content, ContentText } from "pdfmake/interfaces";
-import { styles, logoImagePath, companyInfo } from "./pdfConfig";
+import { styles, logoImagePath, companyInfo, numberToWords } from "./pdfConfig";
 
 // Interface for text with margin
 interface TextWithMargin extends ContentText {
   margin?: [number, number, number, number];
 }
 
-// Create document header with logo and title
+// Create document header with logo and company info
 export const createDocumentHeader = (title: string) => {
   return {
     columns: [
-      // Logo on the left
+      // Company info on the left
       {
-        image: logoImagePath,
-        width: 220,
-        alignment: 'left'
+        width: '65%',
+        stack: [
+          { text: companyInfo.name, style: 'companyName' },
+          { text: companyInfo.address, style: 'companyAddress' },
+          { text: `Contact: ${companyInfo.contact}`, style: 'companyContact' },
+          { text: `Email: ${companyInfo.email}`, style: 'companyContact' },
+          { text: `GSTIN: ${companyInfo.gstin}`, style: 'gstin', margin: [0, 2, 0, 0] }
+        ]
       },
-      // Spacer
-      { width: '*', text: '' },
-      // Title on the right
+      // Logo on the right
       {
-        text: title,
-        style: 'header',
-        width: 'auto'
+        width: '35%',
+        stack: [
+          {
+            image: logoImagePath,
+            width: 150,
+            alignment: 'right',
+            margin: [0, 0, 0, 5]
+          },
+          {
+            text: title,
+            style: 'header'
+          }
+        ]
       }
-    ]
-  };
-};
-
-// Create company information section
-export const createCompanyInfoSection = () => {
-  return {
-    stack: [
-      { text: companyInfo.name, style: 'companyName' },
-      { text: companyInfo.address, style: 'companyAddress' },
-      { text: companyInfo.contact, style: 'companyContact' }
-    ]
+    ],
+    margin: [0, 0, 0, 15]
   };
 };
 
@@ -56,19 +59,20 @@ export const createDocumentDetails = (details: { label: string, value: string }[
 // Create client/vendor information section
 export const createEntityInfoSection = (label: string, name: string, address?: string) => {
   const infoStack: (ContentText | TextWithMargin)[] = [
-    { text: `${label}:`, style: 'sectionTitle' },
-    { text: name }
+    { text: `${label}:`, style: 'sectionTitle', margin: [0, 0, 0, 2] },
+    { text: name, margin: [0, 0, 0, 2] }
   ];
   
   if (address) {
     infoStack.push({ 
       text: address, 
-      margin: [0, 0, 0, 20]
+      margin: [0, 0, 0, 10],
+      fontSize: 9 
     } as TextWithMargin);
   } else {
     infoStack.push({ 
       text: '', 
-      margin: [0, 0, 0, 20]
+      margin: [0, 0, 0, 10]
     } as TextWithMargin);
   }
   
@@ -77,32 +81,57 @@ export const createEntityInfoSection = (label: string, name: string, address?: s
 
 // Create document totals section
 export const createTotalsSection = (subtotal: number, totalGst: number, grandTotal: number) => {
+  const amountInWords = numberToWords(grandTotal);
+  
   return {
-    columns: [
-      { width: '*', text: '' },
+    stack: [
       {
-        width: 'auto',
-        table: {
-          widths: ['auto', 'auto'],
-          body: [
-            [
-              { text: 'Subtotal:', style: 'sectionTitle', alignment: 'right' },
-              { text: `₹${subtotal.toLocaleString()}`, alignment: 'right' }
-            ],
-            [
-              { text: 'GST:', style: 'sectionTitle', alignment: 'right' },
-              { text: `₹${totalGst.toLocaleString()}`, alignment: 'right' }
-            ],
-            [
-              { text: 'Grand Total:', style: 'sectionTitle', alignment: 'right' },
-              { text: `₹${grandTotal.toLocaleString()}`, alignment: 'right', bold: true }
-            ]
-          ]
-        },
-        layout: 'noBorders'
+        columns: [
+          { width: '*', text: '' },
+          {
+            width: 'auto',
+            table: {
+              widths: ['auto', 100],
+              body: [
+                [
+                  { text: 'Subtotal:', style: 'sectionTitle', alignment: 'right' },
+                  { text: `₹${subtotal.toLocaleString()}`, alignment: 'right' }
+                ],
+                [
+                  { text: 'GST (18%):', style: 'sectionTitle', alignment: 'right' },
+                  { text: `₹${totalGst.toLocaleString()}`, alignment: 'right' }
+                ],
+                [
+                  { text: 'Net Amount:', style: 'sectionTitle', alignment: 'right', fontSize: 10, bold: true },
+                  { text: `₹${grandTotal.toLocaleString()}`, alignment: 'right', bold: true }
+                ]
+              ]
+            },
+            layout: 'noBorders'
+          }
+        ],
+        margin: [0, 10, 0, 5] as [number, number, number, number]
+      },
+      {
+        text: `Amount in Words: ${amountInWords}`,
+        style: 'amountInWords',
+        margin: [0, 5, 0, 10]
       }
+    ]
+  };
+};
+
+// Create bank details section
+export const createBankDetailsSection = () => {
+  return {
+    stack: [
+      { text: 'Bank Details:', style: 'bankDetailsHeader' },
+      { text: `Bank Name: ${companyInfo.bankName}`, style: 'bankDetails' },
+      { text: `Account No: ${companyInfo.accountNo}`, style: 'bankDetails' },
+      { text: `IFSC Code: ${companyInfo.ifsc}`, style: 'bankDetails' },
+      { text: `Branch: ${companyInfo.branch}`, style: 'bankDetails' },
     ],
-    margin: [0, 15, 0, 15] as [number, number, number, number]
+    margin: [0, 10, 0, 0] as [number, number, number, number]
   };
 };
 
@@ -141,4 +170,24 @@ export const createThankYouNote = (message: string) => {
     style: 'footer', 
     margin: [0, 20, 0, 0]
   } as TextWithMargin;
+};
+
+// Create signature section
+export const createSignatureSection = () => {
+  return {
+    columns: [
+      {
+        width: '*',
+        text: '',
+      },
+      {
+        width: '30%',
+        stack: [
+          { text: '', margin: [0, 30, 0, 0] },
+          { text: 'Authorized Signature', style: 'termsList', alignment: 'center' }
+        ]
+      }
+    ],
+    margin: [0, 20, 0, 0] as [number, number, number, number]
+  };
 };

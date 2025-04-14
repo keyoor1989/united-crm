@@ -20,75 +20,100 @@ pdfMake.fonts = {
 // Logo image path (served from public folder)
 export const logoImagePath = "/lovable-uploads/6ee98dbf-b695-4632-976f-50c50bb67d59.png";
 
-// Common PDF styling
-export const styles = {
-  header: {
-    fontSize: 22,
-    bold: true,
-    color: '#0047AB', // Royal blue color for header
-    alignment: 'center' as Alignment,
-    margin: [0, 10, 0, 20] as [number, number, number, number]
-  },
-  subheader: {
-    fontSize: 16,
-    bold: true,
-    margin: [0, 10, 0, 5] as [number, number, number, number]
-  },
-  companyName: {
-    fontSize: 16,
-    bold: true,
-    color: '#0047AB'
-  },
-  companyAddress: {
-    fontSize: 10,
-    color: '#333333'
-  },
-  companyContact: {
-    fontSize: 10,
-    color: '#333333'
-  },
-  sectionTitle: {
-    fontSize: 12,
-    bold: true
-  },
-  tableHeader: {
-    bold: true,
-    fontSize: 12,
-    color: 'white',
-    fillColor: '#0047AB',
-    alignment: 'center' as Alignment
-  },
-  tableRow: {
-    fontSize: 10
-  },
-  tableRowEven: {
-    fontSize: 10,
-    fillColor: '#f2f2f2'
-  },
-  termsHeader: {
-    fontSize: 14,
-    bold: true,
-    margin: [0, 15, 0, 5] as [number, number, number, number]
-  },
-  termsList: {
-    fontSize: 10,
-    margin: [0, 2, 0, 2] as [number, number, number, number]
-  },
-  footer: {
-    fontSize: 10,
-    italic: true,
-    alignment: 'center' as Alignment,
-    color: '#0047AB',
-    margin: [0, 10, 0, 0] as [number, number, number, number]
-  }
-};
-
 // Company information data
 export const companyInfo = {
   name: 'United Copier',
   address: '118, Jaora Compound, Indore',
   contact: '81033-49299, 93003-00345',
+  email: 'unitedcopier@gmail.com',
+  gstin: '23ABCDE1234F1Z5',
+  bankName: 'HDFC Bank',
+  accountNo: '50100123456789',
+  ifsc: 'HDFC0001234',
+  branch: 'Indore',
   tagline: 'United Copier - All Solutions Under A Roof for Printers'
+};
+
+// Common PDF styling
+export const styles = {
+  header: {
+    fontSize: 18,
+    bold: true,
+    color: '#333333',
+    alignment: 'right' as Alignment,
+    margin: [0, 5, 0, 10] as [number, number, number, number]
+  },
+  subheader: {
+    fontSize: 14,
+    bold: true,
+    margin: [0, 5, 0, 5] as [number, number, number, number]
+  },
+  companyName: {
+    fontSize: 14,
+    bold: true,
+    color: '#333333'
+  },
+  companyAddress: {
+    fontSize: 9,
+    color: '#333333'
+  },
+  companyContact: {
+    fontSize: 9,
+    color: '#333333'
+  },
+  gstin: {
+    fontSize: 9,
+    bold: true,
+    color: '#333333'
+  },
+  sectionTitle: {
+    fontSize: 10,
+    bold: true
+  },
+  tableHeader: {
+    bold: true,
+    fontSize: 10,
+    color: '#333333',
+    fillColor: '#f2f2f2',
+    alignment: 'center' as Alignment
+  },
+  tableRow: {
+    fontSize: 9
+  },
+  tableRowEven: {
+    fontSize: 9,
+    fillColor: '#ffffff'
+  },
+  termsHeader: {
+    fontSize: 11,
+    bold: true,
+    margin: [0, 10, 0, 5] as [number, number, number, number]
+  },
+  termsList: {
+    fontSize: 9,
+    margin: [0, 2, 0, 2] as [number, number, number, number]
+  },
+  footer: {
+    fontSize: 9,
+    italic: true,
+    alignment: 'center' as Alignment,
+    color: '#333333',
+    margin: [0, 10, 0, 0] as [number, number, number, number]
+  },
+  bankDetails: {
+    fontSize: 9,
+    margin: [0, 5, 0, 0] as [number, number, number, number]
+  },
+  bankDetailsHeader: {
+    fontSize: 9,
+    bold: true,
+    margin: [0, 5, 0, 2] as [number, number, number, number]
+  },
+  amountInWords: {
+    fontSize: 9,
+    italics: true,
+    margin: [0, 2, 0, 5] as [number, number, number, number]
+  }
 };
 
 // Common page footer function
@@ -101,7 +126,7 @@ export const getPageFooter = () => {
           alignment: 'center' as Alignment,
           margin: [40, 0, 40, 0] as [number, number, number, number],
           fontSize: 8,
-          color: '#0047AB',
+          color: '#333333',
           italics: true
         }
       ]
@@ -118,4 +143,72 @@ export const downloadPdf = (docDefinition: any, fileName: string) => {
     console.error("PDF generation error:", error);
     throw error;
   }
+};
+
+// Convert number to words (for amount in words)
+export const numberToWords = (num: number): string => {
+  const single = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const double = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  const formatTens = (num: number): string => {
+    if (num < 10) return single[num];
+    else if (num < 20) return double[num - 10];
+    else {
+      return tens[Math.floor(num / 10)] + (num % 10 !== 0 ? ' ' + single[num % 10] : '');
+    }
+  };
+
+  if (num === 0) return 'Zero';
+
+  // Handle decimals
+  const rupees = Math.floor(num);
+  const paise = Math.round((num - rupees) * 100);
+  
+  let result = '';
+  
+  // Convert rupees part
+  if (rupees > 0) {
+    let crore = Math.floor(rupees / 10000000);
+    rupees %= 10000000;
+    
+    let lakh = Math.floor(rupees / 100000);
+    rupees %= 100000;
+    
+    let thousand = Math.floor(rupees / 1000);
+    rupees %= 1000;
+    
+    let hundred = Math.floor(rupees / 100);
+    rupees %= 100;
+    
+    let ten = rupees;
+    
+    if (crore > 0) {
+      result += formatTens(crore) + ' Crore ';
+    }
+    
+    if (lakh > 0) {
+      result += formatTens(lakh) + ' Lakh ';
+    }
+    
+    if (thousand > 0) {
+      result += formatTens(thousand) + ' Thousand ';
+    }
+    
+    if (hundred > 0) {
+      result += single[hundred] + ' Hundred ';
+    }
+    
+    if (ten > 0) {
+      result += formatTens(ten);
+    }
+    
+    result += ' Rupees';
+  }
+  
+  // Convert paise part
+  if (paise > 0) {
+    result += ' and ' + formatTens(paise) + ' Paise';
+  }
+  
+  return result + ' Only';
 };

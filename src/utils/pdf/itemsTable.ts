@@ -8,7 +8,35 @@ const formatItemSpecs = (specs?: ProductSpecs, description?: string): string => 
   
   if (!specs) return '';
   
-  return `${specs.color ? 'Color' : 'B&W'}${specs.speed ? `, ${specs.speed}` : ''}${specs.ram ? `, ${specs.ram} RAM` : ''}`;
+  const details = [];
+  
+  if (specs.color !== undefined) {
+    details.push(specs.color ? 'Color' : 'B&W');
+  }
+  
+  if (specs.speed) {
+    details.push(`${specs.speed} ppm`);
+  }
+  
+  if (specs.ram) {
+    details.push(`${specs.ram} RAM`);
+  }
+  
+  if (specs.paperTray) {
+    details.push(`Paper Tray: ${specs.paperTray}`);
+  }
+  
+  if (specs.duplex !== undefined) {
+    details.push(specs.duplex ? 'Duplex Printing' : 'Single-sided Printing');
+  }
+  
+  if (specs.additionalSpecs) {
+    Object.entries(specs.additionalSpecs).forEach(([key, value]) => {
+      details.push(`${key}: ${value}`);
+    });
+  }
+  
+  return details.join(', ');
 };
 
 // Create items table for quotations or purchase orders
@@ -18,28 +46,42 @@ export const createItemsTable = (
   return {
     table: {
       headerRows: 1,
-      widths: ['*', '*', 'auto', 'auto', 'auto', 'auto'],
+      widths: [30, '*', 40, 60, 70],
       body: [
         [
-          { text: 'Product', style: 'tableHeader' },
-          { text: 'Specifications', style: 'tableHeader' },
+          { text: '#', style: 'tableHeader' },
+          { text: 'Description', style: 'tableHeader' },
           { text: 'Qty', style: 'tableHeader' },
           { text: 'Rate (₹)', style: 'tableHeader' },
-          { text: 'GST%', style: 'tableHeader' },
-          { text: 'Total (₹)', style: 'tableHeader' }
+          { text: 'Amount (₹)', style: 'tableHeader' }
         ],
         ...items.map((item, index) => [
-          { text: item.name, style: index % 2 === 0 ? 'tableRow' : 'tableRowEven' },
+          { text: (index + 1).toString(), style: index % 2 === 0 ? 'tableRow' : 'tableRowEven', alignment: 'center' },
           { 
-            text: formatItemSpecs(item.specs, item.description), 
-            style: index % 2 === 0 ? 'tableRow' : 'tableRowEven' 
+            stack: [
+              { text: item.name, style: index % 2 === 0 ? 'tableRow' : 'tableRowEven', bold: true },
+              { text: formatItemSpecs(item.specs, item.description), style: index % 2 === 0 ? 'tableRow' : 'tableRowEven', fontSize: 8 }
+            ] 
           },
           { text: item.quantity.toString(), style: index % 2 === 0 ? 'tableRow' : 'tableRowEven', alignment: 'center' },
           { text: `₹${item.unitPrice.toLocaleString()}`, style: index % 2 === 0 ? 'tableRow' : 'tableRowEven', alignment: 'right' },
-          { text: `${item.gstPercent}%`, style: index % 2 === 0 ? 'tableRow' : 'tableRowEven', alignment: 'center' },
           { text: `₹${item.total.toLocaleString()}`, style: index % 2 === 0 ? 'tableRow' : 'tableRowEven', alignment: 'right' }
         ])
       ]
+    },
+    layout: {
+      hLineWidth: function(i: number, node: any) {
+        return (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5;
+      },
+      vLineWidth: function(i: number, node: any) {
+        return (i === 0 || i === node.table.widths.length) ? 1 : 0.5;
+      },
+      hLineColor: function(i: number) {
+        return (i === 0 || i === 1) ? '#aaaaaa' : '#dddddd';
+      },
+      vLineColor: function(i: number, node: any) {
+        return (i === 0 || i === node.table.widths.length) ? '#aaaaaa' : '#dddddd';
+      }
     }
   };
 };

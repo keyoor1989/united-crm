@@ -5,20 +5,23 @@ import { PurchaseOrder } from "@/types/sales";
 import { styles, getPageFooter, downloadPdf } from "./pdfConfig";
 import { 
   createDocumentHeader, 
-  createCompanyInfoSection,
   createDocumentDetails,
   createEntityInfoSection,
   createTotalsSection,
   createTermsSection,
   createNotesSection,
-  createThankYouNote
+  createThankYouNote,
+  createBankDetailsSection,
+  createSignatureSection
 } from "./contentSections";
 import { createItemsTable } from "./itemsTable";
 
 // Standard terms for purchase orders
 const standardPurchaseOrderTerms = [
   'Standard terms and conditions apply.',
-  'Delivery expected within the timeframe specified above.'
+  'Delivery expected within the timeframe specified above.',
+  'Payment terms: As per agreed terms.',
+  'All prices are inclusive of applicable taxes.'
 ];
 
 // Generate PDF for purchase order
@@ -27,8 +30,8 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     // Create document details
     const orderDetails = [
       { label: 'PO No', value: order.poNumber },
-      { label: 'Date', value: format(new Date(order.createdAt), "MMMM dd, yyyy") },
-      { label: 'Delivery Date', value: format(new Date(order.deliveryDate), "MMMM dd, yyyy") }
+      { label: 'Date', value: format(new Date(order.createdAt), "dd/MM/yyyy") },
+      { label: 'Delivery Date', value: format(new Date(order.deliveryDate), "dd/MM/yyyy") }
     ];
 
     // Create an array for content with non-conditional items first
@@ -36,13 +39,13 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       // Header with Logo and Title
       createDocumentHeader('PURCHASE ORDER'),
       
-      // Company and vendor information
+      // Vendor and order information
       {
         columns: [
-          // Company Information
+          // Vendor Information
           {
             width: '60%',
-            ...createCompanyInfoSection()
+            ...createEntityInfoSection('Vendor', order.vendorName)
           },
           // PO Details
           {
@@ -51,17 +54,17 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
           }
         ],
         columnGap: 10,
-        margin: [0, 20, 0, 20]
+        margin: [0, 0, 0, 10]
       },
-      
-      // Vendor Information
-      createEntityInfoSection('Vendor', order.vendorName, 'Vendor Address'),
       
       // Items Table
       createItemsTable(order.items),
       
       // Total Section
       createTotalsSection(order.subtotal, order.totalGst, order.grandTotal),
+      
+      // Bank Details
+      createBankDetailsSection(),
       
       // Terms and conditions
       ...createTermsSection(standardPurchaseOrderTerms, order.terms)
@@ -71,6 +74,9 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     if (order.notes) {
       contentItems.push(...createNotesSection(order.notes));
     }
+    
+    // Add signature section
+    contentItems.push(createSignatureSection());
     
     // Add thank you note
     contentItems.push(createThankYouNote('Thank you for your business!'));

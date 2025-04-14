@@ -5,13 +5,14 @@ import { Quotation } from "@/types/sales";
 import { styles, getPageFooter, downloadPdf } from "./pdfConfig";
 import { 
   createDocumentHeader, 
-  createCompanyInfoSection,
   createDocumentDetails,
   createEntityInfoSection,
   createTotalsSection,
   createTermsSection,
   createNotesSection,
-  createThankYouNote
+  createThankYouNote,
+  createBankDetailsSection,
+  createSignatureSection
 } from "./contentSections";
 import { createItemsTable } from "./itemsTable";
 
@@ -29,7 +30,8 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     // Create document details
     const quotationDetails = [
       { label: 'Quotation No', value: quotation.quotationNumber },
-      { label: 'Date', value: format(new Date(quotation.createdAt), "MMMM dd, yyyy") }
+      { label: 'Date', value: format(new Date(quotation.createdAt), "dd/MM/yyyy") },
+      { label: 'Valid Until', value: format(new Date(quotation.validUntil), "dd/MM/yyyy") }
     ];
 
     // Create an array for content with non-conditional items first
@@ -37,13 +39,13 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       // Header with Logo and Company Name
       createDocumentHeader('QUOTATION'),
       
-      // Company and client information
+      // Client and quotation details
       {
         columns: [
-          // Company Information
+          // Client Information
           {
             width: '60%',
-            ...createCompanyInfoSection()
+            ...createEntityInfoSection('Bill To', quotation.customerName)
           },
           // Quotation Details
           {
@@ -52,17 +54,17 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
           }
         ],
         columnGap: 10,
-        margin: [0, 20, 0, 20]
+        margin: [0, 0, 0, 10]
       },
-      
-      // Client Information
-      createEntityInfoSection('Client', quotation.customerName, '123, Business Park, Pune, Maharashtra'),
       
       // Items Table
       createItemsTable(quotation.items),
       
-      // Total Section
+      // Total Section with Amount in Words
       createTotalsSection(quotation.subtotal, quotation.totalGst, quotation.grandTotal),
+      
+      // Bank Details
+      createBankDetailsSection(),
       
       // Terms and conditions
       ...createTermsSection(standardQuotationTerms, quotation.terms)
@@ -73,8 +75,11 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       contentItems.push(...createNotesSection(quotation.notes));
     }
     
+    // Add signature section
+    contentItems.push(createSignatureSection());
+    
     // Add thank you note
-    contentItems.push(createThankYouNote('Thank you for choosing United Copier!'));
+    contentItems.push(createThankYouNote('Thank you for your business!'));
     
     const docDefinition: TDocumentDefinitions = {
       pageSize: 'A4',
