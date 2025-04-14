@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,7 +12,7 @@ import {
   Trash2, CheckCircle, X, ShoppingBasket 
 } from "lucide-react";
 import { Quotation, QuotationStatus } from "@/types/sales";
-import { generateQuotationPdf, safeGeneratePdf } from "@/utils/pdfGenerator";
+import { safeGeneratePdf, generateQuotationPdf } from "@/utils/pdfGenerator";
 import { updateQuotation, deleteQuotation } from "@/services/quotationService";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -52,11 +51,28 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
       // Create a proper deep copy of the quotation to avoid reference issues
       const quotationCopy = JSON.parse(JSON.stringify(quotation));
       
-      // Use safeGeneratePdf to handle errors
+      // Ensure items is an array
+      if (typeof quotationCopy.items === 'string') {
+        try {
+          quotationCopy.items = JSON.parse(quotationCopy.items);
+        } catch (e) {
+          console.warn("Could not parse items as JSON, using empty array", e);
+          quotationCopy.items = [];
+        }
+      }
+      
+      if (!Array.isArray(quotationCopy.items)) {
+        console.warn("Items is not an array after processing, using empty array");
+        quotationCopy.items = [];
+      }
+      
+      // Use improved error handling
       safeGeneratePdf(generateQuotationPdf, quotationCopy, (error) => {
         console.error("Error in PDF generation:", error);
         toast.error(`Failed to generate PDF: ${error.message}`);
       });
+      
+      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");

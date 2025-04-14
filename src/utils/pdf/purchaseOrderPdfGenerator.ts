@@ -27,6 +27,15 @@ const standardPurchaseOrderTerms = [
 // Generate PDF for purchase order
 export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
   try {
+    // Validate required data
+    if (!order) {
+      throw new Error('Purchase order data is missing');
+    }
+    
+    // Ensure items is always an array
+    const items = Array.isArray(order.items) ? order.items : 
+                 (typeof order.items === 'string' ? JSON.parse(order.items) : []);
+    
     // Create document details
     const orderDetails = [
       { label: 'PO No', value: order.poNumber },
@@ -62,7 +71,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       },
       
       // Items Table
-      createItemsTable(order.items),
+      createItemsTable(items),
       
       // Total Section
       createTotalsSection(order.subtotal, order.totalGst, order.grandTotal),
@@ -90,7 +99,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       pageMargins: [40, 40, 40, 60],
       content: contentItems,
       defaultStyle: {
-        font: 'Roboto'
+        font: 'Helvetica'
       },
       footer: getPageFooter(),
       styles: styles
@@ -99,6 +108,6 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     downloadPdf(docDefinition, `PO_${order.poNumber}.pdf`);
   } catch (error) {
     console.error("PDF generation error:", error);
-    throw error;
+    alert("There was an error generating the PDF. Please try again.");
   }
 };

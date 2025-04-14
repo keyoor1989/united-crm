@@ -28,14 +28,6 @@ const standardQuotationTerms = [
 export const generateQuotationPdf = (quotation: Quotation): void => {
   try {
     console.log("Generating PDF for quotation:", quotation.quotationNumber);
-    console.log("Quotation data check:", JSON.stringify({
-      id: quotation.id,
-      quotationNumber: quotation.quotationNumber,
-      customerName: quotation.customerName,
-      itemsType: typeof quotation.items,
-      itemsIsArray: Array.isArray(quotation.items),
-      itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'not an array'
-    }));
     
     // Validate required data
     if (!quotation) {
@@ -52,35 +44,21 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       if (Array.isArray(quotation.items)) {
         items = quotation.items;
       } else if (typeof quotation.items === 'string') {
-        const parsedItems = JSON.parse(quotation.items);
-        if (Array.isArray(parsedItems)) {
-          items = parsedItems;
-        } else {
-          console.error("Items JSON parsed but not an array:", parsedItems);
-          items = [];
-        }
+        items = JSON.parse(quotation.items);
       } else if (quotation.items) {
         console.error("Items is not an array or string:", quotation.items);
         items = [];
       }
     } catch (error) {
       console.error("Error parsing items:", error);
-      console.log("Original items value:", quotation.items);
       items = [];
     }
-    
-    console.log("Items prepared for PDF:", JSON.stringify({
-      isArray: Array.isArray(items),
-      length: items.length,
-      sample: items.length > 0 ? items[0].name : 'no items' 
-    }));
     
     // Validate dates
     let createdAtDate = new Date();
     try {
       createdAtDate = new Date(quotation.createdAt);
       if (isNaN(createdAtDate.getTime())) {
-        console.warn("Invalid created date format, using current date");
         createdAtDate = new Date();
       }
     } catch (error) {
@@ -95,8 +73,6 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
         const parsedDate = new Date(quotation.validUntil);
         if (!isNaN(parsedDate.getTime())) {
           validUntilDate = parsedDate;
-        } else {
-          console.warn("Invalid valid until date format, using default 15 days from now");
         }
       }
     } catch (error) {
@@ -176,10 +152,8 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     console.log("PDF document definition created, initiating download");
     // Call the download function
     downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);
-    console.log("PDF generation process completed");
   } catch (error) {
     console.error("PDF generation error:", error);
     alert("There was an error generating the PDF. Please check the console for details.");
-    throw error;
   }
 };

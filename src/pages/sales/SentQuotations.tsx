@@ -15,7 +15,7 @@ import {
   Search, MoreHorizontal, 
   Eye, FileDown, Send, CheckCircle, XCircle, Copy, Loader2 
 } from "lucide-react";
-import { generateQuotationPdf } from "@/utils/pdfGenerator";
+import { safeGeneratePdf, generateQuotationPdf } from "@/utils/pdfGenerator";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchQuotations } from "@/services/quotationService";
@@ -56,15 +56,11 @@ const SentQuotations = () => {
   // Handle PDF download
   const handleDownloadPdf = (quotation: Quotation) => {
     try {
-      // Make a copy to ensure items is an array
-      const quotationCopy = {
-        ...quotation,
-        items: Array.isArray(quotation.items) 
-          ? quotation.items 
-          : (typeof quotation.items === 'string' ? JSON.parse(quotation.items) : [])
-      };
-      
-      generateQuotationPdf(quotationCopy);
+      // Use safeGeneratePdf utility for improved error handling
+      safeGeneratePdf(generateQuotationPdf, quotation, (error) => {
+        console.error("PDF generation error:", error);
+        toast.error(`Failed to generate PDF: ${error.message}`);
+      });
       toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -135,7 +131,14 @@ const SentQuotations = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredQuotations.length > 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  <p className="mt-2 text-muted-foreground">Loading quotations...</p>
+                </TableCell>
+              </TableRow>
+            ) : filteredQuotations.length > 0 ? (
               filteredQuotations.map((quotation) => (
                 <TableRow key={quotation.id}>
                   <TableCell className="font-medium">

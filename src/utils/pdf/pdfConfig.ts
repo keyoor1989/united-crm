@@ -116,7 +116,7 @@ export const styles = {
 };
 
 // Define the correct return type for the page footer function
-type PageFooterFunction = (currentPage: number, pageCount: number) => Content;
+export type PageFooterFunction = (currentPage: number, pageCount: number) => Content;
 
 // Common page footer function with the correct return type
 export const getPageFooter = (): PageFooterFunction => {
@@ -141,28 +141,30 @@ export const downloadPdf = (docDefinition: TDocumentDefinitions, fileName: strin
   try {
     console.log("downloadPdf called with fileName:", fileName);
     
-    // Set fonts explicitly on the doc definition to ensure they're used
-    docDefinition.defaultStyle = docDefinition.defaultStyle || {};
-    docDefinition.defaultStyle.font = 'Helvetica';
-    
-    console.log("Creating PDF with document definition:", JSON.stringify({
-      hasContent: !!docDefinition.content,
-      contentItems: Array.isArray(docDefinition.content) ? docDefinition.content.length : 'not an array',
-      hasStyles: !!docDefinition.styles,
-      hasDefaultStyle: !!docDefinition.defaultStyle,
-      fonts: docDefinition.defaultStyle ? docDefinition.defaultStyle.font : 'none'
-    }));
+    // Set font explicitly
+    if (!docDefinition.defaultStyle) {
+      docDefinition.defaultStyle = {
+        font: 'Helvetica'
+      };
+    } else {
+      docDefinition.defaultStyle.font = 'Helvetica';
+    }
     
     // Create the PDF document
     const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-    console.log("PDF document created, initiating download");
     
-    // Use a more reliable download method
-    pdfDocGenerator.download(fileName);
+    // Download the PDF with error handling
+    pdfDocGenerator.download(fileName, {
+      returnPromise: true,
+    }).then(() => {
+      console.log("PDF download completed successfully");
+    }).catch((error) => {
+      console.error("Error downloading PDF:", error);
+      alert("There was an error downloading the PDF. Please try again.");
+    });
   } catch (error) {
     console.error("Fatal error in downloadPdf:", error);
     alert("There was an error generating the PDF. Please try again.");
-    throw error;
   }
 };
 
