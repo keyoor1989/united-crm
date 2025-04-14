@@ -1,9 +1,10 @@
+
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { TDocumentDefinitions, Content, Alignment, DynamicContent } from "pdfmake/interfaces";
 
 // Register the default fonts
-pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+pdfMake.vfs = pdfFonts.vfs;
 
 // Base64 encoded logo to avoid URL loading issues
 // This is a placeholder - we'll use a fallback text header if image fails
