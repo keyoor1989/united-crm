@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -16,17 +15,22 @@ import {
 import { toast } from 'sonner';
 import { 
   PlusCircle, Trash2, ArrowLeft, Save, PrinterIcon, 
-  CheckCircle, Send, Copy, XCircle, LucideProps 
+  CheckCircle, Send, Copy, XCircle, Loader2
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { 
-  products, quotations, createQuotationItem, generateQuotationNumber 
+  products, generateQuotationNumber, createQuotationItem
 } from '@/data/salesData';
 import { 
   ProductCategory, Product, Quotation, QuotationItem, QuotationStatus 
 } from '@/types/sales';
 import CustomerSearch from '@/components/chat/quotation/CustomerSearch';
 import { CustomerType } from '@/types/customer';
+import { 
+  createQuotation, 
+  updateQuotation, 
+  fetchQuotationById 
+} from '@/services/quotationService';
 
 interface QuotationFormValues {
   quotationNumber: string;
@@ -52,24 +56,18 @@ const QuotationForm = () => {
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
 
+  // Loading state
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isFetchingQuotation, setIsFetchingQuotation] = useState<boolean>(isEditMode);
+
   // Find quotation if in edit mode
-  const existingQuotation = isEditMode 
-    ? quotations.find(q => q.id === id) 
-    : null;
+  const [existingQuotation, setExistingQuotation] = useState<Quotation | null>(null);
 
   // Form state
-  const [items, setItems] = useState<QuotationItem[]>(
-    existingQuotation?.items || []
-  );
-  const [subtotal, setSubtotal] = useState<number>(
-    existingQuotation?.subtotal || 0
-  );
-  const [totalGst, setTotalGst] = useState<number>(
-    existingQuotation?.totalGst || 0
-  );
-  const [grandTotal, setGrandTotal] = useState<number>(
-    existingQuotation?.grandTotal || 0
-  );
+  const [items, setItems] = useState<QuotationItem[]>([]);
+  const [subtotal, setSubtotal] = useState<number>(0);
+  const [totalGst, setTotalGst] = useState<number>(0);
+  const [grandTotal, setGrandTotal] = useState<number>(0);
   
   // Customer search state
   const [showCustomerSearch, setShowCustomerSearch] = useState<boolean>(false);
@@ -94,30 +92,61 @@ const QuotationForm = () => {
   
   // Setup form
   const form = useForm<QuotationFormValues>({
-    defaultValues: existingQuotation 
-      ? {
-          quotationNumber: existingQuotation.quotationNumber,
-          customerName: existingQuotation.customerName,
-          customerId: existingQuotation.customerId,
-          createdAt: existingQuotation.createdAt,
-          validUntil: existingQuotation.validUntil,
-          notes: existingQuotation.notes,
-          terms: existingQuotation.terms,
-          status: existingQuotation.status,
-        } 
-      : {
-          quotationNumber: generateQuotationNumber(),
-          customerName: '',
-          customerId: '',
-          createdAt: new Date().toISOString().split('T')[0],
-          validUntil: new Date(
-            new Date().setDate(new Date().getDate() + 30)
-          ).toISOString().split('T')[0],
-          notes: 'Thank you for your business.',
-          terms: 'Payment due within 30 days of acceptance. Delivery within 2 weeks.',
-          status: 'Draft',
-        }
+    defaultValues: {
+      quotationNumber: generateQuotationNumber(),
+      customerName: '',
+      customerId: '',
+      createdAt: new Date().toISOString().split('T')[0],
+      validUntil: new Date(
+        new Date().setDate(new Date().getDate() + 30)
+      ).toISOString().split('T')[0],
+      notes: 'Thank you for your business.',
+      terms: 'Payment due within 30 days of acceptance. Delivery within 2 weeks.',
+      status: 'Draft',
+    }
   });
+  
+  // Fetch quotation data if in edit mode
+  useEffect(() => {
+    if (isEditMode && id) {
+      const fetchQuotation = async () => {
+        try {
+          setIsFetchingQuotation(true);
+          const quotation = await fetchQuotationById(id);
+          
+          if (quotation) {
+            setExistingQuotation(quotation);
+            setItems(quotation.items);
+            setSubtotal(quotation.subtotal);
+            setTotalGst(quotation.totalGst);
+            setGrandTotal(quotation.grandTotal);
+            
+            // Set form values
+            form.reset({
+              quotationNumber: quotation.quotationNumber,
+              customerName: quotation.customerName,
+              customerId: quotation.customerId || '',
+              createdAt: quotation.createdAt,
+              validUntil: quotation.validUntil,
+              notes: quotation.notes,
+              terms: quotation.terms,
+              status: quotation.status,
+            });
+          } else {
+            toast.error("Quotation not found");
+            navigate('/quotations');
+          }
+        } catch (error) {
+          console.error("Error fetching quotation:", error);
+          toast.error("Failed to load quotation");
+        } finally {
+          setIsFetchingQuotation(false);
+        }
+      };
+      
+      fetchQuotation();
+    }
+  }, [id, isEditMode, navigate, form]);
   
   // Toggle customer search panel
   const toggleCustomerSearch = () => {
@@ -243,39 +272,62 @@ const QuotationForm = () => {
   };
   
   // Save quotation
-  const onSubmit = (data: QuotationFormValues) => {
+  const onSubmit = async (data: QuotationFormValues) => {
     if (items.length === 0) {
       toast.error('Please add at least one item to the quotation');
       return;
     }
     
-    const savedQuotation: Quotation = {
-      id: existingQuotation?.id || Math.random().toString(36).substring(2, 11),
-      quotationNumber: data.quotationNumber,
-      customerId: data.customerId,
-      customerName: data.customerName,
-      items,
-      subtotal,
-      totalGst,
-      grandTotal,
-      createdAt: data.createdAt,
-      validUntil: data.validUntil,
-      status: data.status,
-      notes: data.notes,
-      terms: data.terms
-    };
+    setIsLoading(true);
     
-    // In a real app, this would save to a database
-    console.log('Saved quotation:', savedQuotation);
-    
-    toast.success(
-      isEditMode ? 'Quotation updated successfully' : 'Quotation created successfully'
-    );
-    
-    setTimeout(() => {
-      navigate('/quotations');
-    }, 1500);
+    try {
+      const quotationData: Omit<Quotation, 'id'> = {
+        quotationNumber: data.quotationNumber,
+        customerId: data.customerId,
+        customerName: data.customerName,
+        items,
+        subtotal,
+        totalGst,
+        grandTotal,
+        createdAt: data.createdAt,
+        validUntil: data.validUntil,
+        status: data.status,
+        notes: data.notes,
+        terms: data.terms
+      };
+      
+      if (isEditMode && id) {
+        // Update existing quotation
+        await updateQuotation(id, quotationData);
+        toast.success('Quotation updated successfully');
+      } else {
+        // Create new quotation
+        await createQuotation(quotationData);
+        toast.success('Quotation created successfully');
+      }
+      
+      setTimeout(() => {
+        navigate('/quotations');
+      }, 1500);
+    } catch (error) {
+      console.error('Error saving quotation:', error);
+      toast.error(isEditMode ? 'Failed to update quotation' : 'Failed to create quotation');
+    } finally {
+      setIsLoading(false);
+    }
   };
+  
+  // Show loading spinner while fetching quotation
+  if (isFetchingQuotation) {
+    return (
+      <div className="container mx-auto py-6 flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="mt-2 text-muted-foreground">Loading quotation...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="container mx-auto py-6">
@@ -732,6 +784,7 @@ const QuotationForm = () => {
                 type="button"
                 variant="outline"
                 onClick={() => navigate('/quotations')}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
@@ -740,8 +793,13 @@ const QuotationForm = () => {
                 <Button
                   type="submit"
                   onClick={() => form.setValue('status', 'Draft')}
+                  disabled={isLoading}
                 >
-                  <Save className="mr-2 h-4 w-4" />
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
                   Save as Draft
                 </Button>
                 
@@ -752,8 +810,13 @@ const QuotationForm = () => {
                     form.handleSubmit(onSubmit)();
                   }}
                   variant="default"
+                  disabled={isLoading}
                 >
-                  <Send className="mr-2 h-4 w-4" />
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
                   Save & Send
                 </Button>
               </div>
