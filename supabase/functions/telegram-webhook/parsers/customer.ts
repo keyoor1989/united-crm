@@ -54,7 +54,7 @@ export function parseCustomerCommand(text: string) {
   }
   
   // Check if mandatory fields are present
-  result.isValid = Boolean(result.name && result.city);
+  result.isValid = Boolean(result.name && result.city && result.phone);
   
   return result;
 }

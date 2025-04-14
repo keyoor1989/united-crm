@@ -28,7 +28,7 @@ export interface MessageLog {
   chat_id: string;
   message_text: string;
   message_type: string;
-  direction: string;
+  direction: 'incoming' | 'outgoing';
   processed_status: string;
   created_at: string;
 }
@@ -39,15 +39,10 @@ export interface WebhookInfo {
     url: string;
     has_custom_certificate: boolean;
     pending_update_count: number;
+    max_connections: number;
+    ip_address: string;
     last_error_date?: number;
     last_error_message?: string;
-    max_connections?: number;
-    allowed_updates?: string[];
+    last_synchronization_error_date?: number;
   };
-}
-
-export interface TelegramGenericResponse {
-  ok: boolean;
-  description?: string; // Make description optional
-  result?: any;
 }

@@ -172,8 +172,8 @@ Type /help to see more details on how to use these features.
 Here's how to use each feature:
 
 <b>1. Add Customer</b>
-Format: Add Customer Name [name] Address [address] City [city] Interested In [product]
-Example: Add Customer Name Ravi Sharma Address 123 MG Road City Indore Interested In Ricoh 2014D
+Format: Add Customer Name [name] Phone [mobile] Address [address] City [city] Interested In [product]
+Example: Add Customer Name Ravi Sharma Phone 8103349299 Address 123 MG Road City Indore Interested In Ricoh 2014D
 
 <b>2. Lookup Customer</b>
 Format: Lookup [mobile number]
@@ -202,12 +202,12 @@ Simply type: Daily Report
 async function handleAddCustomer(chat_id: string, text: string) {
   try {
     // Parse the customer information from the message
-    const customerData = parseCustomerInfo(text);
+    const customerData = parseCustomerCommand(text);
     
-    if (!customerData.name || !customerData.city) {
+    if (!customerData.name || !customerData.city || !customerData.phone) {
       await sendTelegramMessage(chat_id, 
-        "❌ Missing required information. Please include at least Name and City.\n\n" +
-        "Example: Add Customer Name Ravi Sharma City Indore"
+        "❌ Missing required information. Please include at least Name, Phone, and City.\n\n" +
+        "Example: Add Customer Name Ravi Sharma Phone 8103349299 City Indore"
       );
       return;
     }
@@ -271,6 +271,7 @@ async function handleAddCustomer(chat_id: string, text: string) {
     await sendTelegramMessage(chat_id, 
       `✅ Customer <b>${customerData.name}</b> added successfully to CRM!\n\n` +
       `ID: ${data.id}\n` +
+      `Phone: ${customerData.phone}\n` +
       `Location: ${customerData.city}\n` +
       (customerData.product ? `Interested in: ${customerData.product}` : ''),
       'HTML'
@@ -280,58 +281,6 @@ async function handleAddCustomer(chat_id: string, text: string) {
     console.error("Error in handleAddCustomer:", error);
     await sendTelegramMessage(chat_id, "❌ An error occurred while processing your request.");
   }
-}
-
-// Helper function to parse customer information
-function parseCustomerInfo(text: string) {
-  const result: any = {
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    city: '',
-    product: ''
-  };
-  
-  // Extract name
-  const nameMatch = text.match(/Name\s+([^,\n]+)/i) || text.match(/Customer\s+([^,\n]+)/i);
-  if (nameMatch && nameMatch[1]) {
-    result.name = nameMatch[1].trim();
-  }
-  
-  // Extract phone
-  const phoneMatch = text.match(/Phone\s+(\d{10})/i) || text.match(/Mobile\s+(\d{10})/i);
-  if (phoneMatch && phoneMatch[1]) {
-    result.phone = phoneMatch[1].trim();
-  }
-  
-  // Extract email
-  const emailMatch = text.match(/Email\s+([^\s,\n]+@[^\s,\n]+)/i);
-  if (emailMatch && emailMatch[1]) {
-    result.email = emailMatch[1].trim();
-  }
-  
-  // Extract address
-  const addressMatch = text.match(/Address\s+([^,\n]+)/i);
-  if (addressMatch && addressMatch[1]) {
-    result.address = addressMatch[1].trim();
-  }
-  
-  // Extract city
-  const cityMatch = text.match(/City\s+([^,\n]+)/i) || text.match(/Location\s+([^,\n]+)/i);
-  if (cityMatch && cityMatch[1]) {
-    result.city = cityMatch[1].trim();
-  }
-  
-  // Extract product interest
-  const productMatch = text.match(/Interested\s+In\s+([^,\n]+)/i) || 
-                      text.match(/Looking\s+For\s+([^,\n]+)/i) || 
-                      text.match(/Needs\s+([^,\n]+)/i);
-  if (productMatch && productMatch[1]) {
-    result.product = productMatch[1].trim();
-  }
-  
-  return result;
 }
 
 // Helper function to determine product type
@@ -355,17 +304,15 @@ function determineProductType(productName: string): string {
 async function handleCustomerLookup(chat_id: string, text: string) {
   try {
     // Extract phone number from text
-    const phoneMatch = text.match(/Lookup\s+(\d{10})/i) || text.match(/(\d{10})/);
+    const phoneNumber = parsePhoneNumberCommand(text);
     
-    if (!phoneMatch || !phoneMatch[1]) {
+    if (!phoneNumber) {
       await sendTelegramMessage(chat_id, 
         "❌ Please provide a valid 10-digit phone number.\n\n" +
         "Example: Lookup 8103349299"
       );
       return;
     }
-    
-    const phoneNumber = phoneMatch[1];
     
     // Search for customer with this phone number
     const { data: customer, error } = await supabase
@@ -414,7 +361,7 @@ async function handleCustomerLookup(chat_id: string, text: string) {
 async function handleCreateQuotation(chat_id: string, text: string) {
   try {
     // Extract quotation information
-    const quotationData = parseQuotationInfo(text);
+    const quotationData = parseQuotationCommand(text);
     
     if (!quotationData.mobile || !quotationData.model) {
       await sendTelegramMessage(chat_id, 
@@ -500,56 +447,6 @@ async function handleCreateQuotation(chat_id: string, text: string) {
     console.error("Error in handleCreateQuotation:", error);
     await sendTelegramMessage(chat_id, "❌ An error occurred while processing your request.");
   }
-}
-
-// Helper function to parse quotation information
-function parseQuotationInfo(text: string) {
-  const result: any = {
-    mobile: '',
-    model: '',
-    price: '',
-    gst: '',
-    delivery: '',
-    warranty: ''
-  };
-  
-  // Extract mobile
-  const mobileMatch = text.match(/Mobile:?\s+(\d{10})/i);
-  if (mobileMatch && mobileMatch[1]) {
-    result.mobile = mobileMatch[1].trim();
-  }
-  
-  // Extract model
-  const modelMatch = text.match(/Model:?\s+([^,\n]+)/i);
-  if (modelMatch && modelMatch[1]) {
-    result.model = modelMatch[1].trim();
-  }
-  
-  // Extract price
-  const priceMatch = text.match(/Price:?\s+₹?([0-9,]+)/i);
-  if (priceMatch && priceMatch[1]) {
-    result.price = priceMatch[1].replace(/,/g, '').trim();
-  }
-  
-  // Extract GST
-  const gstMatch = text.match(/GST:?\s+(\d+)%?/i);
-  if (gstMatch && gstMatch[1]) {
-    result.gst = gstMatch[1].trim();
-  }
-  
-  // Extract delivery
-  const deliveryMatch = text.match(/Delivery:?\s+([^,\n]+)/i);
-  if (deliveryMatch && deliveryMatch[1]) {
-    result.delivery = deliveryMatch[1].trim();
-  }
-  
-  // Extract warranty
-  const warrantyMatch = text.match(/Warranty:?\s+([^,\n]+)/i);
-  if (warrantyMatch && warrantyMatch[1]) {
-    result.warranty = warrantyMatch[1].trim();
-  }
-  
-  return result;
 }
 
 // Helper function to format currency
@@ -784,26 +681,14 @@ async function handleDailyReport(chat_id: string) {
       serviceRevenue = completedCalls.reduce((sum, call) => sum + (call.service_charge || 0), 0);
     }
     
-    // Format the report
-    const report = `
-📊 <b>Daily Report</b> (${now.toLocaleDateString()})\n
-<b>New Customers:</b> ${newCustomers?.length || 0}
-${newCustomers && newCustomers.length > 0 ? 
-  '\n' + newCustomers.slice(0, 5).map(c => `- ${c.name} (${c.area})`).join('\n') + 
-  (newCustomers.length > 5 ? `\n+ ${newCustomers.length - 5} more...` : '') : ''}
-
-<b>Quotations Generated:</b> ${quotations?.length || 0}
-${quotations && quotations.length > 0 ? 
-  '\n' + quotations.slice(0, 5).map(q => `- ${q.customer_name} (₹${formatCurrency(q.grand_total)})`).join('\n') + 
-  (quotations.length > 5 ? `\n+ ${quotations.length - 5} more...` : '') : ''}
-
-<b>Service Calls Completed:</b> ${completedCalls?.length || 0}
-${completedCalls && completedCalls.length > 0 ? 
-  '\n' + completedCalls.slice(0, 5).map(s => `- ${s.customer_name} (${s.issue_type})`).join('\n') + 
-  (completedCalls.length > 5 ? `\n+ ${completedCalls.length - 5} more...` : '') : ''}
-
-<b>Total Service Revenue:</b> ₹${formatCurrency(serviceRevenue)}
-`;
+    // Use the report generator to format the data
+    const report = generateDailyReport({
+      newCustomers: newCustomers || [],
+      quotations: quotations || [],
+      completedCalls: completedCalls || [],
+      serviceRevenue,
+      date: now.toLocaleDateString()
+    });
     
     // Send the report
     await sendTelegramMessage(chat_id, report, 'HTML');
