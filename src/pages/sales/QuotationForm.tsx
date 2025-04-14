@@ -56,23 +56,18 @@ const QuotationForm = () => {
   const { id } = useParams<{ id: string }>();
   const isEditMode = !!id;
 
-  // Loading state
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetchingQuotation, setIsFetchingQuotation] = useState<boolean>(isEditMode);
 
-  // Find quotation if in edit mode
   const [existingQuotation, setExistingQuotation] = useState<Quotation | null>(null);
 
-  // Form state
   const [items, setItems] = useState<QuotationItem[]>([]);
   const [subtotal, setSubtotal] = useState<number>(0);
   const [totalGst, setTotalGst] = useState<number>(0);
   const [grandTotal, setGrandTotal] = useState<number>(0);
   
-  // Customer search state
   const [showCustomerSearch, setShowCustomerSearch] = useState<boolean>(false);
   
-  // New item form state
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | ''>('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
@@ -82,15 +77,12 @@ const QuotationForm = () => {
   const [customName, setCustomName] = useState<string>('');
   const [customDescription, setCustomDescription] = useState<string>('');
   
-  // Product specs state (for editable specs)
   const [productSpecs, setProductSpecs] = useState(defaultProductSpecs);
   
-  // Filter products by selected category
   const filteredProducts = selectedCategory 
     ? products.filter(p => p.category === selectedCategory) 
     : products;
   
-  // Setup form
   const form = useForm<QuotationFormValues>({
     defaultValues: {
       quotationNumber: generateQuotationNumber(),
@@ -106,7 +98,6 @@ const QuotationForm = () => {
     }
   });
   
-  // Fetch quotation data if in edit mode
   useEffect(() => {
     if (isEditMode && id) {
       const fetchQuotation = async () => {
@@ -121,7 +112,6 @@ const QuotationForm = () => {
             setTotalGst(quotation.totalGst);
             setGrandTotal(quotation.grandTotal);
             
-            // Set form values
             form.reset({
               quotationNumber: quotation.quotationNumber,
               customerName: quotation.customerName,
@@ -148,12 +138,10 @@ const QuotationForm = () => {
     }
   }, [id, isEditMode, navigate, form]);
   
-  // Toggle customer search panel
   const toggleCustomerSearch = () => {
     setShowCustomerSearch(!showCustomerSearch);
   };
   
-  // Handle customer selection from search
   const handleSelectCustomer = (customer: CustomerType) => {
     form.setValue('customerName', customer.name);
     form.setValue('customerId', customer.id);
@@ -161,12 +149,11 @@ const QuotationForm = () => {
     toast.success(`Selected customer: ${customer.name}`);
   };
   
-  // Handle product selection
   useEffect(() => {
     if (selectedProductId) {
       const product = products.find(p => p.id === selectedProductId);
       if (product) {
-        setUnitPrice(0); // Reset price for new selection
+        setUnitPrice(0);
         setGstPercent(product.defaultGstPercent);
         setProductSpecs({
           speed: product.specs.speed || '',
@@ -179,7 +166,6 @@ const QuotationForm = () => {
     }
   }, [selectedProductId]);
   
-  // Calculate totals
   useEffect(() => {
     let newSubtotal = 0;
     let newTotalGst = 0;
@@ -194,10 +180,8 @@ const QuotationForm = () => {
     setGrandTotal(newSubtotal + newTotalGst);
   }, [items]);
   
-  // Add item to quote
   const handleAddItem = () => {
     if (isCustomItem) {
-      // Validate custom item inputs
       if (!customName) {
         toast.error('Please enter a name for the custom item');
         return;
@@ -216,7 +200,6 @@ const QuotationForm = () => {
       setItems([...items, newItem]);
       resetItemForm();
     } else {
-      // Validate product selection
       if (!selectedProductId) {
         toast.error('Please select a product');
         return;
@@ -229,7 +212,6 @@ const QuotationForm = () => {
         return;
       }
       
-      // Create a new item with the current specs
       const newItem: QuotationItem = {
         id: Math.random().toString(36).substring(2, 11),
         productId: product.id,
@@ -253,7 +235,6 @@ const QuotationForm = () => {
     }
   };
   
-  // Reset item form
   const resetItemForm = () => {
     setSelectedCategory('');
     setSelectedProductId('');
@@ -266,12 +247,10 @@ const QuotationForm = () => {
     setProductSpecs(defaultProductSpecs);
   };
   
-  // Remove item from quote
   const handleRemoveItem = (id: string) => {
     setItems(items.filter(item => item.id !== id));
   };
   
-  // Save quotation
   const onSubmit = async (data: QuotationFormValues) => {
     if (items.length === 0) {
       toast.error('Please add at least one item to the quotation');
@@ -297,11 +276,9 @@ const QuotationForm = () => {
       };
       
       if (isEditMode && id) {
-        // Update existing quotation
         await updateQuotation(id, quotationData);
         toast.success('Quotation updated successfully');
       } else {
-        // Create new quotation
         await createQuotation(quotationData);
         toast.success('Quotation created successfully');
       }
@@ -317,7 +294,44 @@ const QuotationForm = () => {
     }
   };
   
-  // Show loading spinner while fetching quotation
+  const handlePrintQuotation = async () => {
+    if (items.length === 0) {
+      toast.error('Please add at least one item to the quotation');
+      return;
+    }
+
+    if (!existingQuotation && !form.getValues('customerName')) {
+      toast.error('Please select a customer');
+      return;
+    }
+
+    try {
+      const formValues = form.getValues();
+      
+      const quotationData: Quotation = {
+        id: existingQuotation?.id || Math.random().toString(36).substring(2, 9),
+        quotationNumber: formValues.quotationNumber,
+        customerId: formValues.customerId,
+        customerName: formValues.customerName,
+        items,
+        subtotal,
+        totalGst,
+        grandTotal,
+        createdAt: formValues.createdAt,
+        validUntil: formValues.validUntil,
+        status: formValues.status as QuotationStatus,
+        notes: formValues.notes,
+        terms: formValues.terms
+      };
+      
+      generateQuotationPdf(quotationData);
+      toast.success('Quotation PDF generated successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
   if (isFetchingQuotation) {
     return (
       <div className="container mx-auto py-6 flex items-center justify-center h-96">
@@ -355,7 +369,6 @@ const QuotationForm = () => {
       <div className="grid grid-cols-1 gap-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Quotation details section */}
             <div className="bg-card rounded-lg border p-6 shadow-sm">
               <h2 className="text-lg font-medium mb-4">Quotation Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -450,7 +463,6 @@ const QuotationForm = () => {
               </div>
             </div>
             
-            {/* Add items section */}
             <div className="bg-card rounded-lg border p-6 shadow-sm">
               <h2 className="text-lg font-medium mb-4">Add Items</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -652,7 +664,6 @@ const QuotationForm = () => {
                 </div>
               </div>
               
-              {/* Items Table */}
               <div className="border rounded-md">
                 <Table>
                   <TableHeader>
@@ -725,7 +736,6 @@ const QuotationForm = () => {
                 </Table>
               </div>
               
-              {/* Totals */}
               <div className="mt-6 flex justify-end">
                 <div className="w-80 space-y-2">
                   <div className="flex justify-between text-sm">
@@ -744,7 +754,6 @@ const QuotationForm = () => {
               </div>
             </div>
             
-            {/* Terms and notes */}
             <div className="bg-card rounded-lg border p-6 shadow-sm">
               <h2 className="text-lg font-medium mb-4">Terms & Notes</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -778,7 +787,6 @@ const QuotationForm = () => {
               </div>
             </div>
             
-            {/* Action buttons */}
             <div className="flex justify-between items-center">
               <Button
                 type="button"
@@ -818,6 +826,16 @@ const QuotationForm = () => {
                     <Send className="mr-2 h-4 w-4" />
                   )}
                   Save & Send
+                </Button>
+                
+                <Button
+                  type="button"
+                  onClick={handlePrintQuotation}
+                  variant="outline"
+                  disabled={isLoading || items.length === 0}
+                >
+                  <PrinterIcon className="mr-2 h-4 w-4" />
+                  Print Preview
                 </Button>
               </div>
             </div>

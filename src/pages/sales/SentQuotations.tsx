@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   Table, TableHeader, TableRow, TableHead, TableBody, TableCell 
@@ -13,18 +13,37 @@ import {
 import { Input } from "@/components/ui/input";
 import { 
   Search, MoreHorizontal, 
-  Eye, FileDown, Send, CheckCircle, XCircle, Copy 
+  Eye, FileDown, Send, CheckCircle, XCircle, Copy, Loader2 
 } from "lucide-react";
-import { quotations } from "@/data/salesData";
-import { QuotationStatus, Quotation } from "@/types/sales";
-import { format } from "date-fns";
 import { generateQuotationPdf } from "@/utils/pdfGenerator";
-import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { fetchQuotations } from "@/services/quotationService";
+import { Quotation } from "@/types/sales";
 
 const SentQuotations = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const { toast } = useToast();
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Fetch quotations on component mount
+  useEffect(() => {
+    const getQuotations = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchQuotations();
+        setQuotations(data);
+      } catch (error) {
+        console.error("Error fetching quotations:", error);
+        toast.error("Failed to load quotations");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    getQuotations();
+  }, []);
   
   // Filter only sent quotations
   const filteredQuotations = quotations
@@ -37,20 +56,32 @@ const SentQuotations = () => {
   // Handle PDF download
   const handleDownloadPdf = (quotation: Quotation) => {
     try {
-      generateQuotationPdf(quotation);
-      toast({
-        title: "PDF Generated",
-        description: `Quotation ${quotation.quotationNumber} has been downloaded.`,
-      });
+      // Make a copy to ensure items is an array
+      const quotationCopy = {
+        ...quotation,
+        items: Array.isArray(quotation.items) 
+          ? quotation.items 
+          : (typeof quotation.items === 'string' ? JSON.parse(quotation.items) : [])
+      };
+      
+      generateQuotationPdf(quotationCopy);
+      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to generate PDF. Please try again.",
-      });
+      toast.error("Failed to generate PDF. Please try again.");
     }
   };
+  
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-6 flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="mt-2 text-muted-foreground">Loading quotations...</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="container mx-auto py-6">

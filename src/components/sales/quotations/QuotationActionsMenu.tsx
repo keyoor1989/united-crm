@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,7 +12,7 @@ import {
   Trash2, CheckCircle, X, ShoppingBasket 
 } from "lucide-react";
 import { Quotation, QuotationStatus } from "@/types/sales";
-import { generateQuotationPdf } from "@/utils/pdf/quotationPdfGenerator";
+import { safeGeneratePdf, generateQuotationPdf } from "@/utils/pdfGenerator";
 import { updateQuotation, deleteQuotation } from "@/services/quotationService";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -26,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface QuotationActionsMenuProps {
   quotation: Quotation;
@@ -34,7 +34,6 @@ interface QuotationActionsMenuProps {
 const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }) => {
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
-  const { toast } = useToast();
 
   const handleViewDetails = () => {
     navigate(`/quotation/${quotation.id}`);
@@ -46,23 +45,22 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
 
   const handleDownloadPdf = () => {
     try {
-      generateQuotationPdf(quotation);
-      toast({
-        title: "PDF Generated",
-        description: `Quotation ${quotation.quotationNumber} has been downloaded.`
-      });
+      const quotationCopy = {
+        ...quotation,
+        items: Array.isArray(quotation.items) 
+          ? quotation.items 
+          : (typeof quotation.items === 'string' ? JSON.parse(quotation.items) : [])
+      };
+      
+      generateQuotationPdf(quotationCopy);
+      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate PDF. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to generate PDF. Please try again.");
     }
   };
 
   const handleCreatePurchaseOrder = () => {
-    // Navigate to purchase order form with quotation data
     navigate(`/purchase-order-form?from-quotation=${quotation.id}`);
   };
 
@@ -73,7 +71,6 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
         title: "Status Updated",
         description: `Quotation ${quotation.quotationNumber} is now ${newStatus}.`
       });
-      // Refresh the page to show the updated status
       window.location.reload();
     } catch (error) {
       console.error("Error updating status:", error);
@@ -92,7 +89,6 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
         title: "Quotation Deleted",
         description: `Quotation ${quotation.quotationNumber} has been deleted.`
       });
-      // Refresh the page to show the updated list
       window.location.reload();
     } catch (error) {
       console.error("Error deleting quotation:", error);

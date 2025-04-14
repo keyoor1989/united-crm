@@ -1,7 +1,7 @@
 
 import { format } from "date-fns";
 import { TDocumentDefinitions } from "pdfmake/interfaces";
-import { Quotation } from "@/types/sales";
+import { Quotation, QuotationItem } from "@/types/sales";
 import { styles, getPageFooter, downloadPdf } from "./pdfConfig";
 import { 
   createDocumentHeader, 
@@ -27,6 +27,20 @@ const standardQuotationTerms = [
 // Generate PDF for quotation
 export const generateQuotationPdf = (quotation: Quotation): void => {
   try {
+    console.log("Generating PDF for quotation:", quotation.quotationNumber);
+    console.log("Items data type:", typeof quotation.items);
+    console.log("Items value:", JSON.stringify(quotation.items));
+    
+    // Ensure items is always an array
+    const items = Array.isArray(quotation.items) 
+      ? quotation.items 
+      : (typeof quotation.items === 'string' ? JSON.parse(quotation.items) : []);
+    
+    if (!Array.isArray(items)) {
+      console.error("Items is still not an array after parsing:", items);
+      throw new Error("Invalid items format: items must be an array");
+    }
+    
     // Create document details
     const quotationDetails = [
       { label: 'Quotation No', value: quotation.quotationNumber },
@@ -58,7 +72,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       },
       
       // Items Table
-      createItemsTable(quotation.items),
+      createItemsTable(items),
       
       // Total Section with Amount in Words
       createTotalsSection(quotation.subtotal, quotation.totalGst, quotation.grandTotal),
@@ -93,6 +107,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     };
 
     downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);
+    console.log("PDF generation successful");
   } catch (error) {
     console.error("PDF generation error:", error);
     throw error;

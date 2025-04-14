@@ -26,7 +26,9 @@ export const fetchQuotations = async (): Promise<Quotation[]> => {
       quotationNumber: record.quotation_number,
       customerId: record.customer_id || '',
       customerName: record.customer_name,
-      items: JSON.parse(JSON.stringify(record.items)), // Convert JSON to QuotationItem[]
+      items: typeof record.items === 'string' 
+        ? JSON.parse(record.items) 
+        : (Array.isArray(record.items) ? record.items : []),
       subtotal: record.subtotal,
       totalGst: record.total_gst,
       grandTotal: record.grand_total,
@@ -67,13 +69,30 @@ export const fetchQuotationById = async (id: string): Promise<Quotation | null> 
       return null;
     }
 
+    // Check if items is a string and parse it if necessary
+    let parsedItems;
+    try {
+      parsedItems = typeof data.items === 'string' 
+        ? JSON.parse(data.items) 
+        : (Array.isArray(data.items) ? data.items : []);
+        
+      // Verify it's an array after parsing
+      if (!Array.isArray(parsedItems)) {
+        console.error('Items is not an array after parsing:', parsedItems);
+        parsedItems = [];
+      }
+    } catch (parseError) {
+      console.error('Error parsing items JSON:', parseError);
+      parsedItems = [];
+    }
+
     // Transform database record to match our Quotation type
     const quotation: Quotation = {
       id: data.id,
       quotationNumber: data.quotation_number,
       customerId: data.customer_id || '',
       customerName: data.customer_name,
-      items: JSON.parse(JSON.stringify(data.items)), // Convert JSON to QuotationItem[]
+      items: parsedItems,
       subtotal: data.subtotal,
       totalGst: data.total_gst,
       grandTotal: data.grand_total,
