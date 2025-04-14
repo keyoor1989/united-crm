@@ -1,4 +1,5 @@
 
+import { Content } from "pdfmake/interfaces";
 import { styles } from "./pdfConfig";
 import { QuotationItem, PurchaseOrderItem, ProductSpecs } from "@/types/sales";
 
@@ -42,7 +43,7 @@ const formatItemSpecs = (specs?: ProductSpecs, description?: string): string => 
 // Create items table for quotations or purchase orders
 export const createItemsTable = (
   items: (QuotationItem | PurchaseOrderItem)[]
-) => {
+): Content => {
   return {
     table: {
       headerRows: 1,

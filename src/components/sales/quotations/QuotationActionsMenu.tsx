@@ -13,7 +13,7 @@ import {
   Trash2, CheckCircle, X, ShoppingBasket 
 } from "lucide-react";
 import { Quotation, QuotationStatus } from "@/types/sales";
-import { generateQuotationPdf } from "@/utils/pdfGenerator";
+import { generateQuotationPdf, safeGeneratePdf } from "@/utils/pdfGenerator";
 import { updateQuotation, deleteQuotation } from "@/services/quotationService";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -52,10 +52,11 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
       // Create a proper deep copy of the quotation to avoid reference issues
       const quotationCopy = JSON.parse(JSON.stringify(quotation));
       
-      // Directly call the PDF generator function with the copy
-      generateQuotationPdf(quotationCopy);
-      
-      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
+      // Use safeGeneratePdf to handle errors
+      safeGeneratePdf(generateQuotationPdf, quotationCopy, (error) => {
+        console.error("Error in PDF generation:", error);
+        toast.error(`Failed to generate PDF: ${error.message}`);
+      });
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");

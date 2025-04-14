@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import { Content, ContentText } from "pdfmake/interfaces";
 import { styles, logoBase64, companyInfo, numberToWords } from "./pdfConfig";
@@ -8,7 +9,7 @@ interface TextWithMargin extends ContentText {
 }
 
 // Create document header with logo and company info
-export const createDocumentHeader = (title: string) => {
+export const createDocumentHeader = (title: string): Content => {
   return {
     columns: [
       // Company info on the left
@@ -44,7 +45,7 @@ export const createDocumentHeader = (title: string) => {
 };
 
 // Create document details section (date, number, etc.)
-export const createDocumentDetails = (details: { label: string, value: string }[]) => {
+export const createDocumentDetails = (details: { label: string, value: string }[]): Content => {
   return {
     stack: details.map(detail => ({ 
       columns: [
@@ -56,7 +57,7 @@ export const createDocumentDetails = (details: { label: string, value: string }[
 };
 
 // Create client/vendor information section
-export const createEntityInfoSection = (label: string, name: string, address?: string) => {
+export const createEntityInfoSection = (label: string, name: string, address?: string): Content => {
   const infoStack: (ContentText | TextWithMargin)[] = [
     { text: `${label}:`, style: 'sectionTitle', margin: [0, 0, 0, 2] },
     { text: name, margin: [0, 0, 0, 2] }
@@ -79,7 +80,7 @@ export const createEntityInfoSection = (label: string, name: string, address?: s
 };
 
 // Create document totals section
-export const createTotalsSection = (subtotal: number, totalGst: number, grandTotal: number) => {
+export const createTotalsSection = (subtotal: number, totalGst: number, grandTotal: number): Content => {
   const amountInWords = numberToWords(grandTotal);
   
   return {
@@ -121,7 +122,7 @@ export const createTotalsSection = (subtotal: number, totalGst: number, grandTot
 };
 
 // Create bank details section
-export const createBankDetailsSection = () => {
+export const createBankDetailsSection = (): Content => {
   return {
     stack: [
       { text: 'Bank Details:', style: 'bankDetailsHeader' },
@@ -135,7 +136,7 @@ export const createBankDetailsSection = () => {
 };
 
 // Create terms and conditions section
-export const createTermsSection = (standardTerms: string[], customTerms?: string) => {
+export const createTermsSection = (standardTerms: string[], customTerms?: string): Content[] => {
   const termsContent: (ContentText | TextWithMargin)[] = [
     { text: 'Terms & Conditions', style: 'termsHeader' },
     ...standardTerms.map(term => ({ text: `• ${term}`, style: 'termsList' }))
@@ -149,11 +150,11 @@ export const createTermsSection = (standardTerms: string[], customTerms?: string
     } as TextWithMargin);
   }
   
-  return termsContent;
+  return [{ stack: termsContent }];
 };
 
 // Create notes section
-export const createNotesSection = (notes?: string) => {
+export const createNotesSection = (notes?: string): Content[] => {
   if (!notes) return [];
   
   return [
@@ -163,7 +164,7 @@ export const createNotesSection = (notes?: string) => {
 };
 
 // Create thank you note
-export const createThankYouNote = (message: string) => {
+export const createThankYouNote = (message: string): Content => {
   return { 
     text: message, 
     style: 'footer', 
@@ -172,7 +173,7 @@ export const createThankYouNote = (message: string) => {
 };
 
 // Create signature section
-export const createSignatureSection = () => {
+export const createSignatureSection = (): Content => {
   return {
     columns: [
       {

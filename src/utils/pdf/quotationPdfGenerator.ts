@@ -1,6 +1,6 @@
 
 import { format } from "date-fns";
-import { TDocumentDefinitions } from "pdfmake/interfaces";
+import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { Quotation, QuotationItem } from "@/types/sales";
 import { styles, getPageFooter, downloadPdf } from "./pdfConfig";
 import { 
@@ -111,7 +111,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     ];
 
     // Create document content
-    const contentItems: any[] = [
+    const contentItems: Content[] = [
       // Header with Logo and Company Name
       createDocumentHeader('QUOTATION'),
       

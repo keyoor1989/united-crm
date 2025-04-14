@@ -1,6 +1,6 @@
 
 import { format } from "date-fns";
-import { TDocumentDefinitions } from "pdfmake/interfaces";
+import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { PurchaseOrder } from "@/types/sales";
 import { styles, getPageFooter, downloadPdf } from "./pdfConfig";
 import { 
@@ -35,7 +35,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     ];
 
     // Create an array for content with non-conditional items first
-    const contentItems: any[] = [
+    const contentItems: Content[] = [
       // Header with Logo and Title
       createDocumentHeader('PURCHASE ORDER'),
       
