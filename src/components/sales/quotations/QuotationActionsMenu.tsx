@@ -13,7 +13,7 @@ import {
   Trash2, CheckCircle, X, ShoppingBasket 
 } from "lucide-react";
 import { Quotation, QuotationStatus } from "@/types/sales";
-import { safeGeneratePdf, generateQuotationPdf } from "@/utils/pdfGenerator";
+import { generateQuotationPdf } from "@/utils/pdfGenerator";
 import { updateQuotation, deleteQuotation } from "@/services/quotationService";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -48,61 +48,16 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
   const handleDownloadPdf = () => {
     try {
       console.log("Starting PDF generation for quotation:", quotation.quotationNumber);
-      console.log("Quotation data check:", JSON.stringify({
-        id: quotation.id,
-        quotationNumber: quotation.quotationNumber,
-        itemsType: typeof quotation.items,
-        isArray: Array.isArray(quotation.items),
-        itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'N/A',
-        createdAt: quotation.createdAt,
-        validUntil: quotation.validUntil
-      }));
       
       // Create a proper deep copy of the quotation to avoid reference issues
-      let quotationCopy = JSON.parse(JSON.stringify(quotation));
+      const quotationCopy = JSON.parse(JSON.stringify(quotation));
       
-      // Ensure items is always an array
-      if (!quotationCopy.items) {
-        console.log("No items found, initializing empty array");
-        quotationCopy.items = [];
-      } else if (typeof quotationCopy.items === 'string') {
-        try {
-          console.log("Items is a string, attempting to parse:", quotationCopy.items.substring(0, 100) + "...");
-          const parsedItems = JSON.parse(quotationCopy.items);
-          if (Array.isArray(parsedItems)) {
-            quotationCopy.items = parsedItems;
-            console.log("Successfully parsed items array with length:", parsedItems.length);
-          } else {
-            console.error("Parsed items is not an array:", typeof parsedItems);
-            quotationCopy.items = [];
-          }
-        } catch (error) {
-          console.error("Failed to parse items string:", error);
-          quotationCopy.items = [];
-        }
-      } else if (!Array.isArray(quotationCopy.items)) {
-        console.error("Items is not an array or string:", typeof quotationCopy.items);
-        quotationCopy.items = [];
-      }
+      // Directly call the PDF generator function with the copy
+      generateQuotationPdf(quotationCopy);
       
-      // At this point, items should be an array. Verify just to be sure.
-      if (!Array.isArray(quotationCopy.items)) {
-        console.error("Items is STILL not an array after all processing:", quotationCopy.items);
-        quotationCopy.items = [];
-      }
-      
-      console.log("Final quotation with array items, length:", quotationCopy.items.length);
-      
-      // Generate PDF directly without using the safe wrapper
-      try {
-        generateQuotationPdf(quotationCopy);
-        toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
-      } catch (pdfError) {
-        console.error("Error in direct PDF generation:", pdfError);
-        toast.error("Failed to generate PDF. Please try again.");
-      }
+      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
-      console.error("Error in handleDownloadPdf:", error);
+      console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");
     }
   };

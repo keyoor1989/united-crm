@@ -1,24 +1,23 @@
+
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
-import { Alignment } from "pdfmake/interfaces";
 
-// Register the virtual file system with pdfMake
-// Handle different possible structures of pdfFonts
-pdfMake.vfs = (pdfFonts as any).pdfMake?.vfs || (pdfFonts as any).vfs;
+// Register the default fonts
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
-// Use default fonts to avoid loading issues
+// Use built-in fonts only - much more reliable than custom fonts
 pdfMake.fonts = {
-  Roboto: {
-    normal: 'Roboto',
-    bold: 'Roboto',
-    italics: 'Roboto',
-    bolditalics: 'Roboto'
+  Helvetica: {
+    normal: 'Helvetica',
+    bold: 'Helvetica-Bold',
+    italics: 'Helvetica-Oblique',
+    bolditalics: 'Helvetica-BoldOblique'
   }
 };
 
 // Base64 encoded logo to avoid URL loading issues
 // This is a placeholder - we'll use a fallback text header if image fails
-export const logoBase64 = "data:image/png;base64,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";
+export const logoBase64 = "data:image/png;base64,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";
 
 // Company information data
 export const companyInfo = {
@@ -123,8 +122,8 @@ export const getPageFooter = () => {
       columns: [
         { 
           text: companyInfo.tagline,
-          alignment: 'center' as Alignment,
-          margin: [40, 0, 40, 0] as [number, number, number, number],
+          alignment: 'center',
+          margin: [40, 0, 40, 0],
           fontSize: 8,
           color: '#333333',
           italics: true
@@ -138,7 +137,12 @@ export const getPageFooter = () => {
 export const downloadPdf = (docDefinition: any, fileName: string) => {
   try {
     console.log("downloadPdf called with fileName:", fileName);
-    console.log("Document definition structure:", JSON.stringify({
+    
+    // Set fonts explicitly on the doc definition to ensure they're used
+    docDefinition.defaultStyle = docDefinition.defaultStyle || {};
+    docDefinition.defaultStyle.font = 'Helvetica';
+    
+    console.log("Creating PDF with document definition:", JSON.stringify({
       hasContent: !!docDefinition.content,
       contentLength: docDefinition.content ? docDefinition.content.length : 0,
       hasStyles: !!docDefinition.styles,
@@ -146,13 +150,20 @@ export const downloadPdf = (docDefinition: any, fileName: string) => {
       fonts: docDefinition.defaultStyle ? docDefinition.defaultStyle.font : 'none'
     }));
     
+    // Create the PDF document
     const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-    console.log("PDF document created successfully, initiating download");
+    console.log("PDF document created, initiating download");
     
-    pdfDocGenerator.download(fileName);
-    console.log("Download triggered");
+    // Use a more reliable download method with error callback
+    pdfDocGenerator.download(fileName, () => {
+      console.log("PDF download completed successfully");
+    }, (error: any) => {
+      console.error("Error during PDF download:", error);
+      alert("There was an error generating the PDF. Please try again.");
+    });
   } catch (error) {
-    console.error("PDF generation error in downloadPdf:", error);
+    console.error("Fatal error in downloadPdf:", error);
+    alert("There was an error generating the PDF. Please try again.");
     throw error;
   }
 };

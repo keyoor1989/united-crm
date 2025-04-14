@@ -51,6 +51,8 @@ export const safeGeneratePdf = (generator: Function, data: any, errorCallback?: 
     console.error('PDF generation failed in safeGeneratePdf:', error);
     if (errorCallback) {
       errorCallback(error as Error);
+    } else {
+      alert("Failed to generate PDF. Please try again.");
     }
     // Return a default value or error indication
     return null;

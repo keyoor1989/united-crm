@@ -28,15 +28,13 @@ const standardQuotationTerms = [
 export const generateQuotationPdf = (quotation: Quotation): void => {
   try {
     console.log("Generating PDF for quotation:", quotation.quotationNumber);
-    console.log("Quotation data structure:", JSON.stringify({
+    console.log("Quotation data check:", JSON.stringify({
       id: quotation.id,
       quotationNumber: quotation.quotationNumber,
       customerName: quotation.customerName,
       itemsType: typeof quotation.items,
       itemsIsArray: Array.isArray(quotation.items),
-      itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'not an array',
-      createdAt: quotation.createdAt,
-      validUntil: quotation.validUntil
+      itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'not an array'
     }));
     
     // Validate required data
@@ -112,7 +110,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       { label: 'Valid Until', value: format(validUntilDate, "dd/MM/yyyy") }
     ];
 
-    // Create an array for content with non-conditional items first
+    // Create document content
     const contentItems: any[] = [
       // Header with Logo and Company Name
       createDocumentHeader('QUOTATION'),
@@ -159,22 +157,25 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     // Add thank you note
     contentItems.push(createThankYouNote('Thank you for your business!'));
     
+    // Create the document definition
     const docDefinition: TDocumentDefinitions = {
       pageSize: 'A4',
       pageMargins: [40, 40, 40, 60],
       content: contentItems,
       defaultStyle: {
-        font: 'Roboto'
+        font: 'Helvetica'
       },
       footer: getPageFooter(),
       styles: styles
     };
 
     console.log("PDF document definition created, initiating download");
+    // Call the download function
     downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);
-    console.log("PDF generation successful");
+    console.log("PDF generation process completed");
   } catch (error) {
     console.error("PDF generation error:", error);
+    alert("There was an error generating the PDF. Please check the console for details.");
     throw error;
   }
 };
