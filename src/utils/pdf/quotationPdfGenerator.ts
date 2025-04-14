@@ -28,6 +28,16 @@ const standardQuotationTerms = [
 export const generateQuotationPdf = (quotation: Quotation): void => {
   try {
     console.log("Generating PDF for quotation:", quotation.quotationNumber);
+    console.log("Quotation data structure:", JSON.stringify({
+      id: quotation.id,
+      quotationNumber: quotation.quotationNumber,
+      customerName: quotation.customerName,
+      itemsType: typeof quotation.items,
+      itemsIsArray: Array.isArray(quotation.items),
+      itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'not an array',
+      createdAt: quotation.createdAt,
+      validUntil: quotation.validUntil
+    }));
     
     // Validate required data
     if (!quotation) {
@@ -38,42 +48,61 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       throw new Error('Quotation number is missing');
     }
     
-    // Log quotation data for debugging
-    console.log("Quotation data:", JSON.stringify({
-      id: quotation.id,
-      quotationNumber: quotation.quotationNumber,
-      customerName: quotation.customerName,
-      itemsType: typeof quotation.items,
-      itemsIsArray: Array.isArray(quotation.items),
-      itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'not an array'
-    }));
-    
     // Ensure items is always an array
-    const items = Array.isArray(quotation.items) 
-      ? quotation.items 
-      : (typeof quotation.items === 'string' ? JSON.parse(quotation.items) : []);
-    
-    if (!Array.isArray(items)) {
-      console.error("Items is still not an array after parsing:", items);
-      throw new Error("Invalid items format: items must be an array");
+    let items: QuotationItem[] = [];
+    try {
+      if (Array.isArray(quotation.items)) {
+        items = quotation.items;
+      } else if (typeof quotation.items === 'string') {
+        const parsedItems = JSON.parse(quotation.items);
+        if (Array.isArray(parsedItems)) {
+          items = parsedItems;
+        } else {
+          console.error("Items JSON parsed but not an array:", parsedItems);
+          items = [];
+        }
+      } else if (quotation.items) {
+        console.error("Items is not an array or string:", quotation.items);
+        items = [];
+      }
+    } catch (error) {
+      console.error("Error parsing items:", error);
+      console.log("Original items value:", quotation.items);
+      items = [];
     }
     
-    console.log("Items array is valid with length:", items.length);
+    console.log("Items prepared for PDF:", JSON.stringify({
+      isArray: Array.isArray(items),
+      length: items.length,
+      sample: items.length > 0 ? items[0].name : 'no items' 
+    }));
     
     // Validate dates
     let createdAtDate = new Date();
     try {
       createdAtDate = new Date(quotation.createdAt);
+      if (isNaN(createdAtDate.getTime())) {
+        console.warn("Invalid created date format, using current date");
+        createdAtDate = new Date();
+      }
     } catch (error) {
-      console.warn("Invalid created date format, using current date");
+      console.warn("Error parsing created date, using current date:", error);
+      createdAtDate = new Date();
     }
     
     let validUntilDate = new Date();
     validUntilDate.setDate(validUntilDate.getDate() + 15); // Default 15 days validity
     try {
-      validUntilDate = new Date(quotation.validUntil);
+      if (quotation.validUntil) {
+        const parsedDate = new Date(quotation.validUntil);
+        if (!isNaN(parsedDate.getTime())) {
+          validUntilDate = parsedDate;
+        } else {
+          console.warn("Invalid valid until date format, using default 15 days from now");
+        }
+      }
     } catch (error) {
-      console.warn("Invalid valid until date format, using default 15 days from now");
+      console.warn("Error parsing valid until date, using default:", error);
     }
     
     // Create document details

@@ -48,47 +48,59 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
   const handleDownloadPdf = () => {
     try {
       console.log("Starting PDF generation for quotation:", quotation.quotationNumber);
+      console.log("Quotation data check:", JSON.stringify({
+        id: quotation.id,
+        quotationNumber: quotation.quotationNumber,
+        itemsType: typeof quotation.items,
+        isArray: Array.isArray(quotation.items),
+        itemsLength: Array.isArray(quotation.items) ? quotation.items.length : 'N/A',
+        createdAt: quotation.createdAt,
+        validUntil: quotation.validUntil
+      }));
       
-      // Create a deep copy of the quotation to avoid modifying the original
-      const quotationCopy = JSON.parse(JSON.stringify(quotation));
-      console.log("Quotation copy created. Items before processing:", quotationCopy.items);
+      // Create a proper deep copy of the quotation to avoid reference issues
+      let quotationCopy = JSON.parse(JSON.stringify(quotation));
       
-      // Ensure items is properly formatted as an array
-      if (quotationCopy.items) {
-        if (typeof quotationCopy.items === 'string') {
-          try {
-            console.log("Items is a string, attempting to parse");
-            quotationCopy.items = JSON.parse(quotationCopy.items);
-          } catch (error) {
-            console.error("Failed to parse items string:", error);
-            console.log("Original items string:", quotationCopy.items);
+      // Ensure items is always an array
+      if (!quotationCopy.items) {
+        console.log("No items found, initializing empty array");
+        quotationCopy.items = [];
+      } else if (typeof quotationCopy.items === 'string') {
+        try {
+          console.log("Items is a string, attempting to parse:", quotationCopy.items.substring(0, 100) + "...");
+          const parsedItems = JSON.parse(quotationCopy.items);
+          if (Array.isArray(parsedItems)) {
+            quotationCopy.items = parsedItems;
+            console.log("Successfully parsed items array with length:", parsedItems.length);
+          } else {
+            console.error("Parsed items is not an array:", typeof parsedItems);
             quotationCopy.items = [];
           }
-        }
-        
-        // Final check to ensure items is an array
-        if (!Array.isArray(quotationCopy.items)) {
-          console.error("Items is not an array after processing:", quotationCopy.items);
+        } catch (error) {
+          console.error("Failed to parse items string:", error);
           quotationCopy.items = [];
-        } else {
-          console.log("Items is now an array with length:", quotationCopy.items.length);
         }
-      } else {
-        console.log("No items found in quotation, setting to empty array");
+      } else if (!Array.isArray(quotationCopy.items)) {
+        console.error("Items is not an array or string:", typeof quotationCopy.items);
         quotationCopy.items = [];
       }
       
-      // Use the safe generator wrapper
-      safeGeneratePdf(
-        generateQuotationPdf, 
-        quotationCopy, 
-        (error) => {
-          console.error("PDF generation error:", error);
-          toast.error("Failed to generate PDF. Please try again.");
-        }
-      );
+      // At this point, items should be an array. Verify just to be sure.
+      if (!Array.isArray(quotationCopy.items)) {
+        console.error("Items is STILL not an array after all processing:", quotationCopy.items);
+        quotationCopy.items = [];
+      }
       
-      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
+      console.log("Final quotation with array items, length:", quotationCopy.items.length);
+      
+      // Generate PDF directly without using the safe wrapper
+      try {
+        generateQuotationPdf(quotationCopy);
+        toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
+      } catch (pdfError) {
+        console.error("Error in direct PDF generation:", pdfError);
+        toast.error("Failed to generate PDF. Please try again.");
+      }
     } catch (error) {
       console.error("Error in handleDownloadPdf:", error);
       toast.error("Failed to generate PDF. Please try again.");

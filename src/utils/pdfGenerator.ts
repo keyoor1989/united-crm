@@ -23,7 +23,7 @@ export const safeGeneratePdf = (generator: Function, data: any, errorCallback?: 
     if (data && data.items) {
       if (typeof data.items === 'string') {
         try {
-          console.log("Items is a string, attempting to parse:", data.items);
+          console.log("Items is a string, attempting to parse:", data.items.substring(0, 100) + "...");
           data.items = JSON.parse(data.items);
         } catch (error) {
           console.error("Failed to parse items string:", error);
@@ -48,7 +48,7 @@ export const safeGeneratePdf = (generator: Function, data: any, errorCallback?: 
     console.log("Calling PDF generator with validated data");
     return generator(data);
   } catch (error) {
-    console.error('PDF generation failed:', error);
+    console.error('PDF generation failed in safeGeneratePdf:', error);
     if (errorCallback) {
       errorCallback(error as Error);
     }
