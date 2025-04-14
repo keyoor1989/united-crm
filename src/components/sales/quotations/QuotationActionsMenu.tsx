@@ -75,11 +75,11 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
     }
   };
 
-  const handleCreatePurchaseOrder = () => {
+  function handleCreatePurchaseOrder() {
     navigate(`/purchase-order-form?from-quotation=${quotation.id}`);
-  };
-
-  const handleUpdateStatus = async (newStatus: QuotationStatus) => {
+  }
+  
+  async function handleUpdateStatus(newStatus: QuotationStatus) {
     try {
       await updateQuotation(quotation.id, { status: newStatus });
       toast.success(`Quotation ${quotation.quotationNumber} is now ${newStatus}.`);
@@ -88,9 +88,9 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
       console.error("Error updating status:", error);
       toast.error("Failed to update status. Please try again.");
     }
-  };
-
-  const handleDelete = async () => {
+  }
+  
+  async function handleDelete() {
     try {
       await deleteQuotation(quotation.id);
       toast.success(`Quotation ${quotation.quotationNumber} has been deleted.`);
@@ -100,7 +100,7 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
       toast.error("Failed to delete quotation. Please try again.");
     }
     setShowDeleteDialog(false);
-  };
+  }
 
   return (
     <>

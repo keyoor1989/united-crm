@@ -74,14 +74,16 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       
       // Bank Details
       createBankDetailsSection(),
-      
-      // Terms and conditions - properly use the array returned by createTermsSection
-      ...createTermsSection(standardPurchaseOrderTerms, order.terms)
     ];
+    
+    // Add terms section - correctly handle the array returned from createTermsSection
+    const termsSection = createTermsSection(standardPurchaseOrderTerms, order.terms);
+    contentItems.push(...termsSection);
     
     // Add notes section if provided
     if (order.notes) {
-      contentItems.push(...createNotesSection(order.notes));
+      const notesSection = createNotesSection(order.notes);
+      contentItems.push(...notesSection);
     }
     
     // Add signature section
