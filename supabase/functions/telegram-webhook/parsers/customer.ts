@@ -15,32 +15,32 @@ export function parseCustomerCommand(text: string) {
     isValid: false
   };
   
-  // Extract name
+  // Extract name with more flexible matching
   const nameMatch = text.match(/Name\s+([^,\n]+)/i) || text.match(/Customer\s+([^,\n]+)/i);
   if (nameMatch && nameMatch[1]) {
     result.name = nameMatch[1].trim();
   }
   
-  // Extract phone
-  const phoneMatch = text.match(/Phone\s+(\d{10})/i) || text.match(/Mobile\s+(\d{10})/i);
+  // Enhanced phone number extraction
+  const phoneMatch = text.match(/Mobile\s+(\d{10})/i) || text.match(/Phone\s+(\d{10})/i);
   if (phoneMatch && phoneMatch[1]) {
     result.phone = phoneMatch[1].trim();
   }
   
-  // Extract email
+  // Extract email (optional)
   const emailMatch = text.match(/Email\s+([^\s,\n]+@[^\s,\n]+)/i);
   if (emailMatch && emailMatch[1]) {
     result.email = emailMatch[1].trim();
   }
   
-  // Extract address
+  // Extract address with more robust matching
   const addressMatch = text.match(/Address\s+([^,\n]+)/i);
   if (addressMatch && addressMatch[1]) {
     result.address = addressMatch[1].trim();
   }
   
   // Extract city
-  const cityMatch = text.match(/City\s+([^,\n]+)/i) || text.match(/Location\s+([^,\n]+)/i);
+  const cityMatch = text.match(/City\s+([^,\n]+)/i);
   if (cityMatch && cityMatch[1]) {
     result.city = cityMatch[1].trim();
   }
@@ -53,8 +53,12 @@ export function parseCustomerCommand(text: string) {
     result.product = productMatch[1].trim();
   }
   
-  // Check if mandatory fields are present
-  result.isValid = Boolean(result.name && result.city && result.phone);
+  // Mandatory field validation
+  result.isValid = Boolean(
+    result.name && 
+    result.phone && 
+    result.city
+  );
   
   return result;
 }

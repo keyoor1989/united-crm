@@ -204,10 +204,19 @@ async function handleAddCustomer(chat_id: string, text: string) {
     // Parse the customer information from the message
     const customerData = parseCustomerCommand(text);
     
+    // More comprehensive validation message
     if (!customerData.name || !customerData.city || !customerData.phone) {
       await sendTelegramMessage(chat_id, 
-        "❌ Missing required information. Please include at least Name, Phone, and City.\n\n" +
-        "Example: Add Customer Name Ravi Sharma Phone 8103349299 City Indore"
+        "❌ Missing required information. Please include:\n" +
+        "- Name (required)\n" +
+        "- Mobile Number (required, 10 digits)\n" +
+        "- City (required)\n\n" +
+        "Example: Add Customer\n" +
+        "Name Ravi Sharma\n" +
+        "Mobile 9876543210\n" +
+        "Address 123 MG Road\n" +
+        "City Indore\n" +
+        "Interested In Ricoh 2014D"
       );
       return;
     }
@@ -267,11 +276,12 @@ async function handleAddCustomer(chat_id: string, text: string) {
         });
     }
     
-    // Send success message
+    // Enhanced success message
     await sendTelegramMessage(chat_id, 
       `✅ Customer <b>${customerData.name}</b> added successfully to CRM!\n\n` +
       `ID: ${data.id}\n` +
-      `Phone: ${customerData.phone}\n` +
+      `Mobile: ${customerData.phone}\n` +
+      `Address: ${customerData.address || 'Not provided'}\n` +
       `Location: ${customerData.city}\n` +
       (customerData.product ? `Interested in: ${customerData.product}` : ''),
       'HTML'
