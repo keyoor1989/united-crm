@@ -1,5 +1,5 @@
 
-import { Content } from "pdfmake/interfaces";
+import { Content, ContentText } from "pdfmake/interfaces";
 import { DetailItem, ContentWithStack, TextWithMargin } from "./types";
 
 // Create document details section (date, number, etc.)
