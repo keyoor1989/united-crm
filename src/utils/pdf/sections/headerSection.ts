@@ -1,5 +1,5 @@
 
-import { Content } from "pdfmake/interfaces";
+import { Content, Alignment } from "pdfmake/interfaces";
 import { logoBase64, companyInfo } from "../config";
 
 // Create document header with logo and company info
@@ -26,7 +26,7 @@ export const createDocumentHeader = (title: string): Content => {
           ...(logoBase64 ? [{
             image: logoBase64,
             width: 150,
-            alignment: 'right',
+            alignment: 'right' as Alignment,
             margin: [0, 0, 0, 5]
           }] : []),
           {
