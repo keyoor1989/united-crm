@@ -15,6 +15,7 @@ import {
   createSignatureSection
 } from "./sections/contentSections";
 import { createItemsTable } from "./itemsTable";
+import { companyInfo } from "./config/companyInfo";
 
 // Standard terms for purchase orders
 const standardPurchaseOrderTerms = [
@@ -24,7 +25,7 @@ const standardPurchaseOrderTerms = [
   'All prices are inclusive of applicable taxes.'
 ];
 
-// Generate PDF for purchase order
+// Generate PDF for purchase order - cash or bill purchase
 export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
   try {
     // Validate required data
@@ -75,9 +76,18 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       // Total Section
       createTotalsSection(order.subtotal, order.totalGst, order.grandTotal),
       
-      // Bank Details
-      createBankDetailsSection(),
+      // Bank Details - only for billed purchases
+      order.status !== "Cash Purchase" ? createBankDetailsSection() : {},
     ];
+    
+    // Add payment method section if it's a cash purchase
+    if (order.status === "Cash Purchase") {
+      contentItems.push({
+        text: 'Payment Method: Cash',
+        style: 'sectionTitle',
+        margin: [0, 10, 0, 5]
+      });
+    }
     
     // Add terms section - correctly handle the terms content
     const termsSection = createTermsSection(standardPurchaseOrderTerms, order.terms);
@@ -111,4 +121,252 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     console.error("PDF generation error:", error);
     throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+};
+
+// Generate PDF for cash memo (simplified version without billing details)
+export const generateCashMemoPdf = (order: PurchaseOrder): void => {
+  try {
+    // Validate required data
+    if (!order) {
+      throw new Error('Purchase order data is missing');
+    }
+    
+    // Ensure items is always an array
+    const items = Array.isArray(order.items) ? order.items : 
+                (typeof order.items === 'string' ? JSON.parse(order.items) : []);
+    
+    // Create document details
+    const memoDetails = [
+      { label: 'Receipt No', value: order.poNumber },
+      { label: 'Date', value: format(new Date(order.createdAt), "dd/MM/yyyy") },
+      { label: 'Payment', value: 'Cash' }
+    ];
+
+    // Create an array for content
+    const contentItems: Content[] = [
+      // Header with Title (no logo)
+      {
+        text: 'CASH RECEIPT',
+        style: 'header',
+        alignment: 'center',
+        margin: [0, 0, 0, 10]
+      },
+      
+      // Company info at top
+      {
+        text: companyInfo.name,
+        style: 'companyName',
+        alignment: 'center'
+      },
+      {
+        text: companyInfo.address,
+        style: 'companyAddress',
+        alignment: 'center'
+      },
+      {
+        text: `Contact: ${companyInfo.phone}`,
+        style: 'companyContact',
+        alignment: 'center'
+      },
+      {
+        columns: [
+          // Vendor Information (simplified)
+          {
+            width: '60%',
+            text: [
+              { text: 'Vendor: ', bold: true },
+              order.vendorName
+            ]
+          },
+          // Receipt Details
+          {
+            width: '40%',
+            stack: memoDetails.map(detail => ({
+              text: [
+                { text: `${detail.label}: `, bold: true },
+                detail.value
+              ],
+              margin: [0, 2, 0, 0]
+            }))
+          }
+        ],
+        columnGap: 10,
+        margin: [0, 10, 0, 10]
+      },
+      
+      // Items Table (simplified)
+      createItemsTable(items, {
+        alternateRowColors: true,
+        showItemNumbers: true,
+        simplified: true
+      }),
+      
+      // Total Section (simplified)
+      {
+        table: {
+          widths: ['*', 'auto'],
+          body: [
+            [
+              { text: 'Total Amount:', style: 'totalLabel', alignment: 'right' },
+              { text: `₹${order.grandTotal.toLocaleString()}`, style: 'totalValue' }
+            ]
+          ]
+        },
+        layout: 'noBorders',
+        margin: [0, 10, 0, 10]
+      },
+      
+      // Signature section (simplified)
+      {
+        columns: [
+          {
+            width: '50%',
+            text: '_____________________\nReceived By',
+            alignment: 'center',
+            margin: [0, 40, 0, 0]
+          },
+          {
+            width: '50%',
+            text: '_____________________\nAuthorized Signature',
+            alignment: 'center',
+            margin: [0, 40, 0, 0]
+          }
+        ]
+      },
+      
+      // Thank you note
+      {
+        text: 'Thank you for your business!',
+        alignment: 'center',
+        margin: [0, 20, 0, 0],
+        style: 'thankYouNote'
+      }
+    ];
+    
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A4',
+      pageMargins: [40, 40, 40, 60],
+      content: contentItems,
+      defaultStyle: {
+        font: 'Roboto'
+      },
+      styles: {
+        ...styles,
+        companyName: {
+          fontSize: 18,
+          bold: true,
+          margin: [0, 5, 0, 2]
+        },
+        companyAddress: {
+          fontSize: 10,
+          margin: [0, 0, 0, 1]
+        },
+        companyContact: {
+          fontSize: 10,
+          margin: [0, 0, 0, 10]
+        },
+        totalLabel: {
+          fontSize: 12,
+          bold: true
+        },
+        totalValue: {
+          fontSize: 12,
+          bold: true
+        },
+        thankYouNote: {
+          fontSize: 10,
+          italic: true
+        }
+      }
+    };
+
+    downloadPdf(docDefinition, `CashMemo_${order.poNumber}.pdf`);
+  } catch (error) {
+    console.error("Cash memo generation error:", error);
+    throw new Error(`Cash memo generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// Add new function to modify the ItemsTable to support simplified format
+export const createSimplifiedItemsTable = (items: any[], options = {}) => {
+  const { alternateRowColors = false, showItemNumbers = false } = options;
+  
+  // Create header row
+  const headerRow = [
+    { text: 'Item', style: 'tableHeader' },
+    { text: 'Qty', style: 'tableHeader', alignment: 'center' },
+    { text: 'Price', style: 'tableHeader', alignment: 'right' },
+    { text: 'Amount', style: 'tableHeader', alignment: 'right' }
+  ];
+  
+  if (showItemNumbers) {
+    headerRow.unshift({ text: '#', style: 'tableHeader', alignment: 'center' });
+  }
+  
+  // Create body rows
+  const bodyRows = items.map((item, index) => {
+    const rowData = [
+      item.name || item.description,
+      { text: item.quantity.toString(), alignment: 'center' },
+      { text: `₹${item.unitPrice.toLocaleString()}`, alignment: 'right' },
+      { text: `₹${item.total.toLocaleString()}`, alignment: 'right' }
+    ];
+    
+    if (showItemNumbers) {
+      rowData.unshift({ text: (index + 1).toString(), alignment: 'center' });
+    }
+    
+    return rowData;
+  });
+  
+  // Combine header and body
+  const tableBody = [headerRow, ...bodyRows];
+  
+  // Apply alternate row coloring if enabled
+  if (alternateRowColors) {
+    tableBody.forEach((row, index) => {
+      if (index > 0 && index % 2 === 0) {
+        row.forEach(cell => {
+          if (typeof cell === 'object') {
+            cell.fillColor = '#f9f9f9';
+          } else {
+            row[tableBody[0].indexOf(cell)] = {
+              text: cell,
+              fillColor: '#f9f9f9'
+            };
+          }
+        });
+      }
+    });
+  }
+  
+  const widths = showItemNumbers 
+    ? ['auto', '*', 'auto', 'auto', 'auto'] 
+    : ['*', 'auto', 'auto', 'auto'];
+  
+  return {
+    table: {
+      headerRows: 1,
+      widths,
+      body: tableBody
+    },
+    layout: {
+      hLineWidth: function(i, node) {
+        return (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5;
+      },
+      vLineWidth: function() {
+        return 0;
+      },
+      hLineColor: function(i) {
+        return i === 1 ? 'black' : '#dddddd';
+      },
+      paddingTop: function(i) {
+        return (i === 0) ? 4 : 8;
+      },
+      paddingBottom: function(i, node) {
+        return (i === node.table.body.length - 1) ? 4 : 8;
+      }
+    },
+    margin: [0, 10, 0, 10]
+  };
 };

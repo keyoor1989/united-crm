@@ -11,7 +11,10 @@ import {
   CheckSquare,
   BarChart2,
   Clipboard,
-  ShoppingCart
+  ShoppingCart,
+  Cash,
+  FileText,
+  CreditCard
 } from "lucide-react";
 import { SidebarSectionConfig } from "../types/navTypes";
 
@@ -58,6 +61,26 @@ export const inventorySection: SidebarSectionConfig = {
       to: "/inventory/purchase-entry",
       icon: ShoppingCart,
       label: "Purchase Entry"
+    },
+    {
+      to: "/inventory/cash-purchase",
+      icon: Cash,
+      label: "Cash Purchases"
+    },
+    {
+      to: "/inventory/sales",
+      icon: Receipt,
+      label: "Sales Management"
+    },
+    {
+      to: "/inventory/credit-sales",
+      icon: CreditCard,
+      label: "Credit Sales"
+    },
+    {
+      to: "/inventory/sales-reports",
+      icon: FileText,
+      label: "Sales Reports"
     },
     {
       to: "/inventory/issue",
