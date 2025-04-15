@@ -1,3 +1,4 @@
+
 // Define proper company info type
 export interface CompanyInfo {
   name: string;
@@ -13,17 +14,17 @@ export interface CompanyInfo {
   branch: string;
 }
 
-// Company information (existing details remain the same)
+// Company information with updated details
 export const companyInfo: CompanyInfo = {
   name: "United Copiers",
-  address: "Your Company Address",
-  phone: "Your Phone Number",
-  email: "your@email.com",
-  website: "www.yourwebsite.com",
-  contact: "Your Contact Person",
-  gstin: "Your GSTIN Number",
-  bankName: "Your Bank Name",
-  accountNo: "Your Account Number",
-  ifsc: "Your IFSC Code",
-  branch: "Your Branch Name"
+  address: "118, Jaora Compound, Indore",
+  phone: "81033-49299, 93003-00345",
+  email: "unitedcopierindore@gmail.com",
+  website: "unitedcopier.in",
+  contact: "United Copier",
+  gstin: "23AAZPY6466B1Z2",
+  bankName: "ICICI Bank",
+  accountNo: "657405601659",
+  ifsc: "ICIC0006574",
+  branch: "UshaGanj, Indore"
 };
