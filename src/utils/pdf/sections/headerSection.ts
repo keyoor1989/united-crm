@@ -4,7 +4,8 @@ import { logoBase64, companyInfo } from "../config";
 
 // Create document header with logo and company info
 export const createDocumentHeader = (title: string): Content => {
-  return {
+  // Create the base header content
+  const headerContent: Content = {
     columns: [
       // Company info on the left
       {
@@ -17,16 +18,17 @@ export const createDocumentHeader = (title: string): Content => {
           { text: `GSTIN: ${companyInfo.gstin}`, style: 'gstin', margin: [0, 2, 0, 0] }
         ]
       },
-      // Logo on the right or fallback to text if image loading fails
+      // Right side with title and conditionally the logo
       {
         width: '35%',
         stack: [
-          {
+          // Only include the image if logoBase64 is not empty
+          ...(logoBase64 ? [{
             image: logoBase64,
             width: 150,
             alignment: 'right',
             margin: [0, 0, 0, 5]
-          },
+          }] : []),
           {
             text: title,
             style: 'header'
@@ -36,4 +38,6 @@ export const createDocumentHeader = (title: string): Content => {
     ],
     margin: [0, 0, 0, 15]
   };
+
+  return headerContent;
 };
