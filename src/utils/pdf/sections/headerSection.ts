@@ -1,6 +1,7 @@
 
 import { Content, Alignment } from "pdfmake/interfaces";
 import { logoBase64, companyInfo } from "../config";
+import { PdfMargin } from "../config/pdfCore";
 
 // Create document header with logo and company info
 export const createDocumentHeader = (title: string): Content => {
@@ -15,7 +16,7 @@ export const createDocumentHeader = (title: string): Content => {
           { text: companyInfo.address, style: 'companyAddress' },
           { text: `Contact: ${companyInfo.contact}`, style: 'companyContact' },
           { text: `Email: ${companyInfo.email}`, style: 'companyContact' },
-          { text: `GSTIN: ${companyInfo.gstin}`, style: 'gstin', margin: [0, 2, 0, 0] }
+          { text: `GSTIN: ${companyInfo.gstin}`, style: 'gstin', margin: [0, 2, 0, 0] as [number, number, number, number] }
         ]
       },
       // Right side with title and conditionally the logo
@@ -27,7 +28,7 @@ export const createDocumentHeader = (title: string): Content => {
             image: logoBase64,
             width: 150,
             alignment: 'right' as Alignment,
-            margin: [0, 0, 0, 5]
+            margin: [0, 0, 0, 5] as [number, number, number, number]
           }] : []),
           {
             text: title,
@@ -36,7 +37,7 @@ export const createDocumentHeader = (title: string): Content => {
         ]
       }
     ],
-    margin: [0, 0, 0, 15]
+    margin: [0, 0, 0, 15] as [number, number, number, number]
   };
 
   return headerContent;
