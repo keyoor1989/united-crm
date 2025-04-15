@@ -12,13 +12,15 @@ pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
 // Define types for margin to match pdfmake expectations
 export type PdfMargin = [number, number] | [number, number, number, number];
 
-// Function to download PDF
+// Function to download PDF with better error handling
 export const downloadPdf = (docDefinition: TDocumentDefinitions, filename: string) => {
   console.log("Downloading PDF with filename:", filename);
   try {
-    // Create buffer and download
-    pdfMake.createPdf(docDefinition).download(filename);
-    console.log("PDF download initiated successfully");
+    // Create buffer and download with a small delay to ensure fonts are loaded
+    setTimeout(() => {
+      pdfMake.createPdf(docDefinition).download(filename);
+      console.log("PDF download initiated successfully");
+    }, 100);
   } catch (error) {
     console.error("Error downloading PDF:", error);
     throw new Error(`PDF download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

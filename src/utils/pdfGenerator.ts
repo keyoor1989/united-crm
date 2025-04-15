@@ -46,52 +46,6 @@ const validateItemsArray = <T extends { items?: any }>(data: T): T => {
 };
 
 /**
- * Validate required data fields
- * @param data - The data object to validate
- * @returns true if data is valid, false otherwise
- */
-const validateData = <T>(data: T | null | undefined): data is T => {
-  if (!data) {
-    console.error('No data provided for PDF generation');
-    return false;
-  }
-  return true;
-};
-
-/**
- * Execute the PDF generator function with a delay to ensure fonts are loaded
- * @param generator - The PDF generator function
- * @param data - The data to pass to the generator
- * @param errorCallback - Optional callback for error handling
- */
-const executePdfGenerator = <T>(
-  generator: PdfGeneratorFunction<T>, 
-  data: T, 
-  errorCallback?: ErrorCallback
-): void => {
-  console.log("Executing PDF generator with validated data");
-  
-  // Add a slight delay to ensure fonts are loaded before generating PDF
-  setTimeout(() => {
-    try {
-      generator(data);
-    } catch (generatorError) {
-      const errorMessage = generatorError instanceof Error 
-        ? generatorError.message 
-        : 'Unknown error during PDF generation';
-        
-      console.error("Error in PDF generator function:", errorMessage);
-      
-      if (errorCallback) {
-        errorCallback(generatorError as Error);
-      } else {
-        alert("Failed to generate PDF. Please try again.");
-      }
-    }
-  }, 100);
-};
-
-/**
  * Safely generates a PDF, handling data validation and errors
  * @param generator - The PDF generator function
  * @param data - The data to pass to the generator
@@ -112,24 +66,27 @@ export const safeGeneratePdf = <T extends { items?: any }>(
       itemsLength: data?.items && Array.isArray(data.items) ? data.items.length : 'N/A'
     }));
     
-    // Validate that data exists
-    if (!validateData(data)) {
-      throw new Error('No data provided for PDF generation');
-    }
-    
     // Validate and fix items array
     const validatedData = validateItemsArray(data);
     
-    // Execute the PDF generator
-    executePdfGenerator(generator, validatedData, errorCallback);
+    // Execute the PDF generator with a slight delay to ensure fonts are loaded
+    setTimeout(() => {
+      try {
+        generator(validatedData);
+      } catch (generatorError) {
+        console.error("Error in PDF generator function:", generatorError);
+        
+        if (errorCallback) {
+          errorCallback(generatorError as Error);
+        } else {
+          alert("Failed to generate PDF. Please try again.");
+        }
+      }
+    }, 100);
     
     return true;
   } catch (error) {
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Unknown error during PDF generation';
-      
-    console.error('PDF generation failed in safeGeneratePdf:', errorMessage);
+    console.error('PDF generation failed in safeGeneratePdf:', error);
     
     if (errorCallback) {
       errorCallback(error as Error);
@@ -138,28 +95,5 @@ export const safeGeneratePdf = <T extends { items?: any }>(
     }
     
     return false;
-  }
-};
-
-/**
- * Generates a PDF with basic error handling (simpler version)
- * @param generator - The PDF generator function to call
- * @param data - The data to pass to the generator
- * @param onSuccess - Optional callback for successful generation
- * @param onError - Optional callback for failed generation
- */
-export const generatePdf = <T>(
-  generator: PdfGeneratorFunction<T>,
-  data: T,
-  onSuccess?: () => void,
-  onError?: (error: Error) => void
-): void => {
-  try {
-    generator(data);
-    if (onSuccess) onSuccess();
-  } catch (error) {
-    console.error("PDF generation error:", error);
-    if (onError) onError(error as Error);
-    else alert("Failed to generate PDF. Please try again.");
   }
 };

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,13 +69,12 @@ const QuotationView: React.FC<QuotationViewProps> = ({
       };
       
       // Use the safeGeneratePdf utility to handle errors and safely generate PDF
-      setTimeout(() => {
-        safeGeneratePdf(generateQuotationPdf, quotationData, (error) => {
-          console.error("PDF generation error:", error);
-          toast.error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
-        });
-        toast.success("PDF generation started successfully");
-      }, 100);
+      safeGeneratePdf(generateQuotationPdf, quotationData, (error) => {
+        console.error("PDF generation error:", error);
+        toast.error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
+      });
+      
+      toast.success("PDF generation started successfully");
     } catch (error) {
       console.error("Error in handleDownload:", error);
       toast.error("Failed to generate PDF. Please check console for details.");

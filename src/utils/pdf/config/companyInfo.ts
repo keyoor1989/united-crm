@@ -14,8 +14,9 @@ export interface CompanyInfo {
   branch: string;
 }
 
-// Logo as base64 string
-export const logoBase64 = ""; // Add your logo base64 string here if needed
+// Logo as base64 string - Set to empty for now, but can be replaced with actual base64 image
+// Using small transparent placeholder if logo is missing
+export const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
 // Company information
 export const companyInfo: CompanyInfo = {
