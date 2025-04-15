@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,8 @@ const QuotationView: React.FC<QuotationViewProps> = ({
   
   const handleDownload = () => {
     try {
+      toast.info("Preparing PDF for download...");
+      
       // Generate customer data and items data from the initialData
       const quotationData = {
         id: "temp-id",
@@ -42,8 +45,8 @@ const QuotationView: React.FC<QuotationViewProps> = ({
         customerId: "",
         customerName: initialData.customerName || "Customer",
         items: initialData.models.map(model => ({
-          id: model.productId,
-          productId: model.productId,
+          id: model.productId || `custom-${Date.now()}`,
+          productId: model.productId || `custom-${Date.now()}`,
           name: model.model,
           description: `${model.model} Printer/Copier`,
           category: "Copier",
@@ -73,8 +76,6 @@ const QuotationView: React.FC<QuotationViewProps> = ({
         console.error("PDF generation error:", error);
         toast.error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
       });
-      
-      toast.success("PDF generation started successfully");
     } catch (error) {
       console.error("Error in handleDownload:", error);
       toast.error("Failed to generate PDF. Please check console for details.");

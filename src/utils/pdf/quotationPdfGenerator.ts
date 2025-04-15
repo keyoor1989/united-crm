@@ -138,7 +138,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     // Add thank you note
     contentItems.push(createThankYouNote('Thank you for your business!'));
     
-    // Create the document definition
+    // Create the document definition with explicit font settings
     const docDefinition: TDocumentDefinitions = {
       pageSize: 'A4',
       pageMargins: [40, 40, 40, 60],
@@ -151,11 +151,9 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     };
 
     console.log("PDF document definition created, initiating download");
-    // Delay the download operation slightly to ensure fonts are registered
-    setTimeout(() => {
-      // Call the download function
-      downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);
-    }, 100);
+    
+    // Call the download function directly (the delay is now handled in the download function)
+    downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);
   } catch (error) {
     console.error("PDF generation error:", error);
     throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

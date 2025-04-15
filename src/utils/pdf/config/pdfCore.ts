@@ -9,6 +9,16 @@ import { TDocumentDefinitions } from "pdfmake/interfaces";
 (pdfFonts as any).pdfMake = pdfMake;
 pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
 
+// Define fonts for pdfMake - This ensures the proper font is available
+pdfMake.fonts = {
+  Helvetica: {
+    normal: 'Helvetica',
+    bold: 'Helvetica-Bold',
+    italics: 'Helvetica-Oblique',
+    bolditalics: 'Helvetica-BoldOblique'
+  }
+};
+
 // Define types for margin to match pdfmake expectations
 export type PdfMargin = [number, number] | [number, number, number, number];
 
@@ -16,11 +26,33 @@ export type PdfMargin = [number, number] | [number, number, number, number];
 export const downloadPdf = (docDefinition: TDocumentDefinitions, filename: string) => {
   console.log("Downloading PDF with filename:", filename);
   try {
-    // Create buffer and download with a small delay to ensure fonts are loaded
-    setTimeout(() => {
-      pdfMake.createPdf(docDefinition).download(filename);
-      console.log("PDF download initiated successfully");
-    }, 100);
+    // Use a more robust approach to create and download the PDF
+    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+    
+    pdfDocGenerator.getBlob((blob) => {
+      try {
+        // Create a URL for the blob
+        const url = URL.createObjectURL(blob);
+        
+        // Create a link element and trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          console.log("PDF download completed successfully");
+        }, 100);
+      } catch (blobError) {
+        console.error("Error in blob handling:", blobError);
+        // Fallback to direct download if blob approach fails
+        pdfDocGenerator.download(filename);
+      }
+    });
   } catch (error) {
     console.error("Error downloading PDF:", error);
     throw new Error(`PDF download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
