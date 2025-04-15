@@ -85,7 +85,7 @@ export function createNewCustomer(data: any): any {
     phone: data.phone || '',
     email: data.email || '',
     address: data.address || '',
-    area: data.city,
+    area: data.city,  // Store ONLY the city in area field, not the product
     source: 'Telegram',
     lead_status: 'New Lead',
     customer_type: 'Prospect'

@@ -255,7 +255,7 @@ async function handleAddCustomer(chat_id: string, text: string) {
         phone: customerData.phone || '',
         email: customerData.email || '',
         address: customerData.address || '',
-        area: customerData.city,
+        area: customerData.city,  // IMPORTANT: Only store city in area field
         source: 'Telegram',
         lead_status: 'New Lead',
         customer_type: 'Prospect'
