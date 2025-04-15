@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileCheck, FileText, Download } from "lucide-react";
-import { useQuotationGenerator } from "./useQuotationGenerator";
+import { useQuotationGenerator } from "./hooks/useQuotationGenerator";
 import { ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
 import { toast } from "sonner";
 import { safeGeneratePdf } from "@/utils/pdfGenerator";

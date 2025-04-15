@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useQuotationGenerator } from "./quotation/useQuotationGenerator";
+import { useQuotationGenerator } from "./quotation/hooks/useQuotationGenerator";
 import CustomerSearch from "./quotation/CustomerSearch";
 import CustomerInfoForm from "./quotation/CustomerInfoForm";
 import GstSelector from "./quotation/GstSelector";
