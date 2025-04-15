@@ -1,9 +1,11 @@
+
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import { TDocumentDefinitions, Content, Alignment, DynamicContent } from "pdfmake/interfaces";
 
-// Register the default fonts
-pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
+// Register the default fonts - fix the property access
+// Handle different possible structures of pdfFonts
+pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
 
 // Set default font
 const defaultFont = 'Helvetica';
@@ -150,13 +152,24 @@ export const downloadPdf = (docDefinition: TDocumentDefinitions, fileName: strin
     // Make sure the default font is set
     docDefinition.defaultStyle.font = defaultFont;
     
-    // Create the PDF document
-    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
-    
-    // Download the PDF using the correct API
-    pdfDocGenerator.download(fileName);
-    console.log("PDF download initiated successfully");
-
+    // Create the PDF document with error handling
+    try {
+      const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+      
+      // Download the PDF using the correct API with a slight delay to ensure DOM is ready
+      setTimeout(() => {
+        try {
+          pdfDocGenerator.download(fileName);
+          console.log("PDF download initiated successfully");
+        } catch (downloadError) {
+          console.error("Error during PDF download:", downloadError);
+          alert("Download failed. Please try again.");
+        }
+      }, 100);
+    } catch (createError) {
+      console.error("Error creating PDF document:", createError);
+      alert("Could not create PDF document. Please try again.");
+    }
   } catch (error) {
     console.error("Fatal error in downloadPdf:", error);
     alert("There was an error generating the PDF. Please try again.");

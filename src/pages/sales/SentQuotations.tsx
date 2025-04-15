@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -20,6 +19,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchQuotations } from "@/services/quotationService";
 import { Quotation } from "@/types/sales";
+import { safeGeneratePdf } from "@/utils/pdfGenerator";
 
 const SentQuotations = () => {
   const navigate = useNavigate();
@@ -27,7 +27,6 @@ const SentQuotations = () => {
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch quotations on component mount
   useEffect(() => {
     const getQuotations = async () => {
       try {
@@ -45,7 +44,6 @@ const SentQuotations = () => {
     getQuotations();
   }, []);
   
-  // Filter only sent quotations
   const filteredQuotations = quotations
     .filter(q => q.status === "Sent")
     .filter(quotation => 
@@ -53,32 +51,16 @@ const SentQuotations = () => {
       quotation.customerName.toLowerCase().includes(searchTerm.toLowerCase())
     );
   
-  // Handle PDF download
   const handleDownloadPdf = (quotation: Quotation) => {
     try {
-      // Create a deep copy of the quotation
       const quotationCopy = JSON.parse(JSON.stringify(quotation));
       
-      // Ensure items is an array
-      if (typeof quotationCopy.items === 'string') {
-        try {
-          quotationCopy.items = JSON.parse(quotationCopy.items);
-        } catch (e) {
-          console.warn("Could not parse items as JSON, using empty array");
-          quotationCopy.items = [];
-        }
-      }
+      safeGeneratePdf(generateQuotationPdf, quotationCopy, (error) => {
+        console.error("PDF generation error:", error);
+        toast.error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
+      });
       
-      if (!Array.isArray(quotationCopy.items)) {
-        console.warn("Items is not an array after processing, using empty array");
-        quotationCopy.items = [];
-      }
-      
-      // Delay execution slightly to ensure DOM has time to process
-      setTimeout(() => {
-        generateQuotationPdf(quotationCopy);
-        toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
-      }, 100);
+      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");
@@ -120,7 +102,6 @@ const SentQuotations = () => {
         </Button>
       </div>
       
-      {/* Search bar */}
       <div className="mb-6">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -133,7 +114,6 @@ const SentQuotations = () => {
         </div>
       </div>
       
-      {/* Quotations table */}
       <div className="border rounded-md">
         <Table>
           <TableHeader>

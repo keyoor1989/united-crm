@@ -148,10 +148,13 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
     };
 
     console.log("PDF document definition created, initiating download");
-    // Call the download function
-    downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);
+    // Delay the download operation slightly to ensure fonts are registered
+    setTimeout(() => {
+      // Call the download function
+      downloadPdf(docDefinition, `Quotation_${quotation.quotationNumber}.pdf`);
+    }, 100);
   } catch (error) {
     console.error("PDF generation error:", error);
-    alert("There was an error generating the PDF. Please check the console for details.");
+    throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

@@ -6,7 +6,8 @@ import { FileCheck, FileText, Download } from "lucide-react";
 import { useQuotationGenerator } from "./useQuotationGenerator";
 import { ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
 import { toast } from "sonner";
-import { generateQuotationPdf } from "@/utils/pdfGenerator";
+import { safeGeneratePdf } from "@/utils/pdfGenerator";
+import { generateQuotationPdf } from "@/utils/pdf/quotationPdfGenerator";
 
 interface QuotationViewProps {
   quotationText: string;
@@ -19,7 +20,7 @@ const QuotationView: React.FC<QuotationViewProps> = ({
   initialData,
   onConfirm
 }) => {
-  const { quotationData } = useQuotationGenerator({ 
+  const quotationGenerator = useQuotationGenerator({ 
     initialData, 
     onComplete: () => {} 
   });
@@ -35,20 +36,49 @@ const QuotationView: React.FC<QuotationViewProps> = ({
   
   const handleDownload = () => {
     try {
-      if (!quotationData) {
-        toast.error("Cannot generate PDF: No quotation data available");
-        return;
-      }
+      // Generate customer data and items data from the initialData
+      const quotationData = {
+        id: "temp-id",
+        quotationNumber: "TEMP-" + Date.now(),
+        customerId: "",
+        customerName: initialData.customerName || "Customer",
+        items: initialData.models.map(model => ({
+          id: model.productId,
+          productId: model.productId,
+          name: model.model,
+          description: `${model.model} Printer/Copier`,
+          category: "Copier",
+          specs: {
+            color: true,
+            duplex: true
+          },
+          quantity: model.quantity,
+          unitPrice: 150000,
+          gstPercent: 18,
+          gstAmount: 150000 * 0.18 * model.quantity,
+          total: 150000 * 1.18 * model.quantity,
+          isCustomItem: true
+        })),
+        subtotal: initialData.models.reduce((sum, model) => sum + (150000 * model.quantity), 0),
+        totalGst: initialData.models.reduce((sum, model) => sum + (150000 * 0.18 * model.quantity), 0),
+        grandTotal: initialData.models.reduce((sum, model) => sum + (150000 * 1.18 * model.quantity), 0),
+        createdAt: new Date().toISOString(),
+        validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        status: "Draft",
+        notes: "",
+        terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
+      };
       
-      // Create a deep copy to avoid reference issues
-      const quotationCopy = JSON.parse(JSON.stringify(quotationData));
-      
-      // Call the PDF generator
-      generateQuotationPdf(quotationCopy);
-      
-      toast.success("PDF generation started successfully");
+      // Use the safeGeneratePdf utility to handle errors and safely generate PDF
+      setTimeout(() => {
+        safeGeneratePdf(generateQuotationPdf, quotationData, (error) => {
+          console.error("PDF generation error:", error);
+          toast.error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
+        });
+        toast.success("PDF generation started successfully");
+      }, 100);
     } catch (error) {
-      console.error("Error generating PDF:", error);
+      console.error("Error in handleDownload:", error);
       toast.error("Failed to generate PDF. Please check console for details.");
     }
   };

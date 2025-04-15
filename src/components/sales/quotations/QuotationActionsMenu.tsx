@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -27,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { safeGeneratePdf } from "@/utils/pdfGenerator";
 
 interface QuotationActionsMenuProps {
   quotation: Quotation;
@@ -52,26 +52,13 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
       // Create a proper deep copy of the quotation to avoid reference issues
       const quotationCopy = JSON.parse(JSON.stringify(quotation));
       
-      // Ensure items is an array
-      if (typeof quotationCopy.items === 'string') {
-        try {
-          quotationCopy.items = JSON.parse(quotationCopy.items);
-        } catch (e) {
-          console.warn("Could not parse items as JSON, using empty array", e);
-          quotationCopy.items = [];
-        }
-      }
+      // Use the safer PDF generator with proper error handling
+      safeGeneratePdf(generateQuotationPdf, quotationCopy, (error) => {
+        console.error("PDF generation error:", error);
+        toast.error(`Failed to generate PDF: ${error.message || 'Unknown error'}`);
+      });
       
-      if (!Array.isArray(quotationCopy.items)) {
-        console.warn("Items is not an array after processing, using empty array");
-        quotationCopy.items = [];
-      }
-      
-      // Call the PDF generator directly with proper error handling
-      setTimeout(() => {
-        generateQuotationPdf(quotationCopy);
-        toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
-      }, 100);
+      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");

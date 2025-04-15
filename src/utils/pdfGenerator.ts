@@ -45,8 +45,22 @@ export const safeGeneratePdf = (generator: Function, data: any, errorCallback?: 
       data.items = [];
     }
     
-    console.log("Calling PDF generator with validated data");
-    return generator(data);
+    // Add a slight delay to ensure fonts are loaded before generating PDF
+    setTimeout(() => {
+      try {
+        console.log("Calling PDF generator with validated data");
+        generator(data);
+      } catch (generatorError) {
+        console.error("Error in PDF generator function:", generatorError);
+        if (errorCallback) {
+          errorCallback(generatorError as Error);
+        } else {
+          alert("Failed to generate PDF. Please try again.");
+        }
+      }
+    }, 100);
+    
+    return true;
   } catch (error) {
     console.error('PDF generation failed in safeGeneratePdf:', error);
     if (errorCallback) {
@@ -55,6 +69,6 @@ export const safeGeneratePdf = (generator: Function, data: any, errorCallback?: 
       alert("Failed to generate PDF. Please try again.");
     }
     // Return a default value or error indication
-    return null;
+    return false;
   }
 };
