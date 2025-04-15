@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { Quotation, QuotationItem } from "@/types/sales";
@@ -109,8 +108,11 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
         margin: [0, 0, 0, 10]
       },
       
-      // Items Table
-      createItemsTable(items),
+      // Items Table - Use the new enhanced function with options
+      createItemsTable(items, {
+        alternateRowColors: true,
+        showItemNumbers: true
+      }),
       
       // Total Section with Amount in Words
       createTotalsSection(quotation.subtotal, quotation.totalGst, quotation.grandTotal),

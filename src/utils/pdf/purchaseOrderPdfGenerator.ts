@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { PurchaseOrder } from "@/types/sales";
@@ -66,8 +65,11 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
         margin: [0, 0, 0, 10]
       },
       
-      // Items Table
-      createItemsTable(items),
+      // Items Table - Use the new enhanced function with options
+      createItemsTable(items, {
+        alternateRowColors: true,
+        showItemNumbers: true
+      }),
       
       // Total Section
       createTotalsSection(order.subtotal, order.totalGst, order.grandTotal),
