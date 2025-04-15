@@ -15,7 +15,7 @@ import {
   Search, MoreHorizontal, 
   Eye, FileDown, Send, CheckCircle, XCircle, Copy, Loader2 
 } from "lucide-react";
-import { safeGeneratePdf, generateQuotationPdf } from "@/utils/pdfGenerator";
+import { generateQuotationPdf } from "@/utils/pdf/quotationPdfGenerator";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchQuotations } from "@/services/quotationService";
@@ -56,12 +56,29 @@ const SentQuotations = () => {
   // Handle PDF download
   const handleDownloadPdf = (quotation: Quotation) => {
     try {
-      // Use safeGeneratePdf utility for improved error handling
-      safeGeneratePdf(generateQuotationPdf, quotation, (error) => {
-        console.error("PDF generation error:", error);
-        toast.error(`Failed to generate PDF: ${error.message}`);
-      });
-      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
+      // Create a deep copy of the quotation
+      const quotationCopy = JSON.parse(JSON.stringify(quotation));
+      
+      // Ensure items is an array
+      if (typeof quotationCopy.items === 'string') {
+        try {
+          quotationCopy.items = JSON.parse(quotationCopy.items);
+        } catch (e) {
+          console.warn("Could not parse items as JSON, using empty array");
+          quotationCopy.items = [];
+        }
+      }
+      
+      if (!Array.isArray(quotationCopy.items)) {
+        console.warn("Items is not an array after processing, using empty array");
+        quotationCopy.items = [];
+      }
+      
+      // Delay execution slightly to ensure DOM has time to process
+      setTimeout(() => {
+        generateQuotationPdf(quotationCopy);
+        toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
+      }, 100);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");

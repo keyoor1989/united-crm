@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -67,8 +68,10 @@ const QuotationActionsMenu: React.FC<QuotationActionsMenuProps> = ({ quotation }
       }
       
       // Call the PDF generator directly with proper error handling
-      generateQuotationPdf(quotationCopy);
-      toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
+      setTimeout(() => {
+        generateQuotationPdf(quotationCopy);
+        toast.success(`PDF for ${quotation.quotationNumber} generated successfully`);
+      }, 100);
     } catch (error) {
       console.error("Error generating PDF:", error);
       toast.error("Failed to generate PDF. Please try again.");

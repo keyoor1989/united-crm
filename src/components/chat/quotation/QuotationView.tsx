@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { FileCheck, FileText, Download } from "lucide-react";
 import { useQuotationGenerator } from "./useQuotationGenerator";
 import { ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
+import { toast } from "sonner";
+import { generateQuotationPdf } from "@/utils/pdfGenerator";
 
 interface QuotationViewProps {
   quotationText: string;
@@ -17,16 +19,38 @@ const QuotationView: React.FC<QuotationViewProps> = ({
   initialData,
   onConfirm
 }) => {
+  const { quotationData } = useQuotationGenerator({ 
+    initialData, 
+    onComplete: () => {} 
+  });
+  
   const handleConfirmQuotation = () => {
     onConfirm();
   };
   
   const handleEditQuotation = () => {
     // Open quotation editor dialog
+    toast.info("Edit functionality will be available soon");
   };
   
   const handleDownload = () => {
-    // Download functionality
+    try {
+      if (!quotationData) {
+        toast.error("Cannot generate PDF: No quotation data available");
+        return;
+      }
+      
+      // Create a deep copy to avoid reference issues
+      const quotationCopy = JSON.parse(JSON.stringify(quotationData));
+      
+      // Call the PDF generator
+      generateQuotationPdf(quotationCopy);
+      
+      toast.success("PDF generation started successfully");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF. Please check console for details.");
+    }
   };
   
   return (
