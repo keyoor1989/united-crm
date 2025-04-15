@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import { Content, ContentText } from "pdfmake/interfaces";
 import { styles, logoBase64, companyInfo, numberToWords } from "./pdfConfig";
@@ -8,8 +9,10 @@ interface TextWithMargin extends ContentText {
 }
 
 // Type for content objects that have a stack property
-interface ContentWithStack extends Content {
+// Instead of extending Content, we'll define it as its own interface
+interface ContentWithStack {
   stack: (ContentText | TextWithMargin)[];
+  margin?: [number, number, number, number];
 }
 
 // Create document header with logo and company info
@@ -57,7 +60,7 @@ export const createDocumentDetails = (details: { label: string, value: string }[
         { text: ` ${detail.value}`, width: '*' }
       ]
     }))
-  } as ContentWithStack;
+  };
 };
 
 // Create client/vendor information section
@@ -80,7 +83,7 @@ export const createEntityInfoSection = (label: string, name: string, address?: s
     } as TextWithMargin);
   }
   
-  return { stack: infoStack } as ContentWithStack;
+  return { stack: infoStack };
 };
 
 // Create document totals section
