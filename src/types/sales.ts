@@ -79,7 +79,7 @@ export interface PurchaseOrderItem {
   isCustomItem: boolean;
 }
 
-export type PurchaseOrderStatus = "Draft" | "Sent" | "Confirmed" | "Received" | "Cancelled";
+export type PurchaseOrderStatus = "Draft" | "Sent" | "Confirmed" | "Received" | "Cancelled" | "Cash Purchase";
 
 export interface PurchaseOrder {
   id: string;

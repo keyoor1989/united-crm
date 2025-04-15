@@ -71,14 +71,16 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       createItemsTable(items, {
         alternateRowColors: true,
         showItemNumbers: true
-      }),
-      
-      // Total Section
-      createTotalsSection(order.subtotal, order.totalGst, order.grandTotal),
-      
-      // Bank Details - only for billed purchases
-      order.status !== "Cash Purchase" ? createBankDetailsSection() : {},
+      })
     ];
+    
+    // Add totals section
+    contentItems.push(createTotalsSection(order.subtotal, order.totalGst, order.grandTotal));
+
+    // Add bank details section conditionally - only for billed purchases
+    if (order.status !== "Cash Purchase") {
+      contentItems.push(createBankDetailsSection());
+    }
     
     // Add payment method section if it's a cash purchase
     if (order.status === "Cash Purchase") {
@@ -197,8 +199,7 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
       // Items Table (simplified)
       createItemsTable(items, {
         alternateRowColors: true,
-        showItemNumbers: true,
-        simplified: true
+        showItemNumbers: true
       }),
       
       // Total Section (simplified)
@@ -275,7 +276,7 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
         },
         thankYouNote: {
           fontSize: 10,
-          italic: true
+          italics: true
         }
       }
     };
@@ -287,8 +288,13 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
   }
 };
 
+interface ItemsTableOptions {
+  alternateRowColors?: boolean;
+  showItemNumbers?: boolean;
+}
+
 // Add new function to modify the ItemsTable to support simplified format
-export const createSimplifiedItemsTable = (items: any[], options = {}) => {
+export const createSimplifiedItemsTable = (items: any[], options: ItemsTableOptions = {}) => {
   const { alternateRowColors = false, showItemNumbers = false } = options;
   
   // Create header row

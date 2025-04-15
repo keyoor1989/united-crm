@@ -12,7 +12,6 @@ import {
   BarChart2,
   Clipboard,
   ShoppingCart,
-  Cash,
   FileText,
   CreditCard
 } from "lucide-react";
@@ -64,7 +63,7 @@ export const inventorySection: SidebarSectionConfig = {
     },
     {
       to: "/inventory/cash-purchase",
-      icon: Cash,
+      icon: ShoppingCart,
       label: "Cash Purchases"
     },
     {

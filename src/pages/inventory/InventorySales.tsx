@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -35,14 +35,14 @@ import {
   Search,
   ShoppingBag,
   Download,
-  Cash,
   CreditCard,
-  BankTransfer,
   Calendar,
   IndianRupee,
   Receipt,
   FileText,
-  Printer
+  Printer,
+  Wallet,
+  Bank
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -139,9 +139,9 @@ const productCategories = [
 
 // Mock payment types
 const paymentMethods = [
-  { value: "cash", label: "Cash", icon: Cash },
+  { value: "cash", label: "Cash", icon: Wallet },
   { value: "credit_card", label: "Credit Card", icon: CreditCard },
-  { value: "bank_transfer", label: "Bank Transfer", icon: BankTransfer },
+  { value: "bank_transfer", label: "Bank Transfer", icon: Bank },
   { value: "upi", label: "UPI", icon: IndianRupee },
   { value: "credit", label: "Credit (Due Payment)", icon: Calendar },
 ];
@@ -256,6 +256,18 @@ const InventorySales = () => {
     setIsAddSaleOpen(false);
   };
 
+  // Calculate days overdue
+  const calculateDaysOverdue = (dueDateString) => {
+    if (!dueDateString) return 0;
+    
+    const dueDate = new Date(dueDateString);
+    const today = new Date();
+    const timeDiff = today.getTime() - dueDate.getTime();
+    const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+    
+    return Math.max(0, daysDiff);
+  };
+
   return (
     <div className="container p-6">
       <div className="flex justify-between items-center mb-6">
@@ -324,7 +336,7 @@ const InventorySales = () => {
                 </p>
               </div>
               <div className="p-2 bg-blue-100 rounded-full">
-                <Cash className="h-6 w-6 text-blue-600" />
+                <Wallet className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -569,9 +581,7 @@ const InventorySales = () => {
                   {filteredSales
                     .filter(sale => sale.paymentStatus === "Due")
                     .map(sale => {
-                      const dueDate = new Date(sale.dueDate || "2025-04-20");
-                      const today = new Date();
-                      const daysOverdue = Math.max(0, Math.floor((today - dueDate) / (1000 * 60 * 60 * 24)));
+                      const daysOverdue = calculateDaysOverdue(sale.dueDate);
                       
                       return (
                         <TableRow key={sale.id}>
@@ -579,7 +589,7 @@ const InventorySales = () => {
                           <TableCell>{sale.customer}</TableCell>
                           <TableCell>₹{sale.total.toLocaleString()}</TableCell>
                           <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{dueDate.toLocaleDateString()}</TableCell>
+                          <TableCell>{sale.dueDate ? new Date(sale.dueDate).toLocaleDateString() : "N/A"}</TableCell>
                           <TableCell>
                             {daysOverdue > 0 ? (
                               <Badge variant="destructive">{daysOverdue} days</Badge>
@@ -673,128 +683,76 @@ const InventorySales = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Sale Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  defaultValue={new Date().toISOString().split("T")[0]}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" placeholder="Customer phone" />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="category">Product Category</Label>
+              <Label htmlFor="product">Product</Label>
               <Select>
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Select category" />
+                <SelectTrigger id="product">
+                  <SelectValue placeholder="Select a product" />
                 </SelectTrigger>
                 <SelectContent>
-                  {productCategories.map(category => (
-                    <SelectItem key={category} value={category.toLowerCase()}>
-                      {category}
+                  <SelectItem value="toner1">Kyocera TK-1175 Toner</SelectItem>
+                  <SelectItem value="toner2">HP CF217A Toner</SelectItem>
+                  <SelectItem value="drum1">Canon NPG-59 Drum</SelectItem>
+                  <SelectItem value="drum2">Xerox 3020 Drum Unit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input id="quantity" type="number" min="1" placeholder="1" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unit-price">Unit Price (₹)</Label>
+                <Input id="unit-price" type="number" min="0" placeholder="0.00" />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="payment-method">Payment Method</Label>
+              <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
+                <SelectTrigger id="payment-method">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods.map(method => (
+                    <SelectItem key={method.value} value={method.value}>
+                      <div className="flex items-center">
+                        {React.createElement(method.icon, { className: "h-4 w-4 mr-2" })}
+                        {method.label}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="item">Product/Item</Label>
-              <Select>
-                <SelectTrigger id="item">
-                  <SelectValue placeholder="Select item" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="item1">Kyocera TK-1175 Toner</SelectItem>
-                  <SelectItem value="item2">Canon NPG-59 Drum</SelectItem>
-                  <SelectItem value="item3">Ricoh SP 210 Toner</SelectItem>
-                  <SelectItem value="item4">HP CF217A Toner</SelectItem>
-                  <SelectItem value="item5">Badge Making Machine</SelectItem>
-                  <SelectItem value="item6">Lamination Machine</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity</Label>
-                <Input id="quantity" type="number" min="1" defaultValue="1" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="unitPrice">Unit Price (₹)</Label>
-                <Input id="unitPrice" type="number" min="0" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Payment Method</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {paymentMethods.map(method => (
-                  <Button
-                    key={method.value}
-                    type="button"
-                    variant={selectedPaymentMethod === method.value ? "default" : "outline"}
-                    className="justify-start"
-                    onClick={() => setSelectedPaymentMethod(method.value)}
-                  >
-                    <method.icon className="mr-2 h-4 w-4" />
-                    {method.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
             
             {selectedPaymentMethod === "credit" && (
               <div className="space-y-2">
-                <Label htmlFor="dueDate">Payment Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                />
+                <Label htmlFor="due-date">Due Date</Label>
+                <Input id="due-date" type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
               </div>
             )}
-
+            
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
-                id="generateBill"
+                id="generate-bill"
                 checked={generateBill}
-                onChange={(e) => setGenerateBill(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                onChange={() => setGenerateBill(!generateBill)}
+                className="rounded border-gray-300 focus:ring-primary"
               />
-              <Label htmlFor="generateBill" className="text-sm font-medium leading-none">
-                Generate Bill/Invoice
-              </Label>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes</Label>
-              <Input id="notes" placeholder="Notes about this sale" />
+              <Label htmlFor="generate-bill">Generate Bill/Invoice</Label>
             </div>
           </div>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsAddSaleOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsAddSaleOpen(false)}>
               Cancel
             </Button>
-            <Button
-              type="button"
-              onClick={handleCreateSale}
-            >
-              Create Sale
+            <Button onClick={handleCreateSale}>
+              Complete Sale
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -806,82 +764,43 @@ const InventorySales = () => {
           <DialogHeader>
             <DialogTitle>Print Invoice</DialogTitle>
             <DialogDescription>
-              Print or download the invoice for this sale
+              Select print options for this invoice
             </DialogDescription>
           </DialogHeader>
           
-          {selectedSale && (
-            <div className="border rounded-md p-4 my-4">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-bold">United Copiers</h3>
-                <p className="text-sm">118, Jaora Compound, Indore</p>
-                <p className="text-sm">GSTIN: 23AAZPY6466B1Z2</p>
-              </div>
-              
-              <div className="flex justify-between mb-4">
-                <div>
-                  <p className="text-sm font-semibold">Invoice: {selectedSale.invoiceNumber || selectedSale.id}</p>
-                  <p className="text-sm">Date: {new Date(selectedSale.date).toLocaleDateString()}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">Customer: {selectedSale.customer}</p>
-                  <p className="text-sm">Type: {selectedSale.customerType}</p>
-                </div>
-              </div>
-              
-              <table className="w-full mb-4">
-                <thead className="border-b">
-                  <tr>
-                    <th className="text-left py-2">Item</th>
-                    <th className="text-right py-2">Qty</th>
-                    <th className="text-right py-2">Rate</th>
-                    <th className="text-right py-2">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="py-2">{selectedSale.itemName}</td>
-                    <td className="text-right py-2">{selectedSale.quantity}</td>
-                    <td className="text-right py-2">₹{selectedSale.unitPrice.toLocaleString()}</td>
-                    <td className="text-right py-2">₹{selectedSale.total.toLocaleString()}</td>
-                  </tr>
-                </tbody>
-                <tfoot className="border-t">
-                  <tr>
-                    <td colSpan={3} className="text-right py-2 font-semibold">Total:</td>
-                    <td className="text-right py-2 font-semibold">₹{selectedSale.total.toLocaleString()}</td>
-                  </tr>
-                </tfoot>
-              </table>
-              
-              <div className="text-sm mb-4">
-                <p className="font-semibold">Payment Method: {selectedSale.paymentMethod}</p>
-                <p className="font-semibold">Payment Status: {selectedSale.paymentStatus}</p>
-              </div>
-              
-              <div className="text-center text-sm mt-8">
-                <p>Thank you for your business!</p>
-                <p>For any queries, please contact: 81033-49299, 93003-00345</p>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-center p-6 border rounded-md">
+              <div className="space-y-2 text-center">
+                <Printer className="h-16 w-16 mx-auto text-primary/70" />
+                <p>Invoice #{selectedSale?.invoiceNumber || selectedSale?.id}</p>
+                <p className="text-sm text-muted-foreground">Ready to print</p>
               </div>
             </div>
-          )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="print-copies">Number of Copies</Label>
+              <Input id="print-copies" type="number" min="1" defaultValue="1" />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="include-company-header"
+                defaultChecked={true}
+                className="rounded border-gray-300 focus:ring-primary"
+              />
+              <Label htmlFor="include-company-header">Include Company Header</Label>
+            </div>
+          </div>
           
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsPrintDialogOpen(false)}
-            >
-              Close
+            <Button variant="outline" onClick={() => setIsPrintDialogOpen(false)}>
+              Cancel
             </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                toast.success("Invoice sent to printer");
-                setIsPrintDialogOpen(false);
-              }}
-            >
-              <Printer className="mr-2 h-4 w-4" />
+            <Button onClick={() => {
+              toast.success("Invoice sent to printer!");
+              setIsPrintDialogOpen(false);
+            }}>
               Print Invoice
             </Button>
           </DialogFooter>
