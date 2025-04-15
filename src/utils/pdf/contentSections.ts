@@ -1,18 +1,18 @@
 
 import { format } from "date-fns";
 import { Content, ContentText } from "pdfmake/interfaces";
-import { styles, logoBase64, companyInfo, numberToWords } from "./pdfConfig";
+import { styles, logoBase64, companyInfo, numberToWords, PdfMargin, CompanyInfo } from "./pdfConfig";
 
 // Interface for text with margin
 interface TextWithMargin extends ContentText {
-  margin?: [number, number, number, number];
+  margin?: PdfMargin;
 }
 
 // Type for content objects that have a stack property
 // Instead of extending Content, we'll define it as its own interface
 interface ContentWithStack {
   stack: (ContentText | TextWithMargin | Content)[];
-  margin?: [number, number, number, number];
+  margin?: PdfMargin;
 }
 
 // Create document header with logo and company info
@@ -119,7 +119,7 @@ export const createTotalsSection = (subtotal: number, totalGst: number, grandTot
             layout: 'noBorders'
           }
         ],
-        margin: [0, 10, 0, 5] as [number, number, number, number]
+        margin: [0, 10, 0, 5] as PdfMargin
       },
       {
         text: `Amount in Words: ${amountInWords}`,
@@ -140,7 +140,7 @@ export const createBankDetailsSection = (): Content => {
       { text: `IFSC Code: ${companyInfo.ifsc}`, style: 'bankDetails' },
       { text: `Branch: ${companyInfo.branch}`, style: 'bankDetails' },
     ],
-    margin: [0, 10, 0, 0] as [number, number, number, number]
+    margin: [0, 10, 0, 0] as PdfMargin
   };
 };
 
@@ -199,6 +199,6 @@ export const createSignatureSection = (): Content => {
         ]
       }
     ],
-    margin: [0, 20, 0, 0] as [number, number, number, number]
+    margin: [0, 20, 0, 0] as PdfMargin
   };
 };

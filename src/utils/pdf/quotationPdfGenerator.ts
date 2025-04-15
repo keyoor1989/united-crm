@@ -143,7 +143,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       defaultStyle: {
         font: 'Helvetica'
       },
-      footer: getPageFooter(),
+      footer: getPageFooter() as any, // Use type assertion to fix type error
       styles: styles
     };
 
