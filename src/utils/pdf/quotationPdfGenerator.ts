@@ -2,7 +2,6 @@ import { format } from "date-fns";
 import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { Quotation, QuotationItem } from "@/types/sales";
 import { styles, getPageFooter, downloadPdf } from "./config";
-import { logoBase64 } from "./config/companyInfo";
 import { 
   createDocumentHeader, 
   createDocumentDetails,
@@ -27,10 +26,6 @@ const standardQuotationTerms = [
 // Generate PDF for quotation
 export const generateQuotationPdf = (quotation: Quotation): void => {
   try {
-    // Log logo verification details
-    console.log("Logo Base64 Length:", logoBase64.length);
-    console.log("Logo Base64 Starts With:", logoBase64.substring(0, 50) + "...");
-    
     // Validate required data
     if (!quotation) {
       throw new Error('Quotation data is missing');
@@ -90,7 +85,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
 
     // Create document content
     const contentItems: Content[] = [
-      // Header with Logo and Company Name
+      // Header with Company Name (no logo)
       createDocumentHeader('QUOTATION'),
       
       // Client and quotation details

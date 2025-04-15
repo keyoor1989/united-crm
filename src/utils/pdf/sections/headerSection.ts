@@ -1,13 +1,10 @@
 
 import { Content, Alignment } from "pdfmake/interfaces";
-import { logoBase64, companyInfo } from "../config";
+import { companyInfo } from "../config";
 import { PdfMargin } from "../config/pdfCore";
 
-// Create document header with logo and company info
+// Create document header with company info only (no logo)
 export const createDocumentHeader = (title: string): Content => {
-  // Verify logo exists and has valid content before using it
-  const hasValidLogo = logoBase64 && logoBase64.startsWith('data:image/');
-  
   // Create the base header content
   const headerContent: Content = {
     columns: [
@@ -22,17 +19,10 @@ export const createDocumentHeader = (title: string): Content => {
           { text: `GSTIN: ${companyInfo.gstin}`, style: 'gstin', margin: [0, 2, 0, 0] as [number, number, number, number] }
         ]
       },
-      // Right side with title and conditionally the logo
+      // Right side with title only
       {
         width: '35%',
         stack: [
-          // Only include the image if logoBase64 is valid
-          ...(hasValidLogo ? [{
-            image: logoBase64,
-            width: 150,
-            alignment: 'right' as Alignment,
-            margin: [0, 0, 0, 5] as [number, number, number, number]
-          }] : []),
           {
             text: title,
             style: 'header'

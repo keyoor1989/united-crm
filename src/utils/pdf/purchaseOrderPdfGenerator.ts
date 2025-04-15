@@ -1,8 +1,8 @@
+
 import { format } from "date-fns";
 import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { PurchaseOrder } from "@/types/sales";
 import { styles, getPageFooter, downloadPdf } from "./config";
-import { logoBase64 } from "./config/companyInfo";
 import { 
   createDocumentHeader, 
   createDocumentDetails,
@@ -27,10 +27,6 @@ const standardPurchaseOrderTerms = [
 // Generate PDF for purchase order
 export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
   try {
-    // Log logo verification details
-    console.log("Logo Base64 Length:", logoBase64.length);
-    console.log("Logo Base64 Starts With:", logoBase64.substring(0, 50) + "...");
-    
     // Validate required data
     if (!order) {
       throw new Error('Purchase order data is missing');
@@ -49,7 +45,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
 
     // Create an array for content with non-conditional items first
     const contentItems: Content[] = [
-      // Header with Logo and Title
+      // Header with Title (no logo)
       createDocumentHeader('PURCHASE ORDER'),
       
       // Vendor and order information
