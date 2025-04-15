@@ -13,7 +13,9 @@ import {
   Clipboard,
   ShoppingCart,
   FileText,
-  CreditCard
+  CreditCard,
+  Banknote,  // Replaced Cash with Banknote
+  Building2  // Replaced Bank with Building2
 } from "lucide-react";
 import { SidebarSectionConfig } from "../types/navTypes";
 
@@ -63,7 +65,7 @@ export const inventorySection: SidebarSectionConfig = {
     },
     {
       to: "/inventory/cash-purchase",
-      icon: ShoppingCart,
+      icon: Banknote,  // Updated icon
       label: "Cash Purchases"
     },
     {
