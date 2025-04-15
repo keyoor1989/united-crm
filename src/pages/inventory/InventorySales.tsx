@@ -1,51 +1,20 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Filter,
-  Plus,
-  Search,
-  ShoppingBag,
-  Download,
-  CreditCard,
-  Calendar,
-  IndianRupee,
-  Receipt,
-  FileText,
-  Printer,
-  Wallet,
-  Building2
-} from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
+// Import new components
+import { SalesHeader } from "@/components/inventory/sales/SalesHeader";
+import { SalesFilters } from "@/components/inventory/sales/SalesFilters";
+import { SalesTable, SalesItem } from "@/components/inventory/sales/SalesTable";
+import { NewSaleDialog } from "@/components/inventory/sales/NewSaleDialog";
+import { SaleDetailsDialog } from "@/components/inventory/sales/SaleDetailsDialog";
+import { RecordPaymentDialog } from "@/components/inventory/sales/RecordPaymentDialog";
+import { useSalesManagement } from "@/components/inventory/sales/hooks/useSalesManagement";
+
+// Import mock data
 const salesData = [
   {
     id: "S001",
@@ -148,8 +117,142 @@ const customerTypes = [
   { value: "government", label: "Government" },
 ];
 
+import { 
+  CreditCard, 
+  Calendar, 
+  IndianRupee, 
+  Wallet, 
+  Building2 
+} from "lucide-react";
+
 const InventorySales = () => {
-  // ... rest of the existing code remains the same
+  // Use the custom hook to manage sales state and operations
+  const {
+    filteredSalesData,
+    searchQuery,
+    setSearchQuery,
+    paymentFilter,
+    setPaymentFilter,
+    statusFilter,
+    setStatusFilter,
+    customerTypeFilter,
+    setCustomerTypeFilter,
+    resetFilters,
+    addSale,
+    generateBill,
+    recordPayment,
+    exportSalesData,
+  } = useSalesManagement(salesData);
+
+  // State for dialog visibility
+  const [isNewSaleDialogOpen, setIsNewSaleDialogOpen] = useState(false);
+  const [isSaleDetailsDialogOpen, setIsSaleDetailsDialogOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [selectedSale, setSelectedSale] = useState<SalesItem | null>(null);
+
+  // Handle view details
+  const handleViewDetails = (sale: SalesItem) => {
+    setSelectedSale(sale);
+    setIsSaleDetailsDialogOpen(true);
+  };
+
+  // Handle generating bill
+  const handleGenerateBill = (sale: SalesItem) => {
+    generateBill(sale);
+  };
+
+  // Handle printing invoice
+  const handlePrintInvoice = (sale: SalesItem) => {
+    toast.success(`Printing invoice #${sale.invoiceNumber} for ${sale.customer}`);
+  };
+
+  // Handle opening payment dialog
+  const handleOpenPaymentDialog = (sale: SalesItem) => {
+    setSelectedSale(sale);
+    setIsPaymentDialogOpen(true);
+  };
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Header with title and action buttons */}
+      <SalesHeader 
+        onNewSale={() => setIsNewSaleDialogOpen(true)} 
+        onExportData={exportSalesData} 
+      />
+
+      {/* Main content */}
+      <Tabs defaultValue="sales" className="w-full">
+        <TabsList>
+          <TabsTrigger value="sales" className="gap-2">
+            <ShoppingBag size={16} />
+            Sales
+          </TabsTrigger>
+          {/* Additional tabs can be added here */}
+        </TabsList>
+
+        <TabsContent value="sales" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales Management</CardTitle>
+              <CardDescription>
+                View all sales, filter by status, and manage invoices.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Filters */}
+              <SalesFilters 
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                paymentFilter={paymentFilter}
+                onPaymentFilterChange={setPaymentFilter}
+                statusFilter={statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                customerTypeFilter={customerTypeFilter}
+                onCustomerTypeFilterChange={setCustomerTypeFilter}
+                onResetFilters={resetFilters}
+              />
+
+              {/* Sales table */}
+              <SalesTable 
+                salesData={filteredSalesData}
+                onGenerateBill={handleGenerateBill}
+                onPrintInvoice={handlePrintInvoice}
+                onViewDetails={handleViewDetails}
+                onRecordPayment={handleOpenPaymentDialog}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialogs */}
+      <NewSaleDialog 
+        open={isNewSaleDialogOpen}
+        onClose={() => setIsNewSaleDialogOpen(false)}
+        productCategories={productCategories}
+        customerTypes={customerTypes}
+        paymentMethods={paymentMethods}
+        onSaveSale={addSale}
+      />
+      
+      <SaleDetailsDialog 
+        open={isSaleDetailsDialogOpen}
+        onClose={() => setIsSaleDetailsDialogOpen(false)}
+        sale={selectedSale}
+        onGenerateBill={handleGenerateBill}
+        onPrintInvoice={handlePrintInvoice}
+        onRecordPayment={handleOpenPaymentDialog}
+      />
+      
+      <RecordPaymentDialog 
+        open={isPaymentDialogOpen}
+        onClose={() => setIsPaymentDialogOpen(false)}
+        sale={selectedSale}
+        paymentMethods={paymentMethods}
+        onSavePayment={recordPayment}
+      />
+    </div>
+  );
 };
 
 export default InventorySales;
