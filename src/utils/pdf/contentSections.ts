@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import { Content, ContentText } from "pdfmake/interfaces";
 import { styles, logoBase64, companyInfo, numberToWords } from "./pdfConfig";
@@ -6,6 +5,11 @@ import { styles, logoBase64, companyInfo, numberToWords } from "./pdfConfig";
 // Interface for text with margin
 interface TextWithMargin extends ContentText {
   margin?: [number, number, number, number];
+}
+
+// Type for content objects that have a stack property
+interface ContentWithStack extends Content {
+  stack: (ContentText | TextWithMargin)[];
 }
 
 // Create document header with logo and company info
@@ -45,7 +49,7 @@ export const createDocumentHeader = (title: string): Content => {
 };
 
 // Create document details section (date, number, etc.)
-export const createDocumentDetails = (details: { label: string, value: string }[]): Content => {
+export const createDocumentDetails = (details: { label: string, value: string }[]): ContentWithStack => {
   return {
     stack: details.map(detail => ({ 
       columns: [
@@ -53,11 +57,11 @@ export const createDocumentDetails = (details: { label: string, value: string }[
         { text: ` ${detail.value}`, width: '*' }
       ]
     }))
-  };
+  } as ContentWithStack;
 };
 
 // Create client/vendor information section
-export const createEntityInfoSection = (label: string, name: string, address?: string): Content => {
+export const createEntityInfoSection = (label: string, name: string, address?: string): ContentWithStack => {
   const infoStack: (ContentText | TextWithMargin)[] = [
     { text: `${label}:`, style: 'sectionTitle', margin: [0, 0, 0, 2] },
     { text: name, margin: [0, 0, 0, 2] }
@@ -76,7 +80,7 @@ export const createEntityInfoSection = (label: string, name: string, address?: s
     } as TextWithMargin);
   }
   
-  return { stack: infoStack };
+  return { stack: infoStack } as ContentWithStack;
 };
 
 // Create document totals section
