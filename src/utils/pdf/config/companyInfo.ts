@@ -1,4 +1,3 @@
-
 // Define proper company info type
 export interface CompanyInfo {
   name: string;
@@ -14,10 +13,10 @@ export interface CompanyInfo {
   branch: string;
 }
 
-// Set logo to an empty string - we'll have a text fallback
-export const logoBase64 = "";
+// Set logo to the base64 image you provided
+export const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhUg...";
 
-// Company information
+// Company information (existing details remain the same)
 export const companyInfo: CompanyInfo = {
   name: "United Copiers",
   address: "Your Company Address",
