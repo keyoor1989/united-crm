@@ -41,15 +41,19 @@ export function parseCustomerCommand(text: string) {
     result.address = addressMatch[1].trim();
   }
   
-  // Improved city extraction - handles multi-word city names
-  // This captures everything between "City" and either "Email", "Mobile", "Phone", "Interested" or end of line
+  // For city extraction, we need to make sure we only capture the city name
+  // and not any product information that might follow
   const cityRegex = /City\s+(.*?)(?=\s+Email|\s+Mobile|\s+Phone|\s+Interested|$)/is;
   const cityMatch = text.match(cityRegex);
   if (cityMatch && cityMatch[1]) {
-    result.city = cityMatch[1].trim();
+    // Only take the city name without any additional text after it
+    // First split by newline in case "Interested In" is on the next line
+    const cityParts = cityMatch[1].split(/[\n\r]/);
+    // Then take just the first part and trim it
+    result.city = cityParts[0].trim();
   }
   
-  // Extract product interest with more variations
+  // Extract product interest as a separate field
   const productMatch = text.match(/Interested\s+In\s+([^,\n]+)/i) || 
                       text.match(/Intrested\s+In\s+([^,\n]+)/i) ||  // Common misspelling
                       text.match(/Looking\s+For\s+([^,\n]+)/i) || 

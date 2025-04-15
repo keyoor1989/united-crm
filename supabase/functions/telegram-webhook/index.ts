@@ -18,7 +18,6 @@ const telegramBotToken = Deno.env.get('telegram_key') || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -26,7 +25,6 @@ serve(async (req) => {
   try {
     const update = await req.json();
     
-    // Extract the message from the update
     const message = update.message || update.edited_message;
     if (!message) {
       return new Response('No message in update', { status: 200 });
@@ -35,7 +33,6 @@ serve(async (req) => {
     const chat_id = message.chat.id.toString();
     const text = message.text || '';
     
-    // Log the incoming message
     await supabase.from('telegram_message_logs').insert({
       chat_id,
       message_text: text,
@@ -44,7 +41,6 @@ serve(async (req) => {
       processed_status: 'pending'
     });
 
-    // Check if this chat is authorized
     const { data: chatData, error: chatError } = await supabase
       .from('telegram_authorized_chats')
       .select('*')
@@ -53,7 +49,6 @@ serve(async (req) => {
       .single();
 
     if (chatError || !chatData) {
-      // This chat is not authorized
       await supabase.from('telegram_message_logs')
         .update({ processed_status: 'unauthorized' })
         .eq('chat_id', chat_id)
@@ -64,11 +59,9 @@ serve(async (req) => {
       return new Response('Unauthorized chat', { status: 200 });
     }
 
-    // First check for explicit commands (starting with /)
     if (text.startsWith('/')) {
       await handleCommands(chat_id, text);
     } 
-    // Then check for feature-specific command patterns
     else if (text.toLowerCase().startsWith('add customer') || 
              text.toLowerCase().startsWith('new customer')) {
       await handleAddCustomer(chat_id, text);
@@ -97,7 +90,6 @@ serve(async (req) => {
       await handleDailyReport(chat_id);
     }
     else {
-      // Default response for unrecognized messages
       await sendTelegramMessage(chat_id, 
         "I didn't understand that command. Here's what I can help you with:\n\n" +
         "• Add Customer [details]\n" +
@@ -117,7 +109,6 @@ serve(async (req) => {
   }
 });
 
-// Send a message to a Telegram chat
 async function sendTelegramMessage(chat_id: string, text: string, parse_mode: string = 'HTML') {
   try {
     const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
@@ -134,7 +125,6 @@ async function sendTelegramMessage(chat_id: string, text: string, parse_mode: st
 
     const responseData = await response.json();
     
-    // Log the outgoing message
     await supabase.from('telegram_message_logs').insert({
       chat_id,
       message_text: text,
@@ -150,7 +140,6 @@ async function sendTelegramMessage(chat_id: string, text: string, parse_mode: st
   }
 }
 
-// Handle standard commands (like /start, /help)
 async function handleCommands(chat_id: string, text: string) {
   const command = text.split(' ')[0].substring(1).toLowerCase();
   
@@ -203,13 +192,10 @@ Simply type: Daily Report
   }
 }
 
-// Handle adding a new customer
 async function handleAddCustomer(chat_id: string, text: string) {
   try {
-    // Parse the customer information from the message
     const customerData = parseCustomerCommand(text);
     
-    // More comprehensive validation message
     if (!customerData.name || !customerData.city || !customerData.phone) {
       await sendTelegramMessage(chat_id, 
         "❌ Missing required information. Please include:\n" +
@@ -226,7 +212,6 @@ async function handleAddCustomer(chat_id: string, text: string) {
       return;
     }
     
-    // Check if customer with this phone already exists
     let existingCustomer = null;
     if (customerData.phone) {
       const { data } = await supabase
@@ -247,7 +232,6 @@ async function handleAddCustomer(chat_id: string, text: string) {
       return;
     }
     
-    // Add the new customer to the database
     const { data, error } = await supabase
       .from('customers')
       .insert({
@@ -255,7 +239,7 @@ async function handleAddCustomer(chat_id: string, text: string) {
         phone: customerData.phone || '',
         email: customerData.email || '',
         address: customerData.address || '',
-        area: customerData.city,  // IMPORTANT: Only store city in area field
+        area: customerData.city,
         source: 'Telegram',
         lead_status: 'New Lead',
         customer_type: 'Prospect'
@@ -269,7 +253,6 @@ async function handleAddCustomer(chat_id: string, text: string) {
       return;
     }
     
-    // Add machine information if provided
     if (customerData.product && data) {
       await supabase
         .from('customer_machines')
@@ -281,7 +264,6 @@ async function handleAddCustomer(chat_id: string, text: string) {
         });
     }
     
-    // Enhanced success message with full address info
     await sendTelegramMessage(chat_id, 
       `✅ Customer <b>${customerData.name}</b> added successfully to CRM!\n\n` +
       `ID: ${data.id}\n` +
@@ -298,7 +280,6 @@ async function handleAddCustomer(chat_id: string, text: string) {
   }
 }
 
-// Helper function to determine product type
 function determineProductType(productName: string): string {
   const lowerProduct = productName.toLowerCase();
   if (lowerProduct.includes('kyocera') || lowerProduct.includes('ricoh') || 
@@ -315,10 +296,8 @@ function determineProductType(productName: string): string {
   }
 }
 
-// Handle customer lookup by phone number
 async function handleCustomerLookup(chat_id: string, text: string) {
   try {
-    // Extract phone number from text
     const phoneNumber = parsePhoneNumberCommand(text);
     
     if (!phoneNumber) {
@@ -329,7 +308,6 @@ async function handleCustomerLookup(chat_id: string, text: string) {
       return;
     }
     
-    // Search for customer with this phone number
     const { data: customer, error } = await supabase
       .from('customers')
       .select('*, customer_machines(*)')
@@ -347,7 +325,6 @@ async function handleCustomerLookup(chat_id: string, text: string) {
       return;
     }
     
-    // Get machine details
     let machineInfo = "No machines registered";
     if (customer.customer_machines && customer.customer_machines.length > 0) {
       machineInfo = customer.customer_machines.map((machine: any) => 
@@ -355,7 +332,6 @@ async function handleCustomerLookup(chat_id: string, text: string) {
       ).join(", ");
     }
     
-    // Format and send customer information
     await sendTelegramMessage(chat_id, 
       `📇 <b>Customer Found:</b>\n\n` +
       `<b>Name:</b> ${customer.name}\n` +
@@ -372,10 +348,8 @@ async function handleCustomerLookup(chat_id: string, text: string) {
   }
 }
 
-// Handle creating a quotation
 async function handleCreateQuotation(chat_id: string, text: string) {
   try {
-    // Extract quotation information
     const quotationData = parseQuotationCommand(text);
     
     if (!quotationData.mobile || !quotationData.model) {
@@ -386,7 +360,6 @@ async function handleCreateQuotation(chat_id: string, text: string) {
       return;
     }
     
-    // Find customer with this mobile number
     const { data: customer, error: customerError } = await supabase
       .from('customers')
       .select('*')
@@ -401,17 +374,14 @@ async function handleCreateQuotation(chat_id: string, text: string) {
       return;
     }
     
-    // Calculate quotation values
     const price = parseFloat(quotationData.price || "0");
     const gstRate = parseFloat(quotationData.gst || "18");
     const gstAmount = (price * gstRate) / 100;
     const totalPrice = price + gstAmount;
     
-    // Format currency values
     const formattedPrice = formatCurrency(price);
     const formattedTotal = formatCurrency(totalPrice);
     
-    // Create quotation item
     const quotationItem = {
       id: crypto.randomUUID(),
       name: quotationData.model,
@@ -423,7 +393,6 @@ async function handleCreateQuotation(chat_id: string, text: string) {
       total: totalPrice
     };
     
-    // Create a quotation record in database
     const quotationNumber = `Q${Date.now().toString().substring(7)}`;
     const { data: quotation, error: quotationError } = await supabase
       .from('quotations')
@@ -448,7 +417,6 @@ async function handleCreateQuotation(chat_id: string, text: string) {
       return;
     }
     
-    // Send quotation summary
     await sendTelegramMessage(chat_id, 
       `🧾 <b>Quotation Summary</b> (#${quotationNumber})\n\n` +
       `<b>${quotationData.model}</b> for ${customer.name}\n\n` +
@@ -464,15 +432,12 @@ async function handleCreateQuotation(chat_id: string, text: string) {
   }
 }
 
-// Helper function to format currency
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-IN');
 }
 
-// Handle assigning a task to an engineer
 async function handleAssignTask(chat_id: string, text: string) {
   try {
-    // Parse task information
     const taskData = parseTaskInfo(text);
     
     if (!taskData.engineer || !taskData.customer) {
@@ -483,7 +448,6 @@ async function handleAssignTask(chat_id: string, text: string) {
       return;
     }
     
-    // Find the engineer
     const { data: engineer, error: engineerError } = await supabase
       .from('engineers')
       .select('*')
@@ -498,7 +462,6 @@ async function handleAssignTask(chat_id: string, text: string) {
       return;
     }
     
-    // Find the customer
     const { data: customer, error: customerError } = await supabase
       .from('customers')
       .select('*')
@@ -513,7 +476,6 @@ async function handleAssignTask(chat_id: string, text: string) {
       return;
     }
     
-    // Calculate deadline date
     let deadlineDate = new Date();
     if (taskData.deadline) {
       if (taskData.deadline.toLowerCase() === 'tomorrow') {
@@ -521,19 +483,16 @@ async function handleAssignTask(chat_id: string, text: string) {
       } else if (taskData.deadline.toLowerCase().includes('next')) {
         deadlineDate.setDate(deadlineDate.getDate() + 7);
       } else {
-        // Try to parse the date - this is a simplified version
         try {
           const parsedDate = new Date(taskData.deadline);
           if (!isNaN(parsedDate.getTime())) {
             deadlineDate = parsedDate;
           }
         } catch (e) {
-          // Keep default date if parsing fails
         }
       }
     }
     
-    // Create service call record
     const { data: serviceCall, error: serviceError } = await supabase
       .from('service_calls')
       .insert({
@@ -559,13 +518,11 @@ async function handleAssignTask(chat_id: string, text: string) {
       return;
     }
     
-    // Update the engineer's current job
     await supabase
       .from('engineers')
       .update({ current_job: `Service for ${customer.name}` })
       .eq('id', engineer.id);
     
-    // Send success message
     await sendTelegramMessage(chat_id, 
       `✅ Task assigned to <b>${engineer.name}</b> for customer <b>${customer.name}</b>\n\n` +
       `<b>Issue:</b> ${taskData.issue || 'General maintenance'}\n` +
@@ -580,7 +537,6 @@ async function handleAssignTask(chat_id: string, text: string) {
   }
 }
 
-// Helper function to parse task information
 function parseTaskInfo(text: string) {
   const result: any = {
     engineer: '',
@@ -590,31 +546,26 @@ function parseTaskInfo(text: string) {
     priority: ''
   };
   
-  // Extract engineer
   const engineerMatch = text.match(/Engineer:?\s+([^,\n]+)/i);
   if (engineerMatch && engineerMatch[1]) {
     result.engineer = engineerMatch[1].trim();
   }
   
-  // Extract customer
   const customerMatch = text.match(/Customer:?\s+([^,\n]+)/i);
   if (customerMatch && customerMatch[1]) {
     result.customer = customerMatch[1].trim();
   }
   
-  // Extract issue
   const issueMatch = text.match(/Issue:?\s+([^,\n]+)/i);
   if (issueMatch && issueMatch[1]) {
     result.issue = issueMatch[1].trim();
   }
   
-  // Extract deadline
   const deadlineMatch = text.match(/Deadline:?\s+([^,\n]+)/i);
   if (deadlineMatch && deadlineMatch[1]) {
     result.deadline = deadlineMatch[1].trim();
   }
   
-  // Extract priority
   const priorityMatch = text.match(/Priority:?\s+([^,\n]+)/i);
   if (priorityMatch && priorityMatch[1]) {
     result.priority = priorityMatch[1].trim();
@@ -623,7 +574,6 @@ function parseTaskInfo(text: string) {
   return result;
 }
 
-// Helper function to determine issue type
 function determineIssueType(issueDescription: string): string {
   const lowerIssue = issueDescription.toLowerCase();
   
@@ -650,13 +600,11 @@ function determineIssueType(issueDescription: string): string {
   }
 }
 
-// Handle generating a daily report
 async function handleDailyReport(chat_id: string) {
   try {
     const now = new Date();
-    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const today = now.toISOString().split('T')[0];
     
-    // Get today's new customers
     const { data: newCustomers, error: customerError } = await supabase
       .from('customers')
       .select('*')
@@ -667,7 +615,6 @@ async function handleDailyReport(chat_id: string) {
       console.error("Error fetching customers:", customerError);
     }
     
-    // Get today's quotations
     const { data: quotations, error: quotationError } = await supabase
       .from('quotations')
       .select('*')
@@ -678,7 +625,6 @@ async function handleDailyReport(chat_id: string) {
       console.error("Error fetching quotations:", quotationError);
     }
     
-    // Get today's completed service calls
     const { data: completedCalls, error: callsError } = await supabase
       .from('service_calls')
       .select('*')
@@ -690,13 +636,11 @@ async function handleDailyReport(chat_id: string) {
       console.error("Error fetching service calls:", callsError);
     }
     
-    // Calculate total revenue from completed service calls
     let serviceRevenue = 0;
     if (completedCalls) {
       serviceRevenue = completedCalls.reduce((sum, call) => sum + (call.service_charge || 0), 0);
     }
     
-    // Use the report generator to format the data
     const report = generateDailyReport({
       newCustomers: newCustomers || [],
       quotations: quotations || [],
@@ -705,7 +649,6 @@ async function handleDailyReport(chat_id: string) {
       date: now.toLocaleDateString()
     });
     
-    // Send the report
     await sendTelegramMessage(chat_id, report, 'HTML');
     
   } catch (error) {
@@ -714,10 +657,8 @@ async function handleDailyReport(chat_id: string) {
   }
 }
 
-// New function to handle deleting a customer
 async function handleDeleteCustomer(chat_id: string, text: string) {
   try {
-    // Extract customer identifier (either name or phone number)
     let customerIdentifier = '';
     
     const nameMatch = text.match(/customer\s+([^,\n]+)/i);
@@ -734,10 +675,8 @@ async function handleDeleteCustomer(chat_id: string, text: string) {
       return;
     }
     
-    // Check if it's a phone number
     const isPhoneNumber = /^\d{10}$/.test(customerIdentifier);
     
-    // Search for customer
     let customerQuery = supabase.from('customers').select('*, customer_machines(*)');
     
     if (isPhoneNumber) {
@@ -759,7 +698,6 @@ async function handleDeleteCustomer(chat_id: string, text: string) {
       return;
     }
     
-    // If multiple matches found, ask user to be more specific
     if (customers.length > 1) {
       const customerList = customers.map((c, i) => `${i+1}. ${c.name} (${c.phone})`).join('\n');
       await sendTelegramMessage(chat_id, 
@@ -771,12 +709,9 @@ async function handleDeleteCustomer(chat_id: string, text: string) {
     
     const customer = customers[0];
     
-    // Check if customer has associated machines
-    const hasMachines = customer.customer_machines && customer.customer_machines.length > 0;
+    let hasMachines = customer.customer_machines && customer.customer_machines.length > 0;
     
-    // If customer has associated records, delete them first
     if (hasMachines) {
-      // Delete associated machines
       const { error: machineError } = await supabase
         .from('customer_machines')
         .delete()
@@ -791,7 +726,6 @@ async function handleDeleteCustomer(chat_id: string, text: string) {
       }
     }
     
-    // Check for and delete any associated service calls
     const { data: serviceCalls } = await supabase
       .from('service_calls')
       .select('id')
@@ -812,7 +746,6 @@ async function handleDeleteCustomer(chat_id: string, text: string) {
       }
     }
     
-    // Check for and delete any customer notes
     const { error: notesError } = await supabase
       .from('customer_notes')
       .delete()
@@ -823,7 +756,6 @@ async function handleDeleteCustomer(chat_id: string, text: string) {
       // Not critical, so continue
     }
     
-    // Finally delete the customer
     const { error: deleteError } = await supabase
       .from('customers')
       .delete()
@@ -837,7 +769,6 @@ async function handleDeleteCustomer(chat_id: string, text: string) {
       return;
     }
     
-    // Successful deletion message
     await sendTelegramMessage(chat_id, 
       `✅ Customer <b>${customer.name}</b> successfully deleted.\n\n` +
       `${hasMachines ? `${customer.customer_machines.length} associated machines were also deleted.` : ''}` +
