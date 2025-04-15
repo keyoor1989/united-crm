@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { PurchaseOrder } from "@/types/sales";

@@ -1,4 +1,3 @@
-
 // Import the pdfMake library and font definitions
 import pdfMake from "pdfmake/build/pdfmake";
 import * as pdfFonts from "pdfmake/build/vfs_fonts";
@@ -49,11 +48,9 @@ export const styles: StyleDictionary = {
     margin: [0, 5, 0, 15] as PdfMargin
   },
   infoLabel: {
-    bold: true,
-    width: '30%'
+    bold: true
   },
   infoValue: {
-    width: '70%'
   },
   notes: {
     fontSize: 10,
@@ -125,7 +122,7 @@ export const styles: StyleDictionary = {
   },
   amountInWords: {
     fontSize: 10,
-    italic: true
+    italics: true
   },
   footer: {
     fontSize: 10,
