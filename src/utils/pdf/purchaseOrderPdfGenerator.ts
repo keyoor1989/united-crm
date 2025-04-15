@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { PurchaseOrder } from "@/types/sales";
@@ -99,7 +100,7 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
       pageMargins: [40, 40, 40, 60],
       content: contentItems,
       defaultStyle: {
-        font: 'Helvetica'
+        font: 'Roboto'  // Set default font as Roboto
       },
       footer: getPageFooter() as any, // Use type assertion to fix type error
       styles: styles
@@ -108,6 +109,6 @@ export const generatePurchaseOrderPdf = (order: PurchaseOrder): void => {
     downloadPdf(docDefinition, `PO_${order.poNumber}.pdf`);
   } catch (error) {
     console.error("PDF generation error:", error);
-    alert("There was an error generating the PDF. Please try again.");
+    throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

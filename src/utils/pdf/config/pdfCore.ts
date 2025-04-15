@@ -9,13 +9,13 @@ import { TDocumentDefinitions } from "pdfmake/interfaces";
 (pdfFonts as any).pdfMake = pdfMake;
 pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
 
-// Define fonts for pdfMake - This ensures the proper font is available
+// Define fonts for pdfMake - Using Roboto which is bundled with pdfMake
 pdfMake.fonts = {
-  Helvetica: {
-    normal: 'Helvetica',
-    bold: 'Helvetica-Bold',
-    italics: 'Helvetica-Oblique',
-    bolditalics: 'Helvetica-BoldOblique'
+  Roboto: {
+    normal: 'Roboto',
+    bold: 'Roboto-Bold',
+    italics: 'Roboto-Italic',
+    bolditalics: 'Roboto-BoldItalic'
   }
 };
 
@@ -26,6 +26,13 @@ export type PdfMargin = [number, number] | [number, number, number, number];
 export const downloadPdf = (docDefinition: TDocumentDefinitions, filename: string) => {
   console.log("Downloading PDF with filename:", filename);
   try {
+    // Ensure default font is set to Roboto if not specified
+    if (!docDefinition.defaultStyle) {
+      docDefinition.defaultStyle = { font: 'Roboto' };
+    } else if (!docDefinition.defaultStyle.font) {
+      docDefinition.defaultStyle.font = 'Roboto';
+    }
+    
     // Use a more robust approach to create and download the PDF
     const pdfDocGenerator = pdfMake.createPdf(docDefinition);
     

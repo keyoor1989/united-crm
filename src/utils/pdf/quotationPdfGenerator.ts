@@ -144,7 +144,7 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       pageMargins: [40, 40, 40, 60],
       content: contentItems,
       defaultStyle: {
-        font: 'Helvetica'
+        font: 'Roboto'  // Set default font as Roboto
       },
       footer: getPageFooter() as any, // Use type assertion to fix type error
       styles: styles
