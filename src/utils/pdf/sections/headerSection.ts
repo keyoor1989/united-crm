@@ -1,6 +1,6 @@
 
 import { Content } from "pdfmake/interfaces";
-import { logoBase64, companyInfo } from "../pdfConfig";
+import { logoBase64, companyInfo } from "../config";
 
 // Create document header with logo and company info
 export const createDocumentHeader = (title: string): Content => {

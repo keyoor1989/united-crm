@@ -1,7 +1,7 @@
 
 import { Content } from "pdfmake/interfaces";
-import { numberToWords } from "../pdfConfig";
-import { PdfMargin } from "../pdfConfig";
+import { numberToWords } from "../utils/numberToWords";
+import { PdfMargin, companyInfo } from "../config";
 
 // Create document totals section
 export const createTotalsSection = (
@@ -62,6 +62,3 @@ export const createBankDetailsSection = (): Content => {
     margin: [0, 10, 0, 0] as PdfMargin
   };
 };
-
-// Missing import
-import { companyInfo } from "../pdfConfig";

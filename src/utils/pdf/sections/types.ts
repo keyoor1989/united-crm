@@ -1,6 +1,6 @@
 
 import { Content, ContentText } from "pdfmake/interfaces";
-import { PdfMargin } from "../pdfConfig";
+import { PdfMargin } from "../config";
 
 // Interface for text with margin
 export interface TextWithMargin extends ContentText {

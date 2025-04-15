@@ -1,7 +1,7 @@
 
 import { Content, ContentText } from "pdfmake/interfaces";
 import { TextWithMargin } from "./types";
-import { PdfMargin } from "../pdfConfig";
+import { PdfMargin } from "../config";
 
 // Create terms and conditions section
 export const createTermsSection = (standardTerms: string[], customTerms?: string): Content => {

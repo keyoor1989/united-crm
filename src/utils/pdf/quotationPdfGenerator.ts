@@ -1,7 +1,8 @@
+
 import { format } from "date-fns";
 import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { Quotation, QuotationItem } from "@/types/sales";
-import { styles, getPageFooter, downloadPdf } from "./pdfConfig";
+import { styles, getPageFooter, downloadPdf } from "./config";
 import { 
   createDocumentHeader, 
   createDocumentDetails,
@@ -12,7 +13,7 @@ import {
   createThankYouNote,
   createBankDetailsSection,
   createSignatureSection
-} from "./contentSections";
+} from "./sections/contentSections";
 import { createItemsTable } from "./itemsTable";
 
 // Standard terms for quotations
