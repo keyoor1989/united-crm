@@ -11,7 +11,7 @@ interface TextWithMargin extends ContentText {
 // Type for content objects that have a stack property
 // Instead of extending Content, we'll define it as its own interface
 interface ContentWithStack {
-  stack: (ContentText | TextWithMargin)[];
+  stack: (ContentText | TextWithMargin | Content)[];
   margin?: [number, number, number, number];
 }
 
@@ -53,13 +53,15 @@ export const createDocumentHeader = (title: string): Content => {
 
 // Create document details section (date, number, etc.)
 export const createDocumentDetails = (details: { label: string, value: string }[]): ContentWithStack => {
+  const stackItems: Content[] = details.map(detail => ({ 
+    columns: [
+      { text: `${detail.label}:`, style: 'sectionTitle', width: 'auto' },
+      { text: ` ${detail.value}`, width: '*' }
+    ]
+  }));
+  
   return {
-    stack: details.map(detail => ({ 
-      columns: [
-        { text: `${detail.label}:`, style: 'sectionTitle', width: 'auto' },
-        { text: ` ${detail.value}`, width: '*' }
-      ]
-    }))
+    stack: stackItems
   };
 };
 
