@@ -9,15 +9,8 @@ import { TDocumentDefinitions } from "pdfmake/interfaces";
 (pdfFonts as any).pdfMake = pdfMake;
 pdfMake.vfs = (pdfFonts as any).pdfMake.vfs;
 
-// Define fonts for pdfMake - Using Roboto which is bundled with pdfMake
-pdfMake.fonts = {
-  Roboto: {
-    normal: 'Roboto',
-    bold: 'Roboto-Bold',
-    italics: 'Roboto-Italic',
-    bolditalics: 'Roboto-BoldItalic'
-  }
-};
+// Do not define custom fonts - use pdfMake's built-in Roboto font
+// pdfMake automatically includes Roboto by default
 
 // Define types for margin to match pdfmake expectations
 export type PdfMargin = [number, number] | [number, number, number, number];
