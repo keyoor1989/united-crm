@@ -5,6 +5,9 @@ import { PdfMargin } from "../config/pdfCore";
 
 // Create document header with logo and company info
 export const createDocumentHeader = (title: string): Content => {
+  // Verify logo exists and has valid content before using it
+  const hasValidLogo = logoBase64 && logoBase64.startsWith('data:image/');
+  
   // Create the base header content
   const headerContent: Content = {
     columns: [
@@ -23,8 +26,8 @@ export const createDocumentHeader = (title: string): Content => {
       {
         width: '35%',
         stack: [
-          // Only include the image if logoBase64 is not empty
-          ...(logoBase64 ? [{
+          // Only include the image if logoBase64 is valid
+          ...(hasValidLogo ? [{
             image: logoBase64,
             width: 150,
             alignment: 'right' as Alignment,
