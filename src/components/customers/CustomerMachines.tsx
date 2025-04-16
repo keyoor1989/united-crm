@@ -10,12 +10,21 @@ import SalesFollowUpDialog from "./machines/SalesFollowUpDialog";
 import SalesFollowUpList from "./machines/SalesFollowUpList";
 import { Machine, MachineFormData } from "./machines/types";
 import { addMachine } from "./machines/MachineService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CustomerMachinesProps {
   customerId?: string;
+  customerName?: string;
+  customerLocation?: string;
+  customerPhone?: string;
 }
 
-const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
+const CustomerMachines: React.FC<CustomerMachinesProps> = ({ 
+  customerId, 
+  customerName = "", 
+  customerLocation = "", 
+  customerPhone = ""
+}) => {
   const { toast } = useToast();
   const [isAddMachineOpen, setIsAddMachineOpen] = useState(false);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
@@ -30,6 +39,48 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>(undefined);
   const [followUpNotes, setFollowUpNotes] = useState("");
   const [machinesKey, setMachinesKey] = useState(Date.now()); // For refreshing the machines list
+  const [customerDetails, setCustomerDetails] = useState({
+    name: customerName,
+    location: customerLocation,
+    phone: customerPhone
+  });
+
+  // If customer data props are empty, fetch them from the database
+  useEffect(() => {
+    if (customerId && (!customerName || !customerLocation || !customerPhone)) {
+      fetchCustomerDetails();
+    } else {
+      setCustomerDetails({
+        name: customerName,
+        location: customerLocation,
+        phone: customerPhone
+      });
+    }
+  }, [customerId, customerName, customerLocation, customerPhone]);
+
+  const fetchCustomerDetails = async () => {
+    if (!customerId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('name, area, phone')
+        .eq('id', customerId)
+        .single();
+        
+      if (error) throw error;
+      
+      if (data) {
+        setCustomerDetails({
+          name: data.name || "",
+          location: data.area || "",
+          phone: data.phone || ""
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching customer details:", error);
+    }
+  };
 
   const handleAddMachine = () => {
     setIsAddMachineOpen(true);
@@ -117,6 +168,8 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
       description: "The sales follow-up has been scheduled successfully."
     });
     setIsSalesFollowUpOpen(false);
+    // Refresh the follow-ups list
+    setMachinesKey(Date.now());
   };
 
   const onSaveFollowUp = () => {
@@ -184,9 +237,9 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({ customerId }) => {
         open={isSalesFollowUpOpen}
         setOpen={setIsSalesFollowUpOpen}
         customerId={customerId}
-        customerName=""
-        location=""
-        phone=""
+        customerName={customerDetails.name}
+        location={customerDetails.location}
+        phone={customerDetails.phone}
         onSave={handleSalesFollowUpAdded}
       />
     </div>

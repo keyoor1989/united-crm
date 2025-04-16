@@ -127,7 +127,12 @@ const CustomerForm = () => {
           {!isNewCustomer && (
             <>
               <TabsContent value="machines" className="mt-4">
-                <CustomerMachines customerId={id} />
+                <CustomerMachines 
+                  customerId={id} 
+                  customerName={customer?.name}
+                  customerLocation={customer?.location}
+                  customerPhone={customer?.phone}
+                />
               </TabsContent>
               <TabsContent value="pipeline" className="mt-4">
                 <LeadPipeline customerId={id} />

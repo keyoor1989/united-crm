@@ -22,20 +22,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyFollowUp } from "@/services/telegramService";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const formSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
-  type: z.string().min(2, {
-    message: "Type must be at least 2 characters.",
+  type: z.enum(["Call", "Meeting", "Email", "Other"], {
+    required_error: "Please select a follow-up type.",
   }),
   notes: z.string().optional(),
 });
@@ -61,29 +62,40 @@ const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      type: "",
+      type: undefined,
       notes: "",
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    // Reset error state
+    setError(null);
     setIsLoading(true);
+    
     try {
+      // Validate required customer data
+      if (!customerId || !customerName) {
+        throw new Error("Customer information is missing. Please ensure the customer is properly selected.");
+      }
+      
       const followUpData = {
         customer_id: customerId,
         customer_name: customerName,
         date: new Date(values.date).toISOString(),
         type: values.type,
         notes: values.notes,
-        location: location,
-        contact_phone: phone,
+        location: location || "",
+        contact_phone: phone || "",
         status: "pending"
       };
+      
+      console.log("Submitting follow-up data:", followUpData);
       
       const { data, error } = await supabase
         .from("sales_followups")
@@ -103,11 +115,12 @@ const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
       
       onSave?.(data);
       setOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating follow-up:", error);
+      setError(error.message || "Failed to schedule follow-up");
       toast({
         title: "Error",
-        description: "Failed to schedule follow-up",
+        description: error.message || "Failed to schedule follow-up",
         variant: "destructive"
       });
     } finally {
@@ -120,8 +133,27 @@ const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
       <div className="relative m-auto h-fit w-full max-w-2xl p-6">
         <div className="rounded-lg bg-white p-4">
           <h2 className="text-lg font-medium">Schedule Follow-up</h2>
+          
+          {error && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          {!customerId && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Warning</AlertTitle>
+              <AlertDescription>
+                Customer data is missing. Please ensure you've selected a valid customer.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
               <FormField
                 control={form.control}
                 name="date"
@@ -153,7 +185,7 @@ const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
                           selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) =>
-                            date < new Date()
+                            date < new Date(new Date().setHours(0, 0, 0, 0))
                           }
                           initialFocus
                         />
@@ -209,7 +241,7 @@ const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
                 <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading || !customerId}>
                   {isLoading ? "Loading..." : "Save"}
                 </Button>
               </div>
