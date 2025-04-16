@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -21,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { addDays, format } from "date-fns";
+import { DateRange } from "react-day-picker";
 import { CompletionTimeChart } from "@/components/engineer/CompletionTimeChart";
 import { SlaComplianceChart } from "@/components/engineer/SlaComplianceChart";
 import { JobTypeDistributionChart } from "@/components/engineer/JobTypeDistributionChart";
@@ -31,7 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function EngineerServiceReport() {
   const [selectedEngineer, setSelectedEngineer] = useState<string>("");
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: addDays(new Date(), -30),
     to: new Date(),
   });
@@ -82,11 +82,8 @@ export default function EngineerServiceReport() {
     }
   };
 
-  const handleDateRangeChange = (range: { from?: Date; to?: Date | undefined }) => {
-    setDateRange({
-      from: range.from || dateRange.from,
-      to: range.to || dateRange.to,
-    });
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range);
   };
 
   return (
@@ -124,7 +121,7 @@ export default function EngineerServiceReport() {
             {/* Date Range Picker */}
             <div>
               <h3 className="text-lg font-semibold mb-2">Select Date Range</h3>
-              <DateRangePicker date={dateRange} onDateChange={handleDateRangeChange} />
+              <DateRangePicker dateRange={dateRange} onDateRangeChange={handleDateRangeChange} />
             </div>
 
             {/* Display Selected Date Range */}

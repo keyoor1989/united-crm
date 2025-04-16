@@ -2,9 +2,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Download, Calendar } from "lucide-react";
-import { format } from "date-fns";
 import { DateRange } from "react-day-picker";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 interface SalesReportHeaderProps {
   dateRange: DateRange;
@@ -30,6 +29,7 @@ export const SalesReportHeader: React.FC<SalesReportHeaderProps> = ({
         </p>
       </div>
       <div className="flex gap-2">
+        <DateRangePicker dateRange={dateRange} onDateRangeChange={onDateRangeChange} />
         <Button variant="outline" onClick={exportReport}>
           <Download className="mr-2 h-4 w-4" />
           Export

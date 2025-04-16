@@ -41,10 +41,11 @@ import CompletionTimeChart from "@/components/engineer/CompletionTimeChart";
 import SlaComplianceChart from "@/components/engineer/SlaComplianceChart";
 import { EngineerLeaderboard } from "@/components/engineer/EngineerLeaderboard";
 import { addDays } from "date-fns";
+import { DateRange } from "react-day-picker";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 const EngineerPerformanceDashboard = () => {
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: addDays(new Date(), -30),
     to: new Date(),
   });
@@ -55,11 +56,8 @@ const EngineerPerformanceDashboard = () => {
   const [engineerFilter, setEngineerFilter] = useState("All Engineers");
   const [showFilters, setShowFilters] = useState(false);
   
-  const handleDateRangeChange = (range: { from?: Date; to?: Date }) => {
-    setDateRange({
-      from: range.from || dateRange.from,
-      to: range.to || dateRange.to,
-    });
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range);
   };
 
   return (
@@ -95,7 +93,7 @@ const EngineerPerformanceDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date-range">Date Range</Label>
-                <DateRangePicker date={dateRange} onDateChange={handleDateRangeChange} />
+                <DateRangePicker dateRange={dateRange} onDateRangeChange={handleDateRangeChange} />
               </div>
 
               <div className="space-y-2">

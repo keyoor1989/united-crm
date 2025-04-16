@@ -5,20 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart3, PieChart, Calendar, ArrowUpDown } from "lucide-react";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { DateRange } from "react-day-picker";
 
 // Import custom components
 import { SalesReportHeader } from "@/components/inventory/sales/SalesReportHeader";
 import { SalesPerformanceChart } from "@/components/inventory/sales/charts/SalesPerformanceChart";
 import { PaymentMethodChart } from "@/components/inventory/sales/charts/PaymentMethodChart";
 import { CustomerTypeChart } from "@/components/inventory/sales/charts/CustomerTypeChart";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { fetchSalesReportData } from "@/services/salesService";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const SalesReports = () => {
   // State for date range
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: startOfMonth(subMonths(new Date(), 1)),
     to: endOfMonth(new Date())
   });
@@ -34,7 +34,10 @@ const SalesReports = () => {
       try {
         // For now, just use the regular fetchSales function
         // In future, we'd implement fetchSalesReportData with date filtering
-        const data = await fetchSalesReportData(dateRange.from, dateRange.to);
+        const data = await fetchSalesReportData(
+          dateRange.from as Date, 
+          dateRange.to as Date
+        );
         setSalesData(data);
       } catch (error) {
         console.error("Error loading sales report data:", error);
@@ -43,8 +46,15 @@ const SalesReports = () => {
       }
     };
     
-    loadData();
+    if (dateRange.from && dateRange.to) {
+      loadData();
+    }
   }, [dateRange]);
+  
+  // Handle date range changes
+  const handleDateRangeChange = (range: DateRange) => {
+    setDateRange(range);
+  };
   
   // Calculated metrics
   const totalSales = salesData.length;
@@ -62,7 +72,7 @@ const SalesReports = () => {
       {/* Header with title and date range picker */}
       <SalesReportHeader
         dateRange={dateRange}
-        onDateRangeChange={setDateRange}
+        onDateRangeChange={handleDateRangeChange}
       />
       
       {/* Sales metrics cards */}
@@ -78,7 +88,7 @@ const SalesReports = () => {
               <div className="text-2xl font-bold">{totalSales}</div>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d, yyyy")}
+              {dateRange.from && dateRange.to ? `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d, yyyy")}` : "Select date range"}
             </p>
           </CardContent>
         </Card>

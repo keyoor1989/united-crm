@@ -13,7 +13,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { SalesItem } from '@/components/inventory/sales/SalesTable';
-import { format, parseISO, isSameDay, isSameMonth } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 // Register ChartJS components
 ChartJS.register(
@@ -58,20 +58,22 @@ export const SalesPerformanceChart: React.FC<SalesPerformanceChartProps> = ({ sa
       labels: sortedDates.map(date => format(parseISO(date), 'MMM dd')),
       datasets: [
         {
-          type: 'bar' as const,
           label: 'Sales Count',
           data: sortedDates.map(date => salesByDate[date].count),
           backgroundColor: 'rgba(53, 162, 235, 0.5)',
           borderColor: 'rgba(53, 162, 235, 1)',
-          borderWidth: 1
+          borderWidth: 1,
+          order: 1
         },
         {
-          type: 'line' as const,
           label: 'Revenue',
           data: sortedDates.map(date => salesByDate[date].revenue),
           borderColor: 'rgba(255, 99, 132, 1)',
           backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          borderWidth: 2,
+          type: 'line' as const,
           yAxisID: 'y1',
+          order: 0
         }
       ]
     };
