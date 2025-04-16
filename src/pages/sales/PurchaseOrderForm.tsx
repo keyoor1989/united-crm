@@ -102,10 +102,10 @@ const PurchaseOrderForm = () => {
   
   // Load purchase order data if in edit mode
   useEffect(() => {
-    const loadPurchaseOrder = async () => {
-      if (isEditMode && id) {
-        try {
-          setLoading(true);
+    if (isEditMode && id) {
+      try {
+        setLoading(true);
+        const loadPurchaseOrder = async () => {
           const order = await fetchPurchaseOrderById(id);
           
           if (order) {
@@ -116,13 +116,25 @@ const PurchaseOrderForm = () => {
               vendorName: order.vendorName,
               createdAt: new Date(order.createdAt).toISOString().split('T')[0],
               deliveryDate: new Date(order.deliveryDate).toISOString().split('T')[0],
-              notes: order.notes,
-              terms: order.terms,
+              notes: order.notes || '',
+              terms: order.terms || '',
               status: order.status,
             });
             
             // Set items and totals
-            setItems(order.items);
+            if (typeof order.items === 'string') {
+              try {
+                // Parse the JSON string into an array of PurchaseOrderItem
+                const parsedItems = JSON.parse(order.items) as PurchaseOrderItem[];
+                setItems(parsedItems);
+              } catch (error) {
+                console.error("Error parsing order items:", error);
+                setItems([]);
+              }
+            } else {
+              setItems(order.items as PurchaseOrderItem[]);
+            }
+            
             setSubtotal(order.subtotal);
             setTotalGst(order.totalGst);
             setGrandTotal(order.grandTotal);
@@ -134,20 +146,20 @@ const PurchaseOrderForm = () => {
             });
             navigate('/purchase-orders');
           }
-        } catch (error) {
-          console.error("Error loading purchase order:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load purchase order data",
-            variant: "destructive",
-          });
-        } finally {
-          setLoading(false);
-        }
+        };
+        
+        loadPurchaseOrder();
+      } catch (error) {
+        console.error("Error loading purchase order:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load purchase order data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    };
-    
-    loadPurchaseOrder();
+    }
   }, [id, isEditMode, navigate, form, toast]);
   
   // Generate PO number for new orders

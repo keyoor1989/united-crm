@@ -172,9 +172,11 @@ export interface Vendor {
 // Cash Purchase types for our inventory management
 export interface CashPurchaseItemData {
   id: string;
+  itemName: string;
   category: string;
-  description: string;
+  description?: string;
   quantity: number;
   unitPrice: number;
+  purchasePrice?: number;
   totalAmount: number;
 }

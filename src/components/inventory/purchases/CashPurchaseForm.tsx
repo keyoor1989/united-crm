@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Plus, Banknote, Save } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
-import { CashPurchaseItem, CashPurchaseItemData } from "./CashPurchaseItem";
+import { CashPurchaseItem } from "./CashPurchaseItem";
+import { CashPurchaseItemData } from "@/types/sales";
 
 interface CashPurchaseFormProps {
   onSave: (items: CashPurchaseItemData[], vendorName: string, notes: string) => void;
@@ -25,8 +26,9 @@ export const CashPurchaseForm: React.FC<CashPurchaseFormProps> = ({
       id: uuidv4(),
       itemName: "",
       category: categories[0] || "Other",
+      description: "",
       quantity: 1,
-      purchasePrice: 0,
+      unitPrice: 0,
       totalAmount: 0,
     };
     setItems([...items, newItem]);
@@ -48,7 +50,7 @@ export const CashPurchaseForm: React.FC<CashPurchaseFormProps> = ({
 
   const handleSubmit = () => {
     // Validate items
-    const emptyItems = items.filter(item => !item.itemName || item.purchasePrice <= 0);
+    const emptyItems = items.filter(item => !item.itemName || item.unitPrice <= 0);
     if (emptyItems.length > 0) {
       toast.error("Please fill in all item details");
       return;

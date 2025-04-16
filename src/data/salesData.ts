@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { 
   Product, 
@@ -30,7 +29,9 @@ export const products: Product[] = [
     },
     defaultGstPercent: 18,
     status: "Active",
-    isInventoryItem: true
+    isInventoryItem: true,
+    unitPrice: 165000,
+    createdAt: "2023-01-15"
   },
   {
     id: "p2",
@@ -49,7 +50,9 @@ export const products: Product[] = [
     },
     defaultGstPercent: 18,
     status: "Active",
-    isInventoryItem: true
+    isInventoryItem: true,
+    unitPrice: 65000,
+    createdAt: "2023-02-20"
   },
   {
     id: "p3",
@@ -66,7 +69,9 @@ export const products: Product[] = [
     },
     defaultGstPercent: 18,
     status: "Active",
-    isInventoryItem: true
+    isInventoryItem: true,
+    unitPrice: 75000,
+    createdAt: "2023-03-10"
   },
   {
     id: "p4",
@@ -86,7 +91,9 @@ export const products: Product[] = [
     },
     defaultGstPercent: 18,
     status: "Active",
-    isInventoryItem: true
+    isInventoryItem: true,
+    unitPrice: 220000,
+    createdAt: "2023-04-05"
   },
   {
     id: "p5",
@@ -105,7 +112,9 @@ export const products: Product[] = [
     },
     defaultGstPercent: 18,
     status: "Active",
-    isInventoryItem: true
+    isInventoryItem: true,
+    unitPrice: 65000,
+    createdAt: "2023-05-12"
   },
   {
     id: "p6",
@@ -125,7 +134,9 @@ export const products: Product[] = [
     },
     defaultGstPercent: 18,
     status: "Coming Soon",
-    isInventoryItem: true
+    isInventoryItem: true,
+    unitPrice: 350000,
+    createdAt: "2023-06-20"
   }
 ];
 
@@ -137,7 +148,8 @@ export const vendors: Vendor[] = [
     contactPerson: "Rahul Sharma",
     email: "rahul.sharma@kyocera.com",
     phone: "9876543210",
-    address: "123 Corporate Park, Mumbai, MH 400001"
+    address: "123 Corporate Park, Mumbai, MH 400001",
+    createdAt: "2023-01-10"
   },
   {
     id: "v2",
@@ -145,7 +157,8 @@ export const vendors: Vendor[] = [
     contactPerson: "Priya Patel",
     email: "priya.patel@canon.com",
     phone: "9876543211",
-    address: "456 Tech Hub, Bangalore, KA 560001"
+    address: "456 Tech Hub, Bangalore, KA 560001",
+    createdAt: "2023-02-15"
   },
   {
     id: "v3",
@@ -153,7 +166,8 @@ export const vendors: Vendor[] = [
     contactPerson: "Arjun Singh",
     email: "arjun.singh@hp.com",
     phone: "9876543212",
-    address: "789 Business Center, Delhi, DL 110001"
+    address: "789 Business Center, Delhi, DL 110001",
+    createdAt: "2023-03-20"
   }
 ];
 

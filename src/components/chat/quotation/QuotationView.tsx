@@ -8,6 +8,7 @@ import { ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
 import { toast } from "sonner";
 import { safeGeneratePdf } from "@/utils/pdfGenerator";
 import { generateQuotationPdf } from "@/utils/pdf/quotationPdfGenerator";
+import { ProductCategory } from "@/types/sales";
 
 interface QuotationViewProps {
   quotationText: string;
@@ -49,7 +50,7 @@ const QuotationView: React.FC<QuotationViewProps> = ({
           productId: model.productId || `custom-${Date.now()}`,
           name: model.model,
           description: `${model.model} Printer/Copier`,
-          category: "Copier",
+          category: "Copier" as ProductCategory,
           specs: {
             color: true,
             duplex: true

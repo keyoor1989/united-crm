@@ -6,6 +6,7 @@ import { CashPurchaseHeader } from "@/components/inventory/purchases/CashPurchas
 import { CashPurchaseForm } from "@/components/inventory/purchases/CashPurchaseForm";
 import { useCashPurchase } from "@/hooks/inventory/useCashPurchase";
 import { Loader2 } from "lucide-react";
+import { CashPurchaseItemData } from "@/types/sales";
 
 const CashPurchase = () => {
   const {
@@ -15,6 +16,14 @@ const CashPurchase = () => {
     isLoading,
     saveCashPurchase,
   } = useCashPurchase();
+
+  const handleSaveCashPurchase = async (
+    items: CashPurchaseItemData[],
+    vendorName: string,
+    notes: string
+  ) => {
+    await saveCashPurchase(items, vendorName, notes);
+  };
 
   return (
     <div className="container mx-auto py-6">
@@ -36,7 +45,7 @@ const CashPurchase = () => {
             </div>
           ) : (
             <CashPurchaseForm
-              onSave={saveCashPurchase}
+              onSave={handleSaveCashPurchase}
               categories={categories}
             />
           )}

@@ -10,15 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-export interface CashPurchaseItemData {
-  id: string;
-  itemName: string;
-  category: string;
-  quantity: number;
-  purchasePrice: number;
-  totalAmount: number;
-}
+import { CashPurchaseItemData } from "@/types/sales";
 
 interface CashPurchaseItemProps {
   item: CashPurchaseItemData;
@@ -39,9 +31,9 @@ export const CashPurchaseItem: React.FC<CashPurchaseItemProps> = ({
     const updatedItem = { ...localItem, [field]: value };
     
     // Recalculate total if quantity or price changes
-    if (field === "quantity" || field === "purchasePrice") {
+    if (field === "quantity" || field === "unitPrice") {
       const quantity = field === "quantity" ? Number(value) : localItem.quantity;
-      const price = field === "purchasePrice" ? Number(value) : localItem.purchasePrice;
+      const price = field === "unitPrice" ? Number(value) : localItem.unitPrice;
       updatedItem.totalAmount = quantity * price;
     }
     
@@ -96,8 +88,8 @@ export const CashPurchaseItem: React.FC<CashPurchaseItemProps> = ({
             type="number"
             min="0"
             step="0.01"
-            value={localItem.purchasePrice}
-            onChange={(e) => handleInputChange("purchasePrice", Number(e.target.value))}
+            value={localItem.unitPrice}
+            onChange={(e) => handleInputChange("unitPrice", Number(e.target.value))}
             className="w-full"
           />
         </div>
