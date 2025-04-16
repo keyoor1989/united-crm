@@ -21,7 +21,7 @@ export type SalesFollowUp = {
   date: Date;
   customerId: number | string;
   customerName: string;
-  notes: string;
+  notes: string | null;
   status: "pending" | "completed";
   type: "quotation" | "demo" | "negotiation" | "closure";
   contactPhone?: string; // Added to store customer's phone for easy contact
