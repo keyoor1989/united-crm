@@ -31,11 +31,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { notifyFollowUp } from "@/services/telegramService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+// Define a schema with the correct follow-up types that match the database constraint
 const formSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
-  type: z.enum(["Call", "Meeting", "Email", "Other"], {
+  type: z.enum(["quotation", "demo", "negotiation", "closure"], {
     required_error: "Please select a follow-up type.",
   }),
   notes: z.string().optional(),
@@ -207,10 +208,10 @@ const SalesFollowUpDialog: React.FC<SalesFollowUpDialogProps> = ({
                           <SelectValue placeholder="Select a type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Call">Call</SelectItem>
-                          <SelectItem value="Meeting">Meeting</SelectItem>
-                          <SelectItem value="Email">Email</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
+                          <SelectItem value="quotation">Quotation</SelectItem>
+                          <SelectItem value="demo">Demo</SelectItem>
+                          <SelectItem value="negotiation">Negotiation</SelectItem>
+                          <SelectItem value="closure">Closure</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormControl>
