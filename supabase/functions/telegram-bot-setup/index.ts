@@ -1,10 +1,15 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const telegramBotToken = Deno.env.get('telegram_key') || '';
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -13,18 +18,9 @@ serve(async (req) => {
   }
 
   try {
-    const telegramBotToken = Deno.env.get('telegram_key') || '';
-    if (!telegramBotToken) {
-      return new Response(
-        JSON.stringify({ error: 'Telegram bot token is not configured' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500 
-        }
-      );
-    }
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
-    const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
+    // Get request body
     const { action, webhook_url } = await req.json();
     
     if (!action) {
@@ -32,89 +28,124 @@ serve(async (req) => {
         JSON.stringify({ error: 'Missing required parameter: action' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
+          status: 400
+        }
+      );
+    }
+
+    // Set webhook URL for the bot
+    if (action === 'setWebhook') {
+      if (!webhook_url) {
+        return new Response(
+          JSON.stringify({ error: 'Missing required parameter: webhook_url' }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400
+          }
+        );
+      }
+      
+      const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: webhook_url,
+          allowed_updates: ["message", "callback_query"],
+        }),
+      });
+      
+      const webhookData = await webhookResponse.json();
+      
+      if (webhookData.ok) {
+        // Update webhook URL in DB
+        await supabase
+          .from('telegram_config')
+          .update({ webhook_url, updated_at: new Date().toISOString() })
+          .eq('id', (await supabase.from('telegram_config').select('id').limit(1).single()).data.id);
+      }
+      
+      return new Response(
+        JSON.stringify(webhookData),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
         }
       );
     }
     
-    let response;
-    
-    switch (action) {
-      case 'setWebhook':
-        if (!webhook_url) {
-          return new Response(
-            JSON.stringify({ error: 'Missing required parameter: webhook_url' }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 400 
-            }
-          );
+    // Delete webhook
+    if (action === 'deleteWebhook') {
+      const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/deleteWebhook?drop_pending_updates=true`, {
+        method: 'POST'
+      });
+      
+      const webhookData = await webhookResponse.json();
+      
+      if (webhookData.ok) {
+        // Update webhook URL in DB
+        await supabase
+          .from('telegram_config')
+          .update({ webhook_url: null, updated_at: new Date().toISOString() })
+          .eq('id', (await supabase.from('telegram_config').select('id').limit(1).single()).data.id);
+      }
+      
+      return new Response(
+        JSON.stringify(webhookData),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
         }
-        
-        response = await fetch(`${telegramApi}/setWebhook`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: webhook_url,
-            allowed_updates: ["message", "edited_message", "callback_query"]
-          }),
-        });
-        break;
-        
-      case 'deleteWebhook':
-        response = await fetch(`${telegramApi}/deleteWebhook`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            drop_pending_updates: true
-          }),
-        });
-        break;
-        
-      case 'getWebhookInfo':
-        response = await fetch(`${telegramApi}/getWebhookInfo`);
-        break;
-        
-      case 'setCommands':
-        // Set commands for the bot
-        const commands = [
-          { command: "start", description: "Start the bot" },
-          { command: "help", description: "Get help with using the bot" },
-          { command: "report", description: "Get a daily activity report" }
-        ];
-        
-        response = await fetch(`${telegramApi}/setMyCommands`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            commands: commands
-          }),
-        });
-        break;
-        
-      default:
-        return new Response(
-          JSON.stringify({ error: 'Invalid action' }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400 
-          }
-        );
+      );
     }
     
-    const responseData = await response.json();
+    // Get webhook info
+    if (action === 'getWebhookInfo') {
+      const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`);
+      const webhookData = await webhookResponse.json();
+      
+      return new Response(
+        JSON.stringify(webhookData),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
+    }
+    
+    // Set commands
+    if (action === 'setCommands') {
+      const commands = [
+        { command: 'start', description: 'Start using the bot' },
+        { command: 'help', description: 'Get help with using the bot' },
+        { command: 'report', description: 'Get a daily business report' }
+      ];
+      
+      const commandResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setMyCommands`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ commands }),
+      });
+      
+      const commandData = await commandResponse.json();
+      
+      return new Response(
+        JSON.stringify(commandData),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
+    }
     
     return new Response(
-      JSON.stringify(responseData),
+      JSON.stringify({ error: 'Invalid action' }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: 400
       }
     );
   } catch (error) {
@@ -123,7 +154,7 @@ serve(async (req) => {
       JSON.stringify({ error: error.message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: 500
       }
     );
   }
