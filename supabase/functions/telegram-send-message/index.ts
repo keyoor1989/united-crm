@@ -21,42 +21,42 @@ serve(async (req) => {
     if (!telegramBotToken) {
       console.error("Missing Telegram bot token in environment variables");
       return new Response(
-        JSON.stringify({ error: 'Telegram bot token is not configured in Supabase secrets' }),
+        JSON.stringify({ error: 'Telegram bot token is not configured' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
+          status: 500
         }
       );
     }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
-    
-    // Parse request body
-    const { chat_id, text, parse_mode = "HTML" } = await req.json();
+
+    // Parse the request body
+    const { chat_id, text, parse_mode = 'HTML' } = await req.json();
     
     if (!chat_id || !text) {
       return new Response(
-        JSON.stringify({ error: 'chat_id and text are required' }),
+        JSON.stringify({ error: 'chat_id and text are required parameters' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400
         }
       );
     }
+
+    // Create Supabase client
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Check if the chat is authorized
     const { data: chatData, error: chatError } = await supabase
       .from('telegram_authorized_chats')
       .select('*')
-      .eq('chat_id', chat_id)
+      .eq('chat_id', chat_id.toString())
       .eq('is_active', true)
       .single();
     
     if (chatError || !chatData) {
-      console.log("Unauthorized chat or chat not active:", chat_id);
+      console.error("Unauthorized chat:", chat_id);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized chat or chat not active' }),
+        JSON.stringify({ error: 'Unauthorized chat' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 403
@@ -64,10 +64,11 @@ serve(async (req) => {
       );
     }
     
-    // Send message
-    console.log(`Sending message to chat ${chat_id} using token from environment variables`);
+    // Send message to Telegram
+    console.log(`Sending message to chat ${chat_id}: ${text.substring(0, 50)}...`);
     
-    const response = await fetch(`${telegramApi}/sendMessage`, {
+    const telegramApi = `https://api.telegram.org/bot${telegramBotToken}/sendMessage`;
+    const response = await fetch(telegramApi, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -75,24 +76,34 @@ serve(async (req) => {
       body: JSON.stringify({
         chat_id,
         text,
-        parse_mode,
+        parse_mode
       }),
     });
     
-    const result = await response.json();
-    console.log("Send message response:", JSON.stringify(result));
+    const responseData = await response.json();
     
     // Log the message
     await supabase.from('telegram_message_logs').insert({
-      chat_id,
+      chat_id: chat_id.toString(),
       message_text: text,
-      message_type: 'test_message',
+      message_type: 'api_message',
       direction: 'outgoing',
-      processed_status: result.ok ? 'sent' : 'failed',
+      processed_status: responseData.ok ? 'sent' : 'failed'
     });
     
+    if (!responseData.ok) {
+      console.error("Error from Telegram API:", responseData);
+      return new Response(
+        JSON.stringify({ error: 'Failed to send message', telegram_error: responseData }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      );
+    }
+    
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ success: true, data: responseData }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
