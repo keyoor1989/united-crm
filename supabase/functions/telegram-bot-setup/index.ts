@@ -21,7 +21,10 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Get request body
-    const { action, webhook_url } = await req.json();
+    const requestData = await req.json();
+    const { action, webhook_url } = requestData;
+    
+    console.log(`Processing action: ${action}`);
     
     if (!action) {
       return new Response(
@@ -48,6 +51,8 @@ serve(async (req) => {
       // Generate a random secret token for webhook verification
       const webhookSecret = crypto.randomUUID();
       
+      console.log(`Setting webhook to: ${webhook_url}`);
+      
       const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
         method: 'POST',
         headers: {
@@ -61,6 +66,7 @@ serve(async (req) => {
       });
       
       const webhookData = await webhookResponse.json();
+      console.log("Webhook setup response:", webhookData);
       
       if (webhookData.ok) {
         // Update webhook URL and secret in DB
@@ -72,9 +78,6 @@ serve(async (req) => {
             updated_at: new Date().toISOString() 
           })
           .eq('id', (await supabase.from('telegram_config').select('id').limit(1).single()).data.id);
-        
-        // After setting webhook, set the commands
-        await setCommands(telegramBotToken);
       }
       
       return new Response(
@@ -88,11 +91,14 @@ serve(async (req) => {
     
     // Delete webhook
     if (action === 'deleteWebhook') {
+      console.log("Deleting webhook");
+      
       const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/deleteWebhook?drop_pending_updates=true`, {
         method: 'POST'
       });
       
       const webhookData = await webhookResponse.json();
+      console.log("Webhook deletion response:", webhookData);
       
       if (webhookData.ok) {
         // Update webhook URL in DB
@@ -117,8 +123,12 @@ serve(async (req) => {
     
     // Get webhook info
     if (action === 'getWebhookInfo') {
+      console.log("Getting webhook info");
+      
       const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`);
       const webhookData = await webhookResponse.json();
+      
+      console.log("Webhook info:", webhookData);
       
       return new Response(
         JSON.stringify(webhookData),
@@ -131,6 +141,8 @@ serve(async (req) => {
     
     // Set commands
     if (action === 'setCommands') {
+      console.log("Setting bot commands");
+      
       const commandsResult = await setCommands(telegramBotToken);
       
       return new Response(
@@ -168,6 +180,8 @@ async function setCommands(botToken: string) {
     { command: 'report', description: 'Get a daily business report' }
   ];
   
+  console.log("Registering commands:", commands);
+  
   const commandResponse = await fetch(`https://api.telegram.org/bot${botToken}/setMyCommands`, {
     method: 'POST',
     headers: {
@@ -176,5 +190,8 @@ async function setCommands(botToken: string) {
     body: JSON.stringify({ commands }),
   });
   
-  return await commandResponse.json();
+  const responseData = await commandResponse.json();
+  console.log("Command registration response:", responseData);
+  
+  return responseData;
 }

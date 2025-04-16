@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -39,6 +40,7 @@ const TelegramAdmin = () => {
   const [testMessage, setTestMessage] = useState("");
   const [selectedChatId, setSelectedChatId] = useState("");
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [isLoadingWebhookInfo, setIsLoadingWebhookInfo] = useState(false);
 
   const {
     config, 
@@ -53,7 +55,8 @@ const TelegramAdmin = () => {
     toggleChatStatus,
     updateNotificationPreference,
     sendTestMessage,
-    setCommands
+    setCommands,
+    getWebhookInfo
   } = useTelegram();
 
   useEffect(() => {
@@ -72,6 +75,24 @@ const TelegramAdmin = () => {
     }
   }, [chats]);
 
+  useEffect(() => {
+    const fetchWebhookInfo = async () => {
+      setIsLoadingWebhookInfo(true);
+      try {
+        await getWebhookInfo();
+      } catch (error) {
+        console.error("Error fetching webhook info:", error);
+      } finally {
+        setIsLoadingWebhookInfo(false);
+      }
+    };
+    
+    // Fetch webhook info when on setup tab
+    if (activeTab === "setup") {
+      fetchWebhookInfo();
+    }
+  }, [activeTab, getWebhookInfo]);
+
   const saveWebhookSettings = async () => {
     setIsSaving(true);
     try {
@@ -79,6 +100,7 @@ const TelegramAdmin = () => {
       
       if (success) {
         toast.success("Webhook configured successfully");
+        await getWebhookInfo(); // Refresh webhook info
       } else {
         toast.error("Failed to set webhook");
       }
@@ -98,6 +120,7 @@ const TelegramAdmin = () => {
       if (success) {
         setWebhookUrl("");
         toast.success("Webhook deleted successfully");
+        await getWebhookInfo(); // Refresh webhook info
       } else {
         toast.error("Failed to delete webhook");
       }
@@ -319,7 +342,11 @@ const TelegramAdmin = () => {
                     </p>
                   </div>
 
-                  {webhookInfo && (
+                  {isLoadingWebhookInfo ? (
+                    <div className="flex items-center justify-center h-24">
+                      <div className="w-6 h-6 border-t-2 border-b-2 border-primary rounded-full animate-spin"></div>
+                    </div>
+                  ) : webhookInfo ? (
                     <div className="rounded-md border p-4 bg-slate-50">
                       <h3 className="font-medium mb-2">Current Webhook Status:</h3>
                       <div className="text-sm space-y-1">
@@ -330,7 +357,7 @@ const TelegramAdmin = () => {
                         )}
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">

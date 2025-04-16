@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TelegramConfig, AuthorizedChat, NotificationPreference, WebhookInfo } from '@/types/telegram';
@@ -21,6 +20,7 @@ interface TelegramContextType {
   ) => Promise<boolean>;
   sendTestMessage: (chatId: string, message: string) => Promise<boolean>;
   setCommands: () => Promise<any>;
+  getWebhookInfo: () => Promise<WebhookInfo | null>;
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(undefined);
@@ -47,7 +47,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (configResult.data) {
         setConfig(configResult.data as unknown as TelegramConfig);
-        // We'll fetch webhook info in a future implementation
+        // Fetch webhook info after getting config
+        await getWebhookInfo();
       }
 
       if (chatsResult.data) {
@@ -61,6 +62,29 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error("Error loading Telegram data:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getWebhookInfo = async (): Promise<WebhookInfo | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
+        body: { action: "getWebhookInfo" }
+      });
+      
+      if (error) {
+        console.error("Error fetching webhook info:", error);
+        return null;
+      }
+      
+      if (data) {
+        setWebhookInfo(data as WebhookInfo);
+        return data as WebhookInfo;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error fetching webhook info:", error);
+      return null;
     }
   };
 
@@ -224,7 +248,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     toggleChatStatus,
     updateNotificationPreference,
     sendTestMessage,
-    setCommands
+    setCommands,
+    getWebhookInfo
   };
 
   return (

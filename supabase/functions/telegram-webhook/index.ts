@@ -33,6 +33,7 @@ serve(async (req) => {
     
     console.log(`Received message from chat ${chat_id}: "${text}"`);
     
+    // Log the incoming message
     await supabase.from('telegram_message_logs').insert({
       chat_id,
       message_text: text,
@@ -41,6 +42,7 @@ serve(async (req) => {
       processed_status: 'pending'
     });
 
+    // Check if this chat is authorized
     const { data: chatData, error: chatError } = await supabase
       .from('telegram_authorized_chats')
       .select('*')
@@ -65,12 +67,12 @@ serve(async (req) => {
       console.log("Handling command:", text);
       await handleSlashCommands(chat_id, text);
     } 
-    else if (text.toLowerCase().startsWith('add customer') || 
-             text.toLowerCase().startsWith('new customer')) {
+    else if (text.toLowerCase().includes('add customer') || 
+             text.toLowerCase().includes('new customer')) {
       console.log("Handling add customer command");
       await handleCommand(chat_id, 'add_customer', text);
     }
-    else if (text.toLowerCase().startsWith('lookup') || 
+    else if (text.toLowerCase().includes('lookup') || 
              text.match(/^\d{10}$/) || 
              text.toLowerCase().includes('find customer')) {
       console.log("Handling customer lookup");
