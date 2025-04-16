@@ -35,10 +35,11 @@ export function DateRangePicker({
   };
 
   const getRangeLabel = () => {
-    if (dateRange?.from && dateRange?.to) {
-      if (isValid(dateRange.from) && isValid(dateRange.to)) {
+    if (dateRange?.from) {
+      if (dateRange?.to && isValid(dateRange.from) && isValid(dateRange.to)) {
         return `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`;
       }
+      return format(dateRange.from, "LLL dd, y");
     }
     return "Select date range";
   };

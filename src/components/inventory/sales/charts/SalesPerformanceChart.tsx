@@ -32,9 +32,6 @@ interface SalesPerformanceChartProps {
   salesData: SalesItem[];
 }
 
-// Define a more flexible chart data type that allows mixed chart types
-type MixedChartData = ChartData<'bar' | 'line', number[], string>;
-
 export const SalesPerformanceChart: React.FC<SalesPerformanceChartProps> = ({ salesData }) => {
   // Process the data to group by date
   const chartData = useMemo(() => {
@@ -80,7 +77,7 @@ export const SalesPerformanceChart: React.FC<SalesPerformanceChartProps> = ({ sa
           order: 0
         }
       ]
-    } as MixedChartData;
+    };
   }, [salesData]);
 
   const options: ChartOptions<'bar'> = {
@@ -108,5 +105,5 @@ export const SalesPerformanceChart: React.FC<SalesPerformanceChartProps> = ({ sa
     }
   };
 
-  return <Bar data={chartData} options={options} />;
+  return <Bar data={chartData as ChartData<'bar'>} options={options} />;
 };
