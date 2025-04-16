@@ -21,9 +21,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const telegramBotToken = Deno.env.get('telegram_key') || '';
     
-    // For setWebhook actions, we'll generate a new secret token
-    let telegramSecretToken = Deno.env.get('telegram_webhook_secret') || '';
-    
     if (!telegramBotToken) {
       console.error("Missing Telegram bot token in environment variables");
       return new Response(
@@ -40,37 +37,53 @@ serve(async (req) => {
 
     console.log(`Using Telegram API endpoint: ${telegramApi}`);
     
-    // Generate new secret token for webhook if one doesn't exist or we're resetting
-    if ((action === 'setWebhook')) {
+    // Generate new secret token for webhook if setting a webhook
+    let telegramSecretToken = '';
+    if (action === 'setWebhook') {
       // Always generate a new token when setting webhook to ensure fresh authentication
       telegramSecretToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
       
-      console.log(`Generated new secret token: ${telegramSecretToken}`);
+      console.log(`Generated new webhook secret token: ${telegramSecretToken}`);
       
-      // Store the secret in database for reference
-      const { error } = await supabase
+      // Store the webhook secret in the database
+      const { data: existingConfig } = await supabase
         .from('telegram_config')
-        .update({ 
-          webhook_secret: telegramSecretToken,
-          updated_at: new Date().toISOString()
-        })
-        .eq('bot_token', telegramBotToken);
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
       
-      if (error) {
-        console.error("Error storing secret token in database:", error);
+      if (existingConfig && existingConfig.length > 0) {
+        // Update existing config
+        const { error: updateError } = await supabase
+          .from('telegram_config')
+          .update({ 
+            webhook_url: webhook_url,
+            webhook_secret: telegramSecretToken,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingConfig[0].id);
         
-        // Try to insert if update failed (might not exist yet)
+        if (updateError) {
+          console.error("Error updating webhook secret in database:", updateError);
+        } else {
+          console.log("Updated webhook secret in database");
+        }
+      } else {
+        // Create new config
         const { error: insertError } = await supabase
           .from('telegram_config')
           .insert({
             bot_token: telegramBotToken,
+            webhook_url: webhook_url,
             webhook_secret: telegramSecretToken,
           });
           
         if (insertError) {
-          console.error("Error inserting secret token in database:", insertError);
+          console.error("Error inserting webhook secret in database:", insertError);
+        } else {
+          console.log("Created new config with webhook secret in database");
         }
       }
     }
@@ -83,38 +96,6 @@ serve(async (req) => {
           const webhookInfo = await response.json();
           
           console.log("Webhook info response:", JSON.stringify(webhookInfo));
-          
-          // Update telegram_config table with the correct token
-          try {
-            const { data: configData } = await supabase
-              .from('telegram_config')
-              .select('*')
-              .limit(1);
-              
-            if (configData && configData.length > 0) {
-              await supabase
-                .from('telegram_config')
-                .update({ 
-                  bot_token: telegramBotToken,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', configData[0].id);
-                
-              console.log("Updated token in database");
-            } else {
-              await supabase
-                .from('telegram_config')
-                .insert({
-                  bot_token: telegramBotToken,
-                  webhook_url: webhookInfo.result?.url || null,
-                  webhook_secret: telegramSecretToken || null,
-                });
-                
-              console.log("Inserted token in database");
-            }
-          } catch (dbError) {
-            console.error("Error updating token in database:", dbError);
-          }
           
           return new Response(
             JSON.stringify(webhookInfo),
@@ -172,36 +153,12 @@ serve(async (req) => {
           const result = await response.json();
           console.log("Set webhook response:", JSON.stringify(result));
           
-          // Update the webhook URL and secret in our database
-          if (result.ok) {
-            const { data: configData } = await supabase
-              .from('telegram_config')
-              .select('*')
-              .limit(1);
-              
-            if (configData && configData.length > 0) {
-              await supabase
-                .from('telegram_config')
-                .update({ 
-                  bot_token: telegramBotToken,
-                  webhook_url,
-                  webhook_secret: telegramSecretToken,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', configData[0].id);
-            } else {
-              await supabase
-                .from('telegram_config')
-                .insert({
-                  bot_token: telegramBotToken,
-                  webhook_url,
-                  webhook_secret: telegramSecretToken,
-                });
-            }
-          }
-          
           return new Response(
-            JSON.stringify(result),
+            JSON.stringify({ 
+              ...result, 
+              webhook_secret: telegramSecretToken,
+              message: result.ok ? "Webhook set successfully" : "Failed to set webhook" 
+            }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 200
@@ -228,21 +185,23 @@ serve(async (req) => {
           console.log("Delete webhook response:", JSON.stringify(result));
           
           // Update our database
-          if (result.ok) {
-            const { data: configData } = await supabase
+          const { data: configData } = await supabase
+            .from('telegram_config')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1);
+            
+          if (configData && configData.length > 0) {
+            await supabase
               .from('telegram_config')
-              .select('*')
-              .limit(1);
+              .update({ 
+                webhook_url: null,
+                webhook_secret: null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', configData[0].id);
               
-            if (configData && configData.length > 0) {
-              await supabase
-                .from('telegram_config')
-                .update({ 
-                  webhook_url: null,
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', configData[0].id);
-            }
+            console.log("Cleared webhook URL and secret in database");
           }
           
           return new Response(

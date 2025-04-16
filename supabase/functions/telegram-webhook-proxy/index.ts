@@ -17,16 +17,39 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const telegramBotToken = Deno.env.get('telegram_key') || '';
-    const telegramSecretToken = Deno.env.get('telegram_webhook_secret') || '';
     
-    // Enhanced secret token validation with detailed logging
+    // Create Supabase client
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Get the current webhook secret from database
+    const { data: configData, error: configError } = await supabase
+      .from('telegram_config')
+      .select('webhook_secret')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (configError) {
+      console.error("Error fetching webhook secret from database:", configError);
+      return new Response(
+        JSON.stringify({ status: "error", message: "Failed to retrieve webhook configuration" }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    // Get the secret token from the database
+    const telegramSecretToken = configData?.[0]?.webhook_secret || '';
+    
+    // Validate the secret token from the request header
     const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
     
     console.log(`Received webhook request with header X-Telegram-Bot-Api-Secret-Token: ${secretHeader ? '[PRESENT]' : '[MISSING]'}`);
-    console.log(`Expected secret token: ${telegramSecretToken ? telegramSecretToken.substring(0, 3) + '...' : '[NOT SET]'}`);
+    console.log(`Database webhook secret: ${telegramSecretToken ? telegramSecretToken.substring(0, 3) + '...' : '[NOT SET]'}`);
     
     if (telegramSecretToken && secretHeader !== telegramSecretToken) {
-      console.error(`Secret token validation failed! Received: ${secretHeader}, Expected: ${telegramSecretToken}`);
+      console.error(`Secret token validation failed! Received: ${secretHeader || '[NONE]'}, Expected from DB: ${telegramSecretToken}`);
       return new Response(
         JSON.stringify({ status: "error", message: "Unauthorized - Secret token validation failed" }), 
         { 
@@ -35,7 +58,7 @@ serve(async (req) => {
         }
       );
     } else {
-      console.log("Secret token validation successful");
+      console.log("Secret token validation successful or not configured");
     }
     
     if (!telegramBotToken) {
@@ -49,7 +72,6 @@ serve(async (req) => {
       );
     }
     
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
 
     // Parse the webhook update from Telegram
