@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
-import { CashPurchaseItemData } from "@/components/inventory/purchases/CashPurchaseItem";
+import { CashPurchaseItemData } from "@/types/sales";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SavedCashPurchase {

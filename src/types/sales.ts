@@ -11,7 +11,22 @@ export type ProductCategory =
   | "Badge Making Machine" 
   | "Other";
 
-export type ProductStatus = "Active" | "Discontinued" | "Out of Stock" | "Low Stock";
+export type ProductStatus = 
+  | "Active" 
+  | "Discontinued" 
+  | "Out of Stock" 
+  | "Low Stock" 
+  | "Coming Soon";
+
+export interface ProductSpecs {
+  speed?: string;
+  color: boolean;
+  ram?: string;
+  paperTray?: string;
+  duplex: boolean;
+  additionalSpecs?: Record<string, string | number | boolean>;
+  [key: string]: any;
+}
 
 export interface Product {
   id: string;
@@ -29,25 +44,37 @@ export interface Product {
   specifications?: ProductSpecs;
   status: ProductStatus;
   createdAt: string;
-}
-
-export interface ProductSpecs {
-  [key: string]: string | number | boolean;
+  // Additional fields that are used in the app
+  specs: ProductSpecs;
+  defaultGstPercent: number;
+  isInventoryItem?: boolean;
 }
 
 // Quotation types
-export type QuotationStatus = "Draft" | "Sent" | "Approved" | "Rejected" | "Expired";
+export type QuotationStatus = 
+  | "Draft" 
+  | "Sent" 
+  | "Approved" 
+  | "Rejected" 
+  | "Expired" 
+  | "Accepted";
 
 export interface QuotationItem {
   id: string;
   productId: string;
   name: string;
   description?: string;
+  category?: ProductCategory;
   quantity: number;
   unitPrice: number;
   discount?: number;
   tax?: number;
   total: number;
+  // Additional fields that are used in the app
+  gstPercent?: number;
+  gstAmount?: number;
+  specs?: ProductSpecs;
+  isCustomItem?: boolean;
 }
 
 export interface Quotation {
@@ -58,39 +85,48 @@ export interface Quotation {
   customerEmail?: string;
   customerPhone?: string;
   customerAddress?: string;
-  date: string;
+  date?: string;
   validUntil: string;
   items: QuotationItem[];
   subtotal: number;
-  tax: number;
+  tax?: number;
   discount?: number;
-  total: number;
+  total?: number;
   notes?: string;
   terms?: string;
   status: QuotationStatus;
-  createdBy: string;
+  createdBy?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
+  // Additional fields that are used in the app
+  totalGst?: number;
+  grandTotal: number;
 }
 
 // Purchase Order types
 export type PurchaseOrderStatus = 
-  "Draft" | 
-  "Sent" | 
-  "Confirmed" | 
-  "Received" | 
-  "Cancelled" | 
-  "Cash Purchase";
+  | "Draft" 
+  | "Sent" 
+  | "Confirmed" 
+  | "Received" 
+  | "Cancelled" 
+  | "Cash Purchase";
 
 export interface PurchaseOrderItem {
   id: string;
   productId?: string;
   name: string;
   description?: string;
+  category?: ProductCategory;
   quantity: number;
   unitPrice: number;
   tax?: number;
   total: number;
+  // Additional fields that are used in the app
+  gstPercent?: number;
+  gstAmount?: number;
+  specs?: ProductSpecs;
+  isCustomItem?: boolean;
 }
 
 export interface PurchaseOrder {
@@ -101,7 +137,7 @@ export interface PurchaseOrder {
   vendorEmail?: string;
   vendorPhone?: string;
   vendorAddress?: string;
-  date: string;
+  date?: string;
   deliveryDate: string;
   items: PurchaseOrderItem[] | string; // Can be string when stored as JSON
   subtotal: number;
@@ -112,9 +148,9 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus;
   paymentStatus?: string;
   paymentMethod?: string;
-  createdBy: string;
+  createdBy?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 // Vendor types (duplicate of what's in inventory.ts but needed for sales components)
@@ -131,4 +167,14 @@ export interface Vendor {
   rating?: number;
   notes?: string;
   createdAt: string;
+}
+
+// Cash Purchase types for our inventory management
+export interface CashPurchaseItemData {
+  id: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
 }
