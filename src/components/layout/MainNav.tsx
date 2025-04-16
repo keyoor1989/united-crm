@@ -1,6 +1,6 @@
 
-import Link from "next/link";
-import { useRouter } from "react-router-dom";
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   NavigationMenu,
@@ -31,7 +31,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 export function MainNav() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user } = useAuth();
   
   const isAdmin = user?.email === "admin@unitedcopier.com";
@@ -57,15 +57,15 @@ export function MainNav() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => router.navigate("/customers")}>
+                <DropdownMenuItem onClick={() => navigate("/customers")}>
                   <Users className="mr-2 h-4 w-4" />
                   All Customers
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.navigate("/leads")}>
+                <DropdownMenuItem onClick={() => navigate("/customers/follow-ups")}>
                   <Users className="mr-2 h-4 w-4" />
                   Leads
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.navigate("/followups")}>
+                <DropdownMenuItem onClick={() => navigate("/customers/follow-ups")}>
                   <MessagesSquare className="mr-2 h-4 w-4" />
                   Follow-ups
                 </DropdownMenuItem>
@@ -83,11 +83,11 @@ export function MainNav() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => router.navigate("/inventory")}>
+                <DropdownMenuItem onClick={() => navigate("/inventory")}>
                   <Package className="mr-2 h-4 w-4" />
                   Stock Overview
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.navigate("/purchase-orders")}>
+                <DropdownMenuItem onClick={() => navigate("/inventory/purchase-entry")}>
                   <FileCog className="mr-2 h-4 w-4" />
                   Purchase Orders
                 </DropdownMenuItem>
@@ -105,15 +105,15 @@ export function MainNav() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => router.navigate("/quotations")}>
+                <DropdownMenuItem onClick={() => navigate("/quotations")}>
                   <FileCog className="mr-2 h-4 w-4" />
                   Quotations
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.navigate("/sales")}>
+                <DropdownMenuItem onClick={() => navigate("/finance")}>
                   <FileCog className="mr-2 h-4 w-4" />
                   Sales & Billing
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.navigate("/service")}>
+                <DropdownMenuItem onClick={() => navigate("/service")}>
                   <Monitor className="mr-2 h-4 w-4" />
                   Service Calls
                 </DropdownMenuItem>
@@ -131,12 +131,12 @@ export function MainNav() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => router.navigate("/chat")}>
+                <DropdownMenuItem onClick={() => navigate("/smart-assistant")}>
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Assistant
                 </DropdownMenuItem>
                 {isAdmin && (
-                  <DropdownMenuItem onClick={() => router.navigate("/telegram-admin")}>
+                  <DropdownMenuItem onClick={() => navigate("/telegram-admin")}>
                     <Send className="mr-2 h-4 w-4" />
                     Telegram Bot
                   </DropdownMenuItem>
@@ -147,22 +147,6 @@ export function MainNav() {
         </NavigationMenuList>
       </NavigationMenu>
     </div>
-  );
-}
-
-function NavigationMenuDemo() {
-  return (
-    <NavigationMenu>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <Link href="/docs" legacyBehavior passHref>
-            <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-              Documentation
-            </NavigationMenuLink>
-          </Link>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
   );
 }
 
