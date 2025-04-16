@@ -120,12 +120,25 @@ export const triggerTodayReminders = async () => {
       return false;
     }
     
-    if (data && data.success) {
-      toast.success(`Successfully sent ${data.message}`);
-      return true;
-    } else if (data) {
-      toast.info(data.message || "No reminders needed to be sent");
-      return true;
+    // Enhanced response handling with more detailed feedback
+    if (data) {
+      if (data.success) {
+        if (data.details && data.details.reminders_sent > 0) {
+          toast.success(`Successfully sent ${data.details.reminders_sent} reminders`);
+        } else {
+          toast.success(data.message || "Reminders processed successfully");
+        }
+        return true;
+      } else if (data.message && data.message.includes('No pending follow-ups')) {
+        toast.info("No pending follow-ups found for today");
+        return true;
+      } else if (data.message && data.message.includes('No active telegram chats')) {
+        toast.warning("No active Telegram chats found. Please authorize chats in Telegram Admin settings.");
+        return false;
+      } else {
+        toast.warning(data.message || "No reminders were sent. Check configuration.");
+        return false;
+      }
     } else {
       toast.error("Unknown response from reminders service");
       return false;

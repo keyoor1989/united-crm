@@ -13,13 +13,6 @@ const telegramBotToken = Deno.env.get('telegram_key') || '';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Get today's date at midnight for comparison
-const getTodayDate = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
-};
-
 // Format date for display in message
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -47,17 +40,17 @@ serve(async (req) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Format date for SQL query
+    // Format date for SQL query - just the date part (YYYY-MM-DD)
     const formattedDate = today.toISOString().split('T')[0];
     console.log(`Looking for follow-ups on date: ${formattedDate}`);
 
-    // Get all follow-ups scheduled for today that haven't had reminders sent and are pending
+    // IMPROVED DATE COMPARISON: 
+    // Instead of using timestamp range, compare just the date part using ::date casting
     const { data: followUps, error: followUpsError } = await supabase
       .from('sales_followups')
       .select('*')
       .eq('status', 'pending')
-      .gte('date', `${formattedDate}T00:00:00.000Z`)
-      .lte('date', `${formattedDate}T23:59:59.999Z`);
+      .filter('date::date', 'eq', formattedDate);
 
     if (followUpsError) {
       console.error(`Error fetching follow-ups: ${followUpsError.message}`);
@@ -70,7 +63,11 @@ serve(async (req) => {
     if (!followUps || followUps.length === 0) {
       return new Response(JSON.stringify({ 
         message: 'No pending follow-ups for today that need reminders',
-        success: true 
+        success: true,
+        details: { 
+          date: formattedDate,
+          query_info: 'Searched for followups with date matching today (date part only)'
+        }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
@@ -91,7 +88,8 @@ serve(async (req) => {
     if (!chats || chats.length === 0) {
       console.log("No active telegram chats found to notify");
       return new Response(JSON.stringify({ 
-        message: 'No active telegram chats to notify' 
+        message: 'No active telegram chats to notify',
+        success: false 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
@@ -135,6 +133,8 @@ ${followUp.contact_phone ? `<b>Contact:</b> ${followUp.contact_phone}` : ''}
 <i>Please make sure to update the follow-up status after completion.</i>
       `;
 
+      let sentToAnyChat = false;
+
       // Send to all chats with customer_followups preference
       for (const chat of chats) {
         // Check if chat has preference for follow-up notifications
@@ -156,6 +156,8 @@ ${followUp.contact_phone ? `<b>Contact:</b> ${followUp.contact_phone}` : ''}
                 follow_up_id: followUp.id,
                 success: true
               });
+              
+              sentToAnyChat = true;
               
               // Mark this follow-up as having had a reminder sent
               if (!updatedFollowUpIds.includes(followUp.id)) {
@@ -183,6 +185,11 @@ ${followUp.contact_phone ? `<b>Contact:</b> ${followUp.contact_phone}` : ''}
           console.log(`Chat ${chat.chat_id} does not have follow-up notifications enabled`);
         }
       }
+
+      // Only mark as sent if successfully sent to at least one chat
+      if (sentToAnyChat && !updatedFollowUpIds.includes(followUp.id)) {
+        updatedFollowUpIds.push(followUp.id);
+      }
     }
 
     // Update the follow-ups to mark reminders as sent
@@ -203,17 +210,29 @@ ${followUp.contact_phone ? `<b>Contact:</b> ${followUp.contact_phone}` : ''}
       console.log("No follow-ups were successfully sent, so none will be marked as sent");
     }
 
+    // Prepare a detailed response including diagnostic information
     return new Response(JSON.stringify({ 
-      success: true, 
-      message: `Sent ${results.filter(r => r.success).length} follow-up reminders`,
-      details: results
+      success: updatedFollowUpIds.length > 0, 
+      message: updatedFollowUpIds.length > 0 ? 
+        `Sent ${updatedFollowUpIds.length} follow-up reminders` : 
+        'No reminders were sent. Check Telegram bot configuration and notification preferences.',
+      details: {
+        date_checked: formattedDate,
+        follow_ups_found: followUps.length,
+        reminders_sent: updatedFollowUpIds.length,
+        chat_count: chats.length,
+        results
+      }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     });
   } catch (error) {
     console.error('Error in daily-followup-reminders:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      success: false 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
     });

@@ -2,7 +2,8 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Bell } from "lucide-react";
+import { RefreshCw, Bell, AlertCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface FollowUpHeaderProps {
   onRefresh: () => void;
@@ -40,15 +41,28 @@ const FollowUpHeader: React.FC<FollowUpHeaderProps> = ({
       
       <div className="flex gap-3 w-full sm:w-auto">
         {onSendReminders && (
-          <Button 
-            variant="outline" 
-            className="w-full sm:w-auto"
-            onClick={onSendReminders} 
-            disabled={isSendingReminders}
-          >
-            <Bell className="mr-2 h-4 w-4" />
-            {isSendingReminders ? "Sending..." : "Send Reminders"}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full sm:w-auto"
+                    onClick={onSendReminders} 
+                    disabled={isSendingReminders || totalToday === 0}
+                  >
+                    <Bell className="mr-2 h-4 w-4" />
+                    {isSendingReminders ? "Sending..." : "Send Reminders"}
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                {totalToday === 0 ? 
+                  "No follow-ups scheduled for today" : 
+                  "Send Telegram reminders for today's follow-ups"}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
         <Button 
           variant="outline" 
