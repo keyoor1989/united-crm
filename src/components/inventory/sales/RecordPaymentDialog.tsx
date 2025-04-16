@@ -4,13 +4,13 @@ import { format } from "date-fns";
 import { 
   Dialog, 
   DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle, 
+  DialogFooter 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,15 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 import { SalesItem } from "./SalesTable";
-import { PaymentMethodIcon } from "./PaymentMethodIcon";
 
 interface RecordPaymentDialogProps {
   open: boolean;
   onClose: () => void;
   sale: SalesItem | null;
-  paymentMethods: { value: string; label: string; icon: React.ElementType; }[];
+  paymentMethods: { value: string; label: string; icon: any }[];
   onSavePayment: (saleId: string, paymentData: any) => void;
 }
 
@@ -38,60 +36,41 @@ export const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({
   paymentMethods,
   onSavePayment,
 }) => {
-  const [paymentData, setPaymentData] = useState({
-    method: "cash",
-    amount: 0,
-    reference: "",
-    date: format(new Date(), "yyyy-MM-dd"),
-  });
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [amount, setAmount] = useState("");
+  const [notes, setNotes] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
 
-  // Set the default amount to the sale total when a sale is selected
+  // Reset form when the dialog opens with a new sale
   React.useEffect(() => {
     if (sale) {
-      setPaymentData(prev => ({ ...prev, amount: sale.total }));
+      setAmount(sale.total.toString());
+      setInvoiceNumber(sale.invoiceNumber || `INV-${format(new Date(), "yyyyMMdd")}-${Math.floor(Math.random() * 100)}`);
     }
   }, [sale]);
-
-  const handleChange = (field: string, value: string | number) => {
-    setPaymentData(prev => ({ ...prev, [field]: value }));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!sale) return;
     
-    // Basic validation
-    if (paymentData.amount <= 0) {
-      toast.error("Payment amount must be greater than zero");
-      return;
-    }
-    
-    if (paymentData.amount > sale.total) {
-      toast.error("Payment amount cannot exceed the total due");
-      return;
-    }
-    
-    // Create payment record
-    const payment = {
-      ...paymentData,
+    const paymentData = {
       saleId: sale.id,
-      customerName: sale.customer,
-      paymentDate: paymentData.date,
-      invoiceNumber: `INV-${format(new Date(), "yyyyMMdd")}-${Math.floor(Math.random() * 100)}`,
+      paymentMethod,
+      amount: parseFloat(amount),
+      notes,
+      paymentDate: new Date().toISOString(),
+      invoiceNumber,
     };
     
-    // Call the parent component's save handler
-    onSavePayment(sale.id, payment);
-    
-    // Reset form and close dialog
-    setPaymentData({
-      method: "cash",
-      amount: 0,
-      reference: "",
-      date: format(new Date(), "yyyy-MM-dd"),
-    });
+    onSavePayment(sale.id, paymentData);
     onClose();
+    
+    // Reset form
+    setPaymentMethod("cash");
+    setAmount("");
+    setNotes("");
+    setInvoiceNumber("");
   };
 
   if (!sale) return null;
@@ -99,98 +78,76 @@ export const RecordPaymentDialog: React.FC<RecordPaymentDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
-            <DialogDescription>
-              Enter payment details for Invoice #{sale.id} - {sale.customer}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="rounded-md border p-3">
-              <div className="text-sm text-muted-foreground">Total Due</div>
-              <div className="text-2xl font-bold">₹{sale.total}</div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="amount">Payment Amount (₹)</Label>
-              <Input
-                id="amount"
-                type="number"
-                min="0"
-                max={sale.total}
-                step="0.01"
-                value={paymentData.amount}
-                onChange={(e) => handleChange("amount", parseFloat(e.target.value))}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="paymentMethod">Payment Method</Label>
-              <Select
-                value={paymentData.method}
-                onValueChange={(value) => handleChange("method", value)}
-              >
-                <SelectTrigger id="paymentMethod">
-                  <SelectValue placeholder="Select payment method" />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentMethods
-                    .filter(method => method.value !== "credit") // Exclude credit option
-                    .map((method) => (
-                      <SelectItem key={method.value} value={method.value}>
-                        <div className="flex items-center gap-2">
-                          <PaymentMethodIcon method={method.label} />
-                          <span>{method.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="reference">
-                {paymentData.method === "cash" 
-                  ? "Receipt Number" 
-                  : paymentData.method === "bank_transfer" 
-                    ? "Transaction ID" 
-                    : "Reference"}
-              </Label>
-              <Input
-                id="reference"
-                value={paymentData.reference}
-                onChange={(e) => handleChange("reference", e.target.value)}
-                placeholder={
-                  paymentData.method === "cash" 
-                    ? "Enter receipt number" 
-                    : paymentData.method === "bank_transfer" 
-                      ? "Enter transaction ID" 
-                      : "Enter reference"
-                }
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="date">Payment Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={paymentData.date}
-                onChange={(e) => handleChange("date", e.target.value)}
-                max={format(new Date(), "yyyy-MM-dd")}
-                required
-              />
+        <DialogHeader>
+          <DialogTitle>Record Payment for Sale #{sale.id}</DialogTitle>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="sale-details">Sale Details</Label>
+            <div className="rounded-md border p-3 text-sm">
+              <p><span className="font-medium">Customer:</span> {sale.customer}</p>
+              <p><span className="font-medium">Item:</span> {sale.itemName}</p>
+              <p><span className="font-medium">Total Amount:</span> ₹{sale.total}</p>
             </div>
           </div>
           
+          <div className="space-y-2">
+            <Label htmlFor="invoice-number">Invoice Number</Label>
+            <Input
+              id="invoice-number"
+              value={invoiceNumber}
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="payment-method">Payment Method</Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger id="payment-method">
+                <SelectValue placeholder="Select payment method" />
+              </SelectTrigger>
+              <SelectContent>
+                {paymentMethods.map((method) => (
+                  <SelectItem key={method.value} value={method.value}>
+                    <div className="flex items-center">
+                      {React.createElement(method.icon, { className: "mr-2 h-4 w-4" })}
+                      {method.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount</Label>
+            <Input
+              id="amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any payment notes here..."
+              rows={3}
+            />
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Save Payment</Button>
+            <Button type="submit">Record Payment</Button>
           </DialogFooter>
         </form>
       </DialogContent>

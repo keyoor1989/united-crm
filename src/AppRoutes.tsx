@@ -53,6 +53,7 @@ import TaskDashboard from "@/pages/tasks/TaskDashboard";
 import InventorySales from "@/pages/inventory/InventorySales";
 import CashPurchase from "@/pages/inventory/CashPurchase";
 import CreditSales from "@/pages/inventory/CreditSales";
+import SalesReports from "@/pages/inventory/SalesReports";
 
 const AppRoutes = () => {
   return (
@@ -92,6 +93,7 @@ const AppRoutes = () => {
         <Route path="/inventory/cash-purchase" element={<ProtectedRoute><CashPurchase /></ProtectedRoute>} />
         <Route path="/inventory/sales" element={<ProtectedRoute><InventorySales /></ProtectedRoute>} />
         <Route path="/inventory/credit-sales" element={<ProtectedRoute><CreditSales /></ProtectedRoute>} />
+        <Route path="/inventory/sales-reports" element={<ProtectedRoute><SalesReports /></ProtectedRoute>} />
         
         <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
         <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />

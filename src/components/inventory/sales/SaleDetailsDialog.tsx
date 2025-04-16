@@ -171,10 +171,6 @@ export const SaleDetailsDialog: React.FC<SaleDetailsDialogProps> = ({
               Record Payment
             </Button>
           )}
-          
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
