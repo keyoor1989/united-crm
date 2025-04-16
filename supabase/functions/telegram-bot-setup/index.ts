@@ -107,13 +107,18 @@ serve(async (req) => {
         }
         
         try {
+          // First, delete any existing webhook
+          console.log("Deleting existing webhook before setting new one");
+          await fetch(`${telegramApi}/deleteWebhook`);
+          
           // Set allowed updates to filter message types
           const allowedUpdates = ['message', 'edited_message'];
           
           console.log(`Setting webhook to: ${webhook_url}`);
           
+          // Add max_connections parameter to improve reliability
           const response = await fetch(
-            `${telegramApi}/setWebhook?url=${encodeURIComponent(webhook_url)}&allowed_updates=${JSON.stringify(allowedUpdates)}`
+            `${telegramApi}/setWebhook?url=${encodeURIComponent(webhook_url)}&allowed_updates=${JSON.stringify(allowedUpdates)}&max_connections=40`
           );
           const result = await response.json();
           

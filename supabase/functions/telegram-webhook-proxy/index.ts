@@ -30,6 +30,7 @@ serve(async (req) => {
     }
     
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
 
     // Parse the webhook update from Telegram
     let update;
@@ -66,73 +67,99 @@ serve(async (req) => {
       console.error("Exception during webhook logging:", logException);
     }
 
-    // Forward the webhook to the main handler with proper authentication
-    try {
-      console.log("Forwarding webhook to main handler with proper authentication");
+    // Process the webhook message
+    if (update && update.message) {
+      const chatId = update.message.chat.id;
+      const messageText = update.message.text || '';
       
-      // Use the actual token from environment variables
-      const response = await fetch(
-        `https://api.telegram.org/bot${telegramBotToken}/getUpdates`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ offset: -1, limit: 1 }),
+      // Check if the chat is authorized
+      try {
+        const { data: chatData, error: chatError } = await supabase
+          .from('telegram_authorized_chats')
+          .select('*')
+          .eq('chat_id', chatId.toString())
+          .eq('is_active', true)
+          .single();
+        
+        if (chatError || !chatData) {
+          console.log("Unauthorized chat or chat not active:", chatId);
+          
+          // For debugging only - send a reply to the unauthorized chat
+          try {
+            await fetch(`${telegramApi}/sendMessage`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "Your chat is not authorized. Please contact the system administrator.",
+              }),
+            });
+          } catch (replyError) {
+            console.error("Error sending unauthorized message:", replyError);
+          }
+          
+          return new Response(
+            JSON.stringify({ status: "error", message: "Unauthorized chat" }), 
+            { 
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
         }
-      );
-      
-      const authCheckResult = await response.json();
-      console.log("Auth check result:", JSON.stringify(authCheckResult));
-      
-      if (!authCheckResult.ok) {
-        console.error("Token validation failed:", authCheckResult.description);
+        
+        // Log the message
         await supabase
           .from('telegram_message_logs')
           .insert({
-            chat_id: update?.message?.chat?.id?.toString() || "unknown",
-            message_text: `Token validation failed: ${authCheckResult.description}`,
-            message_type: "webhook_error",
-            direction: "internal",
-            processed_status: "failed"
+            chat_id: chatId.toString(),
+            message_text: messageText,
+            message_type: "incoming_message",
+            direction: "incoming",
+            processed_status: "processed"
           });
-          
+        
+        // Reply with a simple message for testing
+        if (messageText.toLowerCase() === '/help' || messageText.toLowerCase() === 'help') {
+          await fetch(`${telegramApi}/sendMessage`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: "Welcome to United Copier bot! This bot is for receiving notifications about service calls, customer follow-ups, and inventory alerts.",
+              parse_mode: "HTML"
+            }),
+          });
+        }
+        
+        // Send back a success response to Telegram
         return new Response(
-          JSON.stringify({ status: "error", message: "Invalid bot token" }), 
+          JSON.stringify({ status: "success" }), 
           { 
-            status: 401,
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      } catch (chatException) {
+        console.error("Exception during chat authorization check:", chatException);
+        
+        return new Response(
+          JSON.stringify({ status: "error", message: "Error processing message" }), 
+          { 
+            status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       }
-      
-      // If token is valid, send a response back to Telegram immediately
-      // This prevents Telegram from retrying the webhook
+    } else {
+      // If not a message, still return success to acknowledge receipt
       return new Response(
         JSON.stringify({ status: "success" }), 
         { 
           status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    } catch (forwardException) {
-      console.error("Exception during token validation:", forwardException);
-      
-      // Log the exception to the database
-      await supabase
-        .from('telegram_message_logs')
-        .insert({
-          chat_id: update?.message?.chat?.id?.toString() || "unknown",
-          message_text: `Token validation exception: ${forwardException.message}`,
-          message_type: "webhook_error",
-          direction: "internal",
-          processed_status: "failed"
-        });
-        
-      return new Response(
-        JSON.stringify({ status: "error", message: "Exception during token validation" }), 
-        { 
-          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
