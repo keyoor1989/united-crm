@@ -1,8 +1,8 @@
 
 import React from "react";
-import { Filter, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -35,89 +35,72 @@ export const SalesFilters: React.FC<SalesFiltersProps> = ({
   onResetFilters,
 }) => {
   return (
-    <div className="flex flex-col space-y-4 md:flex-row md:items-end md:space-x-4 md:space-y-0">
-      <div className="flex-1 space-y-2">
-        <Label htmlFor="search">Search</Label>
-        <div className="relative">
-          <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+    <div className="flex flex-col space-y-4">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            id="search"
-            placeholder="Search sales..."
+            placeholder="Search by customer or item..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-8"
           />
+          {searchQuery && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3"
+              onClick={() => onSearchChange("")}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="payment-status">Payment Status</Label>
-        <Select
-          value={paymentFilter}
-          onValueChange={onPaymentFilterChange}
-        >
-          <SelectTrigger id="payment-status" className="w-[140px]">
-            <SelectValue placeholder="All Payments" />
+        
+        <Select value={paymentFilter} onValueChange={onPaymentFilterChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Payment Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Payments</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="due">Due</SelectItem>
+            <SelectItem value="All">All Payment Status</SelectItem>
+            <SelectItem value="Paid">Paid</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="Due">Due</SelectItem>
+            <SelectItem value="Partial">Partial</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Sale Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Statuses</SelectItem>
+            <SelectItem value="Completed">Completed</SelectItem>
+            <SelectItem value="Pending">Pending</SelectItem>
+            <SelectItem value="Credit Sale">Credit Sale</SelectItem>
+            <SelectItem value="Cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="sale-status">Sale Status</Label>
-        <Select
-          value={statusFilter}
-          onValueChange={onStatusFilterChange}
-        >
-          <SelectTrigger id="sale-status" className="w-[140px]">
-            <SelectValue placeholder="All Status" />
+      <div className="flex justify-between items-center">
+        <Select value={customerTypeFilter} onValueChange={onCustomerTypeFilterChange}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Customer Type" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="credit sale">Credit Sale</SelectItem>
+            <SelectItem value="All">All Customer Types</SelectItem>
+            <SelectItem value="Customer">Customer</SelectItem>
+            <SelectItem value="Dealer">Dealer</SelectItem>
+            <SelectItem value="Government">Government</SelectItem>
           </SelectContent>
         </Select>
+        
+        <Button variant="ghost" size="sm" onClick={onResetFilters}>
+          Reset Filters
+        </Button>
       </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="customer-type">Customer Type</Label>
-        <Select
-          value={customerTypeFilter}
-          onValueChange={onCustomerTypeFilterChange}
-        >
-          <SelectTrigger id="customer-type" className="w-[140px]">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="customer">Customer</SelectItem>
-            <SelectItem value="dealer">Dealer</SelectItem>
-            <SelectItem value="government">Government</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <Button variant="outline" onClick={onResetFilters} className="gap-2">
-        <Filter size={16} />
-        Reset
-      </Button>
     </div>
   );
 };
-
-// Add the Label component to avoid extra import
-const Label = ({ htmlFor, children }: { htmlFor: string, children: React.ReactNode }) => (
-  <label 
-    htmlFor={htmlFor} 
-    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-  >
-    {children}
-  </label>
-);

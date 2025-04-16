@@ -1,33 +1,35 @@
 
 import React from "react";
-import { 
-  CreditCard, 
-  Calendar, 
-  IndianRupee, 
-  Wallet, 
-  Building2 
+import {
+  CreditCard,
+  Wallet,
+  Building2,
+  IndianRupee,
+  Calendar,
+  RefreshCcw,
+  CircleDollarSign,
+  BanknoteIcon
 } from "lucide-react";
 
-type PaymentMethodIconProps = {
+interface PaymentMethodIconProps {
   method: string;
-  size?: number;
-};
+  className?: string;
+}
 
-export const PaymentMethodIcon: React.FC<PaymentMethodIconProps> = ({ 
-  method, 
-  size = 16 
+export const PaymentMethodIcon: React.FC<PaymentMethodIconProps> = ({
+  method,
+  className = "h-4 w-4"
 }) => {
-  switch (method.toLowerCase()) {
-    case "credit card":
-      return <CreditCard size={size} className="text-blue-500" />;
-    case "bank transfer":
-      return <Building2 size={size} className="text-green-600" />;
-    case "upi":
-      return <IndianRupee size={size} className="text-purple-500" />;
-    case "credit":
-      return <Calendar size={size} className="text-amber-500" />;
-    case "cash":
-    default:
-      return <Wallet size={size} className="text-gray-700" />;
-  }
+  const methodLower = method.toLowerCase();
+  
+  if (methodLower.includes("credit card")) return <CreditCard className={className} />;
+  if (methodLower.includes("cash")) return <Wallet className={className} />;
+  if (methodLower.includes("bank")) return <Building2 className={className} />;
+  if (methodLower.includes("upi")) return <IndianRupee className={className} />;
+  if (methodLower.includes("due") || methodLower.includes("credit")) return <Calendar className={className} />;
+  if (methodLower.includes("cheque")) return <BanknoteIcon className={className} />;
+  if (methodLower.includes("online")) return <CircleDollarSign className={className} />;
+  
+  // Default icon for other payment methods
+  return <RefreshCcw className={className} />;
 };

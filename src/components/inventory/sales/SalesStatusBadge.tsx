@@ -2,19 +2,48 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 
-type SalesStatusProps = {
+interface SalesStatusBadgeProps {
   status: string;
-};
+}
 
-export const SalesStatusBadge: React.FC<SalesStatusProps> = ({ status }) => {
-  switch (status.toLowerCase()) {
-    case "completed":
-      return <Badge variant="success">Completed</Badge>;
-    case "pending":
-      return <Badge variant="warning">Pending</Badge>;
-    case "credit sale":
-      return <Badge variant="secondary">Credit Sale</Badge>;
-    default:
-      return <Badge>{status}</Badge>;
+export const SalesStatusBadge: React.FC<SalesStatusBadgeProps> = ({ status }) => {
+  const statusLower = status.toLowerCase();
+  
+  if (statusLower === "completed") {
+    return (
+      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+        Completed
+      </Badge>
+    );
   }
+  
+  if (statusLower === "pending") {
+    return (
+      <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+        Pending
+      </Badge>
+    );
+  }
+  
+  if (statusLower.includes("credit")) {
+    return (
+      <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">
+        Credit Sale
+      </Badge>
+    );
+  }
+  
+  if (statusLower === "cancelled") {
+    return (
+      <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+        Cancelled
+      </Badge>
+    );
+  }
+  
+  return (
+    <Badge variant="outline">
+      {status}
+    </Badge>
+  );
 };
