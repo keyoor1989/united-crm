@@ -22,6 +22,8 @@ const SmartAssistant = () => {
   const [activeTab, setActiveTab] = useState("chat");
 
   const handleQuickAction = (action: string) => {
+    console.log("Smart Assistant: Handling quick action:", action);
+    
     switch(action) {
       case "quotation":
         // Send command to chat interface

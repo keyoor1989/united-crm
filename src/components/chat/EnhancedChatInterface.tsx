@@ -307,43 +307,58 @@ Please summarize this customer profile in a concise, professional format. Focus 
   };
 
   const parseCommand = (command: string): CommandIntent => {
+    console.log("Parsing command:", command);
+    
     if (isMobileNumber(command)) {
+      console.log("Detected mobile number format");
       return "unknown";
     }
     
     const commandLower = command.toLowerCase();
+    console.log("Command lowercase:", commandLower);
     
     if (commandLower.includes("quotation") || commandLower.includes("quote") || 
         commandLower.match(/quote for|generate quote|create quote|make quotation/)) {
+      console.log("Detected quotation command");
       return "quotation";
     } else if (commandLower.includes("follow-up") || commandLower.includes("follow up") || 
                commandLower.includes("reminder") || commandLower.includes("remind me") ||
                (commandLower.includes("task") && commandLower.includes("follow"))) {
+      console.log("Detected follow-up command");
       return "follow-up";
     } else if (commandLower.includes("task") || commandLower.includes("schedule")) {
+      console.log("Detected task command");
       return "task";
     } else if (commandLower.includes("inventory") || commandLower.includes("stock") || 
               commandLower.includes("kitna stock") || commandLower.includes("check stock") ||
               commandLower.includes("toner") || commandLower.includes("drum") || 
               commandLower.includes("developer")) {
+      console.log("Detected inventory command");
       return "inventory";
     } else if (commandLower.includes("invoice") || commandLower.includes("bill")) {
+      console.log("Detected invoice command");
       return "invoice";
     } else if (commandLower.includes("report") || commandLower.includes("show") || commandLower.includes("how many")) {
+      console.log("Detected report command");
       return "report";
     } else if (commandLower.includes("help") || commandLower.includes("what can you do")) {
+      console.log("Detected help command");
       return "help";
     } else if (commandLower.includes("new customer") || commandLower.includes("add customer") || 
                commandLower.includes("create lead") || commandLower.includes("naya customer") ||
                commandLower.includes("add new customer")) {
+      console.log("Detected customer command");
       return "customer";
     }
     
+    console.log("Command not recognized, returning unknown");
     return "unknown";
   };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
+    
+    console.log("Handling message:", inputValue);
     
     const userMessage: Message = {
       id: `msg-${Date.now()}-user`,

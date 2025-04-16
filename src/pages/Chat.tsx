@@ -1,7 +1,7 @@
 
 import React from "react";
 import Layout from "@/components/layout/Layout";
-import ChatInterface from "@/components/chat/ChatInterface";
+import EnhancedChatInterface from "@/components/chat/EnhancedChatInterface";
 
 const Chat = () => {
   return (
@@ -16,7 +16,7 @@ const Chat = () => {
           </div>
         </div>
 
-        <ChatInterface />
+        <EnhancedChatInterface />
       </div>
     </Layout>
   );

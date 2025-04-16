@@ -15,6 +15,8 @@ export interface ParsedCustomerCommand {
 }
 
 export const parseCustomerCommand = (command: string): ParsedCustomerCommand => {
+  console.log("Parsing customer command:", command);
+  
   const result: ParsedCustomerCommand = {
     name: "",
     phone: "",
@@ -33,8 +35,10 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
   
   if (nameMatch && nameMatch[1]) {
     result.name = nameMatch[1].trim();
+    console.log("Extracted name:", result.name);
   } else {
     result.missingFields.push("name");
+    console.log("Name not found in command");
   }
 
   // Extract phone number
@@ -43,8 +47,10 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
   
   if (phoneMatch && phoneMatch[1]) {
     result.phone = phoneMatch[1].replace(/\D/g, '');
+    console.log("Extracted phone:", result.phone);
   } else {
     result.missingFields.push("phone");
+    console.log("Phone not found in command");
   }
 
   // Extract location/city
@@ -53,8 +59,10 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
   
   if (locationMatch && locationMatch[1]) {
     result.location = locationMatch[1].trim();
+    console.log("Extracted location:", result.location);
   } else {
     result.missingFields.push("location");
+    console.log("Location not found in command");
   }
 
   // Extract email (optional)
@@ -63,6 +71,7 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
   
   if (emailMatch) {
     result.email = emailMatch[0];
+    console.log("Extracted email:", result.email);
   }
 
   // Extract product interest (optional)
@@ -71,15 +80,18 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
   
   if (productMatch && productMatch[1]) {
     result.product = productMatch[1].trim();
+    console.log("Extracted product:", result.product);
   }
 
   // Check if this is potentially a spare parts inquiry
   if (command.toLowerCase().includes("spare part") || command.toLowerCase().includes("spare parts")) {
     result.product = result.product || "Spare Parts";
+    console.log("Detected spare parts inquiry");
   }
 
   // Determine if the command has enough information
   result.isValid = result.name !== "" && result.phone !== "";
+  console.log("Command is valid:", result.isValid);
 
   return result;
 };
