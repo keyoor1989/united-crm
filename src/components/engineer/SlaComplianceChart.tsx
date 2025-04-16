@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DateRange } from 'react-day-picker';
 
@@ -7,7 +8,6 @@ interface SlaComplianceChartProps {
 }
 
 const SlaComplianceChart: React.FC<SlaComplianceChartProps> = ({ engineerId, dateRange }) => {
-  // Implementation remains the same
   return (
     <div>
       {/* Chart implementation */}
@@ -16,4 +16,4 @@ const SlaComplianceChart: React.FC<SlaComplianceChartProps> = ({ engineerId, dat
   );
 };
 
-export { SlaComplianceChart };
+export default SlaComplianceChart;

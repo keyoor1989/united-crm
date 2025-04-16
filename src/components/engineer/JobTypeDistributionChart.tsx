@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DateRange } from 'react-day-picker';
 
@@ -7,7 +8,6 @@ interface JobTypeDistributionChartProps {
 }
 
 const JobTypeDistributionChart: React.FC<JobTypeDistributionChartProps> = ({ engineerId, dateRange }) => {
-  // Implementation remains the same
   return (
     <div>
       {/* Chart implementation */}

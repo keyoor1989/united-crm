@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { DateRange } from 'react-day-picker';
 
@@ -7,7 +8,6 @@ interface CompletionTimeChartProps {
 }
 
 const CompletionTimeChart: React.FC<CompletionTimeChartProps> = ({ engineerId, dateRange }) => {
-  // Implementation remains the same
   return (
     <div>
       {/* Chart implementation */}
@@ -16,4 +16,4 @@ const CompletionTimeChart: React.FC<CompletionTimeChartProps> = ({ engineerId, d
   );
 };
 
-export { CompletionTimeChart };
+export default CompletionTimeChart;
