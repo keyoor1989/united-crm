@@ -8,7 +8,7 @@ import { ParsedQuotationRequest } from "@/utils/chatCommands/quotationParser";
 import { toast } from "sonner";
 import { safeGeneratePdf } from "@/utils/pdfGenerator";
 import { generateQuotationPdf } from "@/utils/pdf/quotationPdfGenerator";
-import { ProductCategory } from "@/types/sales";
+import { ProductCategory, QuotationStatus } from "@/types/sales";
 
 interface QuotationViewProps {
   quotationText: string;
@@ -67,7 +67,7 @@ const QuotationView: React.FC<QuotationViewProps> = ({
         grandTotal: initialData.models.reduce((sum, model) => sum + (150000 * 1.18 * model.quantity), 0),
         createdAt: new Date().toISOString(),
         validUntil: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        status: "Draft",
+        status: "Draft" as QuotationStatus, // Type assertion to ensure compatibility
         notes: "",
         terms: "Payment terms: 50% advance, 50% on delivery.\nDelivery within 7-10 working days after confirmation."
       };
