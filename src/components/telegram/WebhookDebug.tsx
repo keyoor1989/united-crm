@@ -16,24 +16,36 @@ const WebhookDebug = () => {
   const [isSettingCommands, setIsSettingCommands] = useState(false);
   const [isPollingEnabled, setIsPollingEnabled] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
+  const [configId, setConfigId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if polling is currently enabled
+    // Check if polling is currently enabled and get the config ID
     checkPollingStatus();
   }, []);
 
   const checkPollingStatus = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('telegram_config')
-        .select('use_polling')
+        .select('id, use_polling')
         .single();
       
-      if (!error && data) {
+      if (error) {
+        console.error("Error checking polling status:", error);
+        toast.error("Failed to load Telegram configuration");
+        return;
+      }
+      
+      if (data) {
+        setConfigId(data.id);
         setIsPollingEnabled(data.use_polling || false);
       }
     } catch (err) {
       console.error("Error checking polling status:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -69,6 +81,11 @@ const WebhookDebug = () => {
   };
 
   const removeWebhook = async () => {
+    if (!configId) {
+      toast.error("Configuration not found. Please refresh the page.");
+      return;
+    }
+
     setIsRemovingWebhook(true);
     try {
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
@@ -85,13 +102,19 @@ const WebhookDebug = () => {
         toast.success("Webhook removed successfully");
         
         // Update config to use polling instead
-        await supabase
+        const { error: updateError } = await supabase
           .from('telegram_config')
           .update({ 
             webhook_url: null,
             use_polling: true 
           })
-          .eq('id', '1'); // Use string for ID comparison
+          .eq('id', configId);
+          
+        if (updateError) {
+          console.error("Error updating config:", updateError);
+          toast.error("Failed to update configuration");
+          return;
+        }
           
         setIsPollingEnabled(true);
       } else {
@@ -132,6 +155,11 @@ const WebhookDebug = () => {
   };
 
   const togglePolling = async () => {
+    if (!configId) {
+      toast.error("Configuration not found. Please refresh the page.");
+      return;
+    }
+
     setIsPolling(true);
     try {
       const newState = !isPollingEnabled;
@@ -143,7 +171,7 @@ const WebhookDebug = () => {
           use_polling: newState, 
           last_update_id: newState ? 0 : null 
         })
-        .eq('id', '1'); // Use string for ID comparison
+        .eq('id', configId);
       
       if (error) {
         console.error("Error toggling polling:", error);
@@ -176,6 +204,18 @@ const WebhookDebug = () => {
       setIsPolling(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-primary rounded-full"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -232,7 +272,7 @@ const WebhookDebug = () => {
               <Button 
                 variant="destructive" 
                 onClick={removeWebhook}
-                disabled={isRemovingWebhook}
+                disabled={isRemovingWebhook || !configId}
                 className="w-full"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isRemovingWebhook ? 'animate-spin' : ''}`} />
@@ -264,7 +304,7 @@ const WebhookDebug = () => {
             <Button 
               variant={isPollingEnabled ? "default" : "outline"} 
               onClick={togglePolling}
-              disabled={isPolling}
+              disabled={isPolling || !configId}
               className="w-full"
             >
               {isPollingEnabled ? "Disable" : "Enable"} Message Polling
