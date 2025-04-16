@@ -64,10 +64,54 @@ serve(async (req) => {
       
       // Generate a random secret token for webhook verification
       const webhookSecret = crypto.randomUUID();
-      
-      console.log(`Setting webhook to: ${webhook_url}`);
+      console.log(`Generated webhook secret: ${webhookSecret.substring(0, 3)}...`);
       
       try {
+        // First, update the database with the new webhook secret
+        // This ensures the secret is stored before we set the webhook
+        const { data: configData, error: configError } = await supabase
+          .from('telegram_config')
+          .select('id')
+          .limit(1)
+          .single();
+          
+        if (configError) {
+          console.error("Error fetching config ID:", configError);
+          return new Response(
+            JSON.stringify({ error: `Database error: ${configError.message}` }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+        
+        // Update config with new webhook URL and secret
+        const { error: updateError } = await supabase
+          .from('telegram_config')
+          .update({ 
+            webhook_url, 
+            webhook_secret: webhookSecret,
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', configData.id);
+          
+        if (updateError) {
+          console.error("Error updating config:", updateError);
+          return new Response(
+            JSON.stringify({ error: `Database error: ${updateError.message}` }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+        
+        console.log("Database updated with new webhook secret");
+        
+        // Now set the webhook with Telegram
+        console.log(`Setting webhook to: ${webhook_url} with secret token: ${webhookSecret.substring(0, 3)}...`);
+        
         const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
           method: 'POST',
           headers: {
@@ -76,7 +120,7 @@ serve(async (req) => {
           body: JSON.stringify({
             url: webhook_url,
             secret_token: webhookSecret,
-            allowed_updates: ["message", "callback_query"],
+            allowed_updates: ["message", "edited_message", "callback_query"],
           }),
         });
         
@@ -94,60 +138,6 @@ serve(async (req) => {
         
         const webhookData = await webhookResponse.json();
         console.log("Webhook setup response:", webhookData);
-        
-        if (webhookData.ok) {
-          // Update webhook URL and secret in DB
-          try {
-            const { data: configData, error: configError } = await supabase
-              .from('telegram_config')
-              .select('id')
-              .limit(1)
-              .single();
-              
-            if (configError) {
-              console.error("Error fetching config ID:", configError);
-              // Still return success to client but with warning
-              return new Response(
-                JSON.stringify({ ...webhookData, warning: "Webhook set on Telegram but database update failed" }),
-                { 
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                  status: 200
-                }
-              );
-            }
-            
-            const { error: updateError } = await supabase
-              .from('telegram_config')
-              .update({ 
-                webhook_url, 
-                webhook_secret: webhookSecret,
-                updated_at: new Date().toISOString() 
-              })
-              .eq('id', configData.id);
-              
-            if (updateError) {
-              console.error("Error updating config:", updateError);
-              // Still return success to client but with warning
-              return new Response(
-                JSON.stringify({ ...webhookData, warning: "Webhook set on Telegram but database update failed" }),
-                { 
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                  status: 200
-                }
-              );
-            }
-          } catch (dbError) {
-            console.error("Database error:", dbError);
-            // Still return success to client but with warning
-            return new Response(
-              JSON.stringify({ ...webhookData, warning: "Webhook set on Telegram but database update failed" }),
-              { 
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 200
-              }
-            );
-          }
-        }
         
         return new Response(
           JSON.stringify(webhookData),

@@ -67,8 +67,10 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
+    } else if (!telegramSecretToken) {
+      console.warn("No webhook secret found in database, skipping validation");
     } else {
-      console.log("Secret token validation successful or not configured");
+      console.log("Secret token validation successful");
     }
     
     // Parse the webhook update from Telegram

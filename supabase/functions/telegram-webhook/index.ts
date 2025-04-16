@@ -35,6 +35,7 @@ serve(async (req) => {
     let update;
     try {
       update = await req.json();
+      console.log("Parsed update:", JSON.stringify(update).substring(0, 100) + "...");
     } catch (error) {
       console.error("Failed to parse update JSON:", error);
       return new Response(
@@ -114,7 +115,7 @@ serve(async (req) => {
     // Handle commands and messages
     try {
       if (text.startsWith('/')) {
-        console.log("Handling command:", text);
+        console.log("Handling slash command:", text);
         await handleSlashCommands(chat_id, text);
       } 
       else if (text.toLowerCase().includes('add customer') || 
@@ -175,6 +176,21 @@ async function sendTelegramMessage(chat_id: string, text: string, parse_mode: st
       throw new Error("Telegram bot token is not configured");
     }
     
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // First log the outgoing message attempt
+    try {
+      await supabase.from('telegram_message_logs').insert({
+        chat_id,
+        message_text: text.substring(0, 500),
+        message_type: 'response',
+        direction: 'outgoing',
+        processed_status: 'sending',
+      });
+    } catch (logError) {
+      console.error("Failed to log outgoing message attempt:", logError);
+    }
+    
     const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: 'POST',
       headers: {
@@ -189,13 +205,28 @@ async function sendTelegramMessage(chat_id: string, text: string, parse_mode: st
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`Telegram API error (${response.status}): ${errorText}`);
+      
+      // Log the error
+      try {
+        await supabase.from('telegram_message_logs').insert({
+          chat_id,
+          message_text: `Failed to send message: ${errorText}`,
+          message_type: 'error',
+          direction: 'outgoing',
+          processed_status: 'failed',
+        });
+      } catch (logError) {
+        console.error("Failed to log error:", logError);
+      }
+      
       throw new Error(`Telegram API error: ${errorText}`);
     }
     
     const responseData = await response.json();
     
+    // Update log with success status
     try {
-      const supabase = createClient(supabaseUrl, supabaseKey);
       await supabase.from('telegram_message_logs').insert({
         chat_id,
         message_text: text.substring(0, 500),

@@ -3,6 +3,7 @@ export interface TelegramConfig {
   id: string;
   bot_token: string;
   webhook_url: string | null;
+  webhook_secret: string | null;
   created_at: string;
   updated_at: string;
   use_polling?: boolean;  // Make this optional
