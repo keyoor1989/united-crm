@@ -1,14 +1,47 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SalesItem } from "../SalesTable";
 import { toast } from "sonner";
+import { 
+  fetchSales, 
+  addSale, 
+  generateBill as generateBillService, 
+  recordPayment as recordPaymentService,
+  getCreditSales 
+} from "@/services/salesService";
 
-export const useSalesManagement = (initialData: SalesItem[]) => {
-  const [salesData, setSalesData] = useState<SalesItem[]>(initialData);
+export const useSalesManagement = (initialData?: SalesItem[]) => {
+  const [salesData, setSalesData] = useState<SalesItem[]>(initialData || []);
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
+
+  // Load sales data from the database
+  const loadSalesData = async (isCreditSalesOnly = false) => {
+    setLoading(true);
+    try {
+      const data = isCreditSalesOnly 
+        ? await getCreditSales() 
+        : await fetchSales();
+      setSalesData(data);
+    } catch (error) {
+      console.error("Error loading sales data:", error);
+      toast.error("Failed to load sales data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data on component mount if no initial data provided
+  useEffect(() => {
+    if (!initialData) {
+      loadSalesData();
+    } else {
+      setLoading(false);
+    }
+  }, [initialData]);
 
   // Filter data based on search query and filters
   const filteredSalesData = salesData.filter((item) => {
@@ -16,7 +49,8 @@ export const useSalesManagement = (initialData: SalesItem[]) => {
     const matchesSearch =
       searchQuery === "" ||
       item.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.itemName.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.itemName && item.itemName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.invoiceNumber && item.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Payment status filter
     const matchesPayment =
@@ -45,53 +79,122 @@ export const useSalesManagement = (initialData: SalesItem[]) => {
   };
 
   // Add a new sale
-  const addSale = (sale: SalesItem) => {
-    setSalesData([sale, ...salesData]);
-    toast.success(`Sale recorded for ${sale.customer}`);
+  const addNewSale = async (sale: SalesItem) => {
+    // Convert SalesItem to the format expected by the service
+    const saleRecord = {
+      date: new Date().toISOString(),
+      customer_name: sale.customer,
+      customer_type: sale.customerType,
+      status: sale.status,
+      payment_status: sale.paymentStatus,
+      payment_method: sale.paymentMethod,
+      invoice_number: sale.invoiceNumber,
+      bill_generated: sale.billGenerated,
+      subtotal: sale.total, // For simplicity, assuming total is subtotal
+      tax_amount: 0, // To be implemented
+      total_amount: sale.total
+    };
+
+    const saleItem = {
+      item_name: sale.itemName,
+      quantity: sale.quantity,
+      unit_price: sale.unitPrice,
+      total: sale.total
+    };
+
+    const saleId = await addSale(saleRecord, [saleItem]);
+    if (saleId) {
+      // Reload the sales data to include the new sale
+      loadSalesData();
+      return true;
+    }
+    return false;
   };
 
   // Generate bill for a sale
-  const generateBill = (sale: SalesItem) => {
-    const updatedSalesData = salesData.map((item) => {
-      if (item.id === sale.id) {
-        const updatedItem = {
-          ...item,
-          billGenerated: true,
-          invoiceNumber: `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(
-            Math.random() * 100
-          )}`,
-        };
-        return updatedItem;
-      }
-      return item;
-    });
+  const generateBill = async (sale: SalesItem) => {
+    if (!sale.id) {
+      toast.error("Sale ID is missing");
+      return false;
+    }
 
-    setSalesData(updatedSalesData);
-    toast.success(`Bill generated for ${sale.customer}`);
+    const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(
+      Math.random() * 100
+    )}`;
+
+    const success = await generateBillService(sale.id, invoiceNumber);
+    if (success) {
+      // Update the local state with the new bill status
+      const updatedSalesData = salesData.map((item) => {
+        if (item.id === sale.id) {
+          return {
+            ...item,
+            billGenerated: true,
+            invoiceNumber
+          };
+        }
+        return item;
+      });
+      
+      setSalesData(updatedSalesData);
+      return true;
+    }
+    return false;
   };
 
   // Record payment for a sale
-  const recordPayment = (saleId: string, paymentData: any) => {
-    const updatedSalesData = salesData.map((item) => {
-      if (item.id === saleId) {
-        return {
-          ...item,
-          paymentStatus: "Paid",
-          paymentMethod: paymentData.paymentMethod,
-          // Update other payment fields if needed
-        };
-      }
-      return item;
-    });
+  const recordPayment = async (saleId: string, paymentData: any) => {
+    const payment = {
+      sale_id: saleId,
+      payment_method: paymentData.paymentMethod,
+      amount: paymentData.amount,
+      reference_number: paymentData.referenceNumber,
+      notes: paymentData.notes
+    };
 
-    setSalesData(updatedSalesData);
-    toast.success(`Payment recorded successfully`);
+    const success = await recordPaymentService(payment);
+    if (success) {
+      // Reload the sales data to get the updated payment status
+      loadSalesData();
+      return true;
+    }
+    return false;
   };
 
   // Export sales data to CSV
   const exportSalesData = () => {
-    // This would normally generate and download a CSV file
-    // For this demo, we'll just show a success message
+    // Create CSV content
+    const headers = ["Date", "Customer", "Type", "Item", "Quantity", "Unit Price", "Total", "Status", "Payment Status", "Invoice"];
+    const rows = filteredSalesData.map(sale => [
+      new Date(sale.date).toLocaleDateString(),
+      sale.customer,
+      sale.customerType,
+      sale.itemName,
+      sale.quantity,
+      sale.unitPrice,
+      sale.total,
+      sale.status,
+      sale.paymentStatus,
+      sale.invoiceNumber || ""
+    ]);
+    
+    // Convert to CSV string
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+    
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `sales_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
     toast.success(`Exported ${filteredSalesData.length} sales records`);
   };
 
@@ -99,6 +202,7 @@ export const useSalesManagement = (initialData: SalesItem[]) => {
     salesData,
     setSalesData,
     filteredSalesData,
+    loading,
     searchQuery,
     setSearchQuery,
     paymentFilter,
@@ -108,9 +212,10 @@ export const useSalesManagement = (initialData: SalesItem[]) => {
     customerTypeFilter,
     setCustomerTypeFilter,
     resetFilters,
-    addSale,
+    addSale: addNewSale,
     generateBill,
     recordPayment,
     exportSalesData,
+    loadSalesData
   };
 };

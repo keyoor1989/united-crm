@@ -10,65 +10,33 @@ import { toast } from "sonner";
 import { SalesHeader } from "@/components/inventory/sales/SalesHeader";
 import { SalesFilters } from "@/components/inventory/sales/SalesFilters";
 import { SalesTable, SalesItem } from "@/components/inventory/sales/SalesTable";
+import { SaleDetailsDialog } from "@/components/inventory/sales/SaleDetailsDialog";
+import { RecordPaymentDialog } from "@/components/inventory/sales/RecordPaymentDialog";
 import { useSalesManagement } from "@/components/inventory/sales/hooks/useSalesManagement";
 import { formatCurrency } from "@/utils/finance/financeUtils";
 
-// Mock data for credit sales
-const creditSalesData = [
-  {
-    id: "CS001",
-    date: "2025-04-10",
-    customer: "Global Enterprises",
-    customerType: "Customer",
-    itemName: "Xerox 3020 Drum Unit",
-    quantity: 3,
-    unitPrice: 3500,
-    total: 10500,
-    status: "Credit Sale",
-    paymentMethod: "Credit",
-    paymentStatus: "Due",
-    billGenerated: true,
-    invoiceNumber: "INV-2025-004",
-    dueDate: "2025-05-10"
-  },
-  {
-    id: "CS002",
-    date: "2025-04-05",
-    customer: "Tech Solutions",
-    customerType: "Dealer",
-    itemName: "Kyocera TK-1175 Toner",
-    quantity: 10,
-    unitPrice: 2200,
-    total: 22000,
-    status: "Credit Sale",
-    paymentMethod: "Credit",
-    paymentStatus: "Due",
-    billGenerated: true,
-    invoiceNumber: "INV-2025-005",
-    dueDate: "2025-05-05"
-  },
-  {
-    id: "CS003",
-    date: "2025-03-25",
-    customer: "City Hospital",
-    customerType: "Government",
-    itemName: "Canon NPG-59 Drum",
-    quantity: 2,
-    unitPrice: 4200,
-    total: 8400,
-    status: "Credit Sale",
-    paymentMethod: "Credit",
-    paymentStatus: "Partial",
-    billGenerated: true,
-    invoiceNumber: "INV-2025-003",
-    dueDate: "2025-04-25"
-  }
+// Payment methods data
+import { 
+  Calendar, 
+  IndianRupee, 
+  Wallet, 
+  Building2, 
+  BanknoteIcon 
+} from "lucide-react";
+
+const paymentMethods = [
+  { value: "Cash", label: "Cash", icon: Wallet },
+  { value: "Credit Card", label: "Credit Card", icon: CreditCard },
+  { value: "Bank Transfer", label: "Bank Transfer", icon: Building2 },
+  { value: "UPI", label: "UPI", icon: IndianRupee },
+  { value: "Cheque", label: "Cheque", icon: BanknoteIcon },
 ];
 
 const CreditSales = () => {
-  // Use the custom hook with filtered data (only credit sales)
+  // Use the custom hook with credit sales filter
   const {
     filteredSalesData,
+    loading,
     searchQuery,
     setSearchQuery,
     paymentFilter,
@@ -81,7 +49,13 @@ const CreditSales = () => {
     generateBill,
     recordPayment,
     exportSalesData,
-  } = useSalesManagement(creditSalesData);
+    loadSalesData
+  } = useSalesManagement();
+
+  // Load credit sales on mount
+  React.useEffect(() => {
+    loadSalesData(true); // true indicates to load only credit sales
+  }, []);
 
   // State for dialog visibility
   const [isSaleDetailsDialogOpen, setIsSaleDetailsDialogOpen] = useState(false);
@@ -96,6 +70,10 @@ const CreditSales = () => {
 
   // Handle printing invoice
   const handlePrintInvoice = (sale: SalesItem) => {
+    if (!sale.invoiceNumber) {
+      toast.error("No invoice number available");
+      return;
+    }
     toast.success(`Printing invoice #${sale.invoiceNumber} for ${sale.customer}`);
   };
 
@@ -107,7 +85,7 @@ const CreditSales = () => {
 
   // Calculate total due amount
   const totalDueAmount = filteredSalesData.reduce((sum, sale) => {
-    if (sale.paymentStatus === "Due") {
+    if (sale.paymentStatus === "Due" || sale.paymentStatus === "Partial") {
       return sum + sale.total;
     }
     return sum;
@@ -115,10 +93,15 @@ const CreditSales = () => {
 
   return (
     <div className="space-y-6 p-6">
+      <Helmet>
+        <title>Credit Sales | Inventory</title>
+      </Helmet>
+      
       {/* Header with title and action buttons */}
       <SalesHeader 
-        onNewSale={() => toast.info("Credit sale functionality will be available soon")} 
+        onNewSale={() => toast.info("Please use regular Sales page to create new Credit Sales")} 
         onExportData={exportSalesData} 
+        title="Credit Sales"
       />
 
       {/* Credit Sales Summary */}
@@ -195,6 +178,7 @@ const CreditSales = () => {
               {/* Sales table */}
               <SalesTable 
                 salesData={filteredSalesData}
+                loading={loading}
                 onGenerateBill={generateBill}
                 onPrintInvoice={handlePrintInvoice}
                 onViewDetails={handleViewDetails}
@@ -205,7 +189,23 @@ const CreditSales = () => {
         </TabsContent>
       </Tabs>
 
-      {/* We're reusing the dialogs from the parent component, so they don't need to be included here */}
+      {/* Dialogs */}
+      <SaleDetailsDialog 
+        open={isSaleDetailsDialogOpen}
+        onClose={() => setIsSaleDetailsDialogOpen(false)}
+        sale={selectedSale}
+        onGenerateBill={generateBill}
+        onPrintInvoice={handlePrintInvoice}
+        onRecordPayment={handleOpenPaymentDialog}
+      />
+      
+      <RecordPaymentDialog 
+        open={isPaymentDialogOpen}
+        onClose={() => setIsPaymentDialogOpen(false)}
+        sale={selectedSale}
+        paymentMethods={paymentMethods}
+        onSavePayment={recordPayment}
+      />
     </div>
   );
 };

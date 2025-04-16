@@ -1,10 +1,32 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, FileText, Banknote } from "lucide-react";
+import { BarChart, FileText, Banknote, PieChart, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  BarElement, 
+  Title, 
+  Tooltip, 
+  Legend,
+  ArcElement
+} from 'chart.js';
+import { Bar, Pie } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 // Import existing components
 import { SalesHeader } from "@/components/inventory/sales/SalesHeader";
@@ -13,97 +35,19 @@ import { SalesTable, SalesItem } from "@/components/inventory/sales/SalesTable";
 import { SaleDetailsDialog } from "@/components/inventory/sales/SaleDetailsDialog";
 import { RecordPaymentDialog } from "@/components/inventory/sales/RecordPaymentDialog";
 import { useSalesManagement } from "@/components/inventory/sales/hooks/useSalesManagement";
-
-// Mock data for sales reports
-const allSalesData = [
-  {
-    id: "S001",
-    date: "2025-04-01",
-    customer: "ABC Corporation",
-    customerType: "Dealer",
-    itemName: "Kyocera TK-1175 Toner",
-    quantity: 5,
-    unitPrice: 3500,
-    total: 17500,
-    status: "Completed",
-    paymentMethod: "Credit Card",
-    paymentStatus: "Paid",
-    billGenerated: true,
-    invoiceNumber: "INV-2025-001"
-  },
-  {
-    id: "S002",
-    date: "2025-03-28",
-    customer: "XYZ Ltd",
-    customerType: "Customer",
-    itemName: "Canon NPG-59 Drum",
-    quantity: 2,
-    unitPrice: 4200,
-    total: 8400,
-    status: "Pending",
-    paymentMethod: "Bank Transfer",
-    paymentStatus: "Pending",
-    billGenerated: true,
-    invoiceNumber: "INV-2025-002"
-  },
-  {
-    id: "S003",
-    date: "2025-03-25",
-    customer: "Tech Solutions",
-    customerType: "Dealer",
-    itemName: "Ricoh SP 210 Toner",
-    quantity: 8,
-    unitPrice: 2400,
-    total: 19200,
-    status: "Completed",
-    paymentMethod: "Cash",
-    paymentStatus: "Paid",
-    billGenerated: false,
-    invoiceNumber: null
-  },
-  {
-    id: "S004",
-    date: "2025-03-22",
-    customer: "City Hospital",
-    customerType: "Government",
-    itemName: "HP CF217A Toner",
-    quantity: 10,
-    unitPrice: 1800,
-    total: 18000,
-    status: "Completed",
-    paymentMethod: "Credit Card",
-    paymentStatus: "Paid",
-    billGenerated: true,
-    invoiceNumber: "INV-2025-003"
-  },
-  {
-    id: "S005",
-    date: "2025-03-20",
-    customer: "Global Enterprises",
-    customerType: "Customer",
-    itemName: "Xerox 3020 Drum Unit",
-    quantity: 3,
-    unitPrice: 3500,
-    total: 10500,
-    status: "Credit Sale",
-    paymentMethod: "Credit",
-    paymentStatus: "Due",
-    billGenerated: true,
-    invoiceNumber: "INV-2025-004",
-    dueDate: "2025-04-20"
-  },
-];
+import { formatCurrency } from "@/utils/finance/financeUtils";
 
 // Payment methods for the payment dialog
 const paymentMethods = [
-  { value: "cash", label: "Cash", icon: Banknote },
-  { value: "credit_card", label: "Credit Card", icon: FileText }
+  { value: "Cash", label: "Cash", icon: Banknote },
+  { value: "Credit Card", label: "Credit Card", icon: FileText }
 ];
 
 const SalesReports = () => {
-  // Use the custom hook with all sales data
+  // Use the custom hook to get all sales data
   const {
     filteredSalesData,
+    loading,
     searchQuery,
     setSearchQuery,
     paymentFilter,
@@ -116,12 +60,119 @@ const SalesReports = () => {
     generateBill,
     recordPayment,
     exportSalesData,
-  } = useSalesManagement(allSalesData);
+  } = useSalesManagement();
 
   // State for dialog visibility
   const [isSaleDetailsDialogOpen, setIsSaleDetailsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<SalesItem | null>(null);
+
+  // State for chart data
+  const [salesByStatusData, setSalesByStatusData] = useState<any>(null);
+  const [paymentStatusData, setPaymentStatusData] = useState<any>(null);
+  const [monthlySalesData, setMonthlySalesData] = useState<any>(null);
+
+  // Prepare chart data whenever filtered data changes
+  useEffect(() => {
+    if (filteredSalesData.length > 0) {
+      prepareChartData();
+    }
+  }, [filteredSalesData]);
+
+  // Prepare chart data from sales
+  const prepareChartData = () => {
+    // Sales by status chart
+    const statusCounts = filteredSalesData.reduce((acc: Record<string, number>, sale) => {
+      acc[sale.status] = (acc[sale.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    setSalesByStatusData({
+      labels: Object.keys(statusCounts),
+      datasets: [
+        {
+          label: 'Sales by Status',
+          data: Object.values(statusCounts),
+          backgroundColor: [
+            'rgba(53, 162, 235, 0.5)',
+            'rgba(255, 159, 64, 0.5)',
+            'rgba(75, 192, 192, 0.5)',
+            'rgba(255, 99, 132, 0.5)',
+          ],
+          borderColor: [
+            'rgba(53, 162, 235, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(255, 99, 132, 1)',
+          ],
+          borderWidth: 1,
+        },
+      ],
+    });
+
+    // Payment status chart
+    const paymentCounts = filteredSalesData.reduce((acc: Record<string, number>, sale) => {
+      acc[sale.paymentStatus] = (acc[sale.paymentStatus] || 0) + 1;
+      return acc;
+    }, {});
+
+    setPaymentStatusData({
+      labels: Object.keys(paymentCounts),
+      datasets: [
+        {
+          label: 'Payment Status',
+          data: Object.values(paymentCounts),
+          backgroundColor: [
+            'rgba(75, 192, 192, 0.5)',
+            'rgba(255, 159, 64, 0.5)',
+            'rgba(255, 99, 132, 0.5)',
+            'rgba(54, 162, 235, 0.5)',
+          ],
+          borderColor: [
+            'rgba(75, 192, 192, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+          ],
+          borderWidth: 1,
+        },
+      ],
+    });
+
+    // Monthly sales chart (last 6 months)
+    const monthlyData: Record<string, number> = {};
+    const now = new Date();
+    
+    // Initialize with last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = month.toLocaleString('default', { month: 'short', year: '2-digit' });
+      monthlyData[monthKey] = 0;
+    }
+    
+    // Sum sales by month
+    filteredSalesData.forEach(sale => {
+      const saleDate = new Date(sale.date);
+      const monthKey = saleDate.toLocaleString('default', { month: 'short', year: '2-digit' });
+      
+      if (monthlyData[monthKey] !== undefined) {
+        monthlyData[monthKey] += sale.total;
+      }
+    });
+    
+    setMonthlySalesData({
+      labels: Object.keys(monthlyData),
+      datasets: [
+        {
+          label: 'Monthly Sales',
+          data: Object.values(monthlyData),
+          backgroundColor: 'rgba(53, 162, 235, 0.5)',
+          borderColor: 'rgba(53, 162, 235, 1)',
+          borderWidth: 1,
+        },
+      ],
+    });
+  };
 
   // Handle view details
   const handleViewDetails = (sale: SalesItem) => {
@@ -131,6 +182,10 @@ const SalesReports = () => {
 
   // Handle printing invoice
   const handlePrintInvoice = (sale: SalesItem) => {
+    if (!sale.invoiceNumber) {
+      toast.error("No invoice number available");
+      return;
+    }
     toast.success(`Printing invoice #${sale.invoiceNumber} for ${sale.customer}`);
   };
 
@@ -157,6 +212,7 @@ const SalesReports = () => {
       <SalesHeader 
         onNewSale={() => toast.info("Sales reporting is read-only")} 
         onExportData={exportSalesData} 
+        title="Sales Reports"
       />
 
       {/* Sales Summary Cards */}
@@ -166,7 +222,7 @@ const SalesReports = () => {
             <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹{totalSales.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalSales)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               From {filteredSalesData.length} transactions
             </p>
@@ -178,9 +234,9 @@ const SalesReports = () => {
             <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">₹{totalPaid.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPaid)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {((totalPaid / totalSales) * 100).toFixed(1)}% of total sales
+              {totalSales > 0 ? ((totalPaid / totalSales) * 100).toFixed(1) : 0}% of total sales
             </p>
           </CardContent>
         </Card>
@@ -190,13 +246,78 @@ const SalesReports = () => {
             <CardTitle className="text-sm font-medium">Outstanding Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">₹{totalOutstanding.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-orange-600">{formatCurrency(totalOutstanding)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {((totalOutstanding / totalSales) * 100).toFixed(1)}% of total sales
+              {totalSales > 0 ? ((totalOutstanding / totalSales) * 100).toFixed(1) : 0}% of total sales
             </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Charts */}
+      {!loading && filteredSalesData.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Monthly Sales Trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {monthlySalesData && <Bar 
+                data={monthlySalesData} 
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      position: 'top' as const,
+                    },
+                    title: {
+                      display: false,
+                    },
+                  },
+                }} 
+              />}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Sales by Status</CardTitle>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              {salesByStatusData && <Pie 
+                data={salesByStatusData} 
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      position: 'bottom' as const,
+                    }
+                  }
+                }} 
+              />}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Payment Status</CardTitle>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              {paymentStatusData && <Pie 
+                data={paymentStatusData} 
+                options={{
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      position: 'bottom' as const,
+                    }
+                  }
+                }} 
+              />}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Main content */}
       <Tabs defaultValue="sales-report" className="w-full">
@@ -204,6 +325,10 @@ const SalesReports = () => {
           <TabsTrigger value="sales-report" className="gap-2">
             <BarChart size={16} />
             Sales Report
+          </TabsTrigger>
+          <TabsTrigger value="trends" className="gap-2">
+            <TrendingUp size={16} />
+            Sales Trends
           </TabsTrigger>
         </TabsList>
 
@@ -232,11 +357,95 @@ const SalesReports = () => {
               {/* Sales table */}
               <SalesTable 
                 salesData={filteredSalesData}
+                loading={loading}
                 onGenerateBill={generateBill}
                 onPrintInvoice={handlePrintInvoice}
                 onViewDetails={handleViewDetails}
                 onRecordPayment={handleOpenPaymentDialog}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="trends" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Sales Trends Analysis</CardTitle>
+              <CardDescription>
+                View sales trends and analytics over time.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <p>Loading sales data...</p>
+                </div>
+              ) : filteredSalesData.length === 0 ? (
+                <div className="flex items-center justify-center h-64">
+                  <p>No sales data available to display trends.</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Monthly Sales Performance</h3>
+                    <div className="h-80">
+                      {monthlySalesData && <Bar 
+                        data={monthlySalesData} 
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              position: 'top' as const,
+                            },
+                            title: {
+                              display: false,
+                            },
+                          },
+                        }} 
+                      />}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Sales by Status</h3>
+                      <div className="h-80">
+                        {salesByStatusData && <Pie 
+                          data={salesByStatusData} 
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: {
+                                position: 'right' as const,
+                              }
+                            }
+                          }} 
+                        />}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Payment Status Distribution</h3>
+                      <div className="h-80">
+                        {paymentStatusData && <Pie 
+                          data={paymentStatusData} 
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: {
+                                position: 'right' as const,
+                              }
+                            }
+                          }} 
+                        />}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

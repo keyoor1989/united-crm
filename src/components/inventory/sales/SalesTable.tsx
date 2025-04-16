@@ -1,6 +1,5 @@
 
 import React from "react";
-import { format } from "date-fns";
 import {
   Table,
   TableBody,
@@ -9,11 +8,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { FileText, Printer, CreditCard, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { 
+  FileText, 
+  Eye, 
+  CreditCard, 
+  MoreHorizontal,
+  RefreshCw
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SalesStatusBadge } from "./SalesStatusBadge";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { PaymentMethodIcon } from "./PaymentMethodIcon";
+import { formatCurrency } from "@/utils/finance/financeUtils";
 
 export interface SalesItem {
   id: string;
@@ -34,112 +46,119 @@ export interface SalesItem {
 
 interface SalesTableProps {
   salesData: SalesItem[];
-  onGenerateBill: (item: SalesItem) => void;
-  onPrintInvoice: (item: SalesItem) => void;
-  onViewDetails: (item: SalesItem) => void;
-  onRecordPayment: (item: SalesItem) => void;
+  loading?: boolean;
+  onGenerateBill: (sale: SalesItem) => void;
+  onPrintInvoice: (sale: SalesItem) => void;
+  onViewDetails: (sale: SalesItem) => void;
+  onRecordPayment: (sale: SalesItem) => void;
 }
 
 export const SalesTable: React.FC<SalesTableProps> = ({
   salesData,
+  loading = false,
   onGenerateBill,
   onPrintInvoice,
   onViewDetails,
   onRecordPayment,
 }) => {
   return (
-    <div className="rounded-md border">
+    <div className="border rounded-md">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
+            <TableHead className="w-[100px]">Date</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Item</TableHead>
-            <TableHead className="text-right">Quantity</TableHead>
-            <TableHead className="text-right">Unit Price</TableHead>
-            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Payment</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {salesData.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium">
-                {format(new Date(item.date), "dd/MM/yyyy")}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col">
-                  <span>{item.customer}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {item.customerType}
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>{item.itemName}</TableCell>
-              <TableCell className="text-right">{item.quantity}</TableCell>
-              <TableCell className="text-right">₹{item.unitPrice}</TableCell>
-              <TableCell className="text-right">₹{item.total}</TableCell>
-              <TableCell>
-                <SalesStatusBadge status={item.status} />
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-1">
-                    <PaymentMethodIcon method={item.paymentMethod} />
-                    <span className="text-xs">{item.paymentMethod}</span>
-                  </div>
-                  <PaymentStatusBadge status={item.paymentStatus} />
-                </div>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => onViewDetails(item)}
-                    title="View Details"
-                  >
-                    <FileText size={16} />
-                  </Button>
-                  
-                  {!item.billGenerated && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onGenerateBill(item)}
-                      title="Generate Bill"
-                    >
-                      <Receipt size={16} />
-                    </Button>
-                  )}
-                  
-                  {item.billGenerated && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onPrintInvoice(item)}
-                      title="Print Invoice"
-                    >
-                      <Printer size={16} />
-                    </Button>
-                  )}
-                  
-                  {item.paymentStatus === "Due" && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onRecordPayment(item)}
-                      title="Record Payment"
-                    >
-                      <CreditCard size={16} />
-                    </Button>
-                  )}
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center h-48">
+                <div className="flex flex-col items-center justify-center">
+                  <RefreshCw className="h-8 w-8 animate-spin text-primary mb-2" />
+                  <p>Loading sales data...</p>
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+          ) : salesData.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center h-24">
+                No sales records found
+              </TableCell>
+            </TableRow>
+          ) : (
+            salesData.map((sale) => (
+              <TableRow key={sale.id}>
+                <TableCell>
+                  {new Date(sale.date).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{sale.customer}</p>
+                    <p className="text-xs text-muted-foreground">{sale.customerType}</p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{sale.itemName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {sale.quantity} x {formatCurrency(sale.unitPrice)}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right font-medium">
+                  {formatCurrency(sale.total)}
+                </TableCell>
+                <TableCell>
+                  <SalesStatusBadge status={sale.status} />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center space-x-2">
+                    <PaymentMethodIcon method={sale.paymentMethod} />
+                    <PaymentStatusBadge status={sale.paymentStatus} />
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onViewDetails(sale)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      {!sale.billGenerated && (
+                        <DropdownMenuItem onClick={() => onGenerateBill(sale)}>
+                          <FileText className="mr-2 h-4 w-4" />
+                          Generate Bill
+                        </DropdownMenuItem>
+                      )}
+                      {sale.billGenerated && sale.invoiceNumber && (
+                        <DropdownMenuItem onClick={() => onPrintInvoice(sale)}>
+                          <FileText className="mr-2 h-4 w-4" />
+                          Print Invoice
+                        </DropdownMenuItem>
+                      )}
+                      {sale.paymentStatus !== "Paid" && (
+                        <DropdownMenuItem onClick={() => onRecordPayment(sale)}>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Record Payment
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
     </div>

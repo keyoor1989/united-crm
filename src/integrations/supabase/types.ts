@@ -449,6 +449,47 @@ export type Database = {
           },
         ]
       }
+      credit_terms: {
+        Row: {
+          created_at: string | null
+          credit_limit: number | null
+          due_date: string
+          follow_up_date: string | null
+          id: string
+          last_follow_up_notes: string | null
+          sale_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          credit_limit?: number | null
+          due_date: string
+          follow_up_date?: string | null
+          id?: string
+          last_follow_up_notes?: string | null
+          sale_id?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string | null
+          credit_limit?: number | null
+          due_date?: string
+          follow_up_date?: string | null
+          id?: string
+          last_follow_up_notes?: string | null
+          sale_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_terms_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_machines: {
         Row: {
           created_at: string | null
@@ -990,6 +1031,115 @@ export type Database = {
           },
         ]
       }
+      sale_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          payment_date: string | null
+          payment_method: string
+          reference_number: string | null
+          sale_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method: string
+          reference_number?: string | null
+          sale_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          payment_method?: string
+          reference_number?: string | null
+          sale_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_payments_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          bill_generated: boolean | null
+          created_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_type: string
+          date: string
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          payment_method: string | null
+          payment_status: string
+          status: string
+          subtotal: number
+          tax_amount: number | null
+          total_amount: number
+        }
+        Insert: {
+          bill_generated?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_type: string
+          date?: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          payment_status: string
+          status: string
+          subtotal: number
+          tax_amount?: number | null
+          total_amount: number
+        }
+        Update: {
+          bill_generated?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_type?: string
+          date?: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number | null
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_followups: {
         Row: {
           contact_phone: string | null
@@ -1030,6 +1180,56 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_items: {
+        Row: {
+          category: string | null
+          description: string | null
+          gst_amount: number | null
+          gst_percent: number | null
+          id: string
+          item_id: string | null
+          item_name: string
+          quantity: number
+          sale_id: string | null
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          category?: string | null
+          description?: string | null
+          gst_amount?: number | null
+          gst_percent?: number | null
+          id?: string
+          item_id?: string | null
+          item_name: string
+          quantity: number
+          sale_id?: string | null
+          total: number
+          unit_price: number
+        }
+        Update: {
+          category?: string | null
+          description?: string | null
+          gst_amount?: number | null
+          gst_percent?: number | null
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          quantity?: number
+          sale_id?: string | null
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
             referencedColumns: ["id"]
           },
         ]

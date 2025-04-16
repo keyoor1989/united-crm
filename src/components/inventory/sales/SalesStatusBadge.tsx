@@ -2,6 +2,8 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 
+export type SaleStatus = 'Completed' | 'Pending' | 'Credit Sale' | 'Cancelled';
+
 interface SalesStatusBadgeProps {
   status: string;
 }

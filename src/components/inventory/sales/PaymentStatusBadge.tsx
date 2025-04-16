@@ -2,6 +2,8 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 
+export type PaymentStatus = 'Paid' | 'Pending' | 'Due' | 'Partial' | 'Cancelled';
+
 interface PaymentStatusBadgeProps {
   status: string;
 }

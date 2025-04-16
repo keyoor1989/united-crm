@@ -1,78 +1,36 @@
 
-import { 
-  Package, 
-  Truck, 
-  Warehouse, 
-  Store, 
-  QrCode, 
-  SendToBack,
-  Box,
-  Receipt,
-  CheckSquare,
-  BarChart2,
-  Clipboard,
-  ShoppingCart,
-  FileText,
-  CreditCard,
-  Banknote,  
-  Building2,
-  BarChart3
-} from "lucide-react";
-import { SidebarSectionConfig } from "../types/navTypes";
+import { Box, CircleDollarSign, CreditCard, BarChart3, Package, Truck, History, Building2, ReceiptText } from "lucide-react";
+import { NavSection } from "../types/navTypes";
 
-export const inventorySection: SidebarSectionConfig = {
-  title: "Inventory",
-  icon: Package,
+export const inventorySection: NavSection = {
+  key: "inventory",
+  label: "Inventory",
+  icon: Box,
   items: [
     {
-      to: "/inventory",
-      icon: Package,
-      label: "Inventory Dashboard"
-    },
-    {
       to: "/inventory/items",
-      icon: Box,
-      label: "Inventory Items"
-    },
-    {
-      to: "/inventory/machine-parts",
-      icon: QrCode,
-      label: "Machine Parts"
-    },
-    {
-      to: "/inventory/brands",
-      icon: Clipboard,
-      label: "Brands & Models"
-    },
-    {
-      to: "/inventory/warehouses",
-      icon: Warehouse,
-      label: "Warehouses"
+      icon: Package,
+      label: "Items"
     },
     {
       to: "/inventory/vendors",
-      icon: Store,
+      icon: Truck,
       label: "Vendors"
     },
     {
-      to: "/inventory/vendor-performance",
-      icon: BarChart2,
-      label: "Vendor Performance"
-    },
-    {
-      to: "/inventory/purchase-entry",
-      icon: ShoppingCart,
-      label: "Purchase Entry"
+      to: "/inventory/warehouses",
+      icon: Building2,
+      label: "Warehouses"
     },
     {
       to: "/inventory/cash-purchase",
-      icon: Banknote,
-      label: "Cash Purchases"
+      icon: CircleDollarSign,
+      label: "Cash Purchase"
     },
     {
       to: "/inventory/sales",
-      icon: Receipt,
-      label: "Sales Management"
+      icon: ReceiptText,
+      label: "Sales"
     },
     {
       to: "/inventory/credit-sales",
@@ -85,24 +43,9 @@ export const inventorySection: SidebarSectionConfig = {
       label: "Sales Reports"
     },
     {
-      to: "/inventory/issue",
-      icon: SendToBack,
-      label: "Issue Entry"
-    },
-    {
       to: "/inventory/transfers",
-      icon: Truck,
-      label: "Stock Transfers"
-    },
-    {
-      to: "/inventory/profit-report",
-      icon: BarChart2,
-      label: "Profit Report"
-    },
-    {
-      to: "/service-inventory",
-      icon: CheckSquare,
-      label: "Service Inventory"
+      icon: History,
+      label: "History"
     }
   ]
 };
