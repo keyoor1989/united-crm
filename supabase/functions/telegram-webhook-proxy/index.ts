@@ -31,7 +31,7 @@ serve(async (req) => {
     // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Get the current webhook secret from database
+    // Get the current webhook secret from database - force refresh with no-cache option
     const { data: configData, error: configError } = await supabase
       .from('telegram_config')
       .select('webhook_secret')
@@ -55,11 +55,43 @@ serve(async (req) => {
     // Validate the secret token from the request header
     const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
     
-    console.log(`Received webhook request with header X-Telegram-Bot-Api-Secret-Token: ${secretHeader ? '[PRESENT]' : '[MISSING]'}`);
-    console.log(`Database webhook secret: ${telegramSecretToken ? telegramSecretToken.substring(0, 3) + '...' : '[NOT SET]'}`);
+    // DETAILED DEBUG LOGGING - first characters only for security
+    console.log("==================== TOKEN VALIDATION DEBUG ====================");
+    console.log(`Received header: ${secretHeader ? secretHeader.substring(0, 10) + '...' : '[MISSING]'}`);
+    console.log(`Database token: ${telegramSecretToken ? telegramSecretToken.substring(0, 10) + '...' : '[NOT SET]'}`);
+    console.log(`Header length: ${secretHeader ? secretHeader.length : 0}, DB token length: ${telegramSecretToken ? telegramSecretToken.length : 0}`);
+    console.log(`Tokens match: ${secretHeader === telegramSecretToken ? 'YES' : 'NO'}`);
+    console.log("================================================================");
     
     if (telegramSecretToken && secretHeader !== telegramSecretToken) {
-      console.error(`Secret token validation failed! Received: ${secretHeader || '[NONE]'}, Expected from DB: ${telegramSecretToken.substring(0, 3) + '...'}`);
+      console.error(`SECRET TOKEN VALIDATION FAILED!`);
+      console.error(`Received token (first 10 chars): ${secretHeader ? secretHeader.substring(0, 10) + '...' : '[NONE]'}`);
+      console.error(`Expected token (first 10 chars): ${telegramSecretToken.substring(0, 10) + '...'}`);
+      console.error(`Header length: ${secretHeader ? secretHeader.length : 0}, DB token length: ${telegramSecretToken.length}`);
+      
+      // Log the failing request for debugging
+      try {
+        const requestBody = await req.clone().text();
+        console.error("Request body that failed validation:", requestBody.substring(0, 500));
+      } catch (e) {
+        console.error("Could not log request body:", e);
+      }
+      
+      // Try to log the invalid token to the database for debugging
+      try {
+        await supabase
+          .from('telegram_message_logs')
+          .insert({
+            chat_id: "system",
+            message_text: `Token validation failed. Received: ${secretHeader ? secretHeader.substring(0, 10) + '...' : '[NONE]'}, Expected: ${telegramSecretToken.substring(0, 10) + '...'}`,
+            message_type: "webhook_error",
+            direction: "incoming",
+            processed_status: "unauthorized"
+          });
+      } catch (logErr) {
+        console.error("Failed to log token validation error:", logErr);
+      }
+      
       return new Response(
         JSON.stringify({ status: "error", message: "Unauthorized - Secret token validation failed" }), 
         { 
