@@ -29,38 +29,67 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
     missingFields: [],
   };
 
-  // Extract name
-  const nameRegex = /(?:new customer|add customer|create lead|naya customer|add new customer)[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i;
-  const nameMatch = command.match(nameRegex) || command.match(/([A-Za-z]+\s+[A-Za-z]+)(?=[,\s]|from\s)/i);
+  // Extract name with multiple pattern matching
+  const namePatterns = [
+    /(?:new customer|add customer|create lead|naya customer|add new customer)[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
+    /([A-Za-z]+\s+[A-Za-z]+)(?=[,\s]|from\s)/i,
+    /name[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
+    /customer[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i
+  ];
   
-  if (nameMatch && nameMatch[1]) {
-    result.name = nameMatch[1].trim();
-    console.log("Extracted name:", result.name);
-  } else {
+  for (const pattern of namePatterns) {
+    const nameMatch = command.match(pattern);
+    if (nameMatch && nameMatch[1]) {
+      result.name = nameMatch[1].trim();
+      console.log("Extracted name:", result.name);
+      break;
+    }
+  }
+  
+  if (!result.name) {
     result.missingFields.push("name");
     console.log("Name not found in command");
   }
 
-  // Extract phone number
-  const phoneRegex = /(?:number|mobile|phone|contact|call)?\s*:?\s*(\d{10}|\d{4}[ -]?\d{3}[ -]?\d{3}|\d{3}[ -]?\d{3}[ -]?\d{4})/i;
-  const phoneMatch = command.match(phoneRegex);
+  // Extract phone number with enhanced pattern matching
+  const phonePatterns = [
+    /(?:number|mobile|phone|contact|call)[:\s]*(\d{10}|\d{4}[ -]?\d{3}[ -]?\d{3}|\d{3}[ -]?\d{3}[ -]?\d{4})/i,
+    /(\d{10})(?=[,\s]|$)/i,
+    /mobile[:\s]*(\d{10})/i,
+    /phone[:\s]*(\d{10})/i
+  ];
   
-  if (phoneMatch && phoneMatch[1]) {
-    result.phone = phoneMatch[1].replace(/\D/g, '');
-    console.log("Extracted phone:", result.phone);
-  } else {
+  for (const pattern of phonePatterns) {
+    const phoneMatch = command.match(pattern);
+    if (phoneMatch && phoneMatch[1]) {
+      result.phone = phoneMatch[1].replace(/\D/g, '');
+      console.log("Extracted phone:", result.phone);
+      break;
+    }
+  }
+  
+  if (!result.phone) {
     result.missingFields.push("phone");
     console.log("Phone not found in command");
   }
 
-  // Extract location/city
-  const locationRegex = /(?:from|in|at)\s+([A-Za-z]+)(?=[,\s]|$)/i;
-  const locationMatch = command.match(locationRegex);
+  // Extract location/city with multiple patterns
+  const locationPatterns = [
+    /(?:from|in|at)\s+([A-Za-z]+)(?=[,\s]|$)/i,
+    /(?:location|city|address)[:\s]+([A-Za-z]+)(?=[,\s]|$)/i,
+    /([A-Za-z]+)\s+(?:city|area)/i
+  ];
   
-  if (locationMatch && locationMatch[1]) {
-    result.location = locationMatch[1].trim();
-    console.log("Extracted location:", result.location);
-  } else {
+  for (const pattern of locationPatterns) {
+    const locationMatch = command.match(pattern);
+    if (locationMatch && locationMatch[1]) {
+      result.location = locationMatch[1].trim();
+      console.log("Extracted location:", result.location);
+      break;
+    }
+  }
+  
+  if (!result.location) {
     result.missingFields.push("location");
     console.log("Location not found in command");
   }
@@ -74,13 +103,20 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
     console.log("Extracted email:", result.email);
   }
 
-  // Extract product interest (optional)
-  const productRegex = /(?:interested in|looking for|enquiry for|enquiry|wants)\s+([A-Za-z0-9\s]+)(?=[,\s]|$)/i;
-  const productMatch = command.match(productRegex);
+  // Extract product interest with multiple patterns (optional)
+  const productPatterns = [
+    /(?:interested in|looking for|enquiry for|enquiry|wants)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i,
+    /(?:product|machine|equipment)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i,
+    /(?:needs|requires)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i
+  ];
   
-  if (productMatch && productMatch[1]) {
-    result.product = productMatch[1].trim();
-    console.log("Extracted product:", result.product);
+  for (const pattern of productPatterns) {
+    const productMatch = command.match(pattern);
+    if (productMatch && productMatch[1]) {
+      result.product = productMatch[1].trim();
+      console.log("Extracted product:", result.product);
+      break;
+    }
   }
 
   // Check if this is potentially a spare parts inquiry
