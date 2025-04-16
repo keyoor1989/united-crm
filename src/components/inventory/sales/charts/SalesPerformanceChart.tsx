@@ -14,6 +14,7 @@ import {
 import { Bar } from 'react-chartjs-2';
 import { SalesItem } from '@/components/inventory/sales/SalesTable';
 import { format, parseISO } from 'date-fns';
+import { ChartData, ChartOptions } from 'chart.js';
 
 // Register ChartJS components
 ChartJS.register(
@@ -30,6 +31,9 @@ ChartJS.register(
 interface SalesPerformanceChartProps {
   salesData: SalesItem[];
 }
+
+// Define a more flexible chart data type that allows mixed chart types
+type MixedChartData = ChartData<'bar' | 'line', number[], string>;
 
 export const SalesPerformanceChart: React.FC<SalesPerformanceChartProps> = ({ salesData }) => {
   // Process the data to group by date
@@ -76,10 +80,10 @@ export const SalesPerformanceChart: React.FC<SalesPerformanceChartProps> = ({ sa
           order: 0
         }
       ]
-    };
+    } as MixedChartData;
   }, [salesData]);
 
-  const options = {
+  const options: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
     scales: {

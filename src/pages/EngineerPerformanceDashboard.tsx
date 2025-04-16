@@ -86,7 +86,6 @@ const EngineerPerformanceDashboard = () => {
         </div>
       </div>
 
-      {/* Filters Section */}
       {showFilters && (
         <Card className="mb-4">
           <CardContent className="pt-6">
@@ -164,7 +163,6 @@ const EngineerPerformanceDashboard = () => {
         </Card>
       )}
 
-      {/* Summary Cards Section */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <PerformanceSummaryCard 
           title="Total Jobs Assigned"
@@ -204,7 +202,6 @@ const EngineerPerformanceDashboard = () => {
         />
       </div>
 
-      {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
@@ -255,7 +252,6 @@ const EngineerPerformanceDashboard = () => {
         </Card>
       </div>
 
-      {/* Engineer Table Section */}
       <Card>
         <CardHeader>
           <CardTitle>Engineer Performance Details</CardTitle>
@@ -343,7 +339,6 @@ const EngineerPerformanceDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Leaderboard Section */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <Card className="lg:col-span-3">
           <CardHeader>
