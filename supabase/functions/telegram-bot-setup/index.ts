@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -17,6 +18,22 @@ serve(async (req) => {
   }
 
   try {
+    if (!supabaseUrl || !supabaseKey || !telegramBotToken) {
+      console.error("Missing required environment variables:", {
+        hasSupabaseUrl: Boolean(supabaseUrl),
+        hasSupabaseKey: Boolean(supabaseKey),
+        hasTelegramKey: Boolean(telegramBotToken)
+      });
+      
+      return new Response(
+        JSON.stringify({ error: 'Missing required environment variables' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Get request body
@@ -61,12 +78,12 @@ serve(async (req) => {
         );
       }
       
-      // Generate a simple random string for webhook secret - more compatible than UUID
+      // Generate a secure random hex string for webhook secret - more compatible than UUID
       const webhookSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
         
-      console.log(`Generated webhook secret (first 10 chars): ${webhookSecret.substring(0, 10)}`);
+      console.log(`Generated webhook secret (first 10 chars): ${webhookSecret.substring(0, 10)}...`);
       
       try {
         // First, update the database with the new webhook secret
@@ -112,7 +129,7 @@ serve(async (req) => {
         console.log("Database updated with new webhook secret");
         
         // Now set the webhook with Telegram
-        console.log(`Setting webhook to: ${webhook_url} with secret token (first 10 chars): ${webhookSecret.substring(0, 10)}`);
+        console.log(`Setting webhook to: ${webhook_url} with secret token (first 10 chars): ${webhookSecret.substring(0, 10)}...`);
         
         const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
           method: 'POST',
@@ -267,13 +284,17 @@ serve(async (req) => {
       console.log("Getting webhook info");
       
       try {
-        const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`);
+        // Add detailed debug logs
+        console.log("Using bot token (first 5 chars):", telegramBotToken ? telegramBotToken.substring(0, 5) + "..." : "MISSING");
         
-        if (!webhookResponse.ok) {
-          const errorText = await webhookResponse.text();
-          console.error("Error from Telegram API:", errorText);
+        // Make the API request with explicit error handling
+        let webhookResponse;
+        try {
+          webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`);
+        } catch (fetchError) {
+          console.error("Fetch error when calling Telegram API:", fetchError);
           return new Response(
-            JSON.stringify({ error: `Telegram API error: ${errorText}` }),
+            JSON.stringify({ error: `Network error when calling Telegram API: ${fetchError.message}` }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 500
@@ -281,8 +302,62 @@ serve(async (req) => {
           );
         }
         
-        const webhookData = await webhookResponse.json();
+        if (!webhookResponse.ok) {
+          let errorText = "";
+          try {
+            errorText = await webhookResponse.text();
+          } catch (e) {
+            errorText = "Could not extract error text";
+          }
+          
+          console.error("Error from Telegram API:", errorText, "Status:", webhookResponse.status);
+          return new Response(
+            JSON.stringify({ 
+              error: `Telegram API error: ${errorText}`, 
+              status: webhookResponse.status 
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+        
+        let webhookData;
+        try {
+          webhookData = await webhookResponse.json();
+        } catch (jsonError) {
+          console.error("Error parsing Telegram API response:", jsonError);
+          return new Response(
+            JSON.stringify({ error: `Error parsing Telegram API response: ${jsonError.message}` }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+        
         console.log("Webhook info:", webhookData);
+        
+        // Also check the database for the secret token for comparison
+        try {
+          const { data: configData, error: configError } = await supabase
+            .from('telegram_config')
+            .select('webhook_secret, webhook_url')
+            .limit(1)
+            .single();
+            
+          if (!configError && configData) {
+            console.log("Current webhook in DB:", configData.webhook_url);
+            console.log("Current webhook secret in DB (first 10 chars):", 
+              configData.webhook_secret ? 
+              configData.webhook_secret.substring(0, 10) + "..." : 
+              "NOT SET");
+          }
+        } catch (dbError) {
+          console.error("Error fetching webhook secret from DB:", dbError);
+          // Non-critical error, just log it
+        }
         
         return new Response(
           JSON.stringify(webhookData),
@@ -294,7 +369,7 @@ serve(async (req) => {
       } catch (error) {
         console.error("Error getting webhook info:", error);
         return new Response(
-          JSON.stringify({ error: `Error getting webhook info: ${error.message}` }),
+          JSON.stringify({ error: `Error getting webhook info: ${error.message}`, stack: error.stack }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500
@@ -368,7 +443,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("Unhandled exception in telegram-bot-setup:", e);
     return new Response(
-      JSON.stringify({ error: e.message }),
+      JSON.stringify({ error: e.message, stack: e.stack }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500
