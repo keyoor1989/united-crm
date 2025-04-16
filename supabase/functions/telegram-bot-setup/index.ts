@@ -20,6 +20,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const telegramBotToken = Deno.env.get('telegram_key') || '';
+    
+    // For setWebhook actions, we'll generate a new secret token
     let telegramSecretToken = Deno.env.get('telegram_webhook_secret') || '';
     
     if (!telegramBotToken) {
@@ -38,8 +40,9 @@ serve(async (req) => {
 
     console.log(`Using Telegram API endpoint: ${telegramApi}`);
     
-    // Generate new secret token for webhook if one doesn't exist
-    if (!telegramSecretToken && (action === 'setWebhook')) {
+    // Generate new secret token for webhook if one doesn't exist or we're resetting
+    if ((action === 'setWebhook')) {
+      // Always generate a new token when setting webhook to ensure fresh authentication
       telegramSecretToken = Array.from(crypto.getRandomValues(new Uint8Array(16)))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
@@ -47,7 +50,6 @@ serve(async (req) => {
       console.log(`Generated new secret token: ${telegramSecretToken}`);
       
       // Store the secret in database for reference
-      // This will be useful later for verification
       const { error } = await supabase
         .from('telegram_config')
         .update({ 
@@ -58,6 +60,18 @@ serve(async (req) => {
       
       if (error) {
         console.error("Error storing secret token in database:", error);
+        
+        // Try to insert if update failed (might not exist yet)
+        const { error: insertError } = await supabase
+          .from('telegram_config')
+          .insert({
+            bot_token: telegramBotToken,
+            webhook_secret: telegramSecretToken,
+          });
+          
+        if (insertError) {
+          console.error("Error inserting secret token in database:", insertError);
+        }
       }
     }
     
@@ -141,17 +155,21 @@ serve(async (req) => {
           
           console.log(`Setting webhook to: ${webhook_url} with secret token: ${telegramSecretToken}`);
           
-          // Add max_connections parameter to improve reliability and include secret token
-          let webhookUrl = `${telegramApi}/setWebhook?url=${encodeURIComponent(webhook_url)}&allowed_updates=${JSON.stringify(allowedUpdates)}&max_connections=40`;
+          // Make a direct call to setWebhook with all parameters
+          const response = await fetch(`${telegramApi}/setWebhook`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: webhook_url,
+              secret_token: telegramSecretToken,
+              allowed_updates: allowedUpdates,
+              max_connections: 40
+            })
+          });
           
-          // Add secret token if available
-          if (telegramSecretToken) {
-            webhookUrl += `&secret_token=${telegramSecretToken}`;
-          }
-          
-          const response = await fetch(webhookUrl);
           const result = await response.json();
-          
           console.log("Set webhook response:", JSON.stringify(result));
           
           // Update the webhook URL and secret in our database
@@ -167,7 +185,7 @@ serve(async (req) => {
                 .update({ 
                   bot_token: telegramBotToken,
                   webhook_url,
-                  webhook_secret: telegramSecretToken || null,
+                  webhook_secret: telegramSecretToken,
                   updated_at: new Date().toISOString()
                 })
                 .eq('id', configData[0].id);
@@ -177,7 +195,7 @@ serve(async (req) => {
                 .insert({
                   bot_token: telegramBotToken,
                   webhook_url,
-                  webhook_secret: telegramSecretToken || null,
+                  webhook_secret: telegramSecretToken,
                 });
             }
           }

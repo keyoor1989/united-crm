@@ -4,13 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, RefreshCw, SendIcon, CheckCircle2, XCircle } from "lucide-react";
+import { InfoIcon, RefreshCw, SendIcon, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const WebhookDebug = () => {
   const [isTesting, setIsTesting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [webhookStatus, setWebhookStatus] = useState<any>(null);
   const [secretStatus, setSecretStatus] = useState<"success" | "error" | null>(null);
   const [testChatId, setTestChatId] = useState("");
@@ -52,7 +53,7 @@ const WebhookDebug = () => {
   };
 
   const deleteAndResetWebhook = async () => {
-    setIsLoading(true);
+    setIsResetting(true);
     try {
       // First delete the webhook
       const { error: deleteError } = await supabase.functions.invoke("telegram-bot-setup", {
@@ -99,7 +100,7 @@ const WebhookDebug = () => {
       console.error("Error resetting webhook:", error);
       toast.error("Failed to reset webhook");
     } finally {
-      setIsLoading(false);
+      setIsResetting(false);
     }
   };
 
@@ -134,7 +135,7 @@ const WebhookDebug = () => {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     checkWebhookStatus();
   }, []);
 
@@ -147,6 +148,13 @@ const WebhookDebug = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Alert variant="destructive" className={secretStatus === "error" ? "block" : "hidden"}>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="font-medium">
+            Secret token validation failed! Please reset the webhook to generate a new secret token.
+          </AlertDescription>
+        </Alert>
+        
         <Alert>
           <InfoIcon className="h-4 w-4" />
           <AlertDescription>
@@ -209,9 +217,10 @@ const WebhookDebug = () => {
           <Button 
             variant="destructive" 
             onClick={deleteAndResetWebhook}
-            disabled={isLoading}
+            disabled={isResetting}
+            className={secretStatus === "error" ? "animate-pulse" : ""}
           >
-            Reset Webhook & Secret
+            {isResetting ? "Resetting..." : "Reset Webhook & Secret"}
           </Button>
         </div>
         

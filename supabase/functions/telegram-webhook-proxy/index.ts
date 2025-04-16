@@ -19,19 +19,23 @@ serve(async (req) => {
     const telegramBotToken = Deno.env.get('telegram_key') || '';
     const telegramSecretToken = Deno.env.get('telegram_webhook_secret') || '';
     
-    // Validate the secret token from Telegram
+    // Enhanced secret token validation with detailed logging
     const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
-    console.log(`Received secret token: ${secretHeader}, Expected: ${telegramSecretToken}`);
+    
+    console.log(`Received webhook request with header X-Telegram-Bot-Api-Secret-Token: ${secretHeader ? '[PRESENT]' : '[MISSING]'}`);
+    console.log(`Expected secret token: ${telegramSecretToken ? telegramSecretToken.substring(0, 3) + '...' : '[NOT SET]'}`);
     
     if (telegramSecretToken && secretHeader !== telegramSecretToken) {
-      console.error("Secret token validation failed");
+      console.error(`Secret token validation failed! Received: ${secretHeader}, Expected: ${telegramSecretToken}`);
       return new Response(
-        JSON.stringify({ status: "error", message: "Unauthorized" }), 
+        JSON.stringify({ status: "error", message: "Unauthorized - Secret token validation failed" }), 
         { 
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
+    } else {
+      console.log("Secret token validation successful");
     }
     
     if (!telegramBotToken) {
@@ -187,7 +191,7 @@ serve(async (req) => {
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+        }
     );
   }
 });
