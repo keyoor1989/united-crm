@@ -5,28 +5,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE'
 };
 
 serve(async (req) => {
-  // Handle CORS preflight request
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { chat_id, text, parse_mode = 'HTML', disable_notification = false } = await req.json();
-
-    if (!chat_id || !text) {
-      return new Response(
-        JSON.stringify({ error: 'Chat ID and message text are required' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const telegramBotToken = Deno.env.get('telegram_key') || '';
@@ -34,35 +21,52 @@ serve(async (req) => {
     if (!telegramBotToken) {
       return new Response(
         JSON.stringify({ error: 'Telegram bot token is not configured' }),
-        {
+        { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
+          status: 400
         }
       );
     }
     
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Check if this chat is authorized
+    const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
+    
+    // Parse request body
+    const { chat_id, text, parse_mode = "HTML" } = await req.json();
+    
+    if (!chat_id || !text) {
+      return new Response(
+        JSON.stringify({ error: 'chat_id and text are required' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      );
+    }
+    
+    // Check if the chat is authorized
     const { data: chatData, error: chatError } = await supabase
       .from('telegram_authorized_chats')
       .select('*')
       .eq('chat_id', chat_id)
       .eq('is_active', true)
       .single();
-
+    
     if (chatError || !chatData) {
+      console.log("Unauthorized chat or chat not active:", chat_id);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized chat or chat not found' }),
-        {
+        JSON.stringify({ error: 'Unauthorized chat or chat not active' }),
+        { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 403,
+          status: 403
         }
       );
     }
-
-    // Send message to Telegram
-    const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+    
+    // Send message
+    console.log(`Sending message to chat ${chat_id}`);
+    
+    const response = await fetch(`${telegramApi}/sendMessage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -71,30 +75,35 @@ serve(async (req) => {
         chat_id,
         text,
         parse_mode,
-        disable_notification
       }),
     });
-
-    const responseData = await response.json();
-
-    // Log the message in our database
+    
+    const result = await response.json();
+    
+    // Log the message
     await supabase.from('telegram_message_logs').insert({
       chat_id,
       message_text: text,
-      message_type: 'manual',
+      message_type: 'test_message',
       direction: 'outgoing',
-      processed_status: responseData.ok ? 'sent' : 'failed',
+      processed_status: result.ok ? 'sent' : 'failed',
     });
-
-    return new Response(JSON.stringify(responseData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+    
+    return new Response(
+      JSON.stringify(result),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    );
   } catch (error) {
     console.error("Error in telegram-send-message:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    );
   }
 });

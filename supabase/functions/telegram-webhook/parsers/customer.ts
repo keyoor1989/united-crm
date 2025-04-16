@@ -18,12 +18,14 @@ export function parseCustomerCommand(text: string) {
     missingFields: []
   };
   
-  // Extract name with multiple patterns
+  // Enhanced name extraction with improved patterns
   const namePatterns = [
     /Name\s+([^,\n]+)/i,
     /Customer\s+([^,\n]+)/i,
-    /(?:new customer|add customer|create lead)[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
-    /([A-Za-z]+\s+[A-Za-z]+)(?=[,\s]|from\s)/i
+    /(?:new customer|add customer|create lead|naya customer)[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
+    /([A-Za-z]+\s+[A-Za-z]+)(?=[,\s]|from\s)/i,
+    /name[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
+    /customer[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i
   ];
   
   for (const pattern of namePatterns) {
@@ -32,6 +34,44 @@ export function parseCustomerCommand(text: string) {
       result.name = nameMatch[1].trim();
       console.log("Extracted name:", result.name);
       break;
+    }
+  }
+  
+  // If name not found with patterns, try to find first segment that could be a name
+  if (!result.name) {
+    // Try to extract the name after "add customer" or similar phrases
+    const addCustomerMatch = text.match(/(?:add|new)\s+customer\s+([^,\d]+)/i);
+    if (addCustomerMatch && addCustomerMatch[1]) {
+      result.name = addCustomerMatch[1].trim();
+      console.log("Extracted name from add customer phrase:", result.name);
+    } else {
+      // Try to extract the first segment that looks like a name
+      const words = text.split(/[\s,]+/);
+      // Skip common command words
+      const skipWords = ['add', 'new', 'customer', 'create', 'lead'];
+      let nameCandidate = '';
+      
+      for (let i = 0; i < words.length; i++) {
+        if (!skipWords.includes(words[i].toLowerCase()) && 
+            /^[A-Za-z]+$/.test(words[i]) && 
+            words[i].length > 2) {
+          // If we find a word that looks like a name, check if next word could be a last name
+          if (i + 1 < words.length && 
+              /^[A-Za-z]+$/.test(words[i+1]) && 
+              words[i+1].length > 2) {
+            nameCandidate = words[i] + ' ' + words[i+1];
+            i++; // Skip the next word since we used it as last name
+          } else {
+            nameCandidate = words[i];
+          }
+          break;
+        }
+      }
+      
+      if (nameCandidate) {
+        result.name = nameCandidate;
+        console.log("Extracted name from word analysis:", result.name);
+      }
     }
   }
   
@@ -45,7 +85,9 @@ export function parseCustomerCommand(text: string) {
     /Mobile\s+(\d{10})/i,
     /Phone\s+(\d{10})/i,
     /(?:number|mobile|phone|contact|call)[:\s]*(\d{10})/i,
-    /(\d{10})(?=[,\s]|$)/i
+    /(?:number|mobile|phone|contact|call)[:\s]*(\d{3}[ -]?\d{3}[ -]?\d{4})/i,
+    /(\d{10})(?=[,\s]|$)/i,
+    /\b(\d{10})\b/  // Standalone 10-digit number
   ];
   
   for (const pattern of phonePatterns) {
@@ -54,6 +96,16 @@ export function parseCustomerCommand(text: string) {
       result.phone = phoneMatch[1].replace(/\D/g, '');
       console.log("Extracted phone:", result.phone);
       break;
+    }
+  }
+  
+  // If no phone found, try to find any 10-digit number in the text
+  if (!result.phone) {
+    const digitsOnly = text.replace(/\D/g, ' ');
+    const numberMatches = digitsOnly.match(/\b\d{10}\b/g);
+    if (numberMatches && numberMatches.length > 0) {
+      result.phone = numberMatches[0];
+      console.log("Extracted phone from digits only:", result.phone);
     }
   }
   
@@ -84,12 +136,13 @@ export function parseCustomerCommand(text: string) {
     }
   }
   
-  // For city extraction with multiple patterns
+  // Enhanced city extraction with multiple patterns
   const cityPatterns = [
     /City\s+(.*?)(?=\s+Email|\s+Mobile|\s+Phone|\s+Interested|$)/is,
     /(?:from|in|at)\s+([A-Za-z]+)(?=[,\s]|$)/i,
     /([A-Za-z]+)\s+(?:city|area)/i,
-    /Area\s+([^,\n]+)/i
+    /Area\s+([^,\n]+)/i,
+    /(?:location|city|address)[:\s]+([A-Za-z]+)(?=[,\s]|$)/i
   ];
   
   for (const pattern of cityPatterns) {
@@ -100,6 +153,23 @@ export function parseCustomerCommand(text: string) {
       result.city = cityParts[0].trim();
       console.log("Extracted city:", result.city);
       break;
+    }
+  }
+  
+  // If city not found, check for common Indian city names
+  if (!result.city) {
+    const commonCities = [
+      'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 
+      'Pune', 'Jaipur', 'Lucknow', 'Ahmedabad', 'Bhopal', 'Indore',
+      'Chandigarh', 'Nagpur', 'Patna', 'Surat', 'Vadodara', 'Kochi'
+    ];
+    
+    for (const city of commonCities) {
+      if (text.includes(city) || text.includes(city.toLowerCase())) {
+        result.city = city;
+        console.log("Extracted city from common cities list:", result.city);
+        break;
+      }
     }
   }
   
@@ -133,11 +203,6 @@ export function parseCustomerCommand(text: string) {
     console.log("Detected spare parts inquiry");
   }
   
-  // Build missing fields list
-  if (!result.name) result.missingFields.push("name");
-  if (!result.phone) result.missingFields.push("phone");
-  if (!result.city) result.missingFields.push("city");
-  
   // Mandatory field validation
   result.isValid = Boolean(
     result.name && 
@@ -145,7 +210,7 @@ export function parseCustomerCommand(text: string) {
     result.city
   );
   
-  console.log("Command validation result:", result.isValid, result.missingFields);
+  console.log("Command validation result:", result.isValid, "Missing fields:", result.missingFields);
   return result;
 }
 
