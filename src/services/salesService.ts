@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { toast } from "sonner";
@@ -385,3 +384,63 @@ export const getCreditSales = async (): Promise<SalesItem[]> => {
   }
 };
 
+// Fetch sales data for reports with date range filtering
+export const fetchSalesReportData = async (fromDate: Date, toDate: Date): Promise<SalesItem[]> => {
+  try {
+    // Format dates to ISO strings
+    const fromDateStr = fromDate.toISOString();
+    const toDateStr = toDate.toISOString();
+    
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*')
+      .gte('date', fromDateStr)
+      .lte('date', toDateStr)
+      .order('date', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching sales report data:', error);
+      toast.error('Failed to load sales report data');
+      return [];
+    }
+    
+    // Transform the data to match our frontend SalesItem format
+    const salesData: SalesItem[] = data.map(sale => ({
+      id: sale.id,
+      date: sale.date,
+      customer: sale.customer_name,
+      customerType: sale.customer_type,
+      itemName: '', // Will be populated from items
+      quantity: 0, // Will be populated from items
+      unitPrice: 0, // Will be populated from items
+      total: sale.total_amount,
+      status: sale.status,
+      paymentMethod: sale.payment_method || '',
+      paymentStatus: sale.payment_status,
+      billGenerated: sale.bill_generated,
+      invoiceNumber: sale.invoice_number || null
+    }));
+    
+    // Fetch items for each sale to get the first item details
+    for (const sale of salesData) {
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('sales_items')
+        .select('*')
+        .eq('sale_id', sale.id)
+        .order('id', { ascending: true })
+        .limit(1);
+      
+      if (!itemsError && itemsData.length > 0) {
+        sale.itemName = itemsData[0].item_name;
+        sale.quantity = itemsData[0].quantity;
+        sale.unitPrice = itemsData[0].unit_price;
+      }
+    }
+    
+    return salesData;
+  } catch (error) {
+    console.error('Error in fetchSalesReportData:', error);
+    toast.error('An unexpected error occurred while loading sales report data');
+    return [];
+  }
+};

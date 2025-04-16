@@ -3,471 +3,212 @@ import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, FileText, Banknote, PieChart, TrendingUp } from "lucide-react";
-import { toast } from "sonner";
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  BarElement, 
-  Title, 
-  Tooltip, 
-  Legend,
-  ArcElement
-} from 'chart.js';
-import { Bar, Pie } from 'react-chartjs-2';
+import { BarChart3, PieChart, Calendar, ArrowUpDown } from "lucide-react";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
-
-// Import existing components
-import { SalesHeader } from "@/components/inventory/sales/SalesHeader";
-import { SalesFilters } from "@/components/inventory/sales/SalesFilters";
-import { SalesTable, SalesItem } from "@/components/inventory/sales/SalesTable";
-import { SaleDetailsDialog } from "@/components/inventory/sales/SaleDetailsDialog";
-import { RecordPaymentDialog } from "@/components/inventory/sales/RecordPaymentDialog";
-import { useSalesManagement } from "@/components/inventory/sales/hooks/useSalesManagement";
-import { formatCurrency } from "@/utils/finance/financeUtils";
-
-// Payment methods for the payment dialog
-const paymentMethods = [
-  { value: "Cash", label: "Cash", icon: Banknote },
-  { value: "Credit Card", label: "Credit Card", icon: FileText }
-];
+// Import custom components
+import { SalesReportHeader } from "@/components/inventory/sales/SalesReportHeader";
+import { SalesPerformanceChart } from "@/components/inventory/sales/charts/SalesPerformanceChart";
+import { PaymentMethodChart } from "@/components/inventory/sales/charts/PaymentMethodChart";
+import { CustomerTypeChart } from "@/components/inventory/sales/charts/CustomerTypeChart";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { fetchSalesReportData } from "@/services/salesService";
+import { SalesItem } from "@/components/inventory/sales/SalesTable";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const SalesReports = () => {
-  // Use the custom hook to get all sales data
-  const {
-    filteredSalesData,
-    loading,
-    searchQuery,
-    setSearchQuery,
-    paymentFilter,
-    setPaymentFilter,
-    statusFilter,
-    setStatusFilter,
-    customerTypeFilter,
-    setCustomerTypeFilter,
-    resetFilters,
-    generateBill,
-    recordPayment,
-    exportSalesData,
-  } = useSalesManagement();
-
-  // State for dialog visibility
-  const [isSaleDetailsDialogOpen, setIsSaleDetailsDialogOpen] = useState(false);
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [selectedSale, setSelectedSale] = useState<SalesItem | null>(null);
-
-  // State for chart data
-  const [salesByStatusData, setSalesByStatusData] = useState<any>(null);
-  const [paymentStatusData, setPaymentStatusData] = useState<any>(null);
-  const [monthlySalesData, setMonthlySalesData] = useState<any>(null);
-
-  // Prepare chart data whenever filtered data changes
+  // State for date range
+  const [dateRange, setDateRange] = useState({
+    from: startOfMonth(subMonths(new Date(), 1)),
+    to: endOfMonth(new Date())
+  });
+  
+  // State for sales data
+  const [salesData, setSalesData] = useState<SalesItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Fetch sales data based on date range
   useEffect(() => {
-    if (filteredSalesData.length > 0) {
-      prepareChartData();
-    }
-  }, [filteredSalesData]);
-
-  // Prepare chart data from sales
-  const prepareChartData = () => {
-    // Sales by status chart
-    const statusCounts = filteredSalesData.reduce((acc: Record<string, number>, sale) => {
-      acc[sale.status] = (acc[sale.status] || 0) + 1;
-      return acc;
-    }, {});
-
-    setSalesByStatusData({
-      labels: Object.keys(statusCounts),
-      datasets: [
-        {
-          label: 'Sales by Status',
-          data: Object.values(statusCounts),
-          backgroundColor: [
-            'rgba(53, 162, 235, 0.5)',
-            'rgba(255, 159, 64, 0.5)',
-            'rgba(75, 192, 192, 0.5)',
-            'rgba(255, 99, 132, 0.5)',
-          ],
-          borderColor: [
-            'rgba(53, 162, 235, 1)',
-            'rgba(255, 159, 64, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(255, 99, 132, 1)',
-          ],
-          borderWidth: 1,
-        },
-      ],
-    });
-
-    // Payment status chart
-    const paymentCounts = filteredSalesData.reduce((acc: Record<string, number>, sale) => {
-      acc[sale.paymentStatus] = (acc[sale.paymentStatus] || 0) + 1;
-      return acc;
-    }, {});
-
-    setPaymentStatusData({
-      labels: Object.keys(paymentCounts),
-      datasets: [
-        {
-          label: 'Payment Status',
-          data: Object.values(paymentCounts),
-          backgroundColor: [
-            'rgba(75, 192, 192, 0.5)',
-            'rgba(255, 159, 64, 0.5)',
-            'rgba(255, 99, 132, 0.5)',
-            'rgba(54, 162, 235, 0.5)',
-          ],
-          borderColor: [
-            'rgba(75, 192, 192, 1)',
-            'rgba(255, 159, 64, 1)',
-            'rgba(255, 99, 132, 1)',
-            'rgba(54, 162, 235, 1)',
-          ],
-          borderWidth: 1,
-        },
-      ],
-    });
-
-    // Monthly sales chart (last 6 months)
-    const monthlyData: Record<string, number> = {};
-    const now = new Date();
-    
-    // Initialize with last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = month.toLocaleString('default', { month: 'short', year: '2-digit' });
-      monthlyData[monthKey] = 0;
-    }
-    
-    // Sum sales by month
-    filteredSalesData.forEach(sale => {
-      const saleDate = new Date(sale.date);
-      const monthKey = saleDate.toLocaleString('default', { month: 'short', year: '2-digit' });
-      
-      if (monthlyData[monthKey] !== undefined) {
-        monthlyData[monthKey] += sale.total;
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // For now, just use the regular fetchSales function
+        // In future, we'd implement fetchSalesReportData with date filtering
+        const data = await fetchSalesReportData(dateRange.from, dateRange.to);
+        setSalesData(data);
+      } catch (error) {
+        console.error("Error loading sales report data:", error);
+      } finally {
+        setLoading(false);
       }
-    });
+    };
     
-    setMonthlySalesData({
-      labels: Object.keys(monthlyData),
-      datasets: [
-        {
-          label: 'Monthly Sales',
-          data: Object.values(monthlyData),
-          backgroundColor: 'rgba(53, 162, 235, 0.5)',
-          borderColor: 'rgba(53, 162, 235, 1)',
-          borderWidth: 1,
-        },
-      ],
-    });
-  };
-
-  // Handle view details
-  const handleViewDetails = (sale: SalesItem) => {
-    setSelectedSale(sale);
-    setIsSaleDetailsDialogOpen(true);
-  };
-
-  // Handle printing invoice
-  const handlePrintInvoice = (sale: SalesItem) => {
-    if (!sale.invoiceNumber) {
-      toast.error("No invoice number available");
-      return;
-    }
-    toast.success(`Printing invoice #${sale.invoiceNumber} for ${sale.customer}`);
-  };
-
-  // Handle opening payment dialog
-  const handleOpenPaymentDialog = (sale: SalesItem) => {
-    setSelectedSale(sale);
-    setIsPaymentDialogOpen(true);
-  };
-
-  // Calculate summary statistics
-  const totalSales = filteredSalesData.reduce((sum, sale) => sum + sale.total, 0);
-  const totalPaid = filteredSalesData.reduce((sum, sale) => 
-    sale.paymentStatus === "Paid" ? sum + sale.total : sum, 0);
-  const totalOutstanding = filteredSalesData.reduce((sum, sale) => 
-    sale.paymentStatus === "Due" || sale.paymentStatus === "Pending" ? sum + sale.total : sum, 0);
-
+    loadData();
+  }, [dateRange]);
+  
+  // Calculated metrics
+  const totalSales = salesData.length;
+  const totalRevenue = salesData.reduce((sum, sale) => sum + sale.total, 0);
+  const averageSaleValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+  const creditSalesCount = salesData.filter(sale => sale.status.toLowerCase().includes("credit")).length;
+  const creditSalesPercentage = totalSales > 0 ? (creditSalesCount / totalSales) * 100 : 0;
+  
   return (
     <div className="space-y-6 p-6">
       <Helmet>
-        <title>Sales Reports | Inventory Management</title>
+        <title>Sales Reports | Inventory</title>
       </Helmet>
-
-      {/* Header with title and action buttons */}
-      <SalesHeader 
-        onNewSale={() => toast.info("Sales reporting is read-only")} 
-        onExportData={exportSalesData} 
-        title="Sales Reports"
+      
+      {/* Header with title and date range picker */}
+      <SalesReportHeader
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
       />
-
-      {/* Sales Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      
+      {/* Sales metrics cards */}
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalSales)}</div>
+            {loading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">{totalSales}</div>
+            )}
             <p className="text-xs text-muted-foreground mt-1">
-              From {filteredSalesData.length} transactions
+              {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d, yyyy")}
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Paid</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPaid)}</div>
+            {loading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</div>
+            )}
             <p className="text-xs text-muted-foreground mt-1">
-              {totalSales > 0 ? ((totalPaid / totalSales) * 100).toFixed(1) : 0}% of total sales
+              {creditSalesCount} credit sales ({creditSalesPercentage.toFixed(1)}%)
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding Payments</CardTitle>
+            <CardTitle className="text-sm font-medium">Average Sale Value</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{formatCurrency(totalOutstanding)}</div>
+            {loading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">₹{averageSaleValue.toFixed(2)}</div>
+            )}
             <p className="text-xs text-muted-foreground mt-1">
-              {totalSales > 0 ? ((totalOutstanding / totalSales) * 100).toFixed(1) : 0}% of total sales
+              Per transaction
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Credit Sales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <div className="text-2xl font-bold">{creditSalesCount}</div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {creditSalesPercentage.toFixed(1)}% of total sales
             </p>
           </CardContent>
         </Card>
       </div>
-
+      
       {/* Charts */}
-      {!loading && filteredSalesData.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Monthly Sales Trend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {monthlySalesData && <Bar 
-                data={monthlySalesData} 
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: {
-                      position: 'top' as const,
-                    },
-                    title: {
-                      display: false,
-                    },
-                  },
-                }} 
-              />}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Sales by Status</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              {salesByStatusData && <Pie 
-                data={salesByStatusData} 
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: {
-                      position: 'bottom' as const,
-                    }
-                  }
-                }} 
-              />}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Payment Status</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              {paymentStatusData && <Pie 
-                data={paymentStatusData} 
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: {
-                      position: 'bottom' as const,
-                    }
-                  }
-                }} 
-              />}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Main content */}
-      <Tabs defaultValue="sales-report" className="w-full">
+      <Tabs defaultValue="sales-performance" className="w-full">
         <TabsList>
-          <TabsTrigger value="sales-report" className="gap-2">
-            <BarChart size={16} />
-            Sales Report
+          <TabsTrigger value="sales-performance" className="gap-2">
+            <BarChart3 size={16} />
+            Sales Performance
           </TabsTrigger>
-          <TabsTrigger value="trends" className="gap-2">
-            <TrendingUp size={16} />
-            Sales Trends
+          <TabsTrigger value="payment-methods" className="gap-2">
+            <PieChart size={16} />
+            Payment Methods
+          </TabsTrigger>
+          <TabsTrigger value="customer-types" className="gap-2">
+            <ArrowUpDown size={16} />
+            Customer Types
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="sales-report" className="space-y-4 mt-4">
+        
+        <TabsContent value="sales-performance" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Sales Report</CardTitle>
+              <CardTitle>Sales Performance</CardTitle>
               <CardDescription>
-                View and analyze all sales transactions.
+                Sales volume and revenue over time
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Filters */}
-              <SalesFilters 
-                searchQuery={searchQuery}
-                onSearchChange={setSearchQuery}
-                paymentFilter={paymentFilter}
-                onPaymentFilterChange={setPaymentFilter}
-                statusFilter={statusFilter}
-                onStatusFilterChange={setStatusFilter}
-                customerTypeFilter={customerTypeFilter}
-                onCustomerTypeFilterChange={setCustomerTypeFilter}
-                onResetFilters={resetFilters}
-              />
-
-              {/* Sales table */}
-              <SalesTable 
-                salesData={filteredSalesData}
-                loading={loading}
-                onGenerateBill={generateBill}
-                onPrintInvoice={handlePrintInvoice}
-                onViewDetails={handleViewDetails}
-                onRecordPayment={handleOpenPaymentDialog}
-              />
+            <CardContent className="h-96">
+              {loading ? (
+                <div className="h-full flex items-center justify-center">
+                  <Skeleton className="h-full w-full" />
+                </div>
+              ) : (
+                <SalesPerformanceChart salesData={salesData} />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
         
-        <TabsContent value="trends" className="space-y-4 mt-4">
+        <TabsContent value="payment-methods" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Sales Trends Analysis</CardTitle>
+              <CardTitle>Payment Methods Distribution</CardTitle>
               <CardDescription>
-                View sales trends and analytics over time.
+                Breakdown of sales by payment method
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="h-96">
               {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  <p>Loading sales data...</p>
-                </div>
-              ) : filteredSalesData.length === 0 ? (
-                <div className="flex items-center justify-center h-64">
-                  <p>No sales data available to display trends.</p>
+                <div className="h-full flex items-center justify-center">
+                  <Skeleton className="h-full w-full" />
                 </div>
               ) : (
-                <div className="space-y-8">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Monthly Sales Performance</h3>
-                    <div className="h-80">
-                      {monthlySalesData && <Bar 
-                        data={monthlySalesData} 
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              position: 'top' as const,
-                            },
-                            title: {
-                              display: false,
-                            },
-                          },
-                        }} 
-                      />}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                    <div>
-                      <h3 className="text-lg font-medium mb-4">Sales by Status</h3>
-                      <div className="h-80">
-                        {salesByStatusData && <Pie 
-                          data={salesByStatusData} 
-                          options={{
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                              legend: {
-                                position: 'right' as const,
-                              }
-                            }
-                          }} 
-                        />}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-4">Payment Status Distribution</h3>
-                      <div className="h-80">
-                        {paymentStatusData && <Pie 
-                          data={paymentStatusData} 
-                          options={{
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                              legend: {
-                                position: 'right' as const,
-                              }
-                            }
-                          }} 
-                        />}
-                      </div>
-                    </div>
-                  </div>
+                <PaymentMethodChart salesData={salesData} />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="customer-types" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Customer Types Analysis</CardTitle>
+              <CardDescription>
+                Distribution of sales by customer type
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-96">
+              {loading ? (
+                <div className="h-full flex items-center justify-center">
+                  <Skeleton className="h-full w-full" />
                 </div>
+              ) : (
+                <CustomerTypeChart salesData={salesData} />
               )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Dialogs */}
-      <SaleDetailsDialog 
-        open={isSaleDetailsDialogOpen}
-        onClose={() => setIsSaleDetailsDialogOpen(false)}
-        sale={selectedSale}
-        onGenerateBill={generateBill}
-        onPrintInvoice={handlePrintInvoice}
-        onRecordPayment={handleOpenPaymentDialog}
-      />
-      
-      <RecordPaymentDialog 
-        open={isPaymentDialogOpen}
-        onClose={() => setIsPaymentDialogOpen(false)}
-        sale={selectedSale}
-        paymentMethods={paymentMethods}
-        onSavePayment={recordPayment}
-      />
     </div>
   );
 };
