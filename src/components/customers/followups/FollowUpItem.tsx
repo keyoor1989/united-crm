@@ -1,13 +1,13 @@
 
 import React from "react";
-import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PhoneCall, MessageSquare, ClipboardCheck, MoreHorizontal } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { SalesFollowUp } from "../machines/types";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Check, Phone, MessageSquare, Clock, Bell } from "lucide-react";
+import { format } from "date-fns";
+import { handleCall, handleWhatsApp } from "./followUpService";
 import FollowUpTypeBadge from "./FollowUpTypeBadge";
-import { handleCall, handleWhatsApp } from "./followupUtils";
 
 interface FollowUpItemProps {
   followUp: SalesFollowUp;
@@ -15,82 +15,88 @@ interface FollowUpItemProps {
 }
 
 const FollowUpItem: React.FC<FollowUpItemProps> = ({ followUp, onMarkComplete }) => {
-  const handleComplete = () => {
-    console.log("Marking follow-up complete:", followUp.id);
-    onMarkComplete(followUp.id);
+  const formatDate = (date: Date) => {
+    return format(date, "MMM d, yyyy");
   };
-
+  
+  const formatTime = (date: Date) => {
+    return format(date, "h:mm a");
+  };
+  
   return (
-    <div key={followUp.id} className="border rounded-md p-3 bg-card">
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center gap-2">
-            <h4 className="font-medium">{followUp.customerName}</h4>
-            <FollowUpTypeBadge type={followUp.type} />
+    <Card className="p-4">
+      <div className="flex flex-col space-y-2">
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="font-medium">{followUp.customerName}</h3>
+            <div className="text-sm text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {formatDate(followUp.date)} at {formatTime(followUp.date)}
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            {format(followUp.date, "PPP")} {followUp.location && `• ${followUp.location}`}
-          </p>
+          <div className="flex items-center gap-2">
+            <FollowUpTypeBadge type={followUp.type} />
+            {followUp.reminderSent && (
+              <Badge variant="outline" className="gap-1 bg-blue-50 text-blue-700">
+                <Bell className="h-3 w-3" />
+                Reminder Sent
+              </Badge>
+            )}
+          </div>
         </div>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleComplete}>
-              Mark Complete
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              Reschedule
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              View Customer
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      
-      {followUp.notes && (
-        <p className="text-sm mt-2 line-clamp-2">{followUp.notes}</p>
-      )}
-      
-      <div className="flex justify-end mt-3 gap-2">
-        {followUp.contactPhone && (
-          <>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="h-7 px-2 text-xs"
-              onClick={() => handleCall(followUp.contactPhone)}
-            >
-              <PhoneCall className="h-3 w-3 mr-1" />
-              Call
-            </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="h-7 px-2 text-xs"
-              onClick={() => handleWhatsApp(followUp.contactPhone)}
-            >
-              <MessageSquare className="h-3 w-3 mr-1" />
-              WhatsApp
-            </Button>
-          </>
+        {followUp.location && (
+          <div className="text-sm">
+            <span className="font-medium">Location:</span> {followUp.location}
+          </div>
         )}
-        <Button 
-          size="sm" 
-          variant="default" 
-          className="h-7 px-2 text-xs"
-          onClick={handleComplete}
-        >
-          <ClipboardCheck className="h-3 w-3 mr-1" />
-          Complete
-        </Button>
+        
+        {followUp.notes && (
+          <div className="text-sm">
+            <span className="font-medium">Notes:</span> {followUp.notes}
+          </div>
+        )}
+        
+        <div className="flex justify-between items-center mt-2">
+          <div className="flex gap-2">
+            {followUp.contactPhone && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1 h-8"
+                  onClick={() => handleCall(followUp.contactPhone)}
+                >
+                  <Phone className="h-3 w-3" />
+                  Call
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1 h-8"
+                  onClick={() => handleWhatsApp(followUp.contactPhone)}
+                >
+                  <MessageSquare className="h-3 w-3" />
+                  WhatsApp
+                </Button>
+              </>
+            )}
+          </div>
+          
+          {followUp.status === "pending" && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="gap-1 h-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+              onClick={() => onMarkComplete(followUp.id)}
+            >
+              <Check className="h-3 w-3" />
+              Complete
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

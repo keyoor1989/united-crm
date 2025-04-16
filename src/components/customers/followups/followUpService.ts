@@ -105,9 +105,14 @@ export const handleWhatsApp = (phone?: string) => {
 // Manually trigger follow-up reminders for today
 export const triggerTodayReminders = async () => {
   try {
+    toast.info("Sending follow-up reminders...");
+    
+    console.log("Triggering follow-up reminders for today");
     const { data, error } = await supabase.functions.invoke('daily-followup-reminders', {
       method: 'POST'
     });
+    
+    console.log("Response from daily-followup-reminders:", data, error);
     
     if (error) {
       console.error("Error triggering follow-up reminders:", error);
@@ -118,9 +123,12 @@ export const triggerTodayReminders = async () => {
     if (data && data.success) {
       toast.success(`Successfully sent ${data.message}`);
       return true;
-    } else {
-      toast.info(data?.message || "No reminders needed to be sent");
+    } else if (data) {
+      toast.info(data.message || "No reminders needed to be sent");
       return true;
+    } else {
+      toast.error("Unknown response from reminders service");
+      return false;
     }
   } catch (error) {
     console.error("Error in triggerTodayReminders:", error);

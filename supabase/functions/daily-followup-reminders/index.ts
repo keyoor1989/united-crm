@@ -38,43 +38,34 @@ serve(async (req) => {
 
   try {
     console.log("Starting daily follow-up reminders check...");
-    const currentHour = new Date().getHours();
     
-    // Only run at around 10 AM (between 9:45 AM and 10:15 AM) unless it's a manual trigger
+    // Force manual trigger for testing purposes
     const isManualTrigger = req.method === 'POST';
-    const isScheduledTime = currentHour === 10;
+    console.log(`Execution type: ${isManualTrigger ? 'Manual trigger' : 'Scheduled execution'}`);
     
-    if (!isManualTrigger && !isScheduledTime) {
-      return new Response(JSON.stringify({ 
-        message: `Not running. Current hour: ${currentHour}, expected hour: 10`,
-        success: false 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      });
-    }
-
-    // Get today's date and tomorrow's date
+    // Get today's date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     // Format date for SQL query
     const formattedDate = today.toISOString().split('T')[0];
+    console.log(`Looking for follow-ups on date: ${formattedDate}`);
 
-    // Get all follow-ups scheduled for today that haven't had reminders sent
+    // Get all follow-ups scheduled for today that haven't had reminders sent and are pending
     const { data: followUps, error: followUpsError } = await supabase
       .from('sales_followups')
       .select('*')
-      .eq('reminder_sent', false)
+      .eq('status', 'pending')
       .gte('date', `${formattedDate}T00:00:00.000Z`)
-      .lte('date', `${formattedDate}T23:59:59.999Z`)
-      .eq('status', 'pending');
+      .lte('date', `${formattedDate}T23:59:59.999Z`);
 
     if (followUpsError) {
+      console.error(`Error fetching follow-ups: ${followUpsError.message}`);
       throw new Error(`Error fetching follow-ups: ${followUpsError.message}`);
     }
 
-    console.log(`Found ${followUps?.length || 0} follow-ups for today that need reminders`);
+    console.log(`Found ${followUps?.length || 0} pending follow-ups for today`);
+    console.log("Follow-ups data:", JSON.stringify(followUps));
 
     if (!followUps || followUps.length === 0) {
       return new Response(JSON.stringify({ 
@@ -93,10 +84,12 @@ serve(async (req) => {
       .eq('is_active', true);
 
     if (chatError) {
+      console.error(`Error fetching chats: ${chatError.message}`);
       throw new Error(`Error fetching chats: ${chatError.message}`);
     }
 
     if (!chats || chats.length === 0) {
+      console.log("No active telegram chats found to notify");
       return new Response(JSON.stringify({ 
         message: 'No active telegram chats to notify' 
       }), {
@@ -105,12 +98,15 @@ serve(async (req) => {
       });
     }
 
+    console.log(`Found ${chats.length} active Telegram chats`);
+
     // Get notification preferences for each chat
     const { data: preferences, error: prefError } = await supabase
       .from('telegram_notification_preferences')
       .select('*');
 
     if (prefError) {
+      console.error(`Error fetching preferences: ${prefError.message}`);
       throw new Error(`Error fetching preferences: ${prefError.message}`);
     }
 
@@ -144,34 +140,55 @@ ${followUp.contact_phone ? `<b>Contact:</b> ${followUp.contact_phone}` : ''}
         // Check if chat has preference for follow-up notifications
         const chatPrefs = preferenceMap.get(chat.chat_id) || {};
         
+        console.log(`Chat ${chat.chat_id} preferences:`, chatPrefs);
+        
         if (chatPrefs.customer_followups === true) {
-          const sendResult = await sendTelegramMessage(chat.chat_id, message);
+          console.log(`Sending reminder for follow-up ${followUp.id} to chat ${chat.chat_id}`);
           
-          if (sendResult.ok) {
-            results.push({
-              chat_id: chat.chat_id,
-              follow_up_id: followUp.id,
-              success: true
-            });
+          try {
+            const sendResult = await sendTelegramMessage(chat.chat_id, message);
             
-            // Mark this follow-up as having had a reminder sent
-            if (!updatedFollowUpIds.includes(followUp.id)) {
-              updatedFollowUpIds.push(followUp.id);
+            console.log(`Send result for chat ${chat.chat_id}:`, sendResult);
+            
+            if (sendResult.ok) {
+              results.push({
+                chat_id: chat.chat_id,
+                follow_up_id: followUp.id,
+                success: true
+              });
+              
+              // Mark this follow-up as having had a reminder sent
+              if (!updatedFollowUpIds.includes(followUp.id)) {
+                updatedFollowUpIds.push(followUp.id);
+              }
+            } else {
+              results.push({
+                chat_id: chat.chat_id,
+                follow_up_id: followUp.id,
+                success: false,
+                error: sendResult.description || 'Unknown error'
+              });
+              console.error(`Failed to send message to chat ${chat.chat_id}:`, sendResult);
             }
-          } else {
+          } catch (error) {
+            console.error(`Error sending message to chat ${chat.chat_id}:`, error);
             results.push({
               chat_id: chat.chat_id,
               follow_up_id: followUp.id,
               success: false,
-              error: sendResult.description || 'Unknown error'
+              error: error.message || 'Unknown error'
             });
           }
+        } else {
+          console.log(`Chat ${chat.chat_id} does not have follow-up notifications enabled`);
         }
       }
     }
 
     // Update the follow-ups to mark reminders as sent
     if (updatedFollowUpIds.length > 0) {
+      console.log(`Updating follow-ups with ids ${updatedFollowUpIds.join(', ')} to mark reminders as sent`);
+      
       const { error: updateError } = await supabase
         .from('sales_followups')
         .update({ reminder_sent: true })
@@ -179,7 +196,11 @@ ${followUp.contact_phone ? `<b>Contact:</b> ${followUp.contact_phone}` : ''}
       
       if (updateError) {
         console.error('Error updating follow-ups:', updateError);
+      } else {
+        console.log(`Successfully updated ${updatedFollowUpIds.length} follow-ups`);
       }
+    } else {
+      console.log("No follow-ups were successfully sent, so none will be marked as sent");
     }
 
     return new Response(JSON.stringify({ 
@@ -202,6 +223,14 @@ ${followUp.contact_phone ? `<b>Contact:</b> ${followUp.contact_phone}` : ''}
 // Send a message to a Telegram chat
 async function sendTelegramMessage(chat_id: string, text: string) {
   try {
+    console.log(`Sending Telegram message to chat ${chat_id}`);
+    console.log(`Message text: ${text.substring(0, 50)}...`);
+    
+    if (!telegramBotToken) {
+      console.error("Telegram bot token is not set");
+      return { ok: false, description: "Telegram bot token is not set" };
+    }
+    
     const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: 'POST',
       headers: {
@@ -215,6 +244,7 @@ async function sendTelegramMessage(chat_id: string, text: string) {
     });
 
     const responseData = await response.json();
+    console.log(`Telegram API response:`, responseData);
     
     // Log the outgoing message
     if (responseData.ok) {
@@ -225,6 +255,7 @@ async function sendTelegramMessage(chat_id: string, text: string) {
         direction: 'outgoing',
         processed_status: 'sent',
       });
+      console.log('Message logged as sent');
     } else {
       console.error('Failed to send Telegram message:', responseData);
       await supabase.from('telegram_message_logs').insert({
@@ -234,6 +265,7 @@ async function sendTelegramMessage(chat_id: string, text: string) {
         direction: 'outgoing',
         processed_status: 'failed',
       });
+      console.log('Message logged as failed');
     }
 
     return responseData;
@@ -241,13 +273,18 @@ async function sendTelegramMessage(chat_id: string, text: string) {
     console.error('Error sending Telegram message:', error);
     
     // Log error
-    await supabase.from('telegram_message_logs').insert({
-      chat_id,
-      message_text: text,
-      message_type: 'follow_up_reminder',
-      direction: 'outgoing',
-      processed_status: 'error',
-    });
+    try {
+      await supabase.from('telegram_message_logs').insert({
+        chat_id,
+        message_text: text,
+        message_type: 'follow_up_reminder',
+        direction: 'outgoing',
+        processed_status: 'error',
+      });
+      console.log('Error logged');
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
     
     return { ok: false, description: error.message };
   }
