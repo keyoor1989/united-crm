@@ -1,98 +1,63 @@
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { 
-  BellRing, 
-  Plus, 
-  RotateCw, 
-  FilterX, 
-  CheckCircle2,
-  AlertCircle
-} from "lucide-react";
+import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { triggerTodayReminders } from "./followUpService";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Bell } from "lucide-react";
 
 interface FollowUpHeaderProps {
   onRefresh: () => void;
-  totalToday?: number;
-  completedToday?: number;
+  totalToday: number;
+  completedToday: number;
+  onSendReminders?: () => void;
+  isSendingReminders?: boolean;
 }
 
 const FollowUpHeader: React.FC<FollowUpHeaderProps> = ({ 
-  onRefresh,
-  totalToday = 0,
-  completedToday = 0 
+  onRefresh, 
+  totalToday, 
+  completedToday,
+  onSendReminders,
+  isSendingReminders = false 
 }) => {
-  const [isSendingReminders, setIsSendingReminders] = useState(false);
-  
-  const handleSendReminders = async () => {
-    setIsSendingReminders(true);
-    try {
-      await triggerTodayReminders();
-    } finally {
-      setIsSendingReminders(false);
-    }
-  };
+  const pending = totalToday - completedToday;
   
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-lg shadow-sm">
       <div>
         <h1 className="text-2xl font-bold">Customer Follow-ups</h1>
-        <div className="flex items-center gap-2 mt-1">
-          <Badge variant="outline" className="text-sm font-medium">
+        <div className="flex items-center gap-2 mt-2">
+          <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-50">
             Today: {totalToday}
           </Badge>
-          <Badge variant="outline" className="bg-green-50 text-green-700 text-sm font-medium">
-            <CheckCircle2 className="mr-1 h-3 w-3" />
+          <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-50">
             Completed: {completedToday}
+          </Badge>
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 hover:bg-amber-50">
+            Pending: {pending}
           </Badge>
         </div>
       </div>
       
-      <div className="flex flex-wrap items-center gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={handleSendReminders} variant="outline" size="sm" disabled={isSendingReminders}>
-                <BellRing className="h-4 w-4 mr-2" />
-                {isSendingReminders ? "Sending..." : "Send Today's Reminders"}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Send Telegram reminders for today's follow-ups</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={onRefresh} variant="outline" size="sm">
-                <RotateCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Refresh follow-up data</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="default" size="sm" onClick={() => toast.info("Add new follow-up feature coming soon")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Follow-up
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Create a new customer follow-up</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      <div className="flex gap-3 w-full sm:w-auto">
+        {onSendReminders && (
+          <Button 
+            variant="outline" 
+            className="w-full sm:w-auto"
+            onClick={onSendReminders} 
+            disabled={isSendingReminders}
+          >
+            <Bell className="mr-2 h-4 w-4" />
+            {isSendingReminders ? "Sending..." : "Send Reminders"}
+          </Button>
+        )}
+        <Button 
+          variant="outline" 
+          className="w-full sm:w-auto"
+          onClick={onRefresh}
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Refresh
+        </Button>
       </div>
     </div>
   );

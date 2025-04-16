@@ -37,6 +37,8 @@ const CustomerFollowUps = () => {
           onRefresh={loadFollowUps} 
           totalToday={todayTotal} 
           completedToday={todayCompleted} 
+          onSendReminders={handleSendReminders}
+          isSendingReminders={isSendingReminders}
         />
         <FollowUpsLoading />
       </div>
@@ -49,6 +51,8 @@ const CustomerFollowUps = () => {
         onRefresh={loadFollowUps} 
         totalToday={todayTotal} 
         completedToday={todayCompleted} 
+        onSendReminders={handleSendReminders}
+        isSendingReminders={isSendingReminders}
       />
       
       <Card className="shadow-md">

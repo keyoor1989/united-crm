@@ -1149,6 +1149,7 @@ export type Database = {
           id: number
           location: string | null
           notes: string | null
+          reminder_sent: boolean | null
           status: string
           type: string
         }
@@ -1160,6 +1161,7 @@ export type Database = {
           id?: number
           location?: string | null
           notes?: string | null
+          reminder_sent?: boolean | null
           status: string
           type: string
         }
@@ -1171,6 +1173,7 @@ export type Database = {
           id?: number
           location?: string | null
           notes?: string | null
+          reminder_sent?: boolean | null
           status?: string
           type?: string
         }
@@ -1391,6 +1394,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          user_id: string | null
         }
         Insert: {
           chat_id: string
@@ -1398,6 +1402,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          user_id?: string | null
         }
         Update: {
           chat_id?: string
@@ -1405,6 +1410,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          user_id?: string | null
         }
         Relationships: []
       }
