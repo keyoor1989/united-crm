@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon, SendIcon, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { TelegramConfig } from "@/types/telegram";
 
 const WebhookDebug = () => {
   const [isTesting, setIsTesting] = useState(false);
@@ -138,7 +138,10 @@ const WebhookDebug = () => {
       // Start or stop polling by updating the configuration
       const { error } = await supabase
         .from('telegram_config')
-        .update({ use_polling: newState })
+        .update({ 
+          use_polling: newState, 
+          last_update_id: newState ? 0 : null 
+        })
         .eq('id', 1);
       
       if (error) {

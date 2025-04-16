@@ -1419,21 +1419,27 @@ export type Database = {
           bot_token: string
           created_at: string
           id: string
+          last_update_id: number
           updated_at: string
+          use_polling: boolean
           webhook_url: string | null
         }
         Insert: {
           bot_token: string
           created_at?: string
           id?: string
+          last_update_id?: number
           updated_at?: string
+          use_polling?: boolean
           webhook_url?: string | null
         }
         Update: {
           bot_token?: string
           created_at?: string
           id?: string
+          last_update_id?: number
           updated_at?: string
+          use_polling?: boolean
           webhook_url?: string | null
         }
         Relationships: []
