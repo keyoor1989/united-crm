@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { parseCustomerCommand, checkDuplicateCustomer, createNewCustomer } from './parsers/customer.ts';
@@ -203,8 +202,13 @@ Format: Assign Task Engineer: [name] Customer: [name] Issue: [description] Deadl
 Example: Assign Task Engineer: Mohan Customer: Ravi Sharma Issue: Drum replacement Deadline: Tomorrow
 
 <b>5. Daily Report</b>
-Simply type: Daily Report
+Simply type: Daily Report or /report
       `, 'HTML');
+      break;
+      
+    case 'report':
+      console.log("Handling /report command");
+      await handleDailyReport(chat_id);
       break;
       
     default:
@@ -667,13 +671,47 @@ async function handleDailyReport(chat_id: string) {
       serviceRevenue = completedCalls.reduce((sum, call) => sum + (call.service_charge || 0), 0);
     }
     
-    const report = generateDailyReport({
-      newCustomers: newCustomers || [],
-      quotations: quotations || [],
-      completedCalls: completedCalls || [],
-      serviceRevenue,
-      date: now.toLocaleDateString()
-    });
+    let report = `<b>📊 Daily Report: ${now.toLocaleDateString()}</b>\n\n`;
+    
+    report += `<b>New Customers:</b> ${newCustomers?.length || 0}\n`;
+    if (newCustomers && newCustomers.length > 0) {
+      report += newCustomers.slice(0, 5).map(c => `- ${c.name} (${c.area})`).join('\n');
+      if (newCustomers.length > 5) {
+        report += `\n... and ${newCustomers.length - 5} more`;
+      }
+      report += '\n\n';
+    }
+    
+    report += `<b>Quotations:</b> ${quotations?.length || 0}\n`;
+    if (quotations && quotations.length > 0) {
+      const totalValue = quotations.reduce((sum, q) => sum + (q.grand_total || 0), 0);
+      report += `Total Value: ₹${totalValue.toLocaleString('en-IN')}\n\n`;
+    }
+    
+    report += `<b>Service Calls Completed:</b> ${completedCalls?.length || 0}\n`;
+    if (completedCalls && completedCalls.length > 0) {
+      report += `Revenue: ₹${serviceRevenue.toLocaleString('en-IN')}\n\n`;
+    }
+    
+    report += `<b>Pending Tasks:</b>\n`;
+    const { data: pendingCalls, error: pendingError } = await supabase
+      .from('service_calls')
+      .select('*')
+      .not('status', 'eq', 'Completed')
+      .limit(5);
+      
+    if (!pendingError && pendingCalls) {
+      if (pendingCalls.length === 0) {
+        report += "No pending tasks! 🎉\n\n";
+      } else {
+        report += pendingCalls.map(call => 
+          `- ${call.customer_name}: ${call.issue_description?.substring(0, 30) || 'Service call'}`
+        ).join('\n');
+        report += '\n\n';
+      }
+    }
+    
+    report += `<i>Generated on ${now.toLocaleString()}</i>`;
     
     await sendTelegramMessage(chat_id, report, 'HTML');
     

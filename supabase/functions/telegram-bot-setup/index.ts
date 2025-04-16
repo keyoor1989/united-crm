@@ -1,159 +1,130 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from '../_shared/cors.ts';
 
-const BOT_TOKEN = Deno.env.get('telegram_key') || '';
-const TELEGRAM_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
-
-async function getWebhookInfo(): Promise<Response> {
-  try {
-    const response = await fetch(`${TELEGRAM_API}/getWebhookInfo`);
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-}
-
-async function setWebhook(url: string): Promise<Response> {
-  try {
-    // Set allowed updates to messages and edited messages only
-    const allowedUpdates = ['message', 'edited_message'];
-    
-    // Use Telegram's setWebhook API
-    const response = await fetch(
-      `${TELEGRAM_API}/setWebhook?url=${encodeURIComponent(url)}&allowed_updates=${JSON.stringify(allowedUpdates)}`
-    );
-    const data = await response.json();
-    
-    console.log(`Webhook set response:`, data);
-    
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    console.error(`Error setting webhook:`, error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-}
-
-async function deleteWebhook(): Promise<Response> {
-  try {
-    const response = await fetch(`${TELEGRAM_API}/deleteWebhook?drop_pending_updates=true`);
-    const data = await response.json();
-    
-    console.log("Webhook deleted successfully:", data);
-    
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    console.error("Error deleting webhook:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-}
-
-async function setCommands(): Promise<Response> {
-  try {
-    const commands = [
-      { command: "start", description: "Start using the bot" },
-      { command: "help", description: "Show available commands and usage" },
-      { command: "lookup", description: "Look up customer by phone number" },
-      { command: "report", description: "Get today's activity report" }
-    ];
-    
-    console.log("Setting commands:", commands);
-    
-    const response = await fetch(`${TELEGRAM_API}/setMyCommands`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ commands }),
-    });
-    
-    const data = await response.json();
-    console.log("Set commands response:", data);
-    
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    console.error("Error setting commands:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-}
-
-async function getBotInfo(): Promise<Response> {
-  try {
-    const response = await fetch(`${TELEGRAM_API}/getMe`);
-    const data = await response.json();
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-}
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const telegramBotToken = Deno.env.get('telegram_key') || '';
+    if (!telegramBotToken) {
+      return new Response(
+        JSON.stringify({ error: 'Telegram bot token is not configured' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500 
+        }
+      );
+    }
+    
+    const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
     const { action, webhook_url } = await req.json();
-
+    
+    if (!action) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required parameter: action' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400 
+        }
+      );
+    }
+    
+    let response;
+    
     switch (action) {
-      case 'getWebhookInfo':
-        return await getWebhookInfo();
       case 'setWebhook':
         if (!webhook_url) {
-          return new Response(JSON.stringify({ error: 'Webhook URL is required' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          });
+          return new Response(
+            JSON.stringify({ error: 'Missing required parameter: webhook_url' }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400 
+            }
+          );
         }
-        return await setWebhook(webhook_url);
-      case 'deleteWebhook':
-        return await deleteWebhook();
-      case 'setCommands':
-        return await setCommands();
-      case 'getBotInfo':
-        return await getBotInfo();
-      default:
-        return new Response(JSON.stringify({ error: 'Invalid action' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
+        
+        response = await fetch(`${telegramApi}/setWebhook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: webhook_url,
+            allowed_updates: ["message", "edited_message", "callback_query"]
+          }),
         });
+        break;
+        
+      case 'deleteWebhook':
+        response = await fetch(`${telegramApi}/deleteWebhook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            drop_pending_updates: true
+          }),
+        });
+        break;
+        
+      case 'getWebhookInfo':
+        response = await fetch(`${telegramApi}/getWebhookInfo`);
+        break;
+        
+      case 'setCommands':
+        // Set commands for the bot
+        const commands = [
+          { command: "start", description: "Start the bot" },
+          { command: "help", description: "Get help with using the bot" },
+          { command: "report", description: "Get a daily activity report" }
+        ];
+        
+        response = await fetch(`${telegramApi}/setMyCommands`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            commands: commands
+          }),
+        });
+        break;
+        
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Invalid action' }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400 
+          }
+        );
     }
+    
+    const responseData = await response.json();
+    
+    return new Response(
+      JSON.stringify(responseData),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    );
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
+    console.error("Error in telegram-bot-setup:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500 
+      }
+    );
   }
 });

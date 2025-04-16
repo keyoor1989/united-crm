@@ -54,6 +54,10 @@ serve(async (req) => {
         response = await processLookupCustomer(supabase, text);
         break;
         
+      case 'report':
+        response = await processReport(supabase);
+        break;
+        
       default:
         response = "Command type not recognized.";
     }
@@ -286,6 +290,98 @@ async function processLookupCustomer(supabase, text) {
   } catch (error) {
     console.error("Error in processLookupCustomer:", error);
     return "❌ An error occurred while processing your request.";
+  }
+}
+
+// New function to handle daily report generation
+async function processReport(supabase) {
+  try {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    
+    const { data: newCustomers, error: customerError } = await supabase
+      .from('customers')
+      .select('*')
+      .gte('created_at', `${today}T00:00:00`)
+      .lte('created_at', `${today}T23:59:59`);
+    
+    if (customerError) {
+      console.error("Error fetching customers:", customerError);
+    }
+    
+    const { data: quotations, error: quotationError } = await supabase
+      .from('quotations')
+      .select('*')
+      .gte('created_at', `${today}T00:00:00`)
+      .lte('created_at', `${today}T23:59:59`);
+    
+    if (quotationError) {
+      console.error("Error fetching quotations:", quotationError);
+    }
+    
+    const { data: completedCalls, error: callsError } = await supabase
+      .from('service_calls')
+      .select('*')
+      .eq('status', 'Completed')
+      .gte('completion_time', `${today}T00:00:00`)
+      .lte('completion_time', `${today}T23:59:59`);
+    
+    if (callsError) {
+      console.error("Error fetching service calls:", callsError);
+    }
+    
+    let serviceRevenue = 0;
+    if (completedCalls) {
+      serviceRevenue = completedCalls.reduce((sum, call) => sum + (call.service_charge || 0), 0);
+    }
+    
+    // Prepare report
+    let report = `<b>📊 Daily Report: ${now.toLocaleDateString()}</b>\n\n`;
+    
+    report += `<b>New Customers:</b> ${newCustomers?.length || 0}\n`;
+    if (newCustomers && newCustomers.length > 0) {
+      report += newCustomers.slice(0, 5).map(c => `- ${c.name} (${c.area})`).join('\n');
+      if (newCustomers.length > 5) {
+        report += `\n... and ${newCustomers.length - 5} more`;
+      }
+      report += '\n\n';
+    }
+    
+    report += `<b>Quotations:</b> ${quotations?.length || 0}\n`;
+    if (quotations && quotations.length > 0) {
+      const totalValue = quotations.reduce((sum, q) => sum + (q.grand_total || 0), 0);
+      report += `Total Value: ₹${totalValue.toLocaleString('en-IN')}\n\n`;
+    }
+    
+    report += `<b>Service Calls Completed:</b> ${completedCalls?.length || 0}\n`;
+    if (completedCalls && completedCalls.length > 0) {
+      report += `Revenue: ₹${serviceRevenue.toLocaleString('en-IN')}\n\n`;
+    }
+    
+    report += `<b>Pending Tasks:</b>\n`;
+    const { data: pendingCalls, error: pendingError } = await supabase
+      .from('service_calls')
+      .select('*')
+      .not('status', 'eq', 'Completed')
+      .limit(5);
+      
+    if (!pendingError && pendingCalls) {
+      if (pendingCalls.length === 0) {
+        report += "No pending tasks! 🎉\n\n";
+      } else {
+        report += pendingCalls.map(call => 
+          `- ${call.customer_name}: ${call.issue_description?.substring(0, 30) || 'Service call'}`
+        ).join('\n');
+        report += '\n\n';
+      }
+    }
+    
+    report += `<i>Generated on ${now.toLocaleString()}</i>`;
+    
+    return report;
+  } catch (error) {
+    console.error("Error generating report:", error);
+    return "❌ An error occurred while generating the report.";
   }
 }
 
