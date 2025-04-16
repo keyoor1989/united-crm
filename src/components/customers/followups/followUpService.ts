@@ -43,7 +43,8 @@ export const fetchFollowUps = async (): Promise<SalesFollowUp[] | null> => {
         // Ensure type matches the expected union type
         type: validateFollowUpType(item.type),
         contactPhone: item.contact_phone || "",
-        location: item.location || ""
+        location: item.location || "",
+        reminderSent: item.reminder_sent || false
       }));
       
       console.log("Formatted follow-ups:", formattedFollowUps);
@@ -98,6 +99,33 @@ export const handleWhatsApp = (phone?: string) => {
     toast.info("Opening WhatsApp chat");
   } else {
     toast.error("No phone number available");
+  }
+};
+
+// Manually trigger follow-up reminders for today
+export const triggerTodayReminders = async () => {
+  try {
+    const { data, error } = await supabase.functions.invoke('daily-followup-reminders', {
+      method: 'POST'
+    });
+    
+    if (error) {
+      console.error("Error triggering follow-up reminders:", error);
+      toast.error("Failed to send follow-up reminders");
+      return false;
+    }
+    
+    if (data && data.success) {
+      toast.success(`Successfully sent ${data.message}`);
+      return true;
+    } else {
+      toast.info(data?.message || "No reminders needed to be sent");
+      return true;
+    }
+  } catch (error) {
+    console.error("Error in triggerTodayReminders:", error);
+    toast.error("Error sending follow-up reminders");
+    return false;
   }
 };
 

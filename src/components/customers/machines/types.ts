@@ -26,6 +26,7 @@ export type SalesFollowUp = {
   type: "quotation" | "demo" | "negotiation" | "closure";
   contactPhone?: string; // Added to store customer's phone for easy contact
   location?: string; // Added to show customer's location
+  reminderSent?: boolean; // Flag to track if reminder was sent
 };
 
 export interface MachineFormData {

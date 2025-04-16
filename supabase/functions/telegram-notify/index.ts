@@ -117,13 +117,14 @@ Priority: ${data.priority}
     case 'follow_up':
       return {
         message: `
-📝 <b>Customer Follow-up</b>
+📝 <b>New Customer Follow-up Scheduled</b>
 
 Customer: ${data.customer_name}
 Type: ${data.type}
-Notes: ${data.notes || 'No notes provided'}
+${data.notes ? `Notes: ${data.notes}` : ''}
 Due: ${new Date(data.date).toLocaleString()}
-Status: ${data.status}
+${data.location ? `Location: ${data.location}` : ''}
+${data.contact_phone ? `Contact: ${data.contact_phone}` : ''}
         `,
         prefKey: 'customer_followups'
       };

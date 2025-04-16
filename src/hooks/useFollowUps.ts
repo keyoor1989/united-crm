@@ -5,7 +5,8 @@ import {
   fetchFollowUps, 
   markFollowUpComplete, 
   filterFollowUps,
-  calculateTodayStats
+  calculateTodayStats,
+  triggerTodayReminders
 } from "@/components/customers/followups/followUpService";
 import { toast } from "sonner";
 
@@ -16,6 +17,7 @@ export const useFollowUps = () => {
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
   
   useEffect(() => {
     loadFollowUps();
@@ -56,6 +58,22 @@ export const useFollowUps = () => {
       toast.error("Failed to mark follow-up as complete");
     }
   };
+
+  const handleSendReminders = async () => {
+    setIsSendingReminders(true);
+    try {
+      const result = await triggerTodayReminders();
+      if (result) {
+        // Refresh data to get updated reminder status
+        await loadFollowUps();
+      }
+    } catch (error) {
+      console.error("Error sending reminders:", error);
+      toast.error("Failed to send reminders");
+    } finally {
+      setIsSendingReminders(false);
+    }
+  };
   
   // Filter follow-ups based on criteria
   const filteredFollowUps = filterFollowUps(followUps, activeTab, searchTerm, typeFilter);
@@ -83,6 +101,8 @@ export const useFollowUps = () => {
     todayCompleted,
     todayProgress,
     loadFollowUps,
-    handleMarkComplete
+    handleMarkComplete,
+    handleSendReminders,
+    isSendingReminders
   };
 };

@@ -25,13 +25,19 @@ const CustomerFollowUps = () => {
     todayCompleted,
     todayProgress,
     loadFollowUps,
-    handleMarkComplete
+    handleMarkComplete,
+    handleSendReminders,
+    isSendingReminders
   } = useFollowUps();
   
   if (isLoading) {
     return (
       <div className="flex flex-col gap-6">
-        <FollowUpHeader onRefresh={loadFollowUps} />
+        <FollowUpHeader 
+          onRefresh={loadFollowUps} 
+          totalToday={todayTotal} 
+          completedToday={todayCompleted} 
+        />
         <FollowUpsLoading />
       </div>
     );
@@ -39,7 +45,11 @@ const CustomerFollowUps = () => {
   
   return (
     <div className="flex flex-col gap-6">
-      <FollowUpHeader onRefresh={loadFollowUps} />
+      <FollowUpHeader 
+        onRefresh={loadFollowUps} 
+        totalToday={todayTotal} 
+        completedToday={todayCompleted} 
+      />
       
       <Card className="shadow-md">
         <CardHeader className="pb-2">

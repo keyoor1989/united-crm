@@ -46,6 +46,25 @@ export const notifyFollowUp = async (followUp: any) => {
   }
 };
 
+// Function to manually trigger follow-up reminders (for testing)
+export const triggerFollowUpReminders = async () => {
+  try {
+    const { data, error } = await supabase.functions.invoke('daily-followup-reminders', {
+      method: 'POST' // Use POST to trigger manual execution
+    });
+
+    if (error) {
+      console.error("Error triggering follow-up reminders:", error);
+      return { success: false, error };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error triggering follow-up reminders:", error);
+    return { success: false, error };
+  }
+};
+
 // Function to send a notification about low inventory
 export const notifyInventoryAlert = async (item: any) => {
   try {
