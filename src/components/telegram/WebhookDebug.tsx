@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,7 +91,7 @@ const WebhookDebug = () => {
             webhook_url: null,
             use_polling: true 
           })
-          .eq('id', 1);
+          .eq('id', '1'); // Use string for ID comparison
           
         setIsPollingEnabled(true);
       } else {
@@ -142,7 +143,7 @@ const WebhookDebug = () => {
           use_polling: newState, 
           last_update_id: newState ? 0 : null 
         })
-        .eq('id', 1);
+        .eq('id', '1'); // Use string for ID comparison
       
       if (error) {
         console.error("Error toggling polling:", error);
