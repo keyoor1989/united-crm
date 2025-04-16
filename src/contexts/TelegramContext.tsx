@@ -20,6 +20,7 @@ interface TelegramContextType {
     value: boolean
   ) => Promise<boolean>;
   sendTestMessage: (chatId: string, message: string) => Promise<boolean>;
+  setCommands: () => Promise<any>;
 }
 
 const TelegramContext = createContext<TelegramContextType | undefined>(undefined);
@@ -195,6 +196,21 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const setCommands = async (): Promise<any> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
+        body: { action: "setCommands" }
+      });
+      
+      if (error) throw error;
+      
+      return data;
+    } catch (error) {
+      console.error("Error setting commands:", error);
+      throw error;
+    }
+  };
+
   const value = {
     config,
     chats,
@@ -207,7 +223,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     addAuthorizedChat,
     toggleChatStatus,
     updateNotificationPreference,
-    sendTestMessage
+    sendTestMessage,
+    setCommands
   };
 
   return (

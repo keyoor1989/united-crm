@@ -53,7 +53,7 @@ const TelegramAdmin = () => {
     toggleChatStatus,
     updateNotificationPreference,
     sendTestMessage,
-    supabase
+    setCommands
   } = useTelegram();
 
   useEffect(() => {
@@ -112,15 +112,7 @@ const TelegramAdmin = () => {
   const handleSetCommands = async () => {
     setIsSettingCommands(true);
     try {
-      const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
-        body: { action: "setCommands" }
-      });
-      
-      if (error) {
-        console.error("Error setting commands:", error);
-        toast.error(`Failed to set commands: ${error.message}`);
-        return;
-      }
+      const data = await setCommands();
       
       if (data && data.ok) {
         toast.success("Bot commands set successfully");
