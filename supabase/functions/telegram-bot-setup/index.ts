@@ -45,6 +45,9 @@ serve(async (req) => {
         );
       }
       
+      // Generate a random secret token for webhook verification
+      const webhookSecret = crypto.randomUUID();
+      
       const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
         method: 'POST',
         headers: {
@@ -52,6 +55,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           url: webhook_url,
+          secret_token: webhookSecret,
           allowed_updates: ["message", "callback_query"],
         }),
       });
@@ -59,11 +63,18 @@ serve(async (req) => {
       const webhookData = await webhookResponse.json();
       
       if (webhookData.ok) {
-        // Update webhook URL in DB
+        // Update webhook URL and secret in DB
         await supabase
           .from('telegram_config')
-          .update({ webhook_url, updated_at: new Date().toISOString() })
+          .update({ 
+            webhook_url, 
+            webhook_secret: webhookSecret,
+            updated_at: new Date().toISOString() 
+          })
           .eq('id', (await supabase.from('telegram_config').select('id').limit(1).single()).data.id);
+        
+        // After setting webhook, set the commands
+        await setCommands(telegramBotToken);
       }
       
       return new Response(
@@ -87,7 +98,11 @@ serve(async (req) => {
         // Update webhook URL in DB
         await supabase
           .from('telegram_config')
-          .update({ webhook_url: null, updated_at: new Date().toISOString() })
+          .update({ 
+            webhook_url: null,
+            webhook_secret: null,
+            updated_at: new Date().toISOString() 
+          })
           .eq('id', (await supabase.from('telegram_config').select('id').limit(1).single()).data.id);
       }
       
@@ -116,24 +131,10 @@ serve(async (req) => {
     
     // Set commands
     if (action === 'setCommands') {
-      const commands = [
-        { command: 'start', description: 'Start using the bot' },
-        { command: 'help', description: 'Get help with using the bot' },
-        { command: 'report', description: 'Get a daily business report' }
-      ];
-      
-      const commandResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setMyCommands`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ commands }),
-      });
-      
-      const commandData = await commandResponse.json();
+      const commandsResult = await setCommands(telegramBotToken);
       
       return new Response(
-        JSON.stringify(commandData),
+        JSON.stringify(commandsResult),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200
@@ -159,3 +160,21 @@ serve(async (req) => {
     );
   }
 });
+
+async function setCommands(botToken: string) {
+  const commands = [
+    { command: 'start', description: 'Start using the bot' },
+    { command: 'help', description: 'Get help with using the bot' },
+    { command: 'report', description: 'Get a daily business report' }
+  ];
+  
+  const commandResponse = await fetch(`https://api.telegram.org/bot${botToken}/setMyCommands`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ commands }),
+  });
+  
+  return await commandResponse.json();
+}

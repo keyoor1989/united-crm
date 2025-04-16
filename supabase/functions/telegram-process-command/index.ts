@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -8,7 +9,6 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const telegramBotToken = Deno.env.get('telegram_key') || '';
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -18,14 +18,13 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
     
     // Parse request body
-    const { chat_id, text, command_type } = await req.json();
+    const { chat_id, command_type, text } = await req.json();
     
-    if (!chat_id || !text || !command_type) {
+    if (!chat_id || !command_type) {
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
+        JSON.stringify({ error: 'Missing required parameters: chat_id and command_type' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400
@@ -36,29 +35,33 @@ serve(async (req) => {
     // Log processing of this command
     await supabase.from('telegram_message_logs').insert({
       chat_id,
-      message_text: `Processing ${command_type} command: ${text}`,
+      message_text: `Processing ${command_type} command: ${text || ''}`,
       message_type: 'command_processing',
       direction: 'internal',
       processed_status: 'processing'
     });
     
-    let response = '';
+    let responseData = { success: true, message: "Command processed successfully" };
+    let responseStatus = 200;
     
-    switch (command_type) {
-      case 'add_customer':
-        response = await processAddCustomer(supabase, text);
-        break;
-        
-      case 'lookup_customer':
-        response = await processLookupCustomer(supabase, text);
-        break;
-        
-      case 'report':
-        response = await processReport(supabase);
-        break;
-        
-      case 'help':
-        response = `
+    try {
+      let response = '';
+      
+      switch (command_type) {
+        case 'add_customer':
+          response = await processAddCustomer(supabase, text);
+          break;
+          
+        case 'lookup_customer':
+          response = await processLookupCustomer(supabase, text);
+          break;
+          
+        case 'report':
+          response = await processReport(supabase);
+          break;
+          
+        case 'help':
+          response = `
 <b>Printer CRM Assistant Help</b>
 
 Here's how to use each feature:
@@ -82,41 +85,24 @@ Example: Assign Task Engineer: Mohan Customer: Ravi Sharma Issue: Drum replaceme
 <b>5. Daily Report</b>
 Simply type: Daily Report or /report
 `;
-        break;
-        
-      default:
-        response = "Command type not recognized.";
+          break;
+          
+        default:
+          response = "Command type not recognized.";
+      }
+      
+      responseData = { success: true, message: response };
+    } catch (error) {
+      console.error("Error processing command:", error);
+      responseData = { success: false, error: error.message };
+      responseStatus = 500;
     }
     
-    // Send the response
-    const sendResponse = await fetch(`${telegramApi}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id,
-        text: response,
-        parse_mode: "HTML"
-      }),
-    });
-    
-    const responseData = await sendResponse.json();
-    
-    // Log the outgoing message
-    await supabase.from('telegram_message_logs').insert({
-      chat_id,
-      message_text: response.substring(0, 500),
-      message_type: 'command_response',
-      direction: 'outgoing',
-      processed_status: responseData.ok ? 'sent' : 'failed'
-    });
-    
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify(responseData),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
+        status: responseStatus
       }
     );
   } catch (error) {
@@ -319,6 +305,33 @@ async function processLookupCustomer(supabase, text) {
   }
 }
 
+function parsePhoneNumberCommand(text) {
+  // Direct 10-digit number case
+  if (/^\d{10}$/.test(text.trim())) {
+    return text.trim();
+  }
+  
+  // Lookup command case
+  const phoneMatch = text.match(/lookup\s+(\d+)/i);
+  if (phoneMatch && phoneMatch[1]) {
+    const number = phoneMatch[1].replace(/\D/g, '');
+    if (number.length >= 10) {
+      return number.substring(number.length - 10);
+    }
+  }
+  
+  // Find customer case
+  const findCustomerMatch = text.match(/find\s+customer\s+(\d+)/i);
+  if (findCustomerMatch && findCustomerMatch[1]) {
+    const number = findCustomerMatch[1].replace(/\D/g, '');
+    if (number.length >= 10) {
+      return number.substring(number.length - 10);
+    }
+  }
+  
+  return null;
+}
+
 async function processReport(supabase) {
   try {
     const now = new Date();
@@ -408,31 +421,4 @@ async function processReport(supabase) {
     console.error("Error generating report:", error);
     return "❌ An error occurred while generating the report.";
   }
-}
-
-function parsePhoneNumberCommand(text) {
-  // Direct 10-digit number case
-  if (/^\d{10}$/.test(text.trim())) {
-    return text.trim();
-  }
-  
-  // Lookup command case
-  const phoneMatch = text.match(/lookup\s+(\d+)/i);
-  if (phoneMatch && phoneMatch[1]) {
-    const number = phoneMatch[1].replace(/\D/g, '');
-    if (number.length >= 10) {
-      return number.substring(number.length - 10);
-    }
-  }
-  
-  // Find customer case
-  const findCustomerMatch = text.match(/find\s+customer\s+(\d+)/i);
-  if (findCustomerMatch && findCustomerMatch[1]) {
-    const number = findCustomerMatch[1].replace(/\D/g, '');
-    if (number.length >= 10) {
-      return number.substring(number.length - 10);
-    }
-  }
-  
-  return null;
 }

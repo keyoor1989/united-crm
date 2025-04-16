@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -33,6 +32,7 @@ const TelegramAdmin = () => {
   const [activeTab, setActiveTab] = useState("setup");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSettingCommands, setIsSettingCommands] = useState(false);
   const [newChatId, setNewChatId] = useState("");
   const [newChatName, setNewChatName] = useState("");
   const [isAddingChat, setIsAddingChat] = useState(false);
@@ -52,12 +52,11 @@ const TelegramAdmin = () => {
     addAuthorizedChat,
     toggleChatStatus,
     updateNotificationPreference,
-    sendTestMessage
+    sendTestMessage,
+    supabase
   } = useTelegram();
 
-  // Generate the webhook URL based on the project's public URL
   useEffect(() => {
-    // Use the proxy URL instead of the direct webhook URL
     const proxyUrl = "https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy";
     
     if (!webhookUrl && !config?.webhook_url) {
@@ -67,7 +66,6 @@ const TelegramAdmin = () => {
     }
   }, [config]);
 
-  // Load initial data
   useEffect(() => {
     if (chats && chats.length > 0) {
       setSelectedChatId(chats[0].chat_id);
@@ -108,6 +106,33 @@ const TelegramAdmin = () => {
       toast.error("Failed to delete webhook");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSetCommands = async () => {
+    setIsSettingCommands(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
+        body: { action: "setCommands" }
+      });
+      
+      if (error) {
+        console.error("Error setting commands:", error);
+        toast.error(`Failed to set commands: ${error.message}`);
+        return;
+      }
+      
+      if (data && data.ok) {
+        toast.success("Bot commands set successfully");
+      } else {
+        const errorMessage = data && data.description ? data.description : "Unknown error";
+        toast.error(`Failed to set commands: ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error("Error setting commands:", error);
+      toast.error("Failed to set bot commands");
+    } finally {
+      setIsSettingCommands(false);
     }
   };
 
@@ -317,13 +342,23 @@ const TelegramAdmin = () => {
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={handleDeleteWebhook}
-                  disabled={isSaving || !webhookUrl}
-                >
-                  Delete Webhook
-                </Button>
+                <div>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDeleteWebhook}
+                    disabled={isSaving || !webhookUrl}
+                    className="mr-2"
+                  >
+                    Delete Webhook
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleSetCommands}
+                    disabled={isSettingCommands}
+                  >
+                    {isSettingCommands ? "Setting Commands..." : "Set Bot Commands"}
+                  </Button>
+                </div>
                 <Button 
                   onClick={saveWebhookSettings}
                   disabled={isSaving || !webhookUrl}
