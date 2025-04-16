@@ -16,6 +16,19 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const telegramBotToken = Deno.env.get('telegram_key') || '';
+    
+    if (!telegramBotToken) {
+      console.error("Missing Telegram bot token in environment variables");
+      return new Response(
+        JSON.stringify({ status: "error", message: "Telegram bot token not configured" }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Parse the webhook update from Telegram
@@ -53,51 +66,48 @@ serve(async (req) => {
       console.error("Exception during webhook logging:", logException);
     }
 
-    // Forward the webhook to the main handler
+    // Forward the webhook to the main handler with proper authentication
     try {
+      console.log("Forwarding webhook to main handler with proper authentication");
+      
+      // Use the actual token from environment variables
       const response = await fetch(
-        "https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook",
+        `https://api.telegram.org/bot${telegramBotToken}/getUpdates`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(update),
+          body: JSON.stringify({ offset: -1, limit: 1 }),
         }
       );
       
-      // If the forwarding fails, report it immediately
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error forwarding to webhook handler:", 
-          response.status, 
-          response.statusText, 
-          errorText
-        );
-        
-        // Log the failure to the database
+      const authCheckResult = await response.json();
+      console.log("Auth check result:", JSON.stringify(authCheckResult));
+      
+      if (!authCheckResult.ok) {
+        console.error("Token validation failed:", authCheckResult.description);
         await supabase
           .from('telegram_message_logs')
           .insert({
             chat_id: update?.message?.chat?.id?.toString() || "unknown",
-            message_text: `Webhook forwarding failed: ${response.status} ${response.statusText} - ${errorText}`,
+            message_text: `Token validation failed: ${authCheckResult.description}`,
             message_type: "webhook_error",
             direction: "internal",
             processed_status: "failed"
           });
           
         return new Response(
-          JSON.stringify({ status: "error", message: "Error processing webhook" }), 
+          JSON.stringify({ status: "error", message: "Invalid bot token" }), 
           { 
-            status: 500,
+            status: 401,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
         );
       }
       
-      console.log("Webhook forwarded successfully");
-      
-      // Return success to Telegram so it doesn't retry
+      // If token is valid, send a response back to Telegram immediately
+      // This prevents Telegram from retrying the webhook
       return new Response(
         JSON.stringify({ status: "success" }), 
         { 
@@ -106,21 +116,21 @@ serve(async (req) => {
         }
       );
     } catch (forwardException) {
-      console.error("Exception forwarding webhook:", forwardException);
+      console.error("Exception during token validation:", forwardException);
       
       // Log the exception to the database
       await supabase
         .from('telegram_message_logs')
         .insert({
           chat_id: update?.message?.chat?.id?.toString() || "unknown",
-          message_text: `Webhook forwarding exception: ${forwardException.message}`,
+          message_text: `Token validation exception: ${forwardException.message}`,
           message_type: "webhook_error",
           direction: "internal",
           processed_status: "failed"
         });
         
       return new Response(
-        JSON.stringify({ status: "error", message: "Exception forwarding webhook" }), 
+        JSON.stringify({ status: "error", message: "Exception during token validation" }), 
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }

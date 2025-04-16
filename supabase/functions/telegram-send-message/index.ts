@@ -19,8 +19,9 @@ serve(async (req) => {
     const telegramBotToken = Deno.env.get('telegram_key') || '';
     
     if (!telegramBotToken) {
+      console.error("Missing Telegram bot token in environment variables");
       return new Response(
-        JSON.stringify({ error: 'Telegram bot token is not configured' }),
+        JSON.stringify({ error: 'Telegram bot token is not configured in Supabase secrets' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400
@@ -64,7 +65,7 @@ serve(async (req) => {
     }
     
     // Send message
-    console.log(`Sending message to chat ${chat_id}`);
+    console.log(`Sending message to chat ${chat_id} using token from environment variables`);
     
     const response = await fetch(`${telegramApi}/sendMessage`, {
       method: 'POST',
@@ -79,6 +80,7 @@ serve(async (req) => {
     });
     
     const result = await response.json();
+    console.log("Send message response:", JSON.stringify(result));
     
     // Log the message
     await supabase.from('telegram_message_logs').insert({

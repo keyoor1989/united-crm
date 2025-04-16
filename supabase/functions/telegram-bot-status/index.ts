@@ -19,8 +19,9 @@ serve(async (req) => {
     const telegramBotToken = Deno.env.get('telegram_key') || '';
     
     if (!telegramBotToken) {
+      console.error("Missing Telegram bot token in environment variables");
       return new Response(
-        JSON.stringify({ error: 'Telegram bot token is not configured' }),
+        JSON.stringify({ error: 'Telegram bot token is not configured in Supabase secrets' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400
@@ -31,13 +32,41 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
     
+    console.log("Using Telegram bot token from environment variables:", telegramBotToken.substring(0, 5) + "...");
+    
     // Get bot information to verify the token
     const botInfoResponse = await fetch(`${telegramApi}/getMe`);
     const botInfo = await botInfoResponse.json();
     
+    console.log("Bot info response:", JSON.stringify(botInfo));
+    
     // Get webhook information
     const webhookResponse = await fetch(`${telegramApi}/getWebhookInfo`);
     const webhookInfo = await webhookResponse.json();
+    
+    console.log("Webhook info response:", JSON.stringify(webhookInfo));
+    
+    // Update the database with the correct token if needed
+    try {
+      const { data: configData } = await supabase
+        .from('telegram_config')
+        .select('*')
+        .limit(1);
+        
+      if (configData && configData.length > 0 && configData[0].bot_token !== telegramBotToken) {
+        await supabase
+          .from('telegram_config')
+          .update({ 
+            bot_token: telegramBotToken,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', configData[0].id);
+          
+        console.log("Updated token in database");
+      }
+    } catch (dbError) {
+      console.error("Error updating token in database:", dbError);
+    }
     
     // Get authorized chats
     const { data: chats, error: chatError } = await supabase
