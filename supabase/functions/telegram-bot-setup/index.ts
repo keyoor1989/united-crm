@@ -51,11 +51,15 @@ async function deleteWebhook(): Promise<Response> {
   try {
     const response = await fetch(`${TELEGRAM_API}/deleteWebhook?drop_pending_updates=true`);
     const data = await response.json();
+    
+    console.log("Webhook deleted successfully:", data);
+    
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
   } catch (error) {
+    console.error("Error deleting webhook:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
@@ -71,6 +75,8 @@ async function setCommands(): Promise<Response> {
       { command: "lookup", description: "Look up customer by phone number" },
       { command: "report", description: "Get today's activity report" }
     ];
+    
+    console.log("Setting commands:", commands);
     
     const response = await fetch(`${TELEGRAM_API}/setMyCommands`, {
       method: 'POST',
@@ -89,6 +95,22 @@ async function setCommands(): Promise<Response> {
     });
   } catch (error) {
     console.error("Error setting commands:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    });
+  }
+}
+
+async function getBotInfo(): Promise<Response> {
+  try {
+    const response = await fetch(`${TELEGRAM_API}/getMe`);
+    const data = await response.json();
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
+  } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
@@ -120,6 +142,8 @@ serve(async (req) => {
         return await deleteWebhook();
       case 'setCommands':
         return await setCommands();
+      case 'getBotInfo':
+        return await getBotInfo();
       default:
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

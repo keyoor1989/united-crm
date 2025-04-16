@@ -33,12 +33,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
     
+    console.log("Starting polling for updates...");
+    
     // Get the last update ID we processed
     const { data: lastUpdateData } = await supabase
       .from('telegram_config')
       .select('last_update_id')
-      .order('created_at', { ascending: false })
-      .limit(1)
       .single();
     
     const lastUpdateId = lastUpdateData?.last_update_id || 0;
@@ -144,6 +144,44 @@ serve(async (req) => {
             });
             break;
             
+          case 'lookup':
+            const phoneNumber = text.split(' ')[1]?.trim();
+            if (phoneNumber) {
+              await supabase.functions.invoke("telegram-process-command", {
+                body: {
+                  chat_id: chatId,
+                  text,
+                  command_type: "lookup_customer",
+                  phone: phoneNumber
+                }
+              });
+            } else {
+              await fetch(`${telegramApi}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  chat_id: chatId,
+                  text: "Please provide a phone number to lookup. Example: /lookup 8103349299",
+                }),
+              });
+            }
+            break;
+            
+          case 'report':
+            await fetch(`${telegramApi}/sendMessage`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "Generating today's activity report... This feature is coming soon.",
+              }),
+            });
+            break;
+            
           default:
             await fetch(`${telegramApi}/sendMessage`, {
               method: 'POST',
@@ -200,7 +238,7 @@ serve(async (req) => {
       await supabase
         .from('telegram_config')
         .update({ last_update_id: newLastUpdateId })
-        .eq('id', lastUpdateData.id);
+        .eq('id', 1);
     }
     
     return new Response(
