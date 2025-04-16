@@ -17,6 +17,17 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase credentials");
+      return new Response(
+        JSON.stringify({ status: "error", message: "Server configuration error" }), 
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
     // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseKey);
     
@@ -48,7 +59,7 @@ serve(async (req) => {
     console.log(`Database webhook secret: ${telegramSecretToken ? telegramSecretToken.substring(0, 3) + '...' : '[NOT SET]'}`);
     
     if (telegramSecretToken && secretHeader !== telegramSecretToken) {
-      console.error(`Secret token validation failed! Received: ${secretHeader || '[NONE]'}, Expected from DB: ${telegramSecretToken}`);
+      console.error(`Secret token validation failed! Received: ${secretHeader || '[NONE]'}, Expected from DB: ${telegramSecretToken.substring(0, 3) + '...'}`);
       return new Response(
         JSON.stringify({ status: "error", message: "Unauthorized - Secret token validation failed" }), 
         { 
@@ -81,7 +92,7 @@ serve(async (req) => {
       const { error: logError } = await supabase
         .from('telegram_message_logs')
         .insert({
-          chat_id: update?.message?.chat?.id?.toString() || "unknown",
+          chat_id: update?.message?.chat?.id?.toString() || update?.edited_message?.chat?.id?.toString() || "unknown",
           message_text: JSON.stringify(update).substring(0, 500),
           message_type: "webhook_received",
           direction: "incoming",
@@ -103,6 +114,22 @@ serve(async (req) => {
       
       if (webhookResponse.error) {
         console.error("Error forwarding webhook to handler:", webhookResponse.error);
+        
+        // Log the error
+        try {
+          await supabase
+            .from('telegram_message_logs')
+            .insert({
+              chat_id: update?.message?.chat?.id?.toString() || update?.edited_message?.chat?.id?.toString() || "unknown",
+              message_text: `Error forwarding webhook: ${JSON.stringify(webhookResponse.error)}`,
+              message_type: "webhook_error",
+              direction: "internal",
+              processed_status: "error"
+            });
+        } catch (logErr) {
+          console.error("Failed to log error:", logErr);
+        }
+        
         return new Response(
           JSON.stringify({ status: "error", message: "Error processing webhook" }), 
           { 
@@ -121,6 +148,22 @@ serve(async (req) => {
       );
     } catch (e) {
       console.error("Exception forwarding webhook:", e);
+      
+      // Log the error
+      try {
+        await supabase
+          .from('telegram_message_logs')
+          .insert({
+            chat_id: update?.message?.chat?.id?.toString() || update?.edited_message?.chat?.id?.toString() || "unknown",
+            message_text: `Exception forwarding webhook: ${e.message}`,
+            message_type: "webhook_error",
+            direction: "internal",
+            processed_status: "error"
+          });
+      } catch (logErr) {
+        console.error("Failed to log error:", logErr);
+      }
+      
       return new Response(
         JSON.stringify({ status: "error", message: "Error forwarding webhook" }), 
         { 

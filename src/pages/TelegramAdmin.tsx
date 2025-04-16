@@ -60,6 +60,14 @@ const TelegramAdmin = () => {
   } = useTelegram();
 
   useEffect(() => {
+    // Set tab from URL if provided
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && ['setup', 'chats', 'notifications', 'test'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+    
+    // Set default webhook URL if none is configured
     const proxyUrl = "https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy";
     
     if (!webhookUrl && !config?.webhook_url) {
@@ -67,7 +75,7 @@ const TelegramAdmin = () => {
     } else if (config?.webhook_url) {
       setWebhookUrl(config.webhook_url);
     }
-  }, [config]);
+  }, [config, webhookUrl]);
 
   useEffect(() => {
     if (chats && chats.length > 0) {

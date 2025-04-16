@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TelegramConfig, AuthorizedChat, NotificationPreference, WebhookInfo } from '@/types/telegram';
+import { toast } from 'sonner';
 
 interface TelegramContextType {
   config: TelegramConfig | null;
@@ -60,6 +62,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     } catch (error) {
       console.error("Error loading Telegram data:", error);
+      toast.error("Failed to load Telegram configuration");
     } finally {
       setIsLoading(false);
     }
@@ -67,16 +70,19 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getWebhookInfo = async (): Promise<WebhookInfo | null> => {
     try {
+      console.log("Fetching webhook info...");
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "getWebhookInfo" }
       });
       
       if (error) {
         console.error("Error fetching webhook info:", error);
+        toast.error(`Failed to fetch webhook info: ${error.message}`);
         return null;
       }
       
       if (data) {
+        console.log("Webhook info received:", data);
         setWebhookInfo(data as WebhookInfo);
         return data as WebhookInfo;
       }
@@ -84,56 +90,93 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return null;
     } catch (error) {
       console.error("Error fetching webhook info:", error);
+      toast.error(`Failed to fetch webhook info: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     }
   };
 
   const updateWebhook = async (url: string): Promise<boolean> => {
     try {
-      // Call the edge function to set webhook (future implementation)
-      // For now, just update the database
-      if (config) {
-        const { error } = await supabase.from('telegram_config').update({
-          webhook_url: url,
-          updated_at: new Date().toISOString(),
-        }).eq('id', config.id);
-        
-        if (error) throw error;
+      console.log("Setting webhook to:", url);
+      const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
+        body: { 
+          action: "setWebhook",
+          webhook_url: url
+        }
+      });
+      
+      if (error) {
+        console.error("Error setting webhook:", error);
+        toast.error(`Failed to set webhook: ${error.message}`);
+        return false;
+      }
+      
+      if (data && data.ok) {
+        if (data.warning) {
+          toast.warning(data.warning);
+        }
         
         await refreshData();
         return true;
+      } else {
+        const errorMessage = data && data.description ? data.description : "Unknown error";
+        toast.error(`Failed to set webhook: ${errorMessage}`);
+        return false;
       }
-      return false;
     } catch (error) {
-      console.error("Error updating webhook:", error);
+      console.error("Error setting webhook:", error);
+      toast.error(`Failed to set webhook: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
   };
 
   const deleteWebhook = async (): Promise<boolean> => {
     try {
-      // Call the edge function to delete webhook (future implementation)
-      // For now, just update the database
-      if (config) {
-        const { error } = await supabase.from('telegram_config').update({
-          webhook_url: null,
-          updated_at: new Date().toISOString(),
-        }).eq('id', config.id);
-        
-        if (error) throw error;
+      console.log("Deleting webhook");
+      const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
+        body: { action: "deleteWebhook" }
+      });
+      
+      if (error) {
+        console.error("Error deleting webhook:", error);
+        toast.error(`Failed to delete webhook: ${error.message}`);
+        return false;
+      }
+      
+      if (data && data.ok) {
+        if (data.warning) {
+          toast.warning(data.warning);
+        }
         
         await refreshData();
         return true;
+      } else {
+        const errorMessage = data && data.description ? data.description : "Unknown error";
+        toast.error(`Failed to delete webhook: ${errorMessage}`);
+        return false;
       }
-      return false;
     } catch (error) {
       console.error("Error deleting webhook:", error);
+      toast.error(`Failed to delete webhook: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
   };
 
   const addAuthorizedChat = async (chatId: string, chatName: string): Promise<boolean> => {
     try {
+      // Check if chat already exists
+      const { data: existingChat } = await supabase
+        .from('telegram_authorized_chats')
+        .select('*')
+        .eq('chat_id', chatId)
+        .maybeSingle();
+      
+      if (existingChat) {
+        toast.error("This chat ID is already authorized");
+        return false;
+      }
+      
+      // Add new chat
       const { error } = await supabase.from('telegram_authorized_chats').insert({
         chat_id: chatId,
         chat_name: chatName || `Chat ${chatId}`,
@@ -156,6 +199,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return true;
     } catch (error) {
       console.error("Error authorizing chat:", error);
+      toast.error(`Failed to authorize chat: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
   };
@@ -173,6 +217,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return true;
     } catch (error) {
       console.error("Error toggling chat status:", error);
+      toast.error(`Failed to update chat status: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
   };
@@ -194,43 +239,58 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return true;
     } catch (error) {
       console.error("Error updating notification preference:", error);
+      toast.error(`Failed to update notification preference: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
   };
 
   const sendTestMessage = async (chatId: string, message: string): Promise<boolean> => {
     try {
-      // This will be implemented with edge functions
-      // For now, just log to database
-      const { error } = await supabase.from('telegram_message_logs').insert({
-        chat_id: chatId,
-        message_text: message,
-        message_type: "test",
-        direction: "outgoing",
-        processed_status: "sent"
+      const { data, error } = await supabase.functions.invoke("telegram-send-message", {
+        body: { 
+          chat_id: chatId,
+          text: message
+        }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error sending test message:", error);
+        toast.error(`Failed to send message: ${error.message}`);
+        return false;
+      }
       
-      await refreshData();
-      return true;
+      if (data && data.ok) {
+        await refreshData();
+        return true;
+      } else {
+        const errorMessage = data && data.description ? data.description : "Unknown error";
+        toast.error(`Failed to send message: ${errorMessage}`);
+        return false;
+      }
     } catch (error) {
       console.error("Error sending test message:", error);
+      toast.error(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
   };
 
   const setCommands = async (): Promise<any> => {
     try {
+      console.log("Setting bot commands");
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "setCommands" }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error setting commands:", error);
+        toast.error(`Failed to set commands: ${error.message}`);
+        throw error;
+      }
       
       return data;
     } catch (error) {
       console.error("Error setting commands:", error);
+      toast.error(`Failed to set commands: ${error instanceof Error ? error.message : 'Unknown error'}`);
       throw error;
     }
   };
