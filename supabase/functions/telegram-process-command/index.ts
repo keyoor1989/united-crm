@@ -58,6 +58,33 @@ serve(async (req) => {
         response = await processReport(supabase);
         break;
         
+      case 'help':
+        response = `
+<b>Printer CRM Assistant Help</b>
+
+Here's how to use each feature:
+
+<b>1. Add Customer</b>
+Format: Add Customer Name [name] Phone [mobile] Address [address] City [city] Interested In [product]
+Example: Add Customer Name Ravi Sharma Phone 8103349299 Address 123 MG Road City Indore Interested In Ricoh 2014D
+
+<b>2. Lookup Customer</b>
+Format: Lookup [mobile number]
+Example: Lookup 8103349299
+
+<b>3. Create Quotation</b>
+Format: Create Quotation Mobile: [number] Model: [model] Price: [price] GST: [rate]
+Example: Create Quotation Mobile: 8103349299 Model: Kyocera 2554ci Price: ₹115000 GST: 18%
+
+<b>4. Assign Task</b>
+Format: Assign Task Engineer: [name] Customer: [name] Issue: [description] Deadline: [date]
+Example: Assign Task Engineer: Mohan Customer: Ravi Sharma Issue: Drum replacement Deadline: Tomorrow
+
+<b>5. Daily Report</b>
+Simply type: Daily Report or /report
+`;
+        break;
+        
       default:
         response = "Command type not recognized.";
     }

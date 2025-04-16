@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Card,
@@ -20,14 +21,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, Copy, ExternalLink, Info, MessageSquareText, X, AlertTriangle, LifeBuoy } from "lucide-react";
+import { Check, Copy, Info, MessageSquareText, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useTelegram } from "@/contexts/TelegramContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Layout from "@/components/layout/Layout";
-import WebhookDebug from "@/components/telegram/WebhookDebug";
 
 const TelegramAdmin = () => {
   const [activeTab, setActiveTab] = useState("setup");
@@ -248,20 +248,9 @@ const TelegramAdmin = () => {
           </div>
         </div>
 
-        <Alert className="mb-6 bg-amber-50 border-amber-200">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <AlertDescription className="text-amber-700">
-            If your bot is not responding to commands like /help or "Add Customer", use the Webhook Debug tool to diagnose and fix connection issues.
-          </AlertDescription>
-        </Alert>
-
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="setup">Bot Setup</TabsTrigger>
-            <TabsTrigger value="debug">
-              <LifeBuoy className="h-4 w-4 mr-1" />
-              Webhook Debug
-            </TabsTrigger>
             <TabsTrigger value="chats">Authorized Chats</TabsTrigger>
             <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
             <TabsTrigger value="test">Test Bot</TabsTrigger>
@@ -343,10 +332,6 @@ const TelegramAdmin = () => {
                 </Button>
               </CardFooter>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="debug">
-            <WebhookDebug />
           </TabsContent>
 
           <TabsContent value="chats">
