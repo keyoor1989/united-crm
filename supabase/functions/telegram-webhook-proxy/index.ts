@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, X-Telegram-Bot-Api-Secret-Token',
 };
 
 serve(async (req) => {
@@ -17,6 +17,22 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const telegramBotToken = Deno.env.get('telegram_key') || '';
+    const telegramSecretToken = Deno.env.get('telegram_webhook_secret') || '';
+    
+    // Validate the secret token from Telegram
+    const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
+    console.log(`Received secret token: ${secretHeader}, Expected: ${telegramSecretToken}`);
+    
+    if (telegramSecretToken && secretHeader !== telegramSecretToken) {
+      console.error("Secret token validation failed");
+      return new Response(
+        JSON.stringify({ status: "error", message: "Unauthorized" }), 
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
     
     if (!telegramBotToken) {
       console.error("Missing Telegram bot token in environment variables");
