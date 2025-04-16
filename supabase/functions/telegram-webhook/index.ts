@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { parseCustomerCommand, checkDuplicateCustomer, createNewCustomer } from './parsers/customer.ts';
@@ -23,15 +24,19 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Received webhook request");
     const update = await req.json();
     
     const message = update.message || update.edited_message;
     if (!message) {
+      console.log("No message in update:", update);
       return new Response('No message in update', { status: 200 });
     }
 
     const chat_id = message.chat.id.toString();
     const text = message.text || '';
+    
+    console.log(`Received message from chat ${chat_id}: "${text}"`);
     
     await supabase.from('telegram_message_logs').insert({
       chat_id,
@@ -49,6 +54,7 @@ serve(async (req) => {
       .single();
 
     if (chatError || !chatData) {
+      console.log("Unauthorized chat attempt:", chat_id);
       await supabase.from('telegram_message_logs')
         .update({ processed_status: 'unauthorized' })
         .eq('chat_id', chat_id)
@@ -60,36 +66,44 @@ serve(async (req) => {
     }
 
     if (text.startsWith('/')) {
+      console.log("Handling command:", text);
       await handleCommands(chat_id, text);
     } 
     else if (text.toLowerCase().startsWith('add customer') || 
              text.toLowerCase().startsWith('new customer')) {
+      console.log("Handling add customer command");
       await handleAddCustomer(chat_id, text);
     }
     else if (text.toLowerCase().startsWith('delete customer') || 
              text.toLowerCase().startsWith('remove customer')) {
+      console.log("Handling delete customer command");
       await handleDeleteCustomer(chat_id, text);
     }
     else if (text.toLowerCase().startsWith('lookup') || 
              text.match(/^\d{10}$/) || 
              text.toLowerCase().includes('find customer')) {
+      console.log("Handling customer lookup");
       await handleCustomerLookup(chat_id, text);
     }
     else if (text.toLowerCase().startsWith('create quotation') ||
              text.toLowerCase().startsWith('new quotation') ||
              text.toLowerCase().startsWith('quotation for')) {
+      console.log("Handling create quotation");
       await handleCreateQuotation(chat_id, text);
     }
     else if (text.toLowerCase().startsWith('assign task') ||
              text.toLowerCase().startsWith('new task')) {
+      console.log("Handling assign task");
       await handleAssignTask(chat_id, text);
     }
     else if (text.toLowerCase() === 'daily report' || 
              text.toLowerCase() === 'report' ||
              text.toLowerCase() === 'today\'s report') {
+      console.log("Handling daily report request");
       await handleDailyReport(chat_id);
     }
     else {
+      console.log("Unknown command, sending help message");
       await sendTelegramMessage(chat_id, 
         "I didn't understand that command. Here's what I can help you with:\n\n" +
         "• Add Customer [details]\n" +
@@ -111,6 +125,7 @@ serve(async (req) => {
 
 async function sendTelegramMessage(chat_id: string, text: string, parse_mode: string = 'HTML') {
   try {
+    console.log(`Sending message to chat ${chat_id}: "${text.substring(0, 50)}..."`);
     const response = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
       method: 'POST',
       headers: {
@@ -133,6 +148,10 @@ async function sendTelegramMessage(chat_id: string, text: string, parse_mode: st
       processed_status: responseData.ok ? 'sent' : 'failed',
     });
 
+    if (!responseData.ok) {
+      console.error("Error from Telegram API:", responseData);
+    }
+
     return responseData;
   } catch (error) {
     console.error('Error sending message:', error);
@@ -142,6 +161,8 @@ async function sendTelegramMessage(chat_id: string, text: string, parse_mode: st
 
 async function handleCommands(chat_id: string, text: string) {
   const command = text.split(' ')[0].substring(1).toLowerCase();
+  
+  console.log("Processing command:", command);
   
   switch (command) {
     case 'start':
@@ -194,9 +215,11 @@ Simply type: Daily Report
 
 async function handleAddCustomer(chat_id: string, text: string) {
   try {
+    console.log("Parsing customer data from:", text);
     const customerData = parseCustomerCommand(text);
     
     if (!customerData.name || !customerData.city || !customerData.phone) {
+      console.log("Missing required customer information:", customerData);
       await sendTelegramMessage(chat_id, 
         "❌ Missing required information. Please include:\n" +
         "- Name (required)\n" +
@@ -224,6 +247,7 @@ async function handleAddCustomer(chat_id: string, text: string) {
     }
     
     if (existingCustomer) {
+      console.log("Customer already exists:", existingCustomer);
       await sendTelegramMessage(chat_id, 
         `⚠️ Customer with phone ${customerData.phone} already exists.\n\n` +
         `Name: ${existingCustomer.name}\n` +
@@ -232,6 +256,7 @@ async function handleAddCustomer(chat_id: string, text: string) {
       return;
     }
     
+    console.log("Creating new customer:", customerData);
     const { data, error } = await supabase
       .from('customers')
       .insert({
@@ -264,6 +289,7 @@ async function handleAddCustomer(chat_id: string, text: string) {
         });
     }
     
+    console.log("Customer added successfully:", data);
     await sendTelegramMessage(chat_id, 
       `✅ Customer <b>${customerData.name}</b> added successfully to CRM!\n\n` +
       `ID: ${data.id}\n` +

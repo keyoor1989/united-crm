@@ -22,7 +22,8 @@ export function parseCustomerCommand(text: string) {
   const namePatterns = [
     /Name\s+([^,\n]+)/i,
     /Customer\s+([^,\n]+)/i,
-    /(?:new customer|add customer|create lead)[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i
+    /(?:new customer|add customer|create lead)[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
+    /([A-Za-z]+\s+[A-Za-z]+)(?=[,\s]|from\s)/i
   ];
   
   for (const pattern of namePatterns) {
@@ -32,6 +33,11 @@ export function parseCustomerCommand(text: string) {
       console.log("Extracted name:", result.name);
       break;
     }
+  }
+  
+  if (!result.name) {
+    result.missingFields.push("name");
+    console.log("Name not found in command");
   }
   
   // Enhanced phone number extraction with multiple patterns
@@ -51,10 +57,15 @@ export function parseCustomerCommand(text: string) {
     }
   }
   
+  if (!result.phone) {
+    result.missingFields.push("phone");
+    console.log("Phone not found in command");
+  }
+  
   // Extract email (optional)
   const emailMatch = text.match(/Email\s+([^\s,\n]+@[^\s,\n]+)/i) || text.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
-  if (emailMatch && emailMatch[1]) {
-    result.email = emailMatch[1].trim();
+  if (emailMatch) {
+    result.email = emailMatch[0];
     console.log("Extracted email:", result.email);
   }
   
@@ -77,7 +88,8 @@ export function parseCustomerCommand(text: string) {
   const cityPatterns = [
     /City\s+(.*?)(?=\s+Email|\s+Mobile|\s+Phone|\s+Interested|$)/is,
     /(?:from|in|at)\s+([A-Za-z]+)(?=[,\s]|$)/i,
-    /([A-Za-z]+)\s+(?:city|area)/i
+    /([A-Za-z]+)\s+(?:city|area)/i,
+    /Area\s+([^,\n]+)/i
   ];
   
   for (const pattern of cityPatterns) {
@@ -91,13 +103,19 @@ export function parseCustomerCommand(text: string) {
     }
   }
   
+  if (!result.city) {
+    result.missingFields.push("city");
+    console.log("City not found in command");
+  }
+  
   // Extract product interest with multiple patterns
   const productPatterns = [
     /Interested\s+In\s+([^,\n]+)/i,
     /Intrested\s+In\s+([^,\n]+)/i,  // Common misspelling
     /Looking\s+For\s+([^,\n]+)/i,
     /Needs\s+([^,\n]+)/i,
-    /(?:product|machine|equipment)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i
+    /(?:product|machine|equipment)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i,
+    /(?:interested in|looking for|enquiry for|enquiry|wants)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i
   ];
   
   for (const pattern of productPatterns) {

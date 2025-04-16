@@ -29,12 +29,13 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
     missingFields: [],
   };
 
-  // Extract name with multiple pattern matching
+  // Extract name with multiple pattern matching for improved flexibility
   const namePatterns = [
     /(?:new customer|add customer|create lead|naya customer|add new customer)[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
     /([A-Za-z]+\s+[A-Za-z]+)(?=[,\s]|from\s)/i,
     /name[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
-    /customer[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i
+    /customer[:\s]+([A-Za-z\s]+)(?=[,\s]|$)/i,
+    /Name\s+([^,\n]+)/i
   ];
   
   for (const pattern of namePatterns) {
@@ -56,7 +57,9 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
     /(?:number|mobile|phone|contact|call)[:\s]*(\d{10}|\d{4}[ -]?\d{3}[ -]?\d{3}|\d{3}[ -]?\d{3}[ -]?\d{4})/i,
     /(\d{10})(?=[,\s]|$)/i,
     /mobile[:\s]*(\d{10})/i,
-    /phone[:\s]*(\d{10})/i
+    /phone[:\s]*(\d{10})/i,
+    /Mobile\s+(\d{10})/i,
+    /Phone\s+(\d{10})/i
   ];
   
   for (const pattern of phonePatterns) {
@@ -77,7 +80,9 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
   const locationPatterns = [
     /(?:from|in|at)\s+([A-Za-z]+)(?=[,\s]|$)/i,
     /(?:location|city|address)[:\s]+([A-Za-z]+)(?=[,\s]|$)/i,
-    /([A-Za-z]+)\s+(?:city|area)/i
+    /([A-Za-z]+)\s+(?:city|area)/i,
+    /City\s+([^,\n]+)/i,
+    /Area\s+([^,\n]+)/i
   ];
   
   for (const pattern of locationPatterns) {
@@ -107,7 +112,8 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
   const productPatterns = [
     /(?:interested in|looking for|enquiry for|enquiry|wants)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i,
     /(?:product|machine|equipment)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i,
-    /(?:needs|requires)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i
+    /(?:needs|requires)[:\s]+([A-Za-z0-9\s]+)(?=[,\s]|$)/i,
+    /Interested\s+In\s+([^,\n]+)/i
   ];
   
   for (const pattern of productPatterns) {
@@ -126,8 +132,8 @@ export const parseCustomerCommand = (command: string): ParsedCustomerCommand => 
   }
 
   // Determine if the command has enough information
-  result.isValid = result.name !== "" && result.phone !== "";
-  console.log("Command is valid:", result.isValid);
+  result.isValid = result.name !== "" && result.phone !== "" && result.location !== "";
+  console.log("Command is valid:", result.isValid, "Missing fields:", result.missingFields);
 
   return result;
 };
