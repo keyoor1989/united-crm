@@ -71,6 +71,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getWebhookInfo = async (): Promise<WebhookInfo | null> => {
     try {
       console.log("Fetching webhook info...");
+      
+      // Add auth headers to the function call
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "getWebhookInfo" }
       });
@@ -98,6 +100,28 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateWebhook = async (url: string): Promise<boolean> => {
     try {
       console.log("Setting webhook to:", url);
+      
+      // Set random webhook secret if there isn't one already
+      if (!config?.webhook_secret) {
+        try {
+          // Generate a random secret token
+          const randomSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+            .map((byte) => byte.toString(16).padStart(2, '0'))
+            .join('');
+          
+          // Update the config with the new secret
+          await supabase
+            .from('telegram_config')
+            .update({ webhook_secret: randomSecret })
+            .eq('id', config?.id);
+          
+          console.log("Generated new webhook secret");
+        } catch (secretError) {
+          console.error("Error generating webhook secret:", secretError);
+        }
+      }
+      
+      // Add auth headers
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { 
           action: "setWebhook",
@@ -133,6 +157,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const deleteWebhook = async (): Promise<boolean> => {
     try {
       console.log("Deleting webhook");
+      
+      // Add auth headers
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "deleteWebhook" }
       });
@@ -246,6 +272,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const sendTestMessage = async (chatId: string, message: string): Promise<boolean> => {
     try {
+      // Add auth headers
       const { data, error } = await supabase.functions.invoke("telegram-send-message", {
         body: { 
           chat_id: chatId,
@@ -277,6 +304,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setCommands = async (): Promise<any> => {
     try {
       console.log("Setting bot commands");
+      
+      // Add auth headers
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "setCommands" }
       });

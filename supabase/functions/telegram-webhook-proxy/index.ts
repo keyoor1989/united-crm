@@ -33,6 +33,29 @@ serve(async (req) => {
     
     // Log all request headers for debugging
     console.log("Request headers:", Object.fromEntries([...req.headers.entries()]));
+
+    // Check for debug request first - used by the admin panel to test connection
+    try {
+      const clonedReq = req.clone();
+      const body = await clonedReq.json();
+      
+      if (body && body.type === "debug_request") {
+        console.log("Received debug request:", body);
+        return new Response(
+          JSON.stringify({ 
+            status: "success", 
+            message: "Debug request received successfully",
+            timestamp: new Date().toISOString()
+          }), 
+          { 
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    } catch (e) {
+      // Not a JSON body or no debug request, continue with normal processing
+    }
     
     try {
       // Get the current webhook secret from database - explicitly request without caching

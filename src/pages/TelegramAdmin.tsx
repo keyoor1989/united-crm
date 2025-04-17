@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -43,6 +43,8 @@ const TelegramAdmin = () => {
   const [isLoadingWebhookInfo, setIsLoadingWebhookInfo] = useState(false);
   const [webhookSetupError, setWebhookSetupError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const refreshTimerRef = useRef<number | null>(null);
+  const lastRefreshTimeRef = useRef<number>(0);
 
   const {
     config, 
@@ -62,6 +64,9 @@ const TelegramAdmin = () => {
   } = useTelegram();
 
   useEffect(() => {
+    // Load data initially
+    refreshData();
+    
     // Set tab from URL if provided
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
@@ -77,7 +82,14 @@ const TelegramAdmin = () => {
     } else if (config?.webhook_url) {
       setWebhookUrl(config.webhook_url);
     }
-  }, [config, webhookUrl]);
+    
+    // Cleanup any existing timer on unmount
+    return () => {
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, [refreshData, config, webhookUrl]);
 
   useEffect(() => {
     if (chats && chats.length > 0) {
@@ -86,11 +98,22 @@ const TelegramAdmin = () => {
   }, [chats]);
 
   useEffect(() => {
+    // Function to fetch webhook info with throttling
     const fetchWebhookInfo = async () => {
+      // Skip if already loading or if it's been less than 3 seconds since last refresh
+      const now = Date.now();
+      if (isLoadingWebhookInfo || (now - lastRefreshTimeRef.current < 3000)) {
+        return;
+      }
+      
       setIsLoadingWebhookInfo(true);
       setWebhookSetupError(null);
+      
       try {
         const info = await getWebhookInfo();
+        // Update last refresh time
+        lastRefreshTimeRef.current = Date.now();
+        
         // Check for errors in the webhook info
         if (info?.result?.last_error_message) {
           setWebhookSetupError(info.result.last_error_message);
@@ -107,11 +130,24 @@ const TelegramAdmin = () => {
       }
     };
     
-    // Fetch webhook info when on setup tab
-    if (activeTab === "setup") {
-      fetchWebhookInfo();
+    // Clear any existing timer
+    if (refreshTimerRef.current !== null) {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
     }
-  }, [activeTab, getWebhookInfo]);
+    
+    // Only set up periodic refreshing when on setup tab
+    if (activeTab === "setup") {
+      // Fetch immediately if needed
+      fetchWebhookInfo();
+      
+      // Set up timer for next refresh (every 10 seconds)
+      refreshTimerRef.current = window.setTimeout(() => {
+        fetchWebhookInfo();
+        refreshTimerRef.current = null;
+      }, 10000);
+    }
+  }, [activeTab, getWebhookInfo, isLoadingWebhookInfo]);
 
   const saveWebhookSettings = async () => {
     setIsSaving(true);
@@ -280,11 +316,12 @@ const TelegramAdmin = () => {
     try {
       setDebugInfo({ loading: true });
       
-      // Test connection to the webhook directly
+      // Test connection to the webhook directly with auth headers
       const response = await fetch("https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
           // Include the current secret token if available
           ...(config?.webhook_secret ? { "X-Telegram-Bot-Api-Secret-Token": config.webhook_secret } : {})
         },
@@ -293,10 +330,13 @@ const TelegramAdmin = () => {
       
       const data = await response.json();
       
-      // Get the webhook info from Telegram
+      // Get the webhook info from Telegram - using fetch directly to add auth header
       const webhookInfoResponse = await fetch("https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-bot-setup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`
+        },
         body: JSON.stringify({ action: "getWebhookInfo" })
       });
       

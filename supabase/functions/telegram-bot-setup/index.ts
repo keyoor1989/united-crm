@@ -1,594 +1,302 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { decode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const telegramBotToken = Deno.env.get('telegram_key') || '';
-
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    if (!supabaseUrl || !supabaseKey || !telegramBotToken) {
-      console.error("Missing required environment variables:", {
-        hasSupabaseUrl: Boolean(supabaseUrl),
-        hasSupabaseKey: Boolean(supabaseKey),
-        hasTelegramKey: Boolean(telegramBotToken)
-      });
-      
+    // Get needed environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const telegramBotToken = Deno.env.get('telegram_key') || '';
+    
+    if (!telegramBotToken) {
+      console.error("Missing Telegram bot token in environment variables");
       return new Response(
-        JSON.stringify({ error: 'Missing required environment variables' }),
+        JSON.stringify({ error: 'Telegram bot token is not configured' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500
+          status: 400
         }
       );
     }
-
+    
+    // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Get request body
-    let requestData;
+    // Parse the request body
+    let requestBody;
     try {
-      requestData = await req.json();
-      console.log(`Received request with action: ${requestData?.action}`);
-    } catch (error) {
-      console.error("Error parsing request JSON:", error);
+      requestBody = await req.json();
+    } catch (e) {
+      console.error("Failed to parse request body:", e);
       return new Response(
-        JSON.stringify({ error: 'Invalid JSON payload' }),
+        JSON.stringify({ error: 'Invalid JSON body' }), 
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
+          status: 400 
         }
       );
     }
     
-    const { action, webhook_url } = requestData;
+    const { action } = requestBody;
+    console.log("Received request with action:", action);
     
-    if (!action) {
-      console.error("Missing required parameter: action");
-      return new Response(
-        JSON.stringify({ error: 'Missing required parameter: action' }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
+    // Base URL for Telegram Bot API
+    const telegramApi = `https://api.telegram.org/bot${telegramBotToken}`;
+    console.log("Using bot token (first 5 chars):", telegramBotToken.substring(0, 5) + "...");
+    
+    // Switch based on action
+    switch (action) {
+      case 'setWebhook': {
+        const { webhook_url } = requestBody;
+        
+        if (!webhook_url) {
+          return new Response(
+            JSON.stringify({ error: 'webhook_url is required' }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 400
+            }
+          );
         }
-      );
-    }
-
-    // Set webhook URL for the bot
-    if (action === 'setWebhook') {
-      if (!webhook_url) {
-        console.error("Missing required parameter: webhook_url");
+        
+        // Get webhook secret from the database
+        const { data: configData, error: configError } = await supabase
+          .from('telegram_config')
+          .select('webhook_secret')
+          .maybeSingle();
+          
+        if (configError) {
+          console.error("Error fetching webhook secret:", configError);
+        }
+        
+        const webhookSecret = configData?.webhook_secret || '';
+        
+        // Set webhook with the secret token
+        console.log(`Setting webhook URL to ${webhook_url}`);
+        
+        const setWebhookUrl = new URL(`${telegramApi}/setWebhook`);
+        setWebhookUrl.searchParams.append('url', webhook_url);
+        
+        // Only set a secret token if we have one
+        if (webhookSecret) {
+          console.log("Using stored webhook secret");
+          setWebhookUrl.searchParams.append('secret_token', webhookSecret);
+        } else {
+          console.warn("No webhook secret found in database");
+        }
+        
+        // Log the actual URL we're calling (without sensitive parts)
+        const safeUrl = setWebhookUrl.toString().replace(telegramBotToken, "REDACTED_TOKEN");
+        console.log("Calling Telegram API with URL:", safeUrl);
+        
+        // Make the request to Telegram Bot API
+        try {
+          const response = await fetch(setWebhookUrl);
+          const result = await response.json();
+          
+          console.log("Set webhook response:", JSON.stringify(result));
+          
+          // Update webhook_url in the database
+          if (result.ok) {
+            const { error: updateError } = await supabase
+              .from('telegram_config')
+              .update({ webhook_url })
+              .eq('bot_token', telegramBotToken);
+              
+            if (updateError) {
+              console.error("Error updating webhook URL in database:", updateError);
+              return new Response(
+                JSON.stringify({ 
+                  ...result, 
+                  warning: 'Webhook set but failed to update database' 
+                }),
+                { 
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                }
+              );
+            }
+            
+            console.log("Successfully set webhook and updated database");
+          }
+          
+          return new Response(
+            JSON.stringify(result),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        } catch (error) {
+          console.error("Error setting webhook:", error);
+          return new Response(
+            JSON.stringify({ 
+              ok: false, 
+              description: `Failed to set webhook: ${error.message}` 
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+      }
+      
+      case 'deleteWebhook': {
+        console.log("Deleting webhook");
+        
+        try {
+          const response = await fetch(`${telegramApi}/deleteWebhook`);
+          const result = await response.json();
+          
+          console.log("Delete webhook response:", JSON.stringify(result));
+          
+          // Update webhook_url in the database if deletion was successful
+          if (result.ok) {
+            const { error: updateError } = await supabase
+              .from('telegram_config')
+              .update({ webhook_url: null })
+              .eq('bot_token', telegramBotToken);
+              
+            if (updateError) {
+              console.error("Error updating webhook URL in database:", updateError);
+              return new Response(
+                JSON.stringify({ 
+                  ...result, 
+                  warning: 'Webhook deleted but failed to update database' 
+                }),
+                { 
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                }
+              );
+            }
+            
+            console.log("Successfully deleted webhook and updated database");
+          }
+          
+          return new Response(
+            JSON.stringify(result),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        } catch (error) {
+          console.error("Error deleting webhook:", error);
+          return new Response(
+            JSON.stringify({ 
+              ok: false, 
+              description: `Failed to delete webhook: ${error.message}` 
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+      }
+      
+      case 'getWebhookInfo': {
+        console.log("Getting webhook info");
+        
+        try {
+          const response = await fetch(`${telegramApi}/getWebhookInfo`);
+          const result = await response.json();
+          
+          console.log("Webhook info:", JSON.stringify(result, null, 2));
+          
+          return new Response(
+            JSON.stringify(result),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        } catch (error) {
+          console.error("Error getting webhook info:", error);
+          return new Response(
+            JSON.stringify({ 
+              ok: false, 
+              description: `Failed to get webhook info: ${error.message}` 
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+      }
+      
+      case 'setCommands': {
+        console.log("Setting bot commands");
+        
+        const commands = [
+          {
+            command: "help",
+            description: "Get help information"
+          },
+          {
+            command: "status",
+            description: "Get bot status information"
+          }
+        ];
+        
+        try {
+          const response = await fetch(`${telegramApi}/setMyCommands`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commands })
+          });
+          
+          const result = await response.json();
+          console.log("Set commands response:", JSON.stringify(result));
+          
+          return new Response(
+            JSON.stringify(result),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        } catch (error) {
+          console.error("Error setting commands:", error);
+          return new Response(
+            JSON.stringify({ 
+              ok: false, 
+              description: `Failed to set commands: ${error.message}` 
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+      }
+      
+      default:
         return new Response(
-          JSON.stringify({ error: 'Missing required parameter: webhook_url' }),
+          JSON.stringify({ error: `Unknown action: ${action}` }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400
           }
         );
-      }
-      
-      try {
-        // Generate a secure random hex string for webhook secret - more compatible than UUID
-        const webhookSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-          
-        console.log(`Generated webhook secret (first 10 chars): ${webhookSecret.substring(0, 10)}...`);
-        
-        // First, update the database with the new webhook secret
-        // This ensures the secret is stored before we set the webhook
-        const { data: configData, error: configError } = await supabase
-          .from('telegram_config')
-          .select('id')
-          .limit(1)
-          .maybeSingle();
-          
-        if (configError) {
-          console.error("Error fetching config ID:", configError);
-          return new Response(
-            JSON.stringify({ error: `Database error: ${configError.message}` }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        if (!configData) {
-          console.error("No telegram_config record found");
-          return new Response(
-            JSON.stringify({ error: 'No telegram_config record found' }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        // Update config with new webhook URL and secret
-        const { error: updateError } = await supabase
-          .from('telegram_config')
-          .update({ 
-            webhook_url, 
-            webhook_secret: webhookSecret,
-            updated_at: new Date().toISOString() 
-          })
-          .eq('id', configData.id);
-          
-        if (updateError) {
-          console.error("Error updating config:", updateError);
-          return new Response(
-            JSON.stringify({ error: `Database error: ${updateError.message}` }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        console.log("Database updated with new webhook secret");
-        
-        // Now set the webhook with Telegram
-        console.log(`Setting webhook to: ${webhook_url} with secret token (first 10 chars): ${webhookSecret.substring(0, 10)}...`);
-        
-        // Validate token length before setting webhook
-        if (telegramBotToken.length < 30) {
-          console.error("Invalid Telegram bot token - too short");
-          return new Response(
-            JSON.stringify({ error: 'Invalid Telegram bot token configuration' }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        try {
-          const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: webhook_url,
-              secret_token: webhookSecret,
-              allowed_updates: ["message", "edited_message", "callback_query"],
-            }),
-          });
-          
-          const responseText = await webhookResponse.text();
-          console.log(`Raw Telegram API response: ${responseText}`);
-          
-          if (!webhookResponse.ok) {
-            console.error(`Error from Telegram API (${webhookResponse.status}): ${responseText}`);
-            return new Response(
-              JSON.stringify({ 
-                error: `Telegram API error (${webhookResponse.status})`, 
-                details: responseText 
-              }),
-              { 
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 500
-              }
-            );
-          }
-          
-          let webhookData;
-          try {
-            webhookData = JSON.parse(responseText);
-          } catch (parseError) {
-            console.error("Error parsing Telegram API response:", parseError);
-            return new Response(
-              JSON.stringify({ 
-                error: 'Invalid JSON response from Telegram API',
-                raw_response: responseText
-              }),
-              { 
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 500
-              }
-            );
-          }
-          
-          console.log("Webhook setup response:", webhookData);
-          
-          // Double-check that the webhook is set correctly
-          const verifyResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`);
-          const verifyData = await verifyResponse.json();
-          console.log("Webhook verification after setup:", verifyData);
-          
-          return new Response(
-            JSON.stringify(webhookData),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 200
-            }
-          );
-        } catch (fetchError) {
-          console.error("Network error setting webhook:", fetchError);
-          return new Response(
-            JSON.stringify({ 
-              error: `Network error setting webhook: ${fetchError.message}`,
-              stack: fetchError.stack
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-      } catch (error) {
-        console.error("Error setting webhook:", error);
-        return new Response(
-          JSON.stringify({ 
-            error: `Error setting webhook: ${error.message}`,
-            stack: error.stack 
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500
-          }
-        );
-      }
     }
+  } catch (error) {
+    console.error("Unhandled error:", error);
     
-    // Delete webhook
-    if (action === 'deleteWebhook') {
-      console.log("Deleting webhook");
-      
-      try {
-        const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/deleteWebhook?drop_pending_updates=true`, {
-          method: 'POST'
-        });
-        
-        const responseText = await webhookResponse.text();
-        
-        if (!webhookResponse.ok) {
-          console.error(`Error from Telegram API (${webhookResponse.status}): ${responseText}`);
-          return new Response(
-            JSON.stringify({ 
-              error: `Telegram API error: ${responseText}`,
-              status_code: webhookResponse.status
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        let webhookData;
-        try {
-          webhookData = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error("Error parsing Telegram API response:", parseError);
-          return new Response(
-            JSON.stringify({ 
-              error: 'Invalid JSON response from Telegram API',
-              raw_response: responseText
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        console.log("Webhook deletion response:", webhookData);
-        
-        if (webhookData.ok) {
-          // Update webhook URL in DB
-          try {
-            const { data: configData, error: configError } = await supabase
-              .from('telegram_config')
-              .select('id')
-              .limit(1)
-              .maybeSingle();
-              
-            if (configError) {
-              console.error("Error fetching config ID:", configError);
-              // Still return success to client but with warning
-              return new Response(
-                JSON.stringify({ ...webhookData, warning: "Webhook deleted on Telegram but database update failed" }),
-                { 
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                  status: 200
-                }
-              );
-            }
-            
-            if (!configData) {
-              console.error("No telegram_config record found");
-              return new Response(
-                JSON.stringify({ ...webhookData, warning: "Webhook deleted on Telegram but no config record found in database" }),
-                { 
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                  status: 200
-                }
-              );
-            }
-            
-            const { error: updateError } = await supabase
-              .from('telegram_config')
-              .update({ 
-                webhook_url: null,
-                webhook_secret: null,
-                updated_at: new Date().toISOString() 
-              })
-              .eq('id', configData.id);
-              
-            if (updateError) {
-              console.error("Error updating config:", updateError);
-              // Still return success to client but with warning
-              return new Response(
-                JSON.stringify({ ...webhookData, warning: "Webhook deleted on Telegram but database update failed" }),
-                { 
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                  status: 200
-                }
-              );
-            }
-          } catch (dbError) {
-            console.error("Database error:", dbError);
-            // Still return success to client but with warning
-            return new Response(
-              JSON.stringify({ ...webhookData, warning: "Webhook deleted on Telegram but database update failed" }),
-              { 
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 200
-              }
-            );
-          }
-        }
-        
-        return new Response(
-          JSON.stringify(webhookData),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
-          }
-        );
-      } catch (error) {
-        console.error("Error deleting webhook:", error);
-        return new Response(
-          JSON.stringify({ 
-            error: `Error deleting webhook: ${error.message}`,
-            stack: error.stack
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500
-          }
-        );
-      }
-    }
-    
-    // Get webhook info
-    if (action === 'getWebhookInfo') {
-      console.log("Getting webhook info");
-      
-      try {
-        // Add detailed debug logs
-        console.log("Using bot token (first 5 chars):", telegramBotToken ? telegramBotToken.substring(0, 5) + "..." : "MISSING");
-        
-        // Make the API request with explicit error handling
-        let webhookResponse;
-        try {
-          // Extended timeout for slow connections
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-          
-          webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`, {
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-        } catch (fetchError) {
-          console.error("Fetch error when calling Telegram API:", fetchError);
-          return new Response(
-            JSON.stringify({ 
-              error: `Network error when calling Telegram API: ${fetchError.message}`,
-              is_abort_error: fetchError.name === 'AbortError'
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        if (!webhookResponse.ok) {
-          let errorText = "";
-          try {
-            errorText = await webhookResponse.text();
-          } catch (e) {
-            errorText = "Could not extract error text";
-          }
-          
-          console.error("Error from Telegram API:", errorText, "Status:", webhookResponse.status);
-          return new Response(
-            JSON.stringify({ 
-              error: `Telegram API error: ${errorText}`, 
-              status: webhookResponse.status 
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        let webhookData;
-        try {
-          webhookData = await webhookResponse.json();
-        } catch (jsonError) {
-          console.error("Error parsing Telegram API response:", jsonError);
-          let responseText = "";
-          try {
-            responseText = await webhookResponse.text();
-          } catch (e) {
-            responseText = "Could not extract response text";
-          }
-          
-          return new Response(
-            JSON.stringify({ 
-              error: `Error parsing Telegram API response: ${jsonError.message}`,
-              response_text: responseText
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        console.log("Webhook info:", webhookData);
-        
-        // Also check the database for the secret token for comparison
-        try {
-          const { data: configData, error: configError } = await supabase
-            .from('telegram_config')
-            .select('webhook_secret, webhook_url')
-            .limit(1)
-            .maybeSingle();
-            
-          if (!configError && configData) {
-            console.log("Current webhook in DB:", configData.webhook_url);
-            console.log("Current webhook secret in DB (first 10 chars):", 
-              configData.webhook_secret ? 
-              configData.webhook_secret.substring(0, 10) + "..." : 
-              "NOT SET");
-          }
-        } catch (dbError) {
-          console.error("Error fetching webhook secret from DB:", dbError);
-          // Non-critical error, just log it
-        }
-        
-        return new Response(
-          JSON.stringify(webhookData),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
-          }
-        );
-      } catch (error) {
-        console.error("Error getting webhook info:", error);
-        return new Response(
-          JSON.stringify({ 
-            error: `Error getting webhook info: ${error.message}`, 
-            stack: error.stack 
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500
-          }
-        );
-      }
-    }
-    
-    // Set commands
-    if (action === 'setCommands') {
-      console.log("Setting bot commands");
-      
-      try {
-        const commands = [
-          { command: 'start', description: 'Start using the bot' },
-          { command: 'help', description: 'Get help with using the bot' },
-          { command: 'report', description: 'Get a daily business report' }
-        ];
-        
-        console.log("Registering commands:", commands);
-        
-        const commandResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setMyCommands`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ commands }),
-        });
-        
-        const responseText = await commandResponse.text();
-        
-        if (!commandResponse.ok) {
-          console.error(`Error from Telegram API (${commandResponse.status}): ${responseText}`);
-          return new Response(
-            JSON.stringify({ 
-              error: `Telegram API error: ${responseText}`,
-              status_code: commandResponse.status 
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        let responseData;
-        try {
-          responseData = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error("Error parsing Telegram API response:", parseError);
-          return new Response(
-            JSON.stringify({ 
-              error: 'Invalid JSON response from Telegram API',
-              raw_response: responseText
-            }),
-            { 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-              status: 500
-            }
-          );
-        }
-        
-        console.log("Command registration response:", responseData);
-        
-        return new Response(
-          JSON.stringify(responseData),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
-          }
-        );
-      } catch (error) {
-        console.error("Error setting commands:", error);
-        return new Response(
-          JSON.stringify({ 
-            error: `Error setting commands: ${error.message}`,
-            stack: error.stack 
-          }),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500
-          }
-        );
-      }
-    }
-    
-    return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
-      }
-    );
-  } catch (e) {
-    console.error("Unhandled exception in telegram-bot-setup:", e);
     return new Response(
       JSON.stringify({ 
-        error: e.message, 
-        stack: e.stack,
-        type: e.name
+        error: "Internal server error", 
+        message: error.message,
+        stack: error.stack
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
