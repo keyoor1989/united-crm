@@ -1387,6 +1387,30 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          webhook_secret: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           address: string | null
