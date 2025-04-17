@@ -40,6 +40,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Fetch the stored webhook secret from the database
+    console.log('Fetching webhook secret from the database');
     const { data, error } = await supabase
       .from('telegram_config')
       .select('webhook_secret')
@@ -56,7 +57,17 @@ serve(async (req) => {
     }
     
     // Verify that we have a stored secret and it matches the incoming request
-    if (!data || !data.webhook_secret || data.webhook_secret !== secretToken) {
+    if (!data || !data.webhook_secret) {
+      console.error('No webhook secret found in database');
+      return new Response(JSON.stringify({ error: 'Configuration error: No webhook secret found' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    console.log('Validating secret token');
+    const storedSecret = data.webhook_secret;
+    if (storedSecret !== secretToken) {
       console.error('Invalid webhook secret token');
       return new Response(JSON.stringify({ error: 'Unauthorized: Invalid secret token' }), {
         status: 401,
@@ -68,13 +79,14 @@ serve(async (req) => {
     const update = await req.json();
     console.log('Received valid Telegram update:', JSON.stringify(update).substring(0, 200) + '...');
     
-    // Forward the update to the telegram-webhook function
-    const { data: forwardData, error: forwardError } = await supabase.functions.invoke('telegram-webhook', {
+    // Forward the update to the telegram-process-command function
+    console.log('Forwarding update to telegram-process-command function');
+    const { data: forwardData, error: forwardError } = await supabase.functions.invoke('telegram-process-command', {
       body: update
     });
     
     if (forwardError) {
-      console.error('Error forwarding webhook to telegram-webhook function:', forwardError);
+      console.error('Error forwarding webhook to telegram-process-command function:', forwardError);
       return new Response(JSON.stringify({ error: 'Failed to process webhook' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
