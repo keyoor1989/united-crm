@@ -6,6 +6,7 @@ import * as z from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { User, UserRole } from "@/types/auth";
 import { roleNames } from "@/utils/rbac/rolePermissions";
+import { UserCreate } from "@/services/userService";
 
 import {
   Dialog,
@@ -49,7 +50,7 @@ type FormValues = z.infer<typeof formSchema>;
 interface UserFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (user: Partial<User> & { id: string }) => void;
+  onSave: (user: UserCreate) => void;
   user: User | null;
 }
 

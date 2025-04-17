@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { User } from "@/types/auth";
+import { User, UserRole } from "@/types/auth";
 
 export interface UserCreate extends Omit<User, 'id' | 'createdAt' | 'updatedAt'> {
   id?: string;
@@ -27,7 +27,7 @@ export const userService = {
       name: user.name,
       email: user.email,
       mobile: user.mobile,
-      role: user.role,
+      role: user.role as UserRole, // Cast the role to UserRole
       branch: user.branch,
       isActive: user.is_active,
       createdAt: user.created_at,
@@ -63,7 +63,7 @@ export const userService = {
       name: data.name,
       email: data.email,
       mobile: data.mobile,
-      role: data.role,
+      role: data.role as UserRole, // Cast the role to UserRole
       branch: data.branch,
       isActive: data.is_active,
       createdAt: data.created_at,
@@ -101,7 +101,7 @@ export const userService = {
       name: data.name,
       email: data.email,
       mobile: data.mobile,
-      role: data.role,
+      role: data.role as UserRole, // Cast the role to UserRole
       branch: data.branch,
       isActive: data.is_active,
       createdAt: data.created_at,

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   User as UserIcon, 
@@ -10,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { User } from "@/types/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { userService } from "@/services/userService";
+import { userService, UserCreate } from "@/services/userService";
 import { useToast } from "@/components/ui/use-toast";
 import UserFormDialog from "./UserFormDialog";
 import UserTable from "./UserTable";
@@ -26,7 +25,6 @@ const UserManagement: React.FC = () => {
   const [showRolesInfo, setShowRolesInfo] = useState(false);
   const { toast } = useToast();
 
-  // Fetch users on component mount
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -73,17 +71,15 @@ const UserManagement: React.FC = () => {
     setEditingUser(null);
   };
 
-  const handleUserSave = async (userData: Partial<User> & { id: string }) => {
+  const handleUserSave = async (userData: UserCreate) => {
     try {
       if (editingUser) {
-        // Update existing user
-        await userService.updateUser(userData.id, userData);
+        await userService.updateUser(userData.id!, userData);
         toast({
           title: "User updated",
           description: "User has been successfully updated.",
         });
       } else {
-        // Add new user
         await userService.createUser(userData);
         toast({
           title: "User created",
@@ -91,7 +87,6 @@ const UserManagement: React.FC = () => {
         });
       }
       
-      // Refresh the user list
       fetchUsers();
       handleFormClose();
       
