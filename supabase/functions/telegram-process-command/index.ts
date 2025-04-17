@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -120,6 +121,11 @@ async function processAddCustomer(supabase, text) {
   try {
     const customerData = parseCustomerCommand(text);
     
+    console.log("Parsed customer data:", customerData);
+    console.log("Parsed Name:", customerData.name);
+    console.log("Parsed Phone:", customerData.phone);
+    console.log("Parsed City:", customerData.city);
+    
     if (!customerData.name || !customerData.city || !customerData.phone) {
       return "❌ Missing required information. Please include:\n" +
              "- Name (required)\n" +
@@ -204,12 +210,13 @@ function parseCustomerCommand(text) {
     product: ''
   };
   
-  const nameMatch = text.match(/Name\s+([^Phone|^Email|^Address|^City|^Interested|^\n]+)/i);
+  // Case-insensitive regex patterns with both colon and space formats
+  const nameMatch = text.match(/Name\s*:?\s+([^Phone|^Email|^Address|^City|^Interested|^\n]+)/i);
   if (nameMatch && nameMatch[1]) {
     result.name = nameMatch[1].trim();
   }
   
-  const phoneMatch = text.match(/Phone\s+([^Name|^Email|^Address|^City|^Interested|^\n]+)/i);
+  const phoneMatch = text.match(/(?:Phone|Mobile)\s*:?\s+([^Name|^Email|^Address|^City|^Interested|^\n]+)/i);
   if (phoneMatch && phoneMatch[1]) {
     result.phone = phoneMatch[1].trim();
     // Extract just the digits if there's formatting
@@ -221,22 +228,22 @@ function parseCustomerCommand(text) {
     }
   }
   
-  const emailMatch = text.match(/Email\s+([^Name|^Phone|^Address|^City|^Interested|^\n]+)/i);
+  const emailMatch = text.match(/Email\s*:?\s+([^Name|^Phone|^Address|^City|^Interested|^\n]+)/i);
   if (emailMatch && emailMatch[1]) {
     result.email = emailMatch[1].trim();
   }
   
-  const addressMatch = text.match(/Address\s+([^Name|^Phone|^Email|^City|^Interested|^\n]+)/i);
+  const addressMatch = text.match(/Address\s*:?\s+([^Name|^Phone|^Email|^City|^Interested|^\n]+)/i);
   if (addressMatch && addressMatch[1]) {
     result.address = addressMatch[1].trim();
   }
   
-  const cityMatch = text.match(/City\s+([^Name|^Phone|^Email|^Address|^Interested|^\n]+)/i);
+  const cityMatch = text.match(/City\s*:?\s+([^Name|^Phone|^Email|^Address|^Interested|^\n]+)/i);
   if (cityMatch && cityMatch[1]) {
     result.city = cityMatch[1].trim();
   }
   
-  const productMatch = text.match(/Interested\s+In\s+([^Name|^Phone|^Email|^Address|^City|^\n]+)/i);
+  const productMatch = text.match(/Interested\s+In\s*:?\s+([^Name|^Phone|^Email|^Address|^City|^\n]+)/i);
   if (productMatch && productMatch[1]) {
     result.product = productMatch[1].trim();
   }
