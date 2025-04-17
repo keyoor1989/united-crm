@@ -112,14 +112,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { user: authUser } } = await supabase.auth.getUser();
         
         if (authUser) {
-          // Create a temporary basic user with default permissions
-          // This allows the user to log in even if they don't have an app_users record
+          console.log('Auth user found:', authUser);
+          // Special handling for copierbazar@gmail.com - assign super_admin role
+          const userRole: UserRole = 
+            authUser.email === "copierbazar@gmail.com" 
+              ? "super_admin" 
+              : "read_only";
+            
+          // Create a temporary basic user with appropriate permissions
           const tempUser: User = {
             id: userId,
             name: authUser.email?.split('@')[0] || 'New User',
             email: authUser.email || '',
             mobile: '',
-            role: 'read_only' as UserRole,  // Safe default role with minimal permissions
+            role: userRole,
             isActive: true,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -132,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           toast({
             title: "Limited Access",
             description: "Your user profile is incomplete. Please contact an administrator.",
-            variant: "warning"
+            variant: "default" // Fixed the variant type error
           });
         }
       }
