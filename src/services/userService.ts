@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User, UserRole } from "@/types/auth";
 
@@ -53,67 +52,93 @@ export const userService = {
    * Create a new user
    */
   async createUser(user: UserCreate): Promise<User> {
-    // First create the auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: user.email,
-      password: user.password || "TemporaryPass123!", // Use provided password or a default
-      options: {
-        data: {
-          name: user.name,
-          mobile: user.mobile,
-          role: user.role,
-          branch: user.branch
-        }
+    try {
+      // First check if a user with this email already exists
+      const { data: existingUser } = await supabase
+        .from('app_users')
+        .select('email')
+        .eq('email', user.email)
+        .single();
+      
+      if (existingUser) {
+        throw new Error(`A user with email ${user.email} already exists.`);
       }
-    });
+      
+      // First create the auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: user.email,
+        password: user.password || "TemporaryPass123!", // Use provided password or a default
+        options: {
+          data: {
+            name: user.name,
+            mobile: user.mobile,
+            role: user.role,
+            branch: user.branch
+          }
+        }
+      });
 
-    if (authError) {
-      console.error('Error creating user in auth system:', authError);
-      throw authError;
-    }
+      if (authError) {
+        console.error('Error creating user in auth system:', authError);
+        throw authError;
+      }
 
-    if (!authData.user) {
-      throw new Error('Failed to create auth user, no user data returned');
+      if (!authData.user) {
+        throw new Error('Failed to create auth user, no user data returned');
+      }
+      
+      // Determine has_set_password value based on whether password was provided
+      const hasSetPassword = !!user.password && user.password.length >= 8;
+      
+      // Create the app_user record using service role to bypass RLS
+      const params: CreateAppUserParams = {
+        user_id: authData.user.id,
+        user_name: user.name,
+        user_email: user.email,
+        user_mobile: user.mobile,
+        user_role: user.role,
+        user_branch: user.branch || '', // Ensure branch is always a string, empty if not provided
+        user_is_active: user.isActive,
+        user_has_set_password: hasSetPassword
+      };
+      
+      // Use proper type casting for the RPC call
+      const { data: userData, error: userError } = await supabase.rpc(
+        'create_app_user',
+        params
+      );
+      
+      if (userError) {
+        // If there was an error creating the app_user, attempt to clean up the auth user
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+        } catch (cleanupError) {
+          console.error('Failed to clean up auth user after app_user creation error:', cleanupError);
+        }
+        
+        console.error('Error creating user in app_users:', userError);
+        throw userError;
+      }
+      
+      return {
+        id: authData.user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        role: user.role as UserRole,
+        branch: user.branch,
+        isActive: user.isActive,
+        hasSetPassword: hasSetPassword,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      // Handle specific database constraint errors
+      if (error instanceof Error && error.message.includes('duplicate key')) {
+        throw new Error(`A user with email ${user.email} already exists.`);
+      }
+      throw error;
     }
-    
-    // Determine has_set_password value based on whether password was provided
-    const hasSetPassword = !!user.password && user.password.length >= 8;
-    
-    // Create the app_user record using service role to bypass RLS
-    const params: CreateAppUserParams = {
-      user_id: authData.user.id,
-      user_name: user.name,
-      user_email: user.email,
-      user_mobile: user.mobile,
-      user_role: user.role,
-      user_branch: user.branch || '', // Ensure branch is always a string, empty if not provided
-      user_is_active: user.isActive,
-      user_has_set_password: hasSetPassword
-    };
-    
-    // Use proper type casting for the RPC call
-    const { data: userData, error: userError } = await supabase.rpc(
-      'create_app_user',
-      params
-    );
-    
-    if (userError) {
-      console.error('Error creating user in app_users:', userError);
-      throw userError;
-    }
-    
-    return {
-      id: authData.user.id,
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      role: user.role as UserRole,
-      branch: user.branch,
-      isActive: user.isActive,
-      hasSetPassword: hasSetPassword,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
   },
   
   /**
