@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { User, UserRole } from "@/types/auth";
 
@@ -80,7 +79,7 @@ export const userService = {
     const hasSetPassword = !!user.password && user.password.length >= 8;
     
     // Create the app_user record using service role to bypass RLS
-    const { data: userData, error: userError } = await supabase.rpc<CreateAppUserParams, any>('create_app_user', {
+    const { data: userData, error: userError } = await supabase.rpc('create_app_user', {
       user_id: authData.user.id,
       user_name: user.name,
       user_email: user.email,
