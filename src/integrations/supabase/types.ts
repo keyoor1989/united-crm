@@ -1422,6 +1422,7 @@ export type Database = {
           last_update_id: number
           updated_at: string
           use_polling: boolean
+          webhook_secret: string | null
           webhook_url: string | null
         }
         Insert: {
@@ -1431,6 +1432,7 @@ export type Database = {
           last_update_id?: number
           updated_at?: string
           use_polling?: boolean
+          webhook_secret?: string | null
           webhook_url?: string | null
         }
         Update: {
@@ -1440,6 +1442,7 @@ export type Database = {
           last_update_id?: number
           updated_at?: string
           use_polling?: boolean
+          webhook_secret?: string | null
           webhook_url?: string | null
         }
         Relationships: []
