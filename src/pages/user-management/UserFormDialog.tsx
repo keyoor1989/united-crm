@@ -22,6 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription
 } from "@/components/ui/form";
 import {
   Select,
@@ -180,7 +181,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                   <FormLabel>Branch (Optional)</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    defaultValue={field.value}
+                    defaultValue={field.value || undefined}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -207,7 +208,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                   <div className="space-y-0.5">
                     <FormLabel>Active Status</FormLabel>
-                    <FormDescription className="text-sm text-muted-foreground">
+                    <FormDescription>
                       Inactive users cannot login to the system
                     </FormDescription>
                   </div>
@@ -235,18 +236,5 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
     </Dialog>
   );
 };
-
-// Add missing FormDescription component
-const FormDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className="text-sm text-muted-foreground"
-    {...props}
-  />
-));
-FormDescription.displayName = "FormDescription";
 
 export default UserFormDialog;

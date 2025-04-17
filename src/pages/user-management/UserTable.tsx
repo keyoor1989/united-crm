@@ -10,7 +10,8 @@ import {
   AlertTriangle,
   CheckCircle2, 
   User as UserIcon,
-  Shield
+  Shield,
+  Loader2
 } from "lucide-react";
 
 import {
@@ -33,15 +34,17 @@ import { Badge } from "@/components/ui/badge";
 interface UserTableProps {
   users: User[];
   onEdit: (user: User) => void;
-  onToggleActive: (userId: string) => void;
+  onToggleActive: (userId: string, currentStatus: boolean) => void;
   currentUser: User | null;
+  isLoading?: boolean;
 }
 
 const UserTable: React.FC<UserTableProps> = ({
   users,
   onEdit,
   onToggleActive,
-  currentUser
+  currentUser,
+  isLoading = false
 }) => {
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
@@ -67,6 +70,17 @@ const UserTable: React.FC<UserTableProps> = ({
   const isSelf = (userId: string) => {
     return currentUser?.id === userId;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64 border rounded-md">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading users...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-md border">
@@ -156,7 +170,7 @@ const UserTable: React.FC<UserTableProps> = ({
                           <Button 
                             variant="ghost" 
                             size="icon"
-                            onClick={() => onToggleActive(user.id)}
+                            onClick={() => onToggleActive(user.id, user.isActive)}
                             disabled={isSelf(user.id)}
                           >
                             {user.isActive ? (

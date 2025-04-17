@@ -1,19 +1,17 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   User as UserIcon, 
   Search, 
   Plus, 
-  Check, 
-  X, 
-  Edit, 
   Shield 
 } from "lucide-react";
-import { mockUsers, useAuth } from "@/contexts/AuthContext";
-import { User, UserRole } from "@/types/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import { User } from "@/types/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { roleNames } from "@/utils/rbac/rolePermissions";
+import { userService } from "@/services/userService";
+import { useToast } from "@/components/ui/use-toast";
 import UserFormDialog from "./UserFormDialog";
 import UserTable from "./UserTable";
 import UserRolesInfo from "./UserRolesInfo";
@@ -23,8 +21,32 @@ const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showRolesInfo, setShowRolesInfo] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch users on component mount
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const fetchedUsers = await userService.getUsers();
+      setUsers(fetchedUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast({
+        variant: "destructive",
+        title: "Error fetching users",
+        description: "There was a problem loading the user list.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -51,47 +73,61 @@ const UserManagement: React.FC = () => {
     setEditingUser(null);
   };
 
-  const handleUserSave = (userData: Partial<User> & { id: string }) => {
-    setUsers(prevUsers => {
-      const userIndex = prevUsers.findIndex(u => u.id === userData.id);
-      
-      if (userIndex >= 0) {
+  const handleUserSave = async (userData: Partial<User> & { id: string }) => {
+    try {
+      if (editingUser) {
         // Update existing user
-        const updatedUsers = [...prevUsers];
-        updatedUsers[userIndex] = {
-          ...updatedUsers[userIndex],
-          ...userData,
-          updatedAt: new Date().toISOString()
-        };
-        return updatedUsers;
+        await userService.updateUser(userData.id, userData);
+        toast({
+          title: "User updated",
+          description: "User has been successfully updated.",
+        });
       } else {
         // Add new user
-        const newUser: User = {
-          id: userData.id,
-          name: userData.name || "",
-          email: userData.email || "",
-          mobile: userData.mobile || "",
-          role: userData.role || "read_only",
-          branch: userData.branch,
-          isActive: userData.isActive !== undefined ? userData.isActive : true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        return [...prevUsers, newUser];
+        await userService.createUser(userData);
+        toast({
+          title: "User created",
+          description: "New user has been successfully created.",
+        });
       }
-    });
-    
-    handleFormClose();
+      
+      // Refresh the user list
+      fetchUsers();
+      handleFormClose();
+      
+    } catch (error) {
+      console.error("Error saving user:", error);
+      toast({
+        variant: "destructive",
+        title: "Error saving user",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+      });
+    }
   };
 
-  const handleToggleActive = (userId: string) => {
-    setUsers(prevUsers => 
-      prevUsers.map(u => 
-        u.id === userId 
-          ? { ...u, isActive: !u.isActive, updatedAt: new Date().toISOString() } 
-          : u
-      )
-    );
+  const handleToggleActive = async (userId: string, currentStatus: boolean) => {
+    try {
+      await userService.toggleUserActive(userId, !currentStatus);
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === userId 
+            ? { ...u, isActive: !currentStatus, updatedAt: new Date().toISOString() } 
+            : u
+        )
+      );
+      
+      toast({
+        title: "User status updated",
+        description: `User is now ${!currentStatus ? "active" : "inactive"}.`,
+      });
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      toast({
+        variant: "destructive",
+        title: "Error updating user status",
+        description: "There was a problem updating the user status.",
+      });
+    }
   };
 
   return (
@@ -140,6 +176,7 @@ const UserManagement: React.FC = () => {
         onEdit={handleEditUser} 
         onToggleActive={handleToggleActive}
         currentUser={currentUser}
+        isLoading={isLoading}
       />
 
       {isFormOpen && (

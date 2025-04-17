@@ -449,6 +449,42 @@ export type Database = {
           },
         ]
       }
+      app_users: {
+        Row: {
+          branch: string | null
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          mobile: string
+          name: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          branch?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          is_active?: boolean
+          mobile: string
+          name: string
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          branch?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          mobile?: string
+          name?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       credit_terms: {
         Row: {
           created_at: string | null
