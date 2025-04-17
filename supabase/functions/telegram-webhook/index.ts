@@ -86,44 +86,56 @@ serve(async (req) => {
 
     // Process different command types
     let processResult;
-    switch (message_text.toLowerCase()) {
-      case '/start':
-        await sendTelegramMessage(
+    
+    // Handle commands
+    if (message_text.startsWith('/start')) {
+      await sendTelegramMessage(
+        chat_id, 
+        "👋 Welcome to the CRM Bot! Type /help to see available commands."
+      );
+    } else if (message_text.startsWith('/help') || message_text.toLowerCase() === 'help') {
+      processResult = await supabase.functions.invoke('telegram-process-command', {
+        body: { chat_id, command_type: 'help' }
+      });
+      if (processResult.data) {
+        await sendTelegramMessage(chat_id, processResult.data.message);
+      }
+    } else if (message_text.startsWith('/report') || message_text.toLowerCase() === 'daily report') {
+      processResult = await supabase.functions.invoke('telegram-process-command', {
+        body: { chat_id, command_type: 'report' }
+      });
+      if (processResult.data) {
+        await sendTelegramMessage(chat_id, processResult.data.message);
+      }
+    } else if (message_text.toLowerCase().startsWith('add customer')) {
+      processResult = await supabase.functions.invoke('telegram-process-command', {
+        body: { 
           chat_id, 
-          "👋 Welcome to the CRM Bot! Type /help to see available commands."
-        );
-        break;
-
-      case '/report':
-        processResult = await supabase.functions.invoke('telegram-process-command', {
-          body: { chat_id, command_type: 'report' }
-        });
-        if (processResult.data) {
-          await sendTelegramMessage(chat_id, processResult.data.message || 'Report generated');
+          command_type: 'add_customer', 
+          text: message_text 
         }
-        break;
-
-      default:
-        // Check for add customer command or other dynamic processing
-        if (message_text.toLowerCase().includes('add customer') || /^\d+$/.test(message_text)) {
-          processResult = await supabase.functions.invoke('telegram-process-command', {
-            body: { 
-              chat_id, 
-              command_type: 'add_customer', 
-              text: message_text 
-            }
-          });
-          if (processResult.data) {
-            await sendTelegramMessage(chat_id, processResult.data.message || 'Customer processing result');
-          }
-        } else {
-          // Unrecognized command
-          await sendTelegramMessage(
-            chat_id, 
-            "❓ Unrecognized command. Type /help for a list of available commands."
-          );
+      });
+      if (processResult.data) {
+        await sendTelegramMessage(chat_id, processResult.data.message);
+      }
+    } else if (message_text.toLowerCase().startsWith('lookup')) {
+      const phoneNumber = message_text.substring(7).trim();
+      processResult = await supabase.functions.invoke('telegram-process-command', {
+        body: { 
+          chat_id, 
+          command_type: 'lookup_customer', 
+          text: phoneNumber 
         }
-        break;
+      });
+      if (processResult.data) {
+        await sendTelegramMessage(chat_id, processResult.data.message);
+      }
+    } else {
+      // Unrecognized command
+      await sendTelegramMessage(
+        chat_id, 
+        "❓ I don't understand this command. Type /help for a list of available commands."
+      );
     }
 
     return new Response(JSON.stringify({ success: true }), {
