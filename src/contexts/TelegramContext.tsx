@@ -36,6 +36,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     refreshData();
+    // We don't need to auto-refresh on component mount
+    // Let the specific pages handle their own refresh logic
   }, []);
 
   const refreshData = async () => {
@@ -44,6 +46,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await telegramConfig.loadConfig();
       await telegramChats.loadChats();
       
+      // Only fetch webhook info if we have a config
       if (telegramConfig.config) {
         await telegramWebhook.getWebhookInfo();
       }

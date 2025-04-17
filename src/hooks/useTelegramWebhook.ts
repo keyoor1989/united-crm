@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { WebhookInfo } from '@/types/telegram';
 import { toast } from 'sonner';
@@ -8,9 +8,38 @@ export const useTelegramWebhook = () => {
   const [webhookInfo, setWebhookInfo] = useState<WebhookInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  const getWebhookInfo = async (): Promise<WebhookInfo | null> => {
+  // Add a lastFetchTime state to throttle requests
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  // Track fetch errors for exponential backoff
+  const [fetchErrorCount, setFetchErrorCount] = useState<number>(0);
+  
+  const getWebhookInfo = useCallback(async (): Promise<WebhookInfo | null> => {
+    // Skip if already loading
+    if (isLoading) {
+      console.log("Skipping webhook fetch - already loading");
+      return null;
+    }
+    
+    // Implement throttling logic
+    const now = Date.now();
+    const minTimeBetweenFetches = 3000; // 3 seconds minimum between fetches
+    
+    // Add exponential backoff on errors
+    const backoffTime = fetchErrorCount > 0 
+      ? Math.min(30000, Math.pow(2, fetchErrorCount) * 1000) 
+      : 0;
+    
+    const timeToWait = Math.max(0, (lastFetchTime + minTimeBetweenFetches + backoffTime) - now);
+    
+    if (timeToWait > 0) {
+      console.log(`Throttling webhook fetch - wait ${timeToWait}ms`);
+      return webhookInfo; // Return existing data
+    }
+    
     try {
       console.log("Fetching webhook info...");
+      setIsLoading(true);
+      setLastFetchTime(now);
       
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "getWebhookInfo" }
@@ -18,6 +47,7 @@ export const useTelegramWebhook = () => {
       
       if (error) {
         console.error("Error fetching webhook info:", error);
+        setFetchErrorCount(prev => prev + 1);
         toast.error(`Failed to fetch webhook info: ${error.message}`);
         return null;
       }
@@ -25,18 +55,23 @@ export const useTelegramWebhook = () => {
       if (data) {
         console.log("Webhook info received:", data);
         setWebhookInfo(data as WebhookInfo);
+        // Reset error count on success
+        setFetchErrorCount(0);
         return data as WebhookInfo;
       }
       
       return null;
     } catch (error) {
       console.error("Error fetching webhook info:", error);
+      setFetchErrorCount(prev => prev + 1);
       toast.error(`Failed to fetch webhook info: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [isLoading, lastFetchTime, fetchErrorCount, webhookInfo]);
 
-  const updateWebhook = async (url: string, configId?: string, webhookSecret?: string | null): Promise<boolean> => {
+  const updateWebhook = useCallback(async (url: string, configId?: string, webhookSecret?: string | null): Promise<boolean> => {
     try {
       console.log("Setting webhook to:", url);
       
@@ -87,9 +122,9 @@ export const useTelegramWebhook = () => {
       toast.error(`Failed to set webhook: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
-  };
+  }, [getWebhookInfo]);
 
-  const deleteWebhook = async (): Promise<boolean> => {
+  const deleteWebhook = useCallback(async (): Promise<boolean> => {
     try {
       console.log("Deleting webhook");
       
@@ -119,7 +154,7 @@ export const useTelegramWebhook = () => {
       toast.error(`Failed to delete webhook: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
     }
-  };
+  }, [getWebhookInfo]);
 
   const setCommands = async (): Promise<any> => {
     try {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   Card,
@@ -43,8 +42,11 @@ const TelegramAdmin = () => {
   const [isLoadingWebhookInfo, setIsLoadingWebhookInfo] = useState(false);
   const [webhookSetupError, setWebhookSetupError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  
   const refreshTimerRef = useRef<number | null>(null);
-  const lastRefreshTimeRef = useRef<number>(0);
+  const isPollingActiveRef = useRef<boolean>(false);
+  const pollingIntervalRef = useRef<number>(10000);
+  const lastManualRefreshTimeRef = useRef<number>(0);
 
   const {
     config, 
@@ -64,17 +66,24 @@ const TelegramAdmin = () => {
   } = useTelegram();
 
   useEffect(() => {
-    // Load data initially
+    return () => {
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+      isPollingActiveRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     refreshData();
     
-    // Set tab from URL if provided
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
     if (tabParam && ['setup', 'chats', 'notifications', 'test', 'debug'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
     
-    // Set default webhook URL if none is configured
     const proxyUrl = "https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy";
     
     if (!webhookUrl && !config?.webhook_url) {
@@ -82,84 +91,100 @@ const TelegramAdmin = () => {
     } else if (config?.webhook_url) {
       setWebhookUrl(config.webhook_url);
     }
-    
-    // Cleanup any existing timer on unmount
-    return () => {
-      if (refreshTimerRef.current !== null) {
-        window.clearTimeout(refreshTimerRef.current);
-      }
-    };
   }, [refreshData, config, webhookUrl]);
 
   useEffect(() => {
-    if (chats && chats.length > 0) {
+    if (chats && chats.length > 0 && !selectedChatId) {
       setSelectedChatId(chats[0].chat_id);
     }
-  }, [chats]);
+  }, [chats, selectedChatId]);
 
   useEffect(() => {
-    // Function to fetch webhook info with throttling
-    const fetchWebhookInfo = async () => {
-      // Skip if already loading or if it's been less than 3 seconds since last refresh
-      const now = Date.now();
-      if (isLoadingWebhookInfo || (now - lastRefreshTimeRef.current < 3000)) {
-        return;
-      }
-      
-      setIsLoadingWebhookInfo(true);
-      setWebhookSetupError(null);
-      
-      try {
-        const info = await getWebhookInfo();
-        // Update last refresh time
-        lastRefreshTimeRef.current = Date.now();
-        
-        // Check for errors in the webhook info
-        if (info?.result?.last_error_message) {
-          setWebhookSetupError(info.result.last_error_message);
-        }
-      } catch (error) {
-        console.error("Error fetching webhook info:", error);
-        if (error instanceof Error) {
-          setWebhookSetupError(error.message);
-        } else {
-          setWebhookSetupError("Unknown error fetching webhook info");
-        }
-      } finally {
-        setIsLoadingWebhookInfo(false);
-      }
-    };
-    
-    // Clear any existing timer
     if (refreshTimerRef.current !== null) {
       window.clearTimeout(refreshTimerRef.current);
       refreshTimerRef.current = null;
     }
     
-    // Only set up periodic refreshing when on setup tab
     if (activeTab === "setup") {
-      // Fetch immediately if needed
-      fetchWebhookInfo();
+      isPollingActiveRef.current = true;
       
-      // Set up timer for next refresh (every 10 seconds)
-      refreshTimerRef.current = window.setTimeout(() => {
-        fetchWebhookInfo();
-        refreshTimerRef.current = null;
-      }, 10000);
+      const pollWebhookInfo = async () => {
+        if (!isPollingActiveRef.current) return;
+        
+        if (isLoadingWebhookInfo) {
+          scheduleNextPoll();
+          return;
+        }
+        
+        const now = Date.now();
+        if (now - lastManualRefreshTimeRef.current < 3000) {
+          scheduleNextPoll();
+          return;
+        }
+        
+        setIsLoadingWebhookInfo(true);
+        setWebhookSetupError(null);
+        
+        try {
+          const info = await getWebhookInfo();
+          
+          if (info?.result?.last_error_message) {
+            setWebhookSetupError(info.result.last_error_message);
+            pollingIntervalRef.current = Math.min(30000, pollingIntervalRef.current + 5000);
+          } else {
+            pollingIntervalRef.current = 10000;
+          }
+        } catch (error) {
+          console.error("Error fetching webhook info:", error);
+          if (error instanceof Error) {
+            setWebhookSetupError(error.message);
+          } else {
+            setWebhookSetupError("Unknown error fetching webhook info");
+          }
+          
+          pollingIntervalRef.current = Math.min(30000, pollingIntervalRef.current + 5000);
+        } finally {
+          setIsLoadingWebhookInfo(false);
+          scheduleNextPoll();
+        }
+      };
+      
+      const scheduleNextPoll = () => {
+        if (!isPollingActiveRef.current) return;
+        
+        refreshTimerRef.current = window.setTimeout(() => {
+          refreshTimerRef.current = null;
+          if (isPollingActiveRef.current) {
+            pollWebhookInfo();
+          }
+        }, pollingIntervalRef.current);
+      };
+      
+      pollWebhookInfo();
+    } else {
+      isPollingActiveRef.current = false;
     }
+    
+    return () => {
+      if (refreshTimerRef.current !== null) {
+        window.clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
   }, [activeTab, getWebhookInfo, isLoadingWebhookInfo]);
 
   const saveWebhookSettings = async () => {
     setIsSaving(true);
     setWebhookSetupError(null);
+    lastManualRefreshTimeRef.current = Date.now();
+    
     try {
       const success = await updateWebhook(webhookUrl);
       
       if (success) {
         toast.success("Webhook configured successfully");
-        const info = await getWebhookInfo(); // Refresh webhook info
+        const info = await getWebhookInfo();
         
-        // Check for errors in the webhook info
         if (info?.result?.last_error_message) {
           setWebhookSetupError(info.result.last_error_message);
           toast.warning("Webhook set but has errors. See details below.");
@@ -184,13 +209,15 @@ const TelegramAdmin = () => {
   const handleDeleteWebhook = async () => {
     setIsSaving(true);
     setWebhookSetupError(null);
+    lastManualRefreshTimeRef.current = Date.now();
+    
     try {
       const success = await deleteWebhook();
       
       if (success) {
         setWebhookUrl("");
         toast.success("Webhook deleted successfully");
-        await getWebhookInfo(); // Refresh webhook info
+        await getWebhookInfo();
       } else {
         toast.error("Failed to delete webhook");
         setWebhookSetupError("Failed to delete webhook. Check console for details.");
@@ -311,18 +338,40 @@ const TelegramAdmin = () => {
     }
   };
 
-  // Function to fetch webhook debug info directly from the edge function
+  const manualRefreshWebhookInfo = async () => {
+    if (isLoadingWebhookInfo) return;
+    
+    setIsLoadingWebhookInfo(true);
+    setWebhookSetupError(null);
+    lastManualRefreshTimeRef.current = Date.now();
+    
+    try {
+      const info = await getWebhookInfo();
+      
+      if (info?.result?.last_error_message) {
+        setWebhookSetupError(info.result.last_error_message);
+      }
+    } catch (error) {
+      console.error("Error manually refreshing webhook info:", error);
+      if (error instanceof Error) {
+        setWebhookSetupError(error.message);
+      } else {
+        setWebhookSetupError("Unknown error fetching webhook info");
+      }
+    } finally {
+      setIsLoadingWebhookInfo(false);
+    }
+  };
+
   const fetchDebugInfo = async () => {
     try {
       setDebugInfo({ loading: true });
       
-      // Test connection to the webhook directly with auth headers
       const response = await fetch("https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""}`,
-          // Include the current secret token if available
           ...(config?.webhook_secret ? { "X-Telegram-Bot-Api-Secret-Token": config.webhook_secret } : {})
         },
         body: JSON.stringify({ type: "debug_request", message: "Testing webhook connection" })
@@ -330,7 +379,6 @@ const TelegramAdmin = () => {
       
       const data = await response.json();
       
-      // Get the webhook info from Telegram - using fetch directly to add auth header
       const webhookInfoResponse = await fetch("https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-bot-setup", {
         method: "POST",
         headers: { 
@@ -479,13 +527,29 @@ const TelegramAdmin = () => {
                     </p>
                   </div>
 
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">Current Webhook Status:</h3>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={manualRefreshWebhookInfo}
+                      disabled={isLoadingWebhookInfo}
+                    >
+                      {isLoadingWebhookInfo ? (
+                        <span className="flex items-center">
+                          <div className="w-4 h-4 border-t-2 border-b-2 border-primary rounded-full animate-spin mr-2"></div>
+                          Refreshing...
+                        </span>
+                      ) : "Refresh Status"}
+                    </Button>
+                  </div>
+
                   {isLoadingWebhookInfo ? (
                     <div className="flex items-center justify-center h-24">
                       <div className="w-6 h-6 border-t-2 border-b-2 border-primary rounded-full animate-spin"></div>
                     </div>
                   ) : webhookInfo ? (
                     <div className="rounded-md border p-4 bg-slate-50">
-                      <h3 className="font-medium mb-2">Current Webhook Status:</h3>
                       <div className="text-sm space-y-1">
                         <p><span className="font-medium">URL:</span> {webhookInfo.result.url || "Not set"}</p>
                         <p><span className="font-medium">Pending updates:</span> {webhookInfo.result.pending_update_count}</p>
@@ -495,7 +559,11 @@ const TelegramAdmin = () => {
                         <p><span className="font-medium">Secret token in DB:</span> {config?.webhook_secret ? "Set" : "Not set"}</p>
                       </div>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="rounded-md border p-4 bg-slate-50">
+                      <p className="text-sm">No webhook information available. Click Refresh Status to check.</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">
@@ -760,7 +828,6 @@ const TelegramAdmin = () => {
                       {debugInfo?.loading ? "Testing Connection..." : "Test Webhook Connection"}
                     </Button>
 
-                    {/* Webhook Secret Status */}
                     <div className="rounded-md border p-4 bg-slate-50">
                       <h3 className="font-medium mb-2">Webhook Secret Status:</h3>
                       <div className="text-sm space-y-1">
@@ -783,7 +850,6 @@ const TelegramAdmin = () => {
                       </div>
                     </div>
 
-                    {/* Current Telegram API Config */}
                     <div className="rounded-md border p-4">
                       <h3 className="font-medium mb-2">Current Telegram API Configuration:</h3>
                       <div className="text-sm">
@@ -802,7 +868,6 @@ const TelegramAdmin = () => {
                       </div>
                     </div>
 
-                    {/* Debug Response */}
                     {debugInfo && !debugInfo.loading && !debugInfo.error && (
                       <div className="rounded-md border p-4">
                         <h3 className="font-medium mb-2">Debug Test Results ({new Date(debugInfo.timestamp).toLocaleString()}):</h3>
@@ -823,7 +888,6 @@ const TelegramAdmin = () => {
                       </div>
                     )}
 
-                    {/* Error Message */}
                     {debugInfo?.error && (
                       <Alert variant="destructive">
                         <AlertTriangle className="h-4 w-4" />
