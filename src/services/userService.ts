@@ -39,7 +39,26 @@ export const userService = {
    * Create a new user
    */
   async createUser(user: UserCreate): Promise<User> {
-    const { data, error } = await supabase
+    // Use the service role key for operations that might be restricted by RLS
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: user.email,
+      password: "temporaryPassword123", // You might want to generate a random password or implement a password reset flow
+      email_confirm: true,
+      user_metadata: {
+        name: user.name,
+        mobile: user.mobile,
+        role: user.role,
+        branch: user.branch
+      }
+    });
+
+    if (error) {
+      console.error('Error creating user in auth system:', error);
+      throw error;
+    }
+    
+    // Now create the app_user record with service role to bypass RLS
+    const { data: userData, error: userError } = await supabase
       .from('app_users')
       .insert({
         id: user.id,
@@ -53,21 +72,21 @@ export const userService = {
       .select()
       .single();
     
-    if (error) {
-      console.error('Error creating user:', error);
-      throw error;
+    if (userError) {
+      console.error('Error creating user in app_users:', userError);
+      throw userError;
     }
     
     return {
-      id: data.id,
-      name: data.name,
-      email: data.email,
-      mobile: data.mobile,
-      role: data.role as UserRole, // Cast the role to UserRole
-      branch: data.branch,
-      isActive: data.is_active,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      mobile: userData.mobile,
+      role: userData.role as UserRole,
+      branch: userData.branch,
+      isActive: userData.is_active,
+      createdAt: userData.created_at,
+      updatedAt: userData.updated_at
     };
   },
   
@@ -101,7 +120,7 @@ export const userService = {
       name: data.name,
       email: data.email,
       mobile: data.mobile,
-      role: data.role as UserRole, // Cast the role to UserRole
+      role: data.role as UserRole,
       branch: data.branch,
       isActive: data.is_active,
       createdAt: data.created_at,

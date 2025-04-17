@@ -90,13 +90,11 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
     onSave(userToSave);
   };
 
-  // Available branches (in a real app, this would be fetched from an API)
+  // Available branches (updated list)
   const branches = [
-    "Main Branch",
-    "North Branch",
-    "South Branch",
-    "East Branch",
-    "West Branch"
+    "Indore",
+    "Bhopal",
+    "Jabalpur"
   ];
 
   return (
