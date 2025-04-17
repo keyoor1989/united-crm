@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
-import { TaskProvider } from "@/contexts/TaskContext";
 import AppRoutes from "./AppRoutes";
 import "./App.css";
 
@@ -17,10 +16,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AuthProvider>
-            <TaskProvider>
-              <AppRoutes />
-              <Toaster />
-            </TaskProvider>
+            <AppRoutes />
+            <Toaster />
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>

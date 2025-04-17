@@ -2,6 +2,7 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import TaskEnabledLayout from "@/components/layout/TaskEnabledLayout";
 import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -66,9 +67,14 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/access-denied" element={<AccessDenied />} />
       
-      {/* Protected routes with layout */}
-      <Route element={<Layout />}>
+      {/* Task-related routes with TaskProvider */}
+      <Route element={<TaskEnabledLayout />}>
+        <Route path="/tasks" element={<ProtectedRoute><TaskDashboard /></ProtectedRoute>} />
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      </Route>
+      
+      {/* Protected routes with layout but without Task context */}
+      <Route element={<Layout />}>
         <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
         <Route path="/customers/follow-ups" element={<ProtectedRoute><CustomerFollowUps /></ProtectedRoute>} />
         <Route path="/customer-form" element={<ProtectedRoute><CustomerForm /></ProtectedRoute>} />
@@ -116,9 +122,6 @@ const AppRoutes = () => {
         <Route path="/purchase-order-form" element={<ProtectedRoute><PurchaseOrderForm /></ProtectedRoute>} />
         <Route path="/sent-orders" element={<ProtectedRoute><SentOrders /></ProtectedRoute>} />
         <Route path="/order-history" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
-        
-        {/* Task Routes */}
-        <Route path="/tasks" element={<ProtectedRoute><TaskDashboard /></ProtectedRoute>} />
         
         {/* User Management Route */}
         <Route path="/user-management" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
