@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +36,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription
 } from "@/components/ui/form";
 import { MessageSquare, ShieldCheck, Webhook, Send, Trash2, Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
