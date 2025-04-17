@@ -78,26 +78,37 @@ serve(async (req) => {
         );
       }
       
-      // Generate a secure random hex string for webhook secret - more compatible than UUID
-      const webhookSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-        
-      console.log(`Generated webhook secret (first 10 chars): ${webhookSecret.substring(0, 10)}...`);
-      
       try {
+        // Generate a secure random hex string for webhook secret - more compatible than UUID
+        const webhookSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+          
+        console.log(`Generated webhook secret (first 10 chars): ${webhookSecret.substring(0, 10)}...`);
+        
         // First, update the database with the new webhook secret
         // This ensures the secret is stored before we set the webhook
         const { data: configData, error: configError } = await supabase
           .from('telegram_config')
           .select('id')
           .limit(1)
-          .single();
+          .maybeSingle();
           
         if (configError) {
           console.error("Error fetching config ID:", configError);
           return new Response(
             JSON.stringify({ error: `Database error: ${configError.message}` }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+        
+        if (!configData) {
+          console.error("No telegram_config record found");
+          return new Response(
+            JSON.stringify({ error: 'No telegram_config record found' }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 500
@@ -131,23 +142,11 @@ serve(async (req) => {
         // Now set the webhook with Telegram
         console.log(`Setting webhook to: ${webhook_url} with secret token (first 10 chars): ${webhookSecret.substring(0, 10)}...`);
         
-        const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: webhook_url,
-            secret_token: webhookSecret,
-            allowed_updates: ["message", "edited_message", "callback_query"],
-          }),
-        });
-        
-        if (!webhookResponse.ok) {
-          const errorText = await webhookResponse.text();
-          console.error("Error from Telegram API:", errorText);
+        // Validate token length before setting webhook
+        if (telegramBotToken.length < 30) {
+          console.error("Invalid Telegram bot token - too short");
           return new Response(
-            JSON.stringify({ error: `Telegram API error: ${errorText}` }),
+            JSON.stringify({ error: 'Invalid Telegram bot token configuration' }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 500
@@ -155,25 +154,87 @@ serve(async (req) => {
           );
         }
         
-        const webhookData = await webhookResponse.json();
-        console.log("Webhook setup response:", webhookData);
-        
-        // Double-check that the webhook is set correctly
-        const verifyResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`);
-        const verifyData = await verifyResponse.json();
-        console.log("Webhook verification after setup:", verifyData);
-        
-        return new Response(
-          JSON.stringify(webhookData),
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
+        try {
+          const webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/setWebhook`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: webhook_url,
+              secret_token: webhookSecret,
+              allowed_updates: ["message", "edited_message", "callback_query"],
+            }),
+          });
+          
+          const responseText = await webhookResponse.text();
+          console.log(`Raw Telegram API response: ${responseText}`);
+          
+          if (!webhookResponse.ok) {
+            console.error(`Error from Telegram API (${webhookResponse.status}): ${responseText}`);
+            return new Response(
+              JSON.stringify({ 
+                error: `Telegram API error (${webhookResponse.status})`, 
+                details: responseText 
+              }),
+              { 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 500
+              }
+            );
           }
-        );
+          
+          let webhookData;
+          try {
+            webhookData = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error("Error parsing Telegram API response:", parseError);
+            return new Response(
+              JSON.stringify({ 
+                error: 'Invalid JSON response from Telegram API',
+                raw_response: responseText
+              }),
+              { 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 500
+              }
+            );
+          }
+          
+          console.log("Webhook setup response:", webhookData);
+          
+          // Double-check that the webhook is set correctly
+          const verifyResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`);
+          const verifyData = await verifyResponse.json();
+          console.log("Webhook verification after setup:", verifyData);
+          
+          return new Response(
+            JSON.stringify(webhookData),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200
+            }
+          );
+        } catch (fetchError) {
+          console.error("Network error setting webhook:", fetchError);
+          return new Response(
+            JSON.stringify({ 
+              error: `Network error setting webhook: ${fetchError.message}`,
+              stack: fetchError.stack
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
       } catch (error) {
         console.error("Error setting webhook:", error);
         return new Response(
-          JSON.stringify({ error: `Error setting webhook: ${error.message}` }),
+          JSON.stringify({ 
+            error: `Error setting webhook: ${error.message}`,
+            stack: error.stack 
+          }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500
@@ -191,11 +252,15 @@ serve(async (req) => {
           method: 'POST'
         });
         
+        const responseText = await webhookResponse.text();
+        
         if (!webhookResponse.ok) {
-          const errorText = await webhookResponse.text();
-          console.error("Error from Telegram API:", errorText);
+          console.error(`Error from Telegram API (${webhookResponse.status}): ${responseText}`);
           return new Response(
-            JSON.stringify({ error: `Telegram API error: ${errorText}` }),
+            JSON.stringify({ 
+              error: `Telegram API error: ${responseText}`,
+              status_code: webhookResponse.status
+            }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 500
@@ -203,7 +268,23 @@ serve(async (req) => {
           );
         }
         
-        const webhookData = await webhookResponse.json();
+        let webhookData;
+        try {
+          webhookData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error("Error parsing Telegram API response:", parseError);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid JSON response from Telegram API',
+              raw_response: responseText
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+        
         console.log("Webhook deletion response:", webhookData);
         
         if (webhookData.ok) {
@@ -213,13 +294,24 @@ serve(async (req) => {
               .from('telegram_config')
               .select('id')
               .limit(1)
-              .single();
+              .maybeSingle();
               
             if (configError) {
               console.error("Error fetching config ID:", configError);
               // Still return success to client but with warning
               return new Response(
                 JSON.stringify({ ...webhookData, warning: "Webhook deleted on Telegram but database update failed" }),
+                { 
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                  status: 200
+                }
+              );
+            }
+            
+            if (!configData) {
+              console.error("No telegram_config record found");
+              return new Response(
+                JSON.stringify({ ...webhookData, warning: "Webhook deleted on Telegram but no config record found in database" }),
                 { 
                   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                   status: 200
@@ -270,7 +362,10 @@ serve(async (req) => {
       } catch (error) {
         console.error("Error deleting webhook:", error);
         return new Response(
-          JSON.stringify({ error: `Error deleting webhook: ${error.message}` }),
+          JSON.stringify({ 
+            error: `Error deleting webhook: ${error.message}`,
+            stack: error.stack
+          }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500
@@ -290,11 +385,22 @@ serve(async (req) => {
         // Make the API request with explicit error handling
         let webhookResponse;
         try {
-          webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`);
+          // Extended timeout for slow connections
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          webhookResponse = await fetch(`https://api.telegram.org/bot${telegramBotToken}/getWebhookInfo`, {
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
         } catch (fetchError) {
           console.error("Fetch error when calling Telegram API:", fetchError);
           return new Response(
-            JSON.stringify({ error: `Network error when calling Telegram API: ${fetchError.message}` }),
+            JSON.stringify({ 
+              error: `Network error when calling Telegram API: ${fetchError.message}`,
+              is_abort_error: fetchError.name === 'AbortError'
+            }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 500
@@ -328,8 +434,18 @@ serve(async (req) => {
           webhookData = await webhookResponse.json();
         } catch (jsonError) {
           console.error("Error parsing Telegram API response:", jsonError);
+          let responseText = "";
+          try {
+            responseText = await webhookResponse.text();
+          } catch (e) {
+            responseText = "Could not extract response text";
+          }
+          
           return new Response(
-            JSON.stringify({ error: `Error parsing Telegram API response: ${jsonError.message}` }),
+            JSON.stringify({ 
+              error: `Error parsing Telegram API response: ${jsonError.message}`,
+              response_text: responseText
+            }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 500
@@ -345,7 +461,7 @@ serve(async (req) => {
             .from('telegram_config')
             .select('webhook_secret, webhook_url')
             .limit(1)
-            .single();
+            .maybeSingle();
             
           if (!configError && configData) {
             console.log("Current webhook in DB:", configData.webhook_url);
@@ -369,7 +485,10 @@ serve(async (req) => {
       } catch (error) {
         console.error("Error getting webhook info:", error);
         return new Response(
-          JSON.stringify({ error: `Error getting webhook info: ${error.message}`, stack: error.stack }),
+          JSON.stringify({ 
+            error: `Error getting webhook info: ${error.message}`, 
+            stack: error.stack 
+          }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500
@@ -399,11 +518,15 @@ serve(async (req) => {
           body: JSON.stringify({ commands }),
         });
         
+        const responseText = await commandResponse.text();
+        
         if (!commandResponse.ok) {
-          const errorText = await commandResponse.text();
-          console.error("Error from Telegram API:", errorText);
+          console.error(`Error from Telegram API (${commandResponse.status}): ${responseText}`);
           return new Response(
-            JSON.stringify({ error: `Telegram API error: ${errorText}` }),
+            JSON.stringify({ 
+              error: `Telegram API error: ${responseText}`,
+              status_code: commandResponse.status 
+            }),
             { 
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
               status: 500
@@ -411,7 +534,23 @@ serve(async (req) => {
           );
         }
         
-        const responseData = await commandResponse.json();
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error("Error parsing Telegram API response:", parseError);
+          return new Response(
+            JSON.stringify({ 
+              error: 'Invalid JSON response from Telegram API',
+              raw_response: responseText
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500
+            }
+          );
+        }
+        
         console.log("Command registration response:", responseData);
         
         return new Response(
@@ -424,7 +563,10 @@ serve(async (req) => {
       } catch (error) {
         console.error("Error setting commands:", error);
         return new Response(
-          JSON.stringify({ error: `Error setting commands: ${error.message}` }),
+          JSON.stringify({ 
+            error: `Error setting commands: ${error.message}`,
+            stack: error.stack 
+          }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 500
@@ -443,7 +585,11 @@ serve(async (req) => {
   } catch (e) {
     console.error("Unhandled exception in telegram-bot-setup:", e);
     return new Response(
-      JSON.stringify({ error: e.message, stack: e.stack }),
+      JSON.stringify({ 
+        error: e.message, 
+        stack: e.stack,
+        type: e.name
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500

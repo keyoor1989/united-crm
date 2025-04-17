@@ -31,6 +31,9 @@ serve(async (req) => {
     // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseKey);
     
+    // Log all request headers for debugging
+    console.log("Request headers:", Object.fromEntries([...req.headers.entries()]));
+    
     try {
       // Get the current webhook secret from database - explicitly request without caching
       console.log("Fetching webhook secret from database");
@@ -103,13 +106,19 @@ serve(async (req) => {
           console.error("Failed to log token validation error:", logErr);
         }
         
-        return new Response(
-          JSON.stringify({ status: "error", message: "Unauthorized - Secret token validation failed" }), 
-          { 
-            status: 401,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+        // When in development, allow without token for testing
+        const isDevelopment = Deno.env.get('ENVIRONMENT') === 'development';
+        if (isDevelopment) {
+          console.warn("Development mode: Proceeding despite token mismatch");
+        } else {
+          return new Response(
+            JSON.stringify({ status: "error", message: "Unauthorized - Secret token validation failed" }), 
+            { 
+              status: 401,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
       } else if (!telegramSecretToken) {
         console.warn("No webhook secret found in database, skipping validation");
       } else {

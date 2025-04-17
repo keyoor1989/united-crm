@@ -21,11 +21,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, Copy, Info, MessageSquareText, X } from "lucide-react";
+import { Check, Copy, Info, MessageSquareText, X, AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useTelegram } from "@/contexts/TelegramContext";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Layout from "@/components/layout/Layout";
 
@@ -41,6 +41,8 @@ const TelegramAdmin = () => {
   const [selectedChatId, setSelectedChatId] = useState("");
   const [isSendingTest, setIsSendingTest] = useState(false);
   const [isLoadingWebhookInfo, setIsLoadingWebhookInfo] = useState(false);
+  const [webhookSetupError, setWebhookSetupError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   const {
     config, 
@@ -63,7 +65,7 @@ const TelegramAdmin = () => {
     // Set tab from URL if provided
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
-    if (tabParam && ['setup', 'chats', 'notifications', 'test'].includes(tabParam)) {
+    if (tabParam && ['setup', 'chats', 'notifications', 'test', 'debug'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
     
@@ -86,10 +88,20 @@ const TelegramAdmin = () => {
   useEffect(() => {
     const fetchWebhookInfo = async () => {
       setIsLoadingWebhookInfo(true);
+      setWebhookSetupError(null);
       try {
-        await getWebhookInfo();
+        const info = await getWebhookInfo();
+        // Check for errors in the webhook info
+        if (info?.result?.last_error_message) {
+          setWebhookSetupError(info.result.last_error_message);
+        }
       } catch (error) {
         console.error("Error fetching webhook info:", error);
+        if (error instanceof Error) {
+          setWebhookSetupError(error.message);
+        } else {
+          setWebhookSetupError("Unknown error fetching webhook info");
+        }
       } finally {
         setIsLoadingWebhookInfo(false);
       }
@@ -103,18 +115,31 @@ const TelegramAdmin = () => {
 
   const saveWebhookSettings = async () => {
     setIsSaving(true);
+    setWebhookSetupError(null);
     try {
       const success = await updateWebhook(webhookUrl);
       
       if (success) {
         toast.success("Webhook configured successfully");
-        await getWebhookInfo(); // Refresh webhook info
+        const info = await getWebhookInfo(); // Refresh webhook info
+        
+        // Check for errors in the webhook info
+        if (info?.result?.last_error_message) {
+          setWebhookSetupError(info.result.last_error_message);
+          toast.warning("Webhook set but has errors. See details below.");
+        }
       } else {
         toast.error("Failed to set webhook");
+        setWebhookSetupError("Failed to set webhook. Check console for details.");
       }
     } catch (error) {
       console.error("Error saving webhook settings:", error);
       toast.error("Failed to save webhook settings");
+      if (error instanceof Error) {
+        setWebhookSetupError(error.message);
+      } else {
+        setWebhookSetupError("Unknown error setting webhook");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -122,6 +147,7 @@ const TelegramAdmin = () => {
 
   const handleDeleteWebhook = async () => {
     setIsSaving(true);
+    setWebhookSetupError(null);
     try {
       const success = await deleteWebhook();
       
@@ -131,10 +157,14 @@ const TelegramAdmin = () => {
         await getWebhookInfo(); // Refresh webhook info
       } else {
         toast.error("Failed to delete webhook");
+        setWebhookSetupError("Failed to delete webhook. Check console for details.");
       }
     } catch (error) {
       console.error("Error deleting webhook:", error);
       toast.error("Failed to delete webhook");
+      if (error instanceof Error) {
+        setWebhookSetupError(error.message);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -245,6 +275,54 @@ const TelegramAdmin = () => {
     }
   };
 
+  // Function to fetch webhook debug info directly from the edge function
+  const fetchDebugInfo = async () => {
+    try {
+      setDebugInfo({ loading: true });
+      
+      // Test connection to the webhook directly
+      const response = await fetch("https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Include the current secret token if available
+          ...(config?.webhook_secret ? { "X-Telegram-Bot-Api-Secret-Token": config.webhook_secret } : {})
+        },
+        body: JSON.stringify({ type: "debug_request", message: "Testing webhook connection" })
+      });
+      
+      const data = await response.json();
+      
+      // Get the webhook info from Telegram
+      const webhookInfoResponse = await fetch("https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-bot-setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getWebhookInfo" })
+      });
+      
+      const webhookInfoData = await webhookInfoResponse.json();
+      
+      setDebugInfo({
+        directWebhookResponse: {
+          status: response.status,
+          statusText: response.statusText,
+          data
+        },
+        webhookInfo: webhookInfoData,
+        timestamp: new Date().toISOString()
+      });
+      
+      toast.success("Debug info fetched successfully");
+    } catch (error) {
+      console.error("Error fetching debug info:", error);
+      setDebugInfo({
+        error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      });
+      toast.error("Failed to fetch debug information");
+    }
+  };
+
   const getPreferencesForChat = (chatId: string) => {
     return preferences.find(pref => pref.chat_id === chatId) || {
       service_calls: false,
@@ -302,6 +380,7 @@ const TelegramAdmin = () => {
             <TabsTrigger value="chats">Authorized Chats</TabsTrigger>
             <TabsTrigger value="notifications">Notification Settings</TabsTrigger>
             <TabsTrigger value="test">Test Bot</TabsTrigger>
+            <TabsTrigger value="debug">Debug</TabsTrigger>
           </TabsList>
 
           <TabsContent value="setup">
@@ -321,6 +400,16 @@ const TelegramAdmin = () => {
                       If you need to update it, please go to Supabase and update the 'telegram_key' secret.
                     </AlertDescription>
                   </Alert>
+                  
+                  {webhookSetupError && (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Webhook Error</AlertTitle>
+                      <AlertDescription>
+                        {webhookSetupError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mb-1">
@@ -363,6 +452,7 @@ const TelegramAdmin = () => {
                         {webhookInfo.result.last_error_message && (
                           <p className="text-red-500"><span className="font-medium">Last error:</span> {webhookInfo.result.last_error_message}</p>
                         )}
+                        <p><span className="font-medium">Secret token in DB:</span> {config?.webhook_secret ? "Set" : "Not set"}</p>
                       </div>
                     </div>
                   ) : null}
@@ -601,6 +691,119 @@ const TelegramAdmin = () => {
                   </Button>
                 </div>
               </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="debug">
+            <Card>
+              <CardHeader>
+                <CardTitle>Webhook Debugging</CardTitle>
+                <CardDescription>
+                  Troubleshoot webhook connection issues
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <Alert className="mb-4">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      This page helps diagnose issues with your Telegram webhook setup.
+                      Press the button below to test your webhook connection and see detailed debug information.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="flex flex-col gap-4">
+                    <Button 
+                      onClick={fetchDebugInfo}
+                      disabled={debugInfo?.loading}
+                    >
+                      {debugInfo?.loading ? "Testing Connection..." : "Test Webhook Connection"}
+                    </Button>
+
+                    {/* Webhook Secret Status */}
+                    <div className="rounded-md border p-4 bg-slate-50">
+                      <h3 className="font-medium mb-2">Webhook Secret Status:</h3>
+                      <div className="text-sm space-y-1">
+                        <p>
+                          <span className="font-medium">Secret stored in database:</span> 
+                          {config?.webhook_secret ? (
+                            <Badge variant="success" className="ml-2">Set</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="ml-2">Not Set</Badge>
+                          )}
+                        </p>
+                        <p>
+                          <span className="font-medium">First 10 characters of secret:</span> 
+                          {config?.webhook_secret ? config.webhook_secret.substring(0, 10) + '...' : 'N/A'}
+                        </p>
+                        <p>
+                          <span className="font-medium">Secret length:</span> 
+                          {config?.webhook_secret ? config.webhook_secret.length : 0} characters
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Current Telegram API Config */}
+                    <div className="rounded-md border p-4">
+                      <h3 className="font-medium mb-2">Current Telegram API Configuration:</h3>
+                      <div className="text-sm">
+                        <p><span className="font-medium">Webhook URL:</span> {webhookInfo?.result?.url || 'Not set'}</p>
+                        <p><span className="font-medium">Has custom certificate:</span> {webhookInfo?.result?.has_custom_certificate ? 'Yes' : 'No'}</p>
+                        <p><span className="font-medium">Pending updates:</span> {webhookInfo?.result?.pending_update_count || 0}</p>
+                        <p><span className="font-medium">Max connections:</span> {webhookInfo?.result?.max_connections || 'N/A'}</p>
+                        <p><span className="font-medium">IP address:</span> {webhookInfo?.result?.ip_address || 'N/A'}</p>
+                        
+                        {webhookInfo?.result?.last_error_date && (
+                          <div className="mt-2 text-red-500">
+                            <p className="font-medium">Last error ({new Date(webhookInfo.result.last_error_date * 1000).toLocaleString()}):</p>
+                            <p>{webhookInfo.result.last_error_message}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Debug Response */}
+                    {debugInfo && !debugInfo.loading && !debugInfo.error && (
+                      <div className="rounded-md border p-4">
+                        <h3 className="font-medium mb-2">Debug Test Results ({new Date(debugInfo.timestamp).toLocaleString()}):</h3>
+                        
+                        <div className="mt-2">
+                          <h4 className="font-medium">Direct Webhook Response:</h4>
+                          <pre className="mt-1 p-2 bg-gray-800 text-white rounded text-xs overflow-auto max-h-40">
+                            {JSON.stringify(debugInfo.directWebhookResponse, null, 2)}
+                          </pre>
+                        </div>
+                        
+                        <div className="mt-2">
+                          <h4 className="font-medium">Webhook Info Response:</h4>
+                          <pre className="mt-1 p-2 bg-gray-800 text-white rounded text-xs overflow-auto max-h-40">
+                            {JSON.stringify(debugInfo.webhookInfo, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error Message */}
+                    {debugInfo?.error && (
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Debug Test Failed</AlertTitle>
+                        <AlertDescription>
+                          {debugInfo.error}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={() => window.open("https://klieshkrqryigtqtshka.supabase.co/functions/telegram-bot-setup/logs", "_blank")}>
+                  View Edge Function Logs
+                </Button>
+                <Button variant="outline" onClick={() => window.open("https://klieshkrqryigtqtshka.supabase.co/functions/telegram-webhook-proxy/logs", "_blank")}>
+                  View Webhook Proxy Logs
+                </Button>
+              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
