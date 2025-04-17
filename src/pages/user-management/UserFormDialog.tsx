@@ -40,6 +40,8 @@ import { Switch } from "@/components/ui/switch";
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters" }).optional()
+    .or(z.literal('')),
   mobile: z.string().min(10, { message: "Mobile number must be at least 10 digits" }),
   role: z.enum(["super_admin", "sales", "service", "finance", "inventory", "engineer", "read_only"] as const),
   branch: z.string().optional(),
@@ -68,6 +70,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
     defaultValues: {
       name: user?.name || "",
       email: user?.email || "",
+      password: "", // Empty by default
       mobile: user?.mobile || "",
       role: user?.role || "read_only",
       branch: user?.branch || "",
@@ -81,6 +84,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
       id: user?.id || uuidv4(),
       name: data.name,
       email: data.email,
+      password: data.password, // Include password if provided
       mobile: data.mobile,
       role: data.role,
       branch: data.branch,
@@ -138,6 +142,25 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                 </FormItem>
               )}
             />
+            
+            {!isEditing && (
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="Minimum 8 characters" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Leave blank to generate a temporary password.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <FormField
               control={form.control}

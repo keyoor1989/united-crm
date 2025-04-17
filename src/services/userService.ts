@@ -4,6 +4,7 @@ import { User, UserRole } from "@/types/auth";
 
 export interface UserCreate extends Omit<User, 'id' | 'createdAt' | 'updatedAt'> {
   id?: string;
+  password?: string; // Add password field
 }
 
 export const userService = {
@@ -39,29 +40,30 @@ export const userService = {
    * Create a new user
    */
   async createUser(user: UserCreate): Promise<User> {
-    // Use the service role key for operations that might be restricted by RLS
-    const { data, error } = await supabase.auth.admin.createUser({
+    // First create the auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: user.email,
-      password: "temporaryPassword123", // You might want to generate a random password or implement a password reset flow
-      email_confirm: true,
-      user_metadata: {
-        name: user.name,
-        mobile: user.mobile,
-        role: user.role,
-        branch: user.branch
+      password: user.password || "TemporaryPass123!", // Use provided password or a default
+      options: {
+        data: {
+          name: user.name,
+          mobile: user.mobile,
+          role: user.role,
+          branch: user.branch
+        }
       }
     });
 
-    if (error) {
-      console.error('Error creating user in auth system:', error);
-      throw error;
+    if (authError) {
+      console.error('Error creating user in auth system:', authError);
+      throw authError;
     }
     
-    // Now create the app_user record with service role to bypass RLS
+    // Now create the app_user record
     const { data: userData, error: userError } = await supabase
       .from('app_users')
       .insert({
-        id: user.id,
+        id: authData.user?.id, // Use the ID from the auth user
         name: user.name,
         email: user.email,
         mobile: user.mobile,
