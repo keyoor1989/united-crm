@@ -59,6 +59,9 @@ export const userService = {
       throw authError;
     }
     
+    // Determine has_set_password value based on whether password was provided
+    const hasSetPassword = !!user.password && user.password.length >= 8;
+    
     // Now create the app_user record
     const { data: userData, error: userError } = await supabase
       .from('app_users')
@@ -69,7 +72,8 @@ export const userService = {
         mobile: user.mobile,
         role: user.role,
         branch: user.branch,
-        is_active: user.isActive
+        is_active: user.isActive,
+        has_set_password: hasSetPassword
       })
       .select()
       .single();

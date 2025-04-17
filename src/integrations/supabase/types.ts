@@ -454,6 +454,7 @@ export type Database = {
           branch: string | null
           created_at: string
           email: string
+          has_set_password: boolean | null
           id: string
           is_active: boolean
           mobile: string
@@ -465,6 +466,7 @@ export type Database = {
           branch?: string | null
           created_at?: string
           email: string
+          has_set_password?: boolean | null
           id?: string
           is_active?: boolean
           mobile: string
@@ -476,6 +478,7 @@ export type Database = {
           branch?: string | null
           created_at?: string
           email?: string
+          has_set_password?: boolean | null
           id?: string
           is_active?: boolean
           mobile?: string

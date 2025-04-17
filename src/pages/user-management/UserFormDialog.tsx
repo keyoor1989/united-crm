@@ -154,7 +154,7 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
                       <Input type="password" placeholder="Minimum 8 characters" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Leave blank to generate a temporary password.
+                      Leave blank to generate a temporary password (TemporaryPass123!).
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

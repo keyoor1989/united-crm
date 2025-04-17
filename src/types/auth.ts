@@ -33,6 +33,7 @@ export interface User {
   role: UserRole;
   branch?: string;
   isActive: boolean;
+  hasSetPassword?: boolean;
   createdAt: string;
   updatedAt: string;
 }
