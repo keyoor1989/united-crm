@@ -36,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
+// Define a schema that matches the required fields in UserCreate
 const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   email: z.string().email({ message: "Please enter a valid email" }),
@@ -75,10 +76,18 @@ const UserFormDialog: React.FC<UserFormDialogProps> = ({
   });
 
   const onSubmit = (data: FormValues) => {
-    onSave({
+    // Create a UserCreate object with all required fields
+    const userToSave: UserCreate = {
       id: user?.id || uuidv4(),
-      ...data
-    });
+      name: data.name,
+      email: data.email,
+      mobile: data.mobile,
+      role: data.role,
+      branch: data.branch,
+      isActive: data.isActive,
+    };
+    
+    onSave(userToSave);
   };
 
   // Available branches (in a real app, this would be fetched from an API)
