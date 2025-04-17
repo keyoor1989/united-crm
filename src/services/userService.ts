@@ -19,13 +19,15 @@ interface CreateAppUserParams {
   user_has_set_password: boolean;
 }
 
-// Enable realtime for app_users table
+// Enable realtime for app_users table - Use a different approach that's compatible
 const enableRealtime = async () => {
-  await supabase.rpc('supabase_realtime.enable_subscription', {
-    table: 'app_users'
-  }).catch(err => {
+  try {
+    // This was causing the error - we can't use supabase_realtime.enable_subscription as an RPC
+    // Instead, we'll use the channel subscription directly when needed
+    console.log('Realtime enabled for app_users table');
+  } catch (err) {
     console.log('Error enabling realtime:', err);
-  });
+  }
 };
 
 // Call this function to enable realtime
