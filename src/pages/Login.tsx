@@ -34,9 +34,9 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const Login: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { login } = useAuth();
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -47,10 +47,13 @@ const Login: React.FC = () => {
   });
 
   const onSubmit = async (data: FormValues) => {
+    if (isSubmitting) return; // Prevent multiple form submissions
+    
     try {
-      setFormSubmitting(true);
+      setIsSubmitting(true);
       setLoginError(null);
       await login(data.email, data.password);
+      // Note: We don't need to reset isSubmitting here as successful login will navigate away
     } catch (error) {
       console.error("Login failed:", error);
       setLoginError(
@@ -58,8 +61,7 @@ const Login: React.FC = () => {
           ? error.message 
           : "Failed to login. Please check your credentials and try again."
       );
-    } finally {
-      setFormSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -92,7 +94,7 @@ const Login: React.FC = () => {
                       <Input
                         placeholder="john.doe@example.com"
                         {...field}
-                        disabled={formSubmitting || isLoading}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
@@ -110,15 +112,15 @@ const Login: React.FC = () => {
                         type="password"
                         placeholder="••••••••"
                         {...field}
-                        disabled={formSubmitting || isLoading}
+                        disabled={isSubmitting}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={formSubmitting || isLoading}>
-                {formSubmitting ? (
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
                   </>

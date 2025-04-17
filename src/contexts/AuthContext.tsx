@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole, Permission } from "@/types/auth";
 import { rolePermissions } from "@/utils/rbac/rolePermissions";
@@ -29,12 +30,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkSession = async () => {
       setIsLoading(true);
       try {
-        // Listen for auth state changes
+        // Set up auth state listener first (Supabase best practice)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
+          (event, session) => {
             console.log('Auth state changed:', event, session?.user?.id);
             if (event === 'SIGNED_IN' && session) {
-              await fetchUserProfile(session.user.id);
+              // Don't await here - we'll use setTimeout to avoid recursive auth state changes
+              setTimeout(() => {
+                fetchUserProfile(session.user.id);
+              }, 0);
             } else if (event === 'SIGNED_OUT') {
               setUser(null);
               localStorage.removeItem("currentUser");
@@ -42,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         );
 
-        // Check Supabase session
+        // Check for existing session
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
@@ -79,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error("Error fetching user data:", error);
         setIsLoading(false);
-        throw error;
+        return;
       }
       
       if (userData) {
@@ -125,10 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string): Promise<void> => {
-    setIsLoading(true);
-    
     try {
       console.log('Attempting login for:', email);
+      
       // Try to authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
@@ -137,18 +140,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (authError) {
         console.error('Auth error:', authError);
-        setIsLoading(false); // Reset loading state on error
         throw authError;
       }
       
       if (authData.user) {
         console.log('Auth successful, user ID:', authData.user.id);
-        // User profile will be fetched by the onAuthStateChange handler
-        navigate("/");
+        // Navigation will happen after user profile is fetched via the onAuthStateChange handler
         toast({
           title: "Login successful",
           description: "Welcome back!",
         });
+        navigate("/");
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -157,7 +159,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Login failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
       });
-      setIsLoading(false); // Reset loading state on error
       throw error;
     }
   };
@@ -245,8 +246,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
-
-// Remove mock users as they're no longer needed with Supabase auth
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
