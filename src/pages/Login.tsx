@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Spinner } from "@/components/ui/spinner";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -34,7 +35,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const Login: React.FC = () => {
-  const { login } = useAuth();
+  const { login, isLoading: authLoading } = useAuth();
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -77,6 +78,9 @@ const Login: React.FC = () => {
     }
   };
 
+  // Show combined loading state from both form submission and auth context
+  const isLoading = isSubmitting || authLoading;
+
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
@@ -106,7 +110,8 @@ const Login: React.FC = () => {
                       <Input
                         placeholder="john.doe@example.com"
                         {...field}
-                        disabled={isSubmitting}
+                        disabled={isLoading}
+                        autoComplete="email"
                       />
                     </FormControl>
                     <FormMessage />
@@ -124,17 +129,18 @@ const Login: React.FC = () => {
                         type="password"
                         placeholder="••••••••"
                         {...field}
-                        disabled={isSubmitting}
+                        disabled={isLoading}
+                        autoComplete="current-password"
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
+                    <Spinner className="mr-2 h-4 w-4" /> Please wait
                   </>
                 ) : (
                   "Sign In"

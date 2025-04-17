@@ -5,6 +5,7 @@ import { rolePermissions } from "@/utils/rbac/rolePermissions";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { userService } from "@/services/userService";
 
 interface AuthContextType {
   user: User | null;
@@ -73,6 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log('Fetching user profile for ID:', userId);
+      
       // Fetch user data from app_users table
       const { data: userData, error } = await supabase
         .from('app_users')
@@ -105,6 +107,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.setItem("currentUser", JSON.stringify(appUser));
       } else {
         console.log('No user profile found for ID:', userId);
+        
+        // Get user email from auth data
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        if (authUser) {
+          // Create a temporary basic user with default permissions
+          // This allows the user to log in even if they don't have an app_users record
+          const tempUser: User = {
+            id: userId,
+            name: authUser.email?.split('@')[0] || 'New User',
+            email: authUser.email || '',
+            mobile: '',
+            role: 'read_only' as UserRole,  // Safe default role with minimal permissions
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          setUser(tempUser);
+          localStorage.setItem("currentUser", JSON.stringify(tempUser));
+          
+          // Show a toast to notify the admin about the issue
+          toast({
+            title: "Limited Access",
+            description: "Your user profile is incomplete. Please contact an administrator.",
+            variant: "warning"
+          });
+        }
       }
     } catch (err) {
       console.error('Error fetching user profile:', err);
@@ -131,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<void> => {
     try {
       console.log('Attempting login for:', email);
+      setIsLoading(true);
       
       // Try to authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -160,11 +191,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error instanceof Error ? error.message : "An unknown error occurred",
       });
       throw error;
+    } finally {
+      // Reset loading state if we need to
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 0);
     }
   };
 
   const logout = async () => {
     try {
+      setIsLoading(true);
       await supabase.auth.signOut();
       setUser(null);
       localStorage.removeItem("currentUser");
@@ -180,6 +217,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Logout failed",
         description: "There was a problem logging out",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
