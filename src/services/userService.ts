@@ -7,6 +7,18 @@ export interface UserCreate extends Omit<User, 'id' | 'createdAt' | 'updatedAt'>
   password?: string; // Add password field
 }
 
+// Define an interface for the create_app_user RPC parameters
+interface CreateAppUserParams {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  user_mobile: string;
+  user_role: string;
+  user_branch?: string;
+  user_is_active: boolean;
+  user_has_set_password: boolean;
+}
+
 export const userService = {
   /**
    * Get all users
@@ -68,7 +80,7 @@ export const userService = {
     const hasSetPassword = !!user.password && user.password.length >= 8;
     
     // Create the app_user record using service role to bypass RLS
-    const { data: userData, error: userError } = await supabase.rpc('create_app_user', {
+    const { data: userData, error: userError } = await supabase.rpc<CreateAppUserParams, any>('create_app_user', {
       user_id: authData.user.id,
       user_name: user.name,
       user_email: user.email,
@@ -77,7 +89,7 @@ export const userService = {
       user_branch: user.branch,
       user_is_active: user.isActive,
       user_has_set_password: hasSetPassword
-    } as any); // Use type assertion to bypass TypeScript error until Supabase types are updated
+    });
     
     if (userError) {
       console.error('Error creating user in app_users:', userError);
