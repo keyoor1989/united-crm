@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -210,6 +209,49 @@ function parseCustomerCommand(text) {
     product: ''
   };
   
+  // First, try to parse the simple multi-line format as seen in the screenshot
+  const lines = text.split('\n');
+  
+  // Check if it starts with "Add Customer" which indicates the format from screenshot
+  const isSimpleFormat = text.trim().toLowerCase().startsWith('add customer');
+  
+  if (isSimpleFormat && lines.length > 1) {
+    console.log("Detected simple multi-line format");
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.toLowerCase().startsWith('add customer')) {
+        // Skip the header line
+        continue;
+      } else if (trimmedLine.toLowerCase().startsWith('name')) {
+        result.name = trimmedLine.substring(4).trim();
+      } else if (trimmedLine.toLowerCase().startsWith('mobile')) {
+        result.phone = trimmedLine.substring(6).trim().replace(/\D/g, '');
+      } else if (trimmedLine.toLowerCase().startsWith('address')) {
+        result.address = trimmedLine.substring(7).trim();
+      } else if (trimmedLine.toLowerCase().startsWith('city')) {
+        result.city = trimmedLine.substring(4).trim();
+      } else if (trimmedLine.toLowerCase().startsWith('interested in')) {
+        result.product = trimmedLine.substring(13).trim();
+      }
+    }
+    
+    console.log("Parsed from simple format:", result);
+    
+    // If we got the required fields, return early
+    if (result.name && result.phone && result.city) {
+      // Take just the last 10 digits if phone is longer
+      if (result.phone.length > 10) {
+        result.phone = result.phone.substring(result.phone.length - 10);
+      }
+      return result;
+    }
+  }
+  
+  // If simple format failed, fall back to regex patterns
+  console.log("Simple format parsing failed, trying regex patterns");
+  
   // Case-insensitive regex patterns with both colon and space formats
   const nameMatch = text.match(/Name\s*:?\s+([^Phone|^Email|^Address|^City|^Interested|^\n]+)/i);
   if (nameMatch && nameMatch[1]) {
@@ -248,6 +290,7 @@ function parseCustomerCommand(text) {
     result.product = productMatch[1].trim();
   }
   
+  console.log("Parsed from regex patterns:", result);
   return result;
 }
 
