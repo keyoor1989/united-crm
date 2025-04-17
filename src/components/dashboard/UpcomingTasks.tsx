@@ -4,19 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
-import { mockTasks } from "@/data/taskData";
+import { useTaskContext } from "@/contexts/TaskContext";
+import { Task } from "@/types/task";
 
 interface UpcomingTasksProps {
   className?: string;
 }
 
 const UpcomingTasks: React.FC<UpcomingTasksProps> = ({ className }) => {
+  const { tasks } = useTaskContext();
+  
   // Get upcoming tasks that are due in the next 7 days and not completed
   const now = new Date();
   const nextWeek = new Date(now);
   nextWeek.setDate(now.getDate() + 7);
   
-  const upcomingTasks = mockTasks
+  const upcomingTasks = tasks
     .filter(task => {
       const dueDate = new Date(task.dueDate);
       return dueDate >= now && dueDate <= nextWeek && task.status !== "Completed";

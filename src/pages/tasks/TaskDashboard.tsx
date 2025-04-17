@@ -21,8 +21,8 @@ const TaskDashboard = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { tasks, myTasks, loading, updateTask, deleteTask, addTask } = useTaskContext();
   
-  // Filter tasks created by the current user (this will now be handled by RLS)
-  const tasksCreatedByMe = tasks.filter(task => task.createdBy.id === task.createdBy.id);
+  // Filter tasks created by the current user (this is handled by RLS in Supabase)
+  const tasksCreatedByMe = tasks;
 
   const handleCreateTask = async (taskData: Partial<Task>) => {
     await addTask(taskData);

@@ -1,8 +1,17 @@
 
 import { format, parse, isValid, isBefore, addDays, addHours } from "date-fns";
-import { Task, TaskPriority, TaskStatus, TaskType } from "@/types/task";
-import { mockUsers, currentUser } from "@/data/taskData";
+import { Task, TaskPriority, TaskStatus, TaskType, User } from "@/types/task";
 import { v4 as uuidv4 } from "uuid";
+import { useAuth } from "@/contexts/AuthContext";
+
+// Create a simple user object for the current user
+const defaultUser: User = {
+  id: "current-user",
+  name: "Current User",
+  email: "user@example.com",
+  role: "User",
+  department: "Admin"
+};
 
 export interface ParsedTaskCommand {
   customerName: string;
@@ -20,7 +29,7 @@ export const parseTaskCommand = (command: string): ParsedTaskCommand => {
     taskTitle: "",
     dueDate: null,
     notes: "",
-    assignedTo: currentUser.id,
+    assignedTo: defaultUser.id,
     isValid: false,
     missingFields: []
   };
@@ -244,21 +253,24 @@ export const formatTaskTime = (date: Date): string => {
 };
 
 export const createNewTask = (data: ParsedTaskCommand): Task => {
-  // Find assigned user object from ID
-  const assignedUser = mockUsers.find(user => user.id === data.assignedTo) || currentUser;
-  
   return {
     id: `task-${Date.now()}`,
     title: data.taskTitle,
     description: data.notes || `Follow up with ${data.customerName}`,
-    assignedTo: assignedUser,
-    createdBy: currentUser,
+    assignedTo: {
+      id: data.assignedTo,
+      name: defaultUser.name,
+      email: defaultUser.email,
+      role: defaultUser.role,
+      department: "Sales"
+    },
+    createdBy: defaultUser,
     department: "Sales",
     dueDate: data.dueDate || new Date(),
     priority: "Medium" as TaskPriority,
     type: "Personal" as TaskType,
     hasReminder: true,
-    branch: "Indore", // Default, could be determined by customer location
+    branch: "Indore", // Default
     status: "Assigned" as TaskStatus,
     createdAt: new Date(),
     updatedAt: new Date()

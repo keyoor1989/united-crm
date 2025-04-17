@@ -3,14 +3,18 @@ import React from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
-import { mockUsers } from "@/data/taskData";
 import { FormValues } from "./types";
+import { useTaskContext } from "@/contexts/TaskContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AssignmentFieldsProps {
   form: UseFormReturn<FormValues>;
 }
 
 const AssignmentFields: React.FC<AssignmentFieldsProps> = ({ form }) => {
+  const { users } = useTaskContext();
+  const { user } = useAuth();
+  
   return (
     <div className="grid grid-cols-2 gap-4">
       <FormField
@@ -26,11 +30,20 @@ const AssignmentFields: React.FC<AssignmentFieldsProps> = ({ form }) => {
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {mockUsers.map(user => (
+                {/* First show the current user */}
+                {user && (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.name} ({user.department})
+                    {user.name} (Me)
                   </SelectItem>
-                ))}
+                )}
+                {/* Then show other users */}
+                {users
+                  .filter(u => user && u.id !== user.id)
+                  .map(u => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name} ({u.department})
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
             <FormMessage />

@@ -2,18 +2,24 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, Clock, AlertTriangle, CheckSquare } from "lucide-react";
-import {
-  getTasksDueToday,
-  getTasksCompletedToday,
-  getOverdueTasks,
-  getTasksCompletedThisMonth
-} from "@/data/taskData";
+import { useTaskContext } from "@/contexts/TaskContext";
+import { isToday, isBefore, isThisMonth } from "date-fns";
 
 const TaskDashboardSummary = () => {
-  const tasksDueToday = getTasksDueToday();
-  const tasksCompletedToday = getTasksCompletedToday();
-  const overdueTasks = getOverdueTasks();
-  const tasksCompletedThisMonth = getTasksCompletedThisMonth();
+  const { tasks } = useTaskContext();
+  
+  // Filter tasks for dashboard summary
+  const tasksDueToday = tasks.filter(task => 
+    isToday(new Date(task.dueDate)) && task.status !== "Completed");
+  
+  const tasksCompletedToday = tasks.filter(task => 
+    task.status === "Completed" && isToday(new Date(task.updatedAt)));
+  
+  const overdueTasks = tasks.filter(task => 
+    isBefore(new Date(task.dueDate), new Date()) && task.status !== "Completed");
+  
+  const tasksCompletedThisMonth = tasks.filter(task => 
+    task.status === "Completed" && isThisMonth(new Date(task.updatedAt)));
 
   const summaryItems = [
     {
