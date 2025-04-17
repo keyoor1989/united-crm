@@ -80,7 +80,6 @@ export const userService = {
     const hasSetPassword = !!user.password && user.password.length >= 8;
     
     // Create the app_user record using service role to bypass RLS
-    // We use type assertion with 'unknown' as an intermediate step to avoid direct assertion
     const params: CreateAppUserParams = {
       user_id: authData.user.id,
       user_name: user.name,
@@ -92,9 +91,10 @@ export const userService = {
       user_has_set_password: hasSetPassword
     };
     
+    // Use a simpler approach with explicit Object casting instead of complex type assertions
     const { data: userData, error: userError } = await supabase.rpc(
       'create_app_user',
-      params as unknown as Record<string, unknown>
+      params as Record<string, any>
     );
     
     if (userError) {
