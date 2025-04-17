@@ -1629,6 +1629,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -30,7 +30,7 @@ const UserManagement: React.FC = () => {
   useEffect(() => {
     fetchUsers();
     
-    // Set up a subscription to user changes
+    // Enable realtime updates for the app_users table
     const channel = supabase
       .channel('schema-db-changes')
       .on(
@@ -63,7 +63,7 @@ const UserManagement: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Error fetching users",
-        description: "There was a problem loading the user list.",
+        description: error instanceof Error ? error.message : "There was a problem loading the user list.",
       });
     } finally {
       setIsLoading(false);
@@ -127,18 +127,11 @@ const UserManagement: React.FC = () => {
   const handleToggleActive = async (userId: string, currentStatus: boolean) => {
     try {
       await userService.toggleUserActive(userId, !currentStatus);
-      setUsers(prevUsers => 
-        prevUsers.map(u => 
-          u.id === userId 
-            ? { ...u, isActive: !currentStatus, updatedAt: new Date().toISOString() } 
-            : u
-        )
-      );
-      
       toast({
         title: "User status updated",
         description: `User is now ${!currentStatus ? "active" : "inactive"}.`,
       });
+      fetchUsers(); // Refresh the user list
     } catch (error) {
       console.error("Error toggling user status:", error);
       toast({

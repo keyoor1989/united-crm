@@ -19,6 +19,18 @@ interface CreateAppUserParams {
   user_has_set_password: boolean;
 }
 
+// Enable realtime for app_users table
+const enableRealtime = async () => {
+  await supabase.rpc('supabase_realtime.enable_subscription', {
+    table: 'app_users'
+  }).catch(err => {
+    console.log('Error enabling realtime:', err);
+  });
+};
+
+// Call this function to enable realtime
+enableRealtime();
+
 export const userService = {
   /**
    * Get all users
