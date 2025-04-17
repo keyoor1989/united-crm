@@ -1426,6 +1426,60 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assigned_to: string
+          attachments: string[] | null
+          branch: string | null
+          created_at: string
+          created_by: string
+          department: string
+          description: string
+          due_date: string
+          has_reminder: boolean | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to: string
+          attachments?: string[] | null
+          branch?: string | null
+          created_at?: string
+          created_by: string
+          department: string
+          description: string
+          due_date: string
+          has_reminder?: boolean | null
+          id?: string
+          priority: string
+          status: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string
+          attachments?: string[] | null
+          branch?: string | null
+          created_at?: string
+          created_by?: string
+          department?: string
+          description?: string
+          due_date?: string
+          has_reminder?: boolean | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       telegram_authorized_chats: {
         Row: {
           authorized_by: string | null

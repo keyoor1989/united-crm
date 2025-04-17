@@ -4,48 +4,75 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/types/task";
-import { currentUser } from "@/data/taskData";
 import { formSchema, FormValues } from "./types";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTaskContext } from "@/contexts/TaskContext";
 
 export function useTaskForm(task: Task | undefined, onSubmit: (task: Partial<Task>) => void, onClose: () => void) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { users } = useTaskContext();
   const isEditMode = !!task;
+
+  // Get current user info
+  const currentUser = user ? {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    department: task?.department || "Admin",
+  } : null;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: task?.title || "",
       description: task?.description || "",
-      assignedTo: task?.assignedTo.id || currentUser.id,
-      department: task?.department || currentUser.department,
+      assignedTo: task?.assignedTo.id || user?.id || "",
+      department: task?.department || "Admin",
       dueDate: task?.dueDate ? new Date(task.dueDate) : new Date(),
       dueTime: task?.dueDate ? format(new Date(task.dueDate), "HH:mm") : "12:00",
       priority: task?.priority || "Medium",
       type: task?.type || "Personal",
       hasReminder: task?.hasReminder || false,
-      branch: task?.branch || "Indore",
+      branch: task?.branch || user?.branch || "Indore",
       attachments: task?.attachments || [],
     },
   });
 
   const handleFormSubmit = (values: FormValues) => {
+    if (!user) {
+      toast({
+        title: "Authentication error",
+        description: "You must be logged in to create or update tasks",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Combine date and time
     const [hours, minutes] = values.dueTime.split(":").map(Number);
     const dueDate = new Date(values.dueDate);
     dueDate.setHours(hours, minutes);
 
-    // Find the assigned user object from the ID
-    const assignedUser = mockUsers.find(user => user.id === values.assignedTo);
+    // Find the assigned user from users list or use current user
+    const assignedUser = users.find(u => u.id === values.assignedTo) || currentUser;
+
+    if (!assignedUser) {
+      toast({
+        title: "Error",
+        description: "Could not find the assigned user",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const taskData: Partial<Task> = {
       ...values,
       dueDate,
-      assignedTo: assignedUser!,
-      createdBy: currentUser,
+      assignedTo: assignedUser,
+      createdBy: task?.createdBy || currentUser,
       status: task?.status || "Assigned",
-      id: task?.id || `task-${Date.now()}`,
-      createdAt: task?.createdAt || new Date(),
-      updatedAt: new Date(),
     };
 
     onSubmit(taskData);
@@ -60,6 +87,3 @@ export function useTaskForm(task: Task | undefined, onSubmit: (task: Partial<Tas
 
   return { form, handleFormSubmit, isEditMode };
 }
-
-// Need to import mockUsers
-import { mockUsers } from "@/data/taskData";

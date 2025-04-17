@@ -11,37 +11,32 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/types/task";
-import { mockTasks, currentUser } from "@/data/taskData";
 import MyTasksTab from "./MyTasksTab";
 import AssignTaskTab from "./AssignTaskTab";
+import { useTaskContext } from "@/contexts/TaskContext";
+import { Spinner } from "@/components/ui/spinner";
 
 const TaskDashboard = () => {
-  const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>(mockTasks);
+  const { tasks, myTasks, loading, updateTask, deleteTask, addTask } = useTaskContext();
   
-  // Filter tasks for the current user
-  const myTasks = tasks.filter(task => task.assignedTo.id === currentUser.id);
-  
-  // Filter tasks created by the current user
-  const tasksCreatedByMe = tasks.filter(task => task.createdBy.id === currentUser.id);
+  // Filter tasks created by the current user (this will now be handled by RLS)
+  const tasksCreatedByMe = tasks.filter(task => task.createdBy.id === task.createdBy.id);
 
-  const handleCreateTask = (taskData: Partial<Task>) => {
-    const newTask = taskData as Task;
-    setTasks(prev => [newTask, ...prev]);
+  const handleCreateTask = async (taskData: Partial<Task>) => {
+    await addTask(taskData);
+    setIsCreateDialogOpen(false);
   };
 
-  const handleUpdateTask = (updatedTask: Task) => {
-    setTasks(prev => 
-      prev.map(task => task.id === updatedTask.id ? updatedTask : task)
+  if (loading && tasks.length === 0) {
+    return (
+      <div className="container mx-auto py-6 flex flex-col items-center justify-center min-h-[50vh]">
+        <Spinner className="h-8 w-8 mb-4" />
+        <p className="text-muted-foreground">Loading tasks...</p>
+      </div>
     );
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
-  };
+  }
 
   return (
     <div className="container mx-auto py-6">
@@ -76,15 +71,15 @@ const TaskDashboard = () => {
               <TabsContent value="my-tasks" className="mt-0">
                 <MyTasksTab 
                   tasks={myTasks} 
-                  onTaskUpdate={handleUpdateTask} 
-                  onTaskDelete={handleDeleteTask} 
+                  onTaskUpdate={updateTask} 
+                  onTaskDelete={deleteTask} 
                 />
               </TabsContent>
               <TabsContent value="assign-tasks" className="mt-0">
                 <AssignTaskTab 
                   tasks={tasksCreatedByMe} 
-                  onTaskUpdate={handleUpdateTask} 
-                  onTaskDelete={handleDeleteTask} 
+                  onTaskUpdate={updateTask} 
+                  onTaskDelete={deleteTask} 
                 />
               </TabsContent>
             </div>
