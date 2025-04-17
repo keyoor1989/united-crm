@@ -60,3 +60,14 @@ export const sendNotification = async (type: string, data: any) => {
   toast.info("Notification system is currently mocked");
   return true;
 };
+
+// Adding the missing functions to fix build errors
+export const notifyInventoryAlert = async (alertData: any) => {
+  console.log("Mock inventory alert notification:", alertData);
+  return true;
+};
+
+export const notifyServiceCall = async (serviceCallData: any) => {
+  console.log("Mock service call notification:", serviceCallData);
+  return true;
+};

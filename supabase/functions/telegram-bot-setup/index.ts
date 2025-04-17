@@ -50,8 +50,8 @@ async function setWebhook(url: string, supabase: any): Promise<Response> {
       // Update the config with the new secret
       const { error: updateError } = await supabase
         .from('telegram_config')
-        .update({ webhook_secret: webhookSecret })
-        .eq('id', configData?.id || 1);
+        .upsert({ webhook_secret: webhookSecret })
+        .select();
       
       if (updateError) {
         console.error("Error updating webhook secret:", updateError);
@@ -61,31 +61,30 @@ async function setWebhook(url: string, supabase: any): Promise<Response> {
       console.log("Using existing webhook secret");
     }
     
-    // Set allowed updates to messages and edited messages only
-    const allowedUpdates = ['message', 'edited_message', 'callback_query'];
+    // Set allowed updates to messages and callback queries only
+    const allowedUpdates = ['message', 'callback_query'];
     
-    // Build the setWebhook URL with parameters
-    const setWebhookUrl = new URL(`${TELEGRAM_API}/setWebhook`);
-    setWebhookUrl.searchParams.append('url', url);
-    setWebhookUrl.searchParams.append('allowed_updates', JSON.stringify(allowedUpdates));
+    // Call Telegram API to set the webhook
+    const response = await fetch(`${TELEGRAM_API}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: url,
+        secret_token: webhookSecret,
+        allowed_updates: allowedUpdates
+      })
+    });
     
-    // Add secret_token parameter if we have a secret
-    if (webhookSecret) {
-      setWebhookUrl.searchParams.append('secret_token', webhookSecret);
-    }
-    
-    // Use Telegram's setWebhook API
-    const response = await fetch(setWebhookUrl.toString());
     const data = await response.json();
     
     console.log(`Webhook set response:`, data);
     
-    // Update the webhook_url in the database
+    // Update the webhook_url in the database if successful
     if (data.ok) {
       const { error: urlUpdateError } = await supabase
         .from('telegram_config')
-        .update({ webhook_url: url })
-        .eq('id', configData?.id || 1);
+        .upsert({ webhook_url: url })
+        .select();
       
       if (urlUpdateError) {
         console.error("Error updating webhook URL:", urlUpdateError);
@@ -111,51 +110,18 @@ async function deleteWebhook(supabase: any): Promise<Response> {
     const response = await fetch(`${TELEGRAM_API}/deleteWebhook`);
     const data = await response.json();
     
-    // Update the database to remove the webhook URL
+    // Update the database to remove the webhook URL if successful
     if (data.ok) {
       const { error: updateError } = await supabase
         .from('telegram_config')
         .update({ webhook_url: null })
-        .eq('bot_token', BOT_TOKEN);
+        .eq('id', 1);
       
       if (updateError) {
         console.error("Error updating database after webhook deletion:", updateError);
         data.warning = "Webhook deleted but failed to update database";
       }
     }
-    
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-}
-
-async function setCommands(): Promise<Response> {
-  try {
-    const commands = [
-      {
-        command: "help",
-        description: "Get help information"
-      },
-      {
-        command: "status",
-        description: "Get bot status information"
-      }
-    ];
-    
-    const response = await fetch(`${TELEGRAM_API}/setMyCommands`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commands })
-    });
-    
-    const data = await response.json();
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -204,8 +170,6 @@ serve(async (req) => {
         return await setWebhook(webhook_url, supabase);
       case 'deleteWebhook':
         return await deleteWebhook(supabase);
-      case 'setCommands':
-        return await setCommands();
       default:
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
