@@ -8,7 +8,6 @@ import FollowUpFilters from "@/components/customers/followups/FollowUpFilters";
 import FollowUpProgress from "@/components/customers/followups/FollowUpProgress";
 import FollowUpList from "@/components/customers/followups/FollowUpList";
 import FollowUpsLoading from "@/components/customers/followups/FollowUpsLoading";
-import TelegramSetupCheck from "@/components/customers/followups/TelegramSetupCheck";
 
 const CustomerFollowUps = () => {
   const {
@@ -55,8 +54,6 @@ const CustomerFollowUps = () => {
         onSendReminders={handleSendReminders}
         isSendingReminders={isSendingReminders}
       />
-      
-      <TelegramSetupCheck />
       
       <Card className="shadow-md">
         <CardHeader className="pb-2">

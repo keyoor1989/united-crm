@@ -4,7 +4,6 @@ import { BrowserRouter as Router } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "./components/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { TelegramProvider } from "@/contexts/TelegramContext";
 import AppRoutes from "./AppRoutes";
 
 function App() {
@@ -12,10 +11,8 @@ function App() {
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <Router>
         <AuthProvider>
-          <TelegramProvider>
-            <AppRoutes />
-            <Toaster position="top-right" />
-          </TelegramProvider>
+          <AppRoutes />
+          <Toaster position="top-right" />
         </AuthProvider>
       </Router>
     </ThemeProvider>
