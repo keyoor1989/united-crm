@@ -91,10 +91,10 @@ export const userService = {
       user_has_set_password: hasSetPassword
     };
     
-    // Use a simpler approach with explicit Object casting instead of complex type assertions
+    // Use explicit type casting for the RPC call
     const { data: userData, error: userError } = await supabase.rpc(
       'create_app_user',
-      params as Record<string, any>
+      params as unknown as Record<string, any>
     );
     
     if (userError) {
