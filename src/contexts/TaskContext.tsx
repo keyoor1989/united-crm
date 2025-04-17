@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Task, TaskDepartment, TaskPriority, TaskStatus, TaskType, User } from "@/types/task";
 import { toast } from "sonner";
@@ -11,6 +10,7 @@ import {
   deleteTask as apiDeleteTask,
   getTaskById as apiGetTaskById
 } from "@/services/taskApiService";
+import { userService } from "@/services/userService";
 
 interface TaskContextType {
   tasks: Task[];
@@ -68,11 +68,27 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Load users (simplified - in a real app, this would fetch from Supabase)
+  // Load all users from the database
   const loadUsers = async () => {
     try {
-      // This is a placeholder - in a real app, you would fetch users from the database
-      // For now, we'll just create a basic array with the current user
+      // Attempt to fetch all users from the database using userService
+      const allUsers = await userService.getUsers();
+      console.log("TaskContext - Fetched users:", allUsers);
+      
+      // Map users to the format expected by the Task components
+      const mappedUsers: User[] = allUsers.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department as TaskDepartment || "Admin",
+      }));
+      
+      setUsers(mappedUsers);
+    } catch (err) {
+      console.error("Failed to load users:", err);
+      
+      // Fallback: If we can't fetch users, at least include the current user
       if (user) {
         const currentUserData: User = {
           id: user.id,
@@ -83,8 +99,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         };
         setUsers([currentUserData]);
       }
-    } catch (err) {
-      console.error("Failed to load users:", err);
     }
   };
 

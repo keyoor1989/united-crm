@@ -15,6 +15,8 @@ const AssignmentFields: React.FC<AssignmentFieldsProps> = ({ form }) => {
   const { users } = useTaskContext();
   const { user } = useAuth();
   
+  console.log("AssignmentFields - Available users:", users); // Debug log
+  
   return (
     <div className="grid grid-cols-2 gap-4">
       <FormField
@@ -33,12 +35,12 @@ const AssignmentFields: React.FC<AssignmentFieldsProps> = ({ form }) => {
                 {/* First show the current user */}
                 {user && (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.name} (Me)
+                    {user.name || user.email} (Me)
                   </SelectItem>
                 )}
                 {/* Then show other users */}
                 {users
-                  .filter(u => user && u.id !== user.id)
+                  .filter(u => !user || u.id !== user.id)
                   .map(u => (
                     <SelectItem key={u.id} value={u.id}>
                       {u.name} ({u.department})
