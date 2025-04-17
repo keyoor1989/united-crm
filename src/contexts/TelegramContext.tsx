@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TelegramConfig, AuthorizedChat, NotificationPreference, WebhookInfo } from '@/types/telegram';
@@ -49,7 +48,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (configResult.data) {
         setConfig(configResult.data as unknown as TelegramConfig);
-        // Fetch webhook info after getting config
         await getWebhookInfo();
       }
 
@@ -72,7 +70,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       console.log("Fetching webhook info...");
       
-      // Add auth headers to the function call
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "getWebhookInfo" }
       });
@@ -101,15 +98,12 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       console.log("Setting webhook to:", url);
       
-      // Set random webhook secret if there isn't one already
       if (!config?.webhook_secret) {
         try {
-          // Generate a random secret token
           const randomSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
             .map((byte) => byte.toString(16).padStart(2, '0'))
             .join('');
           
-          // Update the config with the new secret
           await supabase
             .from('telegram_config')
             .update({ webhook_secret: randomSecret })
@@ -121,7 +115,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }
       }
       
-      // Add auth headers
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { 
           action: "setWebhook",
@@ -158,7 +151,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       console.log("Deleting webhook");
       
-      // Add auth headers
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "deleteWebhook" }
       });
@@ -190,7 +182,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const addAuthorizedChat = async (chatId: string, chatName: string): Promise<boolean> => {
     try {
-      // Check if chat already exists
       const { data: existingChat } = await supabase
         .from('telegram_authorized_chats')
         .select('*')
@@ -202,7 +193,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return false;
       }
       
-      // Add new chat
       const { error } = await supabase.from('telegram_authorized_chats').insert({
         chat_id: chatId,
         chat_name: chatName || `Chat ${chatId}`,
@@ -211,7 +201,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (error) throw error;
       
-      // Also create default notification preferences
       const { error: prefError } = await supabase.from('telegram_notification_preferences').insert({
         chat_id: chatId,
         service_calls: true,
@@ -272,7 +261,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const sendTestMessage = async (chatId: string, message: string): Promise<boolean> => {
     try {
-      // Add auth headers
       const { data, error } = await supabase.functions.invoke("telegram-send-message", {
         body: { 
           chat_id: chatId,
@@ -305,7 +293,6 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       console.log("Setting bot commands");
       
-      // Add auth headers
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "setCommands" }
       });
