@@ -76,9 +76,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         const currentUserData: User = {
           id: user.id,
-          name: user.name,
+          name: user.name || user.email.split('@')[0],
           email: user.email,
-          role: user.role,
+          role: user.role || "admin",
           department: "Admin" as TaskDepartment,
         };
         setUsers([currentUserData]);
@@ -100,9 +100,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         ...taskData,
         createdBy: {
           id: user.id,
-          name: user.name,
+          name: user.name || user.email.split('@')[0],
           email: user.email,
-          role: user.role,
+          role: user.role || "admin",
           department: taskData.department || "Admin" as TaskDepartment,
         },
         status: "Assigned",
