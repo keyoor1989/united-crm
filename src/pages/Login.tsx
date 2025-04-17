@@ -36,6 +36,7 @@ type FormValues = z.infer<typeof formSchema>;
 const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [formSubmitting, setFormSubmitting] = useState(false);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -47,6 +48,7 @@ const Login: React.FC = () => {
 
   const onSubmit = async (data: FormValues) => {
     try {
+      setFormSubmitting(true);
       setLoginError(null);
       await login(data.email, data.password);
     } catch (error) {
@@ -56,6 +58,8 @@ const Login: React.FC = () => {
           ? error.message 
           : "Failed to login. Please check your credentials and try again."
       );
+    } finally {
+      setFormSubmitting(false);
     }
   };
 
@@ -88,7 +92,7 @@ const Login: React.FC = () => {
                       <Input
                         placeholder="john.doe@example.com"
                         {...field}
-                        disabled={isLoading}
+                        disabled={formSubmitting || isLoading}
                       />
                     </FormControl>
                     <FormMessage />
@@ -106,15 +110,15 @@ const Login: React.FC = () => {
                         type="password"
                         placeholder="••••••••"
                         {...field}
-                        disabled={isLoading}
+                        disabled={formSubmitting || isLoading}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" className="w-full" disabled={formSubmitting || isLoading}>
+                {formSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
                   </>

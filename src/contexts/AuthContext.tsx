@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { User, UserRole, Permission } from "@/types/auth";
 import { rolePermissions } from "@/utils/rbac/rolePermissions";
@@ -50,11 +49,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('Session found, fetching user profile');
           await fetchUserProfile(session.user.id);
         } else {
-          // Fallback to localStorage for development
-          const savedUser = localStorage.getItem("currentUser");
-          if (savedUser) {
-            setUser(JSON.parse(savedUser));
-          }
           setIsLoading(false);
         }
 
@@ -143,6 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (authError) {
         console.error('Auth error:', authError);
+        setIsLoading(false); // Reset loading state on error
         throw authError;
       }
       
@@ -154,25 +149,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: "Login successful",
           description: "Welcome back!",
         });
-      } else {
-        // Fallback to mock authentication for development
-        const foundUser = mockUsers.find(u => 
-          u.email === email && u.isActive
-        );
-        
-        if (!foundUser) {
-          throw new Error("Invalid credentials or inactive account");
-        }
-        
-        setUser(foundUser);
-        localStorage.setItem("currentUser", JSON.stringify(foundUser));
-        
-        toast({
-          title: "Login successful (mock)",
-          description: `Welcome back, ${foundUser.name}`,
-        });
-        
-        navigate("/");
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -181,7 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Login failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
       });
-      setIsLoading(false);
+      setIsLoading(false); // Reset loading state on error
       throw error;
     }
   };
@@ -270,30 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Mock users for development/testing when Supabase auth is not available
-export const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "admin@unitedcopier.com",
-    mobile: "9876543210",
-    role: "super_admin",
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: "2",
-    name: "Sales User",
-    email: "sales@unitedcopier.com",
-    mobile: "9876543211",
-    role: "sales",
-    branch: "Main Branch",
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-];
+// Remove mock users as they're no longer needed with Supabase auth
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
