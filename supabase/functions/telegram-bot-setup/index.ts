@@ -15,6 +15,7 @@ async function getWebhookInfo(): Promise<Response> {
       status: 200,
     });
   } catch (error) {
+    console.error("Error in getWebhookInfo:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
@@ -26,14 +27,15 @@ async function setWebhook(url: string, supabase: any): Promise<Response> {
   try {
     console.log(`Setting webhook to URL: ${url}`);
     
-    // Generate a new secret token using crypto.randomUUID()
+    // Generate a new secure webhook secret using crypto.randomUUID()
     const webhookSecret = crypto.randomUUID();
     console.log(`Generated new webhook secret: ${webhookSecret.substring(0, 8)}...`);
     
     // Set allowed updates to messages and callback queries only
     const allowedUpdates = ['message', 'callback_query'];
     
-    // Remove any configurations with null webhook_url
+    // First, clean up any configurations with null webhook_url
+    console.log("Cleaning up null webhook_url entries from the database");
     const { error: cleanupError } = await supabase
       .from('telegram_config')
       .delete()
@@ -41,12 +43,14 @@ async function setWebhook(url: string, supabase: any): Promise<Response> {
     
     if (cleanupError) {
       console.error("Error cleaning up null webhook_url entries:", cleanupError);
+      // Continue despite cleanup error
     }
     
     // Insert new configuration with the webhook URL and secret
+    console.log("Storing new webhook configuration in database");
     const { data: configData, error: upsertError } = await supabase
       .from('telegram_config')
-      .upsert({ 
+      .insert({ 
         webhook_url: url, 
         webhook_secret: webhookSecret 
       })
@@ -66,6 +70,7 @@ async function setWebhook(url: string, supabase: any): Promise<Response> {
     console.log("Successfully stored webhook configuration in database:", configData);
     
     // Call Telegram API to set the webhook with the new secret token
+    console.log("Calling Telegram API to set webhook with secret token");
     const response = await fetch(`${TELEGRAM_API}/setWebhook`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -89,7 +94,8 @@ async function setWebhook(url: string, supabase: any): Promise<Response> {
         status: 200,
       });
     } else {
-      // If Telegram API fails, we should remove the config we just added
+      // If Telegram API fails, remove the config we just added
+      console.error("Telegram API failed, rolling back database changes");
       const { error: cleanupError } = await supabase
         .from('telegram_config')
         .delete()
@@ -124,6 +130,7 @@ async function deleteWebhook(supabase: any): Promise<Response> {
     
     if (data.ok) {
       // Remove all telegram_config entries
+      console.log("Removing webhook configurations from database");
       const { error: deleteError } = await supabase
         .from('telegram_config')
         .delete()
@@ -162,6 +169,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
     if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase credentials");
       return new Response(JSON.stringify({ error: 'Missing Supabase credentials' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

@@ -76,29 +76,46 @@ serve(async (req) => {
     }
     
     // Parse the incoming update from Telegram
-    const update = await req.json();
-    console.log('Received valid Telegram update:', JSON.stringify(update).substring(0, 200) + '...');
-    
-    // Forward the update to the telegram-process-command function
-    console.log('Forwarding update to telegram-process-command function');
-    const { data: forwardData, error: forwardError } = await supabase.functions.invoke('telegram-process-command', {
-      body: update
-    });
-    
-    if (forwardError) {
-      console.error('Error forwarding webhook to telegram-process-command function:', forwardError);
-      return new Response(JSON.stringify({ error: 'Failed to process webhook' }), {
-        status: 500,
+    let update;
+    try {
+      update = await req.json();
+      console.log('Received valid Telegram update:', JSON.stringify(update).substring(0, 200) + '...');
+    } catch (e) {
+      console.error('Invalid JSON payload:', e);
+      return new Response(JSON.stringify({ error: 'Bad Request: Invalid JSON payload' }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
     
-    // Successfully processed and forwarded the webhook
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-    
+    // Forward the update to the telegram-webhook function
+    console.log('Forwarding update to telegram-webhook function');
+    try {
+      const { data: forwardData, error: forwardError } = await supabase.functions.invoke('telegram-webhook', {
+        body: update
+      });
+      
+      if (forwardError) {
+        console.error('Error forwarding webhook to telegram-webhook function:', forwardError);
+        return new Response(JSON.stringify({ error: 'Failed to process webhook' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Successfully processed and forwarded the webhook
+      console.log('Successfully forwarded and processed webhook');
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    } catch (e) {
+      console.error('Exception while invoking telegram-webhook function:', e);
+      return new Response(JSON.stringify({ error: 'Internal Server Error: Failed to process webhook' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
   } catch (error) {
     console.error('Unexpected error processing webhook:', error);
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
