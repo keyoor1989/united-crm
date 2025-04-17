@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import RecentServiceCalls from "@/components/dashboard/RecentServiceCalls";
 import UpcomingTasks from "@/components/dashboard/UpcomingTasks";
 import TopCustomers from "@/components/dashboard/TopCustomers";
+import TaskDashboardSummary from "@/components/tasks/TaskDashboardSummary";
 
 const Dashboard = () => {
   // Memoize the stats icons to prevent unnecessary rerenders
@@ -60,6 +61,9 @@ const Dashboard = () => {
           icon={statsIcons.renewals}
         />
       </div>
+
+      {/* Task Summary Section */}
+      <TaskDashboardSummary />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <RecentServiceCalls className="md:col-span-2 lg:col-span-1" />

@@ -33,6 +33,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  console.log("TaskContext - Current user:", user); // Debug log
+
   // Filter tasks for the current user
   const myTasks = tasks.filter(task => 
     task.assignedTo.id === user?.id || 
@@ -42,6 +44,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   // Load tasks on component mount
   useEffect(() => {
     if (user) {
+      console.log("TaskContext - Loading tasks for user:", user.id);
       loadTasks();
       loadUsers();
     }
@@ -51,7 +54,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const loadTasks = async () => {
     setLoading(true);
     try {
+      console.log("TaskContext - Fetching tasks from API");
       const tasksData = await fetchTasks();
+      console.log("TaskContext - Fetched tasks:", tasksData);
       setTasks(tasksData);
       setError(null);
     } catch (err) {
@@ -88,6 +93,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     try {
       if (!user) throw new Error("User must be logged in to create tasks");
 
+      console.log("TaskContext - Adding new task:", taskData);
+
       // Create a task with current user as creator
       const taskWithUser: Partial<Task> = {
         ...taskData,
@@ -102,6 +109,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       };
       
       const newTask = await apiCreateTask(taskWithUser);
+      console.log("TaskContext - New task created:", newTask);
       
       // Update local state
       setTasks(prev => [newTask, ...prev]);

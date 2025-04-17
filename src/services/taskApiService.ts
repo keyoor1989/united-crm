@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 
 // Convert database task to app task
 export const mapDbTaskToTask = (dbTask: any): Task => {
+  console.log("mapDbTaskToTask - Raw DB task:", dbTask); // Debug log
+  
   return {
     id: dbTask.id,
     title: dbTask.title,
@@ -38,6 +40,8 @@ export const mapDbTaskToTask = (dbTask: any): Task => {
 
 // Convert app task to database format
 export const mapTaskToDbTask = (task: Partial<Task>): any => {
+  console.log("mapTaskToDbTask - Task to save:", task); // Debug log
+  
   return {
     title: task.title,
     description: task.description,
@@ -57,6 +61,8 @@ export const mapTaskToDbTask = (task: Partial<Task>): any => {
 // Fetch all tasks for the current user
 export const fetchTasks = async (): Promise<Task[]> => {
   try {
+    console.log("fetchTasks - Fetching tasks from Supabase");
+    
     const { data: dbTasks, error } = await supabase
       .from('tasks')
       .select(`
@@ -67,10 +73,16 @@ export const fetchTasks = async (): Promise<Task[]> => {
       .order('due_date', { ascending: true });
 
     if (error) {
+      console.error("fetchTasks - Supabase error:", error);
       throw error;
     }
 
-    return dbTasks.map(mapDbTaskToTask);
+    console.log("fetchTasks - Raw data from Supabase:", dbTasks);
+    
+    const tasks = dbTasks.map(mapDbTaskToTask);
+    console.log("fetchTasks - Mapped tasks:", tasks);
+    
+    return tasks;
   } catch (error) {
     console.error('Error fetching tasks:', error);
     throw error;
@@ -80,7 +92,10 @@ export const fetchTasks = async (): Promise<Task[]> => {
 // Create a new task
 export const createTask = async (taskData: Partial<Task>): Promise<Task> => {
   try {
+    console.log("createTask - Creating task with data:", taskData);
+    
     const dbTask = mapTaskToDbTask(taskData);
+    console.log("createTask - Mapped DB task:", dbTask);
     
     const { data, error } = await supabase
       .from('tasks')
@@ -93,10 +108,16 @@ export const createTask = async (taskData: Partial<Task>): Promise<Task> => {
       .single();
 
     if (error) {
+      console.error("createTask - Supabase error:", error);
       throw error;
     }
 
-    return mapDbTaskToTask(data);
+    console.log("createTask - Created task, raw response:", data);
+    
+    const task = mapDbTaskToTask(data);
+    console.log("createTask - Mapped task:", task);
+    
+    return task;
   } catch (error) {
     console.error('Error creating task:', error);
     throw error;

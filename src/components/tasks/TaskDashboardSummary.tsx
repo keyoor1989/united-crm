@@ -8,6 +8,8 @@ import { isToday, isBefore, isThisMonth } from "date-fns";
 const TaskDashboardSummary = () => {
   const { tasks } = useTaskContext();
   
+  console.log("TaskDashboardSummary - tasks:", tasks); // Debug log
+  
   // Filter tasks for dashboard summary
   const tasksDueToday = tasks.filter(task => 
     isToday(new Date(task.dueDate)) && task.status !== "Completed");

@@ -14,6 +14,8 @@ interface UpcomingTasksProps {
 const UpcomingTasks: React.FC<UpcomingTasksProps> = ({ className }) => {
   const { tasks } = useTaskContext();
   
+  console.log("UpcomingTasks - tasks:", tasks); // Debug log
+  
   // Get upcoming tasks that are due in the next 7 days and not completed
   const now = new Date();
   const nextWeek = new Date(now);
