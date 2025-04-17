@@ -1387,6 +1387,36 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_authorized_chats: {
+        Row: {
+          authorized_by: string | null
+          chat_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          user_name: string | null
+        }
+        Insert: {
+          authorized_by?: string | null
+          chat_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          authorized_by?: string | null
+          chat_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       telegram_config: {
         Row: {
           created_at: string | null
@@ -1408,6 +1438,39 @@ export type Database = {
           updated_at?: string | null
           webhook_secret?: string | null
           webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      telegram_message_logs: {
+        Row: {
+          chat_id: string
+          created_at: string
+          direction: string
+          error_message: string | null
+          id: string
+          message_text: string | null
+          message_type: string
+          processed_status: string | null
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          direction: string
+          error_message?: string | null
+          id?: string
+          message_text?: string | null
+          message_type: string
+          processed_status?: string | null
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          id?: string
+          message_text?: string | null
+          message_type?: string
+          processed_status?: string | null
         }
         Relationships: []
       }
