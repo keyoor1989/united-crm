@@ -1616,7 +1616,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_app_user: {
+        Args: {
+          user_id: string
+          user_name: string
+          user_email: string
+          user_mobile: string
+          user_role: string
+          user_branch: string
+          user_is_active: boolean
+          user_has_set_password: boolean
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
