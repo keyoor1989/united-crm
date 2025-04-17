@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, Copy, Info, MessageSquareText, X, AlertTriangle } from "lucide-react";
+import { Check, Copy, Info, X, AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useTelegram } from "@/contexts/TelegramContext";
@@ -43,10 +43,7 @@ const TelegramAdmin = () => {
   const [webhookSetupError, setWebhookSetupError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   
-  const refreshTimerRef = useRef<number | null>(null);
-  const isPollingActiveRef = useRef<boolean>(false);
-  const pollingIntervalRef = useRef<number>(10000);
-  const lastManualRefreshTimeRef = useRef<number>(0);
+  const intervalRef = React.useRef<number | null>(null);
 
   const {
     config, 
@@ -66,16 +63,6 @@ const TelegramAdmin = () => {
   } = useTelegram();
 
   useEffect(() => {
-    return () => {
-      if (refreshTimerRef.current !== null) {
-        window.clearTimeout(refreshTimerRef.current);
-        refreshTimerRef.current = null;
-      }
-      isPollingActiveRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
     refreshData();
     
     const urlParams = new URLSearchParams(window.location.search);
@@ -91,6 +78,13 @@ const TelegramAdmin = () => {
     } else if (config?.webhook_url) {
       setWebhookUrl(config.webhook_url);
     }
+    
+    return () => {
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [refreshData, config, webhookUrl]);
 
   useEffect(() => {
@@ -100,83 +94,47 @@ const TelegramAdmin = () => {
   }, [chats, selectedChatId]);
 
   useEffect(() => {
-    if (refreshTimerRef.current !== null) {
-      window.clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = null;
+    if (intervalRef.current) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
     
     if (activeTab === "setup") {
-      isPollingActiveRef.current = true;
-      
-      const pollWebhookInfo = async () => {
-        if (!isPollingActiveRef.current) return;
-        
-        if (isLoadingWebhookInfo) {
-          scheduleNextPoll();
-          return;
+      intervalRef.current = window.setInterval(() => {
+        if (!isLoadingWebhookInfo && !isSaving) {
+          setIsLoadingWebhookInfo(true);
+          getWebhookInfo()
+            .then(info => {
+              if (info?.result?.last_error_message) {
+                setWebhookSetupError(info.result.last_error_message);
+              } else {
+                setWebhookSetupError(null);
+              }
+            })
+            .catch(error => {
+              console.error("Error fetching webhook info:", error);
+              if (error instanceof Error) {
+                setWebhookSetupError(error.message);
+              }
+            })
+            .finally(() => {
+              setIsLoadingWebhookInfo(false);
+            });
         }
-        
-        const now = Date.now();
-        if (now - lastManualRefreshTimeRef.current < 3000) {
-          scheduleNextPoll();
-          return;
-        }
-        
-        setIsLoadingWebhookInfo(true);
-        setWebhookSetupError(null);
-        
-        try {
-          const info = await getWebhookInfo();
-          
-          if (info?.result?.last_error_message) {
-            setWebhookSetupError(info.result.last_error_message);
-            pollingIntervalRef.current = Math.min(30000, pollingIntervalRef.current + 5000);
-          } else {
-            pollingIntervalRef.current = 10000;
-          }
-        } catch (error) {
-          console.error("Error fetching webhook info:", error);
-          if (error instanceof Error) {
-            setWebhookSetupError(error.message);
-          } else {
-            setWebhookSetupError("Unknown error fetching webhook info");
-          }
-          
-          pollingIntervalRef.current = Math.min(30000, pollingIntervalRef.current + 5000);
-        } finally {
-          setIsLoadingWebhookInfo(false);
-          scheduleNextPoll();
-        }
-      };
-      
-      const scheduleNextPoll = () => {
-        if (!isPollingActiveRef.current) return;
-        
-        refreshTimerRef.current = window.setTimeout(() => {
-          refreshTimerRef.current = null;
-          if (isPollingActiveRef.current) {
-            pollWebhookInfo();
-          }
-        }, pollingIntervalRef.current);
-      };
-      
-      pollWebhookInfo();
-    } else {
-      isPollingActiveRef.current = false;
+      }, 10000);
     }
     
     return () => {
-      if (refreshTimerRef.current !== null) {
-        window.clearTimeout(refreshTimerRef.current);
-        refreshTimerRef.current = null;
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [activeTab, getWebhookInfo, isLoadingWebhookInfo]);
+  }, [activeTab, getWebhookInfo, isLoadingWebhookInfo, isSaving]);
 
   const saveWebhookSettings = async () => {
     setIsSaving(true);
     setWebhookSetupError(null);
-    lastManualRefreshTimeRef.current = Date.now();
     
     try {
       const success = await updateWebhook(webhookUrl);
@@ -209,7 +167,6 @@ const TelegramAdmin = () => {
   const handleDeleteWebhook = async () => {
     setIsSaving(true);
     setWebhookSetupError(null);
-    lastManualRefreshTimeRef.current = Date.now();
     
     try {
       const success = await deleteWebhook();
@@ -343,7 +300,6 @@ const TelegramAdmin = () => {
     
     setIsLoadingWebhookInfo(true);
     setWebhookSetupError(null);
-    lastManualRefreshTimeRef.current = Date.now();
     
     try {
       const info = await getWebhookInfo();
