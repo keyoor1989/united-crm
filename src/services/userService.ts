@@ -79,6 +79,7 @@ export const userService = {
     const hasSetPassword = !!user.password && user.password.length >= 8;
     
     // Create the app_user record using service role to bypass RLS
+    // Use type assertion to make TypeScript happy with our custom RPC function
     const { data: userData, error: userError } = await supabase.rpc('create_app_user', {
       user_id: authData.user.id,
       user_name: user.name,
@@ -88,7 +89,7 @@ export const userService = {
       user_branch: user.branch,
       user_is_active: user.isActive,
       user_has_set_password: hasSetPassword
-    });
+    } as any);
     
     if (userError) {
       console.error('Error creating user in app_users:', userError);
