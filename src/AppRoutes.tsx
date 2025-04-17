@@ -54,6 +54,9 @@ import InventorySales from "@/pages/inventory/InventorySales";
 import CashPurchase from "@/pages/inventory/CashPurchase";
 import CreditSales from "@/pages/inventory/CreditSales";
 import SalesReports from "@/pages/inventory/SalesReports";
+// User Management page
+import UserManagement from "@/pages/user-management/UserManagement";
+import NotFound from "@/pages/NotFound";
 
 const AppRoutes = () => {
   return (
@@ -117,12 +120,18 @@ const AppRoutes = () => {
         {/* Task Routes */}
         <Route path="/tasks" element={<ProtectedRoute><TaskDashboard /></ProtectedRoute>} />
         
+        {/* User Management Route */}
+        <Route path="/user-management" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
+        
         {/* Smart Assistant */}
         <Route path="/smart-assistant" element={<ProtectedRoute><SmartAssistant /></ProtectedRoute>} />
 
         {/* Settings Routes */}
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/telegram-admin" element={<ProtectedRoute><TelegramAdmin /></ProtectedRoute>} />
+        
+        {/* 404 catch-all */}
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   );
