@@ -14,7 +14,7 @@ interface CreateAppUserParams {
   user_email: string;
   user_mobile: string;
   user_role: string;
-  user_branch?: string;
+  user_branch: string; // Changed from optional to required to match RPC expectations
   user_is_active: boolean;
   user_has_set_password: boolean;
 }
@@ -86,7 +86,7 @@ export const userService = {
       user_email: user.email,
       user_mobile: user.mobile,
       user_role: user.role,
-      user_branch: user.branch,
+      user_branch: user.branch || '', // Ensure branch is always a string, empty if not provided
       user_is_active: user.isActive,
       user_has_set_password: hasSetPassword
     };
