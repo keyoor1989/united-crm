@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -42,8 +42,12 @@ const TelegramAdmin = () => {
   const [isLoadingWebhookInfo, setIsLoadingWebhookInfo] = useState(false);
   const [webhookSetupError, setWebhookSetupError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [isPollingEnabled, setIsPollingEnabled] = useState(true);
   
-  const intervalRef = React.useRef<number | null>(null);
+  const intervalRef = useRef<number | null>(null);
+  const errorCountRef = useRef(0);
+  const MAX_ERROR_COUNT = 3;
+  const POLL_INTERVAL = 30000; // 30 seconds - slower polling to prevent overwhelm
 
   const {
     config, 
@@ -51,6 +55,7 @@ const TelegramAdmin = () => {
     preferences,
     webhookInfo,
     isLoading,
+    isRefreshing,
     refreshData,
     updateWebhook,
     deleteWebhook,
@@ -63,8 +68,6 @@ const TelegramAdmin = () => {
   } = useTelegram();
 
   useEffect(() => {
-    refreshData();
-    
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
     if (tabParam && ['setup', 'chats', 'notifications', 'test', 'debug'].includes(tabParam)) {
@@ -75,17 +78,10 @@ const TelegramAdmin = () => {
     
     if (!webhookUrl && !config?.webhook_url) {
       setWebhookUrl(proxyUrl);
-    } else if (config?.webhook_url) {
+    } else if (config?.webhook_url && webhookUrl === "") {
       setWebhookUrl(config.webhook_url);
     }
-    
-    return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [refreshData, config, webhookUrl]);
+  }, [config, webhookUrl]);
 
   useEffect(() => {
     if (chats && chats.length > 0 && !selectedChatId) {
@@ -93,35 +89,50 @@ const TelegramAdmin = () => {
     }
   }, [chats, selectedChatId]);
 
+  const pollWebhookInfo = useCallback(async () => {
+    if (isLoadingWebhookInfo || isSaving || isRefreshing || !isPollingEnabled) {
+      return;
+    }
+    
+    try {
+      setIsLoadingWebhookInfo(true);
+      const info = await getWebhookInfo();
+      
+      if (info?.result?.last_error_message) {
+        setWebhookSetupError(info.result.last_error_message);
+      } else {
+        setWebhookSetupError(null);
+      }
+      
+      errorCountRef.current = 0;
+    } catch (error) {
+      console.error("Error polling webhook info:", error);
+      errorCountRef.current += 1;
+      
+      if (errorCountRef.current >= MAX_ERROR_COUNT) {
+        setIsPollingEnabled(false);
+        console.log("Polling paused due to consecutive errors");
+        toast.error("Webhook info polling paused due to consecutive errors. Click 'Refresh Status' to try again.");
+      }
+      
+      if (error instanceof Error) {
+        setWebhookSetupError(error.message);
+      }
+    } finally {
+      setIsLoadingWebhookInfo(false);
+    }
+  }, [getWebhookInfo, isLoadingWebhookInfo, isSaving, isRefreshing, isPollingEnabled]);
+
   useEffect(() => {
     if (intervalRef.current) {
       window.clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     
-    if (activeTab === "setup") {
-      intervalRef.current = window.setInterval(() => {
-        if (!isLoadingWebhookInfo && !isSaving) {
-          setIsLoadingWebhookInfo(true);
-          getWebhookInfo()
-            .then(info => {
-              if (info?.result?.last_error_message) {
-                setWebhookSetupError(info.result.last_error_message);
-              } else {
-                setWebhookSetupError(null);
-              }
-            })
-            .catch(error => {
-              console.error("Error fetching webhook info:", error);
-              if (error instanceof Error) {
-                setWebhookSetupError(error.message);
-              }
-            })
-            .finally(() => {
-              setIsLoadingWebhookInfo(false);
-            });
-        }
-      }, 10000);
+    if (activeTab === "setup" && isPollingEnabled) {
+      pollWebhookInfo();
+      
+      intervalRef.current = window.setInterval(pollWebhookInfo, POLL_INTERVAL);
     }
     
     return () => {
@@ -130,7 +141,7 @@ const TelegramAdmin = () => {
         intervalRef.current = null;
       }
     };
-  }, [activeTab, getWebhookInfo, isLoadingWebhookInfo, isSaving]);
+  }, [activeTab, isPollingEnabled, pollWebhookInfo]);
 
   const saveWebhookSettings = async () => {
     setIsSaving(true);
@@ -296,6 +307,9 @@ const TelegramAdmin = () => {
   };
 
   const manualRefreshWebhookInfo = async () => {
+    setIsPollingEnabled(true);
+    errorCountRef.current = 0;
+    
     if (isLoadingWebhookInfo) return;
     
     setIsLoadingWebhookInfo(true);
@@ -307,6 +321,7 @@ const TelegramAdmin = () => {
       if (info?.result?.last_error_message) {
         setWebhookSetupError(info.result.last_error_message);
       }
+      toast.success("Webhook status refreshed");
     } catch (error) {
       console.error("Error manually refreshing webhook info:", error);
       if (error instanceof Error) {
@@ -314,6 +329,7 @@ const TelegramAdmin = () => {
       } else {
         setWebhookSetupError("Unknown error fetching webhook info");
       }
+      toast.error("Failed to refresh webhook status");
     } finally {
       setIsLoadingWebhookInfo(false);
     }

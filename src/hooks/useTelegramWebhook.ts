@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { WebhookInfo } from '@/types/telegram';
 import { toast } from 'sonner';
@@ -7,14 +7,26 @@ import { toast } from 'sonner';
 export const useTelegramWebhook = () => {
   const [webhookInfo, setWebhookInfo] = useState<WebhookInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const requestInProgressRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const minFetchIntervalMs = 5000; // Minimum 5 seconds between API calls
 
   const getWebhookInfo = useCallback(async (): Promise<WebhookInfo | null> => {
-    if (isLoading) {
+    // Don't make concurrent requests
+    if (requestInProgressRef.current) {
       return webhookInfo;
     }
-    
+
+    // Rate limiting - don't fetch more often than every 5 seconds
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < minFetchIntervalMs) {
+      return webhookInfo;
+    }
+
     try {
+      requestInProgressRef.current = true;
       setIsLoading(true);
+      lastFetchTimeRef.current = now;
       
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
         body: { action: "getWebhookInfo" }
@@ -22,7 +34,6 @@ export const useTelegramWebhook = () => {
       
       if (error) {
         console.error("Error fetching webhook info:", error);
-        toast.error(`Failed to fetch webhook info: ${error.message}`);
         return null;
       }
       
@@ -34,15 +45,21 @@ export const useTelegramWebhook = () => {
       return null;
     } catch (error) {
       console.error("Error fetching webhook info:", error);
-      toast.error(`Failed to fetch webhook info: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     } finally {
       setIsLoading(false);
+      requestInProgressRef.current = false;
     }
-  }, [isLoading, webhookInfo]);
+  }, [webhookInfo]);
 
   const updateWebhook = useCallback(async (url: string, configId?: string, webhookSecret?: string | null): Promise<boolean> => {
+    if (requestInProgressRef.current) {
+      toast.error("Another operation is in progress. Please wait.");
+      return false;
+    }
+
     try {
+      requestInProgressRef.current = true;
       console.log("Setting webhook to:", url);
       
       if (!webhookSecret) {
@@ -90,11 +107,19 @@ export const useTelegramWebhook = () => {
       console.error("Error setting webhook:", error);
       toast.error(`Failed to set webhook: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
+    } finally {
+      requestInProgressRef.current = false;
     }
   }, [getWebhookInfo]);
 
   const deleteWebhook = useCallback(async (): Promise<boolean> => {
+    if (requestInProgressRef.current) {
+      toast.error("Another operation is in progress. Please wait.");
+      return false;
+    }
+
     try {
+      requestInProgressRef.current = true;
       console.log("Deleting webhook");
       
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
@@ -122,11 +147,19 @@ export const useTelegramWebhook = () => {
       console.error("Error deleting webhook:", error);
       toast.error(`Failed to delete webhook: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return false;
+    } finally {
+      requestInProgressRef.current = false;
     }
   }, [getWebhookInfo]);
 
   const setCommands = async (): Promise<any> => {
+    if (requestInProgressRef.current) {
+      toast.error("Another operation is in progress. Please wait.");
+      return { ok: false, error: "Another operation is in progress" };
+    }
+
     try {
+      requestInProgressRef.current = true;
       console.log("Setting bot commands");
       
       const { data, error } = await supabase.functions.invoke("telegram-bot-setup", {
@@ -136,14 +169,16 @@ export const useTelegramWebhook = () => {
       if (error) {
         console.error("Error setting commands:", error);
         toast.error(`Failed to set commands: ${error.message}`);
-        throw error;
+        return { ok: false, error: error.message };
       }
       
       return data;
     } catch (error) {
       console.error("Error setting commands:", error);
       toast.error(`Failed to set commands: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error;
+      return { ok: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    } finally {
+      requestInProgressRef.current = false;
     }
   };
 
