@@ -37,6 +37,7 @@ import EngineerForm from "@/pages/EngineerForm";
 import AmcTracker from "@/pages/inventory/AmcTracker";
 import Settings from "@/pages/Settings";
 import SmartAssistant from "@/pages/SmartAssistant";
+import TelegramAdmin from "@/pages/TelegramAdmin";
 // Quotation pages
 import Quotations from "@/pages/sales/Quotations";
 import QuotationForm from "@/pages/sales/QuotationForm";
@@ -119,8 +120,9 @@ const AppRoutes = () => {
         {/* Smart Assistant */}
         <Route path="/smart-assistant" element={<ProtectedRoute><SmartAssistant /></ProtectedRoute>} />
 
-        {/* Settings Route */}
+        {/* Settings Routes */}
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/telegram-admin" element={<ProtectedRoute><TelegramAdmin /></ProtectedRoute>} />
       </Route>
     </Routes>
   );
