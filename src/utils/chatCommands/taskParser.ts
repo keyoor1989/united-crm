@@ -1,12 +1,27 @@
 
 import { Command } from "../types";
-import { Task, TaskPriority, TaskDepartment, TaskStatus } from "@/types/task";
+import { Task, TaskPriority, TaskDepartment, TaskStatus, TaskType } from "@/types/task";
 import { v4 as uuidv4 } from "uuid";
+import { format } from "date-fns";
+
+// Interface for parsed task data that includes validation fields
+export interface ParsedTask extends Partial<Task> {
+  isValid: boolean;
+  missingFields: string[];
+  taskTitle?: string;
+}
+
+/**
+ * Formats a date for display in task view
+ */
+export const formatTaskTime = (date: Date): string => {
+  return format(new Date(date), "PPP");
+};
 
 /**
  * Extracts task information from a chat command
  */
-export const parseTaskCommand = (input: string): Partial<Task> | null => {
+export const parseTaskCommand = (input: string): ParsedTask => {
   try {
     // Use regex to extract task information
     const titleRegex = /title:\s*(.+?)(?=\s+description:|$)/i;
@@ -26,17 +41,28 @@ export const parseTaskCommand = (input: string): Partial<Task> | null => {
     const typeMatch = input.match(typeRegex);
     const assignedToMatch = input.match(assignedToRegex);
 
+    // Track missing fields for validation
+    const missingFields: string[] = [];
+    if (!titleMatch) missingFields.push("title");
+    if (!descriptionMatch) missingFields.push("description");
+    if (!dueMatch) missingFields.push("dueDate");
+    if (!assignedToMatch) missingFields.push("assignedTo");
+    if (!departmentMatch) missingFields.push("department");
+
     // Create task with basic information
-    const task: Partial<Task> = {
+    const parsedTask: ParsedTask = {
       title: titleMatch ? titleMatch[1].trim() : "",
       description: descriptionMatch ? descriptionMatch[1].trim() : "",
       dueDate: dueMatch ? new Date(dueMatch[1].trim()) : new Date(),
       priority: (priorityMatch ? priorityMatch[1].trim() : "Medium") as TaskPriority,
       department: (departmentMatch ? departmentMatch[1].trim() : "Admin") as TaskDepartment,
-      type: typeMatch ? typeMatch[1].trim() : "Personal",
+      type: (typeMatch ? typeMatch[1].trim() : "Personal") as TaskType,
       status: "Assigned" as TaskStatus,
       hasReminder: false,
-      attachments: []
+      attachments: [],
+      isValid: missingFields.length === 0,
+      missingFields: missingFields,
+      taskTitle: titleMatch ? titleMatch[1].trim() : ""
     };
 
     // Default: create a placeholder for assigned user
@@ -46,16 +72,60 @@ export const parseTaskCommand = (input: string): Partial<Task> | null => {
       name: assignedToMatch ? assignedToMatch[1].trim() : "Current User",
       email: "",
       role: "",
-      department: task.department || "Admin"
+      department: parsedTask.department || "Admin"
     };
 
-    task.assignedTo = defaultAssignee;
+    parsedTask.assignedTo = defaultAssignee;
 
-    return task;
+    return parsedTask;
   } catch (error) {
     console.error("Error parsing task command:", error);
-    return null;
+    return {
+      isValid: false,
+      missingFields: ["parsing_error"],
+      title: "",
+      description: "",
+      dueDate: new Date(),
+      status: "Assigned" as TaskStatus
+    };
   }
+};
+
+/**
+ * Creates a new task from a parsed task input
+ */
+export const createNewTask = (parsedTask: ParsedTask): Task => {
+  const now = new Date();
+  
+  return {
+    id: uuidv4(),
+    title: parsedTask.title || "New Task",
+    description: parsedTask.description || "",
+    assignedTo: parsedTask.assignedTo || {
+      id: "",
+      name: "Current User",
+      email: "",
+      role: "",
+      department: parsedTask.department || "Admin"
+    },
+    createdBy: {
+      id: "",
+      name: "Current User",
+      email: "",
+      role: "",
+      department: parsedTask.department || "Admin"
+    },
+    department: parsedTask.department || "Admin",
+    dueDate: parsedTask.dueDate || new Date(now.setDate(now.getDate() + 1)),
+    priority: parsedTask.priority || "Medium",
+    type: parsedTask.type || "Personal",
+    hasReminder: parsedTask.hasReminder || false,
+    branch: parsedTask.branch || "",
+    attachments: parsedTask.attachments || [],
+    status: parsedTask.status || "Assigned",
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
 };
 
 /**
@@ -68,7 +138,7 @@ export const taskCommand: Command = {
   handler: async (input: string) => {
     const task = parseTaskCommand(input);
     
-    if (!task) {
+    if (!task.isValid) {
       return {
         type: "text",
         content: "I couldn't understand the task details. Please try using the format: title: Task Name description: Task details due: date priority: Low/Medium/High department: DepartmentName type: Personal/Assigned",

@@ -769,7 +769,7 @@ Quotation Request:
             <div className="space-y-3">
               <p>I'd be happy to create a follow-up task for you. Please provide the following missing information:</p>
               <ul className="list-disc pl-5 space-y-1">
-                {parsedTask.missingFields.includes("customerName") && (
+                {parsedTask.missingFields.includes("title") && (
                   <li>Who do you need to follow up with?</li>
                 )}
                 {parsedTask.missingFields.includes("dueDate") && (
