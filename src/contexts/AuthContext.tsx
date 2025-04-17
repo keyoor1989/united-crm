@@ -30,95 +30,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkSession = async () => {
       setIsLoading(true);
       try {
+        // Listen for auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('Auth state changed:', event, session?.user?.id);
+            if (event === 'SIGNED_IN' && session) {
+              await fetchUserProfile(session.user.id);
+            } else if (event === 'SIGNED_OUT') {
+              setUser(null);
+              localStorage.removeItem("currentUser");
+            }
+          }
+        );
+
         // Check Supabase session
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          // Fetch user data from app_users table
-          const { data: userData, error } = await supabase
-            .from('app_users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (error) {
-            console.error("Error fetching user data:", error);
-            throw error;
-          }
-          
-          if (userData) {
-            const appUser: User = {
-              id: userData.id,
-              name: userData.name,
-              email: userData.email,
-              mobile: userData.mobile,
-              role: userData.role as UserRole,
-              branch: userData.branch,
-              isActive: userData.is_active,
-              hasSetPassword: userData.has_set_password,
-              createdAt: userData.created_at,
-              updatedAt: userData.updated_at
-            };
-            
-            setUser(appUser);
-          }
+          console.log('Session found, fetching user profile');
+          await fetchUserProfile(session.user.id);
         } else {
           // Fallback to localStorage for development
           const savedUser = localStorage.getItem("currentUser");
           if (savedUser) {
             setUser(JSON.parse(savedUser));
           }
+          setIsLoading(false);
         }
+
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (error) {
         console.error("Session check error:", error);
         // Clear any invalid session data
         localStorage.removeItem("currentUser");
-      } finally {
         setIsLoading(false);
       }
     };
     
     checkSession();
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          // User signed in, fetch their data
-          const { data: userData, error } = await supabase
-            .from('app_users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (!error && userData) {
-            const appUser: User = {
-              id: userData.id,
-              name: userData.name,
-              email: userData.email,
-              mobile: userData.mobile,
-              role: userData.role as UserRole,
-              branch: userData.branch,
-              isActive: userData.is_active,
-              hasSetPassword: userData.has_set_password,
-              createdAt: userData.created_at,
-              updatedAt: userData.updated_at
-            };
-            
-            setUser(appUser);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          // User signed out
-          setUser(null);
-          localStorage.removeItem("currentUser");
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      console.log('Fetching user profile for ID:', userId);
+      // Fetch user data from app_users table
+      const { data: userData, error } = await supabase
+        .from('app_users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching user data:", error);
+        setIsLoading(false);
+        throw error;
+      }
+      
+      if (userData) {
+        console.log('User profile found:', userData);
+        const appUser: User = {
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          mobile: userData.mobile,
+          role: userData.role as UserRole,
+          branch: userData.branch,
+          isActive: userData.is_active,
+          hasSetPassword: userData.has_set_password,
+          createdAt: userData.created_at,
+          updatedAt: userData.updated_at
+        };
+        
+        setUser(appUser);
+        localStorage.setItem("currentUser", JSON.stringify(appUser));
+      } else {
+        console.log('No user profile found for ID:', userId);
+      }
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false;
@@ -139,47 +134,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
+      console.log('Attempting login for:', email);
       // Try to authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw authError;
+      }
       
       if (authData.user) {
-        // Fetch user profile from app_users
-        const { data: userData, error: userError } = await supabase
-          .from('app_users')
-          .select('*')
-          .eq('id', authData.user.id)
-          .single();
-          
-        if (userError) throw userError;
-        
-        // Create User object
-        const appUser: User = {
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          mobile: userData.mobile,
-          role: userData.role as UserRole,
-          branch: userData.branch,
-          isActive: userData.is_active,
-          hasSetPassword: userData.has_set_password,
-          createdAt: userData.created_at,
-          updatedAt: userData.updated_at
-        };
-        
-        setUser(appUser);
-        localStorage.setItem("currentUser", JSON.stringify(appUser));
-        
+        console.log('Auth successful, user ID:', authData.user.id);
+        // User profile will be fetched by the onAuthStateChange handler
+        navigate("/");
         toast({
           title: "Login successful",
-          description: `Welcome back, ${appUser.name}`,
+          description: "Welcome back!",
         });
-        
-        navigate("/");
       } else {
         // Fallback to mock authentication for development
         const foundUser = mockUsers.find(u => 
@@ -201,14 +175,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         navigate("/");
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         variant: "destructive",
         title: "Login failed",
         description: error instanceof Error ? error.message : "An unknown error occurred",
       });
-      throw error;
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   };
 

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,7 +23,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -34,6 +35,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
+  const [loginError, setLoginError] = useState<string | null>(null);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -45,10 +47,15 @@ const Login: React.FC = () => {
 
   const onSubmit = async (data: FormValues) => {
     try {
+      setLoginError(null);
       await login(data.email, data.password);
     } catch (error) {
-      // Error is handled in the AuthContext
       console.error("Login failed:", error);
+      setLoginError(
+        error instanceof Error 
+          ? error.message 
+          : "Failed to login. Please check your credentials and try again."
+      );
     }
   };
 
@@ -62,6 +69,13 @@ const Login: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {loginError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{loginError}</AlertDescription>
+            </Alert>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -113,7 +127,7 @@ const Login: React.FC = () => {
         </CardContent>
         <CardFooter className="text-center text-sm text-muted-foreground">
           <p className="w-full">
-            For demo: use admin@unitedcopier.com or sales@unitedcopier.com
+            For demo: use admin@unitedcopier.com, sales@unitedcopier.com, or copierbazar@gmail.com
           </p>
         </CardFooter>
       </Card>

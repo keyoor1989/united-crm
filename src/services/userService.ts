@@ -19,19 +19,43 @@ interface CreateAppUserParams {
   user_has_set_password: boolean;
 }
 
-// Enable realtime for app_users table - Use a different approach that's compatible
-const enableRealtime = async () => {
-  try {
-    // This was causing the error - we can't use supabase_realtime.enable_subscription as an RPC
-    // Instead, we'll use the channel subscription directly when needed
-    console.log('Realtime enabled for app_users table');
-  } catch (err) {
-    console.log('Error enabling realtime:', err);
-  }
-};
+// More efficient approach to realtime subscriptions
+export const subscribeToUserChanges = (callback: (user: User) => void) => {
+  const channel = supabase
+    .channel('schema-db-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'app_users'
+      },
+      (payload) => {
+        console.log('User changes received:', payload);
+        if (payload.new) {
+          const userData = payload.new as any;
+          const user: User = {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            mobile: userData.mobile,
+            role: userData.role as UserRole,
+            branch: userData.branch,
+            isActive: userData.is_active,
+            hasSetPassword: userData.has_set_password,
+            createdAt: userData.created_at,
+            updatedAt: userData.updated_at
+          };
+          callback(user);
+        }
+      }
+    )
+    .subscribe();
 
-// Call this function to enable realtime
-enableRealtime();
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
 
 export const userService = {
   /**
@@ -69,6 +93,39 @@ export const userService = {
       createdAt: user.created_at,
       updatedAt: user.updated_at
     }));
+  },
+  
+  /**
+   * Get a single user by ID
+   */
+  async getUserById(userId: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('app_users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Record not found
+        return null;
+      }
+      console.error('Error fetching user:', error);
+      throw error;
+    }
+    
+    return {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      mobile: data.mobile,
+      role: data.role as UserRole,
+      branch: data.branch,
+      isActive: data.is_active,
+      hasSetPassword: data.has_set_password,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
   },
   
   /**
