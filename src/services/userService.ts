@@ -77,7 +77,7 @@ export const userService = {
       user_branch: user.branch,
       user_is_active: user.isActive,
       user_has_set_password: hasSetPassword
-    });
+    } as any); // Use type assertion to bypass TypeScript error until Supabase types are updated
     
     if (userError) {
       console.error('Error creating user in app_users:', userError);
