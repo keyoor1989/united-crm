@@ -1,5 +1,4 @@
 
-import { Command } from "../types";
 import { Task, TaskPriority, TaskDepartment, TaskStatus, TaskType } from "@/types/task";
 import { v4 as uuidv4 } from "uuid";
 import { format } from "date-fns";
@@ -131,7 +130,7 @@ export const createNewTask = (parsedTask: ParsedTask): Task => {
 /**
  * Command handler for creating tasks via chat
  */
-export const taskCommand: Command = {
+export const taskCommand = {
   command: "task",
   description: "Create a new task",
   exampleUsage: "/task title: Follow up with client description: Call John about the printer quote due: tomorrow priority: High department: Sales",
