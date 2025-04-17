@@ -52,15 +52,27 @@ const Login: React.FC = () => {
     try {
       setIsSubmitting(true);
       setLoginError(null);
+      
       await login(data.email, data.password);
-      // Note: We don't need to reset isSubmitting here as successful login will navigate away
+      // Successful login will redirect via AuthContext
     } catch (error) {
       console.error("Login failed:", error);
-      setLoginError(
-        error instanceof Error 
-          ? error.message 
-          : "Failed to login. Please check your credentials and try again."
-      );
+      
+      // Extract error message from various error types
+      let errorMessage = "Failed to login. Please check your credentials and try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        const anyError = error as any;
+        if (anyError.message) {
+          errorMessage = anyError.message;
+        } else if (anyError.error_description) {
+          errorMessage = anyError.error_description;
+        }
+      }
+      
+      setLoginError(errorMessage);
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -133,7 +145,7 @@ const Login: React.FC = () => {
         </CardContent>
         <CardFooter className="text-center text-sm text-muted-foreground">
           <p className="w-full">
-            For demo: use admin@unitedcopier.com, sales@unitedcopier.com, or copierbazar@gmail.com
+            For demo: use admin@unitedcopier.com, sales@unitedcopier.com, or copierbazar@gmail.com with password: 123456
           </p>
         </CardFooter>
       </Card>

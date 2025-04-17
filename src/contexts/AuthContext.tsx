@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (event, session) => {
             console.log('Auth state changed:', event, session?.user?.id);
             if (event === 'SIGNED_IN' && session) {
-              // Don't await here - we'll use setTimeout to avoid recursive auth state changes
+              // Use setTimeout to avoid recursion in auth state changes
               setTimeout(() => {
                 fetchUserProfile(session.user.id);
               }, 0);
@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('app_users')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
       if (error) {
         console.error("Error fetching user data:", error);
