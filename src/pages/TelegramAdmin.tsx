@@ -55,6 +55,7 @@ const TelegramAdmin = () => {
     webhookInfo,
     isLoading,
     isRefreshing,
+    isLoadingWebhookInfo,
     refreshData,
     updateWebhook,
     deleteWebhook,

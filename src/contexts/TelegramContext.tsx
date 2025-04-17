@@ -12,6 +12,7 @@ interface TelegramContextType {
   webhookInfo: WebhookInfo | null;
   isLoading: boolean;
   isRefreshing: boolean;
+  isLoadingWebhookInfo: boolean;
   refreshData: (force?: boolean) => Promise<void>;
   updateWebhook: (url: string) => Promise<boolean>;
   deleteWebhook: () => Promise<boolean>;
@@ -107,6 +108,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     webhookInfo: telegramWebhook.webhookInfo,
     isLoading,
     isRefreshing,
+    isLoadingWebhookInfo: telegramWebhook.isLoading,
     refreshData,
     updateWebhook: (url: string) => telegramWebhook.updateWebhook(url, telegramConfig.config?.id),
     deleteWebhook: telegramWebhook.deleteWebhook,
