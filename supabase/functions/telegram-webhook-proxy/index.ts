@@ -31,9 +31,6 @@ serve(async (req) => {
     // Create Supabase client
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Log all request headers for debugging
-    console.log("Request headers:", Object.fromEntries([...req.headers.entries()]));
-
     // Check for debug request first - used by the admin panel to test connection
     try {
       const clonedReq = req.clone();
@@ -57,106 +54,76 @@ serve(async (req) => {
       // Not a JSON body or no debug request, continue with normal processing
     }
     
-    try {
-      // Get the current webhook secret from database - explicitly request without caching
-      console.log("Fetching webhook secret from database");
-      const { data: configData, error: configError } = await supabase
-        .from('telegram_config')
-        .select('webhook_secret, webhook_url')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    // Get the current webhook secret from database
+    console.log("Fetching webhook secret from database");
+    const { data: configData, error: configError } = await supabase
+      .from('telegram_config')
+      .select('webhook_secret, webhook_url')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    if (configError) {
+      console.error("Error fetching webhook secret from database:", configError);
+      // Continue processing even if we can't get the secret - we'll just skip validation
+    }
+    
+    // Get the secret token from the database
+    const telegramSecretToken = configData?.webhook_secret || '';
+    
+    // Validate the secret token from the request header
+    const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
+    
+    // Debug logging (without exposing full secrets)
+    const secretHeaderPrefix = secretHeader ? secretHeader.substring(0, 3) + '...' : '[MISSING]';
+    const tokenPrefix = telegramSecretToken ? telegramSecretToken.substring(0, 3) + '...' : '[NOT SET]';
+    console.log(`Webhook verification: Header=${secretHeaderPrefix}, DB Token=${tokenPrefix}`);
+    
+    // For development mode detection
+    const isDevelopment = Deno.env.get('ENVIRONMENT') === 'development';
+    
+    // Skip validation if:
+    // 1. No secret token is set in the database (meaning first-time setup)
+    // 2. We're in development mode (for testing)
+    const skipValidation = !telegramSecretToken || isDevelopment;
+    
+    if (!skipValidation && secretHeader !== telegramSecretToken) {
+      console.error(`Token validation failed: header length=${secretHeader?.length || 0}, db token length=${telegramSecretToken.length}`);
       
-      if (configError) {
-        console.error("Error fetching webhook secret from database:", configError);
-        return new Response(
-          JSON.stringify({ status: "error", message: "Failed to retrieve webhook configuration" }), 
-          { 
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+      try {
+        await supabase
+          .from('telegram_message_logs')
+          .insert({
+            chat_id: "system",
+            message_text: `Token validation failed. Received token does not match stored token.`,
+            message_type: "webhook_error",
+            direction: "incoming",
+            processed_status: "unauthorized"
+          });
+      } catch (logErr) {
+        console.error("Failed to log token validation error:", logErr);
       }
       
-      // Get the secret token from the database
-      const telegramSecretToken = configData?.webhook_secret || '';
-      
-      // Validate the secret token from the request header
-      const secretHeader = req.headers.get('X-Telegram-Bot-Api-Secret-Token');
-      
-      // DETAILED DEBUG LOGGING - first characters only for security
-      console.log("==================== TOKEN VALIDATION DEBUG ====================");
-      console.log(`Received header: ${secretHeader ? secretHeader.substring(0, 10) + '...' : '[MISSING]'}`);
-      console.log(`Database token: ${telegramSecretToken ? telegramSecretToken.substring(0, 10) + '...' : '[NOT SET]'}`);
-      console.log(`Header length: ${secretHeader ? secretHeader.length : 0}, DB token length: ${telegramSecretToken ? telegramSecretToken.length : 0}`);
-      console.log(`Tokens match: ${secretHeader === telegramSecretToken ? 'YES' : 'NO'}`);
-      console.log("================================================================");
-      
-      if (telegramSecretToken && secretHeader !== telegramSecretToken) {
-        console.error(`SECRET TOKEN VALIDATION FAILED!`);
-        console.error(`Received token (first 10 chars): ${secretHeader ? secretHeader.substring(0, 10) + '...' : '[NONE]'}`);
-        console.error(`Expected token (first 10 chars): ${telegramSecretToken.substring(0, 10) + '...'}`);
-        console.error(`Header length: ${secretHeader ? secretHeader.length : 0}, DB token length: ${telegramSecretToken.length}`);
-        
-        // For deep debugging, log all the hex codes of the first several characters
-        if (secretHeader && telegramSecretToken) {
-          const headerChars = secretHeader.substring(0, 20).split('').map(c => c.charCodeAt(0).toString(16)).join(' ');
-          const dbChars = telegramSecretToken.substring(0, 20).split('').map(c => c.charCodeAt(0).toString(16)).join(' ');
-          console.error(`Header hex: ${headerChars}`);
-          console.error(`DB hex: ${dbChars}`);
+      return new Response(
+        JSON.stringify({ status: "error", message: "Unauthorized - Secret token validation failed" }), 
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
-        
-        // Log the failing request for debugging
-        try {
-          const requestBody = await req.clone().text();
-          console.error("Request body that failed validation:", requestBody.substring(0, 500));
-        } catch (e) {
-          console.error("Could not log request body:", e);
-        }
-        
-        // Try to log the invalid token to the database for debugging
-        try {
-          await supabase
-            .from('telegram_message_logs')
-            .insert({
-              chat_id: "system",
-              message_text: `Token validation failed. Received: ${secretHeader ? secretHeader.substring(0, 10) + '...' : '[NONE]'}, Expected: ${telegramSecretToken.substring(0, 10) + '...'}`,
-              message_type: "webhook_error",
-              direction: "incoming",
-              processed_status: "unauthorized"
-            });
-        } catch (logErr) {
-          console.error("Failed to log token validation error:", logErr);
-        }
-        
-        // When in development, allow without token for testing
-        const isDevelopment = Deno.env.get('ENVIRONMENT') === 'development';
-        if (isDevelopment) {
-          console.warn("Development mode: Proceeding despite token mismatch");
-        } else {
-          return new Response(
-            JSON.stringify({ status: "error", message: "Unauthorized - Secret token validation failed" }), 
-            { 
-              status: 401,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            }
-          );
-        }
-      } else if (!telegramSecretToken) {
-        console.warn("No webhook secret found in database, skipping validation");
-      } else {
-        console.log("Secret token validation successful");
-      }
-    } catch (dbError) {
-      console.error("Exception during token validation:", dbError);
-      // Continue processing even on validation error - this is critical
+      );
+    }
+    
+    if (skipValidation) {
+      console.log("Skipping token validation due to missing secret or development mode");
+    } else {
+      console.log("Secret token validation successful");
     }
     
     // Parse the webhook update from Telegram
     let update;
     try {
       update = await req.json();
-      console.log("Received webhook update:", JSON.stringify(update).substring(0, 200) + "...");
+      console.log("Received webhook update");
     } catch (e) {
       console.error("Error parsing webhook JSON:", e);
       return new Response(
@@ -196,21 +163,6 @@ serve(async (req) => {
       if (webhookResponse.error) {
         console.error("Error forwarding webhook to handler:", webhookResponse.error);
         
-        // Log the error
-        try {
-          await supabase
-            .from('telegram_message_logs')
-            .insert({
-              chat_id: update?.message?.chat?.id?.toString() || update?.edited_message?.chat?.id?.toString() || "unknown",
-              message_text: `Error forwarding webhook: ${JSON.stringify(webhookResponse.error)}`,
-              message_type: "webhook_error",
-              direction: "internal",
-              processed_status: "error"
-            });
-        } catch (logErr) {
-          console.error("Failed to log error:", logErr);
-        }
-        
         return new Response(
           JSON.stringify({ status: "error", message: "Error processing webhook" }), 
           { 
@@ -230,21 +182,6 @@ serve(async (req) => {
     } catch (e) {
       console.error("Exception forwarding webhook:", e);
       
-      // Log the error
-      try {
-        await supabase
-          .from('telegram_message_logs')
-          .insert({
-            chat_id: update?.message?.chat?.id?.toString() || update?.edited_message?.chat?.id?.toString() || "unknown",
-            message_text: `Exception forwarding webhook: ${e.message}`,
-            message_type: "webhook_error",
-            direction: "internal",
-            processed_status: "error"
-          });
-      } catch (logErr) {
-        console.error("Failed to log error:", logErr);
-      }
-      
       return new Response(
         JSON.stringify({ status: "error", message: "Error forwarding webhook" }), 
         { 
@@ -256,11 +193,11 @@ serve(async (req) => {
   } catch (e) {
     console.error("Unhandled exception in webhook proxy:", e);
     return new Response(
-      JSON.stringify({ status: "error", message: "Unhandled exception", error: e.message, stack: e.stack }), 
+      JSON.stringify({ status: "error", message: "Unhandled exception" }), 
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+      }
     );
   }
 });

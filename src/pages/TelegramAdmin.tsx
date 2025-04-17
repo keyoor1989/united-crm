@@ -39,15 +39,14 @@ const TelegramAdmin = () => {
   const [testMessage, setTestMessage] = useState("");
   const [selectedChatId, setSelectedChatId] = useState("");
   const [isSendingTest, setIsSendingTest] = useState(false);
-  const [isLoadingWebhookInfo, setIsLoadingWebhookInfo] = useState(false);
   const [webhookSetupError, setWebhookSetupError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [isPollingEnabled, setIsPollingEnabled] = useState(true);
   
-  const intervalRef = useRef<number | null>(null);
+  const pollIntervalRef = useRef<number | null>(null);
   const errorCountRef = useRef(0);
   const MAX_ERROR_COUNT = 3;
-  const POLL_INTERVAL = 30000; // 30 seconds - slower polling to prevent overwhelm
+  const POLL_INTERVAL = 30000; // 30 seconds
 
   const {
     config, 
@@ -74,12 +73,10 @@ const TelegramAdmin = () => {
       setActiveTab(tabParam);
     }
     
-    const proxyUrl = "https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy";
-    
-    if (!webhookUrl && !config?.webhook_url) {
-      setWebhookUrl(proxyUrl);
-    } else if (config?.webhook_url && webhookUrl === "") {
+    if (config?.webhook_url && webhookUrl === "") {
       setWebhookUrl(config.webhook_url);
+    } else if (!webhookUrl && !config?.webhook_url) {
+      setWebhookUrl("https://klieshkrqryigtqtshka.supabase.co/functions/v1/telegram-webhook-proxy");
     }
   }, [config, webhookUrl]);
 
@@ -90,12 +87,23 @@ const TelegramAdmin = () => {
   }, [chats, selectedChatId]);
 
   const pollWebhookInfo = useCallback(async () => {
-    if (isLoadingWebhookInfo || isSaving || isRefreshing || !isPollingEnabled) {
+    if (isRefreshing) {
+      console.log("Skipping webhook poll - app is refreshing data");
+      return;
+    }
+    
+    if (activeTab !== "setup") {
+      console.log("Skipping webhook poll - not on setup tab");
+      return;
+    }
+    
+    if (!isPollingEnabled) {
+      console.log("Webhook polling disabled");
       return;
     }
     
     try {
-      setIsLoadingWebhookInfo(true);
+      console.log("Polling webhook info...");
       const info = await getWebhookInfo();
       
       if (info?.result?.last_error_message) {
@@ -118,32 +126,32 @@ const TelegramAdmin = () => {
       if (error instanceof Error) {
         setWebhookSetupError(error.message);
       }
-    } finally {
-      setIsLoadingWebhookInfo(false);
     }
-  }, [getWebhookInfo, isLoadingWebhookInfo, isSaving, isRefreshing, isPollingEnabled]);
+  }, [getWebhookInfo, activeTab, isPollingEnabled, isRefreshing]);
 
   useEffect(() => {
-    if (intervalRef.current) {
-      window.clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (pollIntervalRef.current) {
+      window.clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
     
     if (activeTab === "setup" && isPollingEnabled) {
       pollWebhookInfo();
       
-      intervalRef.current = window.setInterval(pollWebhookInfo, POLL_INTERVAL);
+      pollIntervalRef.current = window.setInterval(pollWebhookInfo, POLL_INTERVAL);
     }
     
     return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (pollIntervalRef.current) {
+        window.clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
       }
     };
   }, [activeTab, isPollingEnabled, pollWebhookInfo]);
 
   const saveWebhookSettings = async () => {
+    if (isSaving) return;
+    
     setIsSaving(true);
     setWebhookSetupError(null);
     
@@ -152,11 +160,16 @@ const TelegramAdmin = () => {
       
       if (success) {
         toast.success("Webhook configured successfully");
-        const info = await getWebhookInfo();
         
-        if (info?.result?.last_error_message) {
-          setWebhookSetupError(info.result.last_error_message);
-          toast.warning("Webhook set but has errors. See details below.");
+        try {
+          const info = await getWebhookInfo();
+          
+          if (info?.result?.last_error_message) {
+            setWebhookSetupError(info.result.last_error_message);
+            toast.warning("Webhook set but has errors. See details below.");
+          }
+        } catch (infoError) {
+          console.error("Error getting webhook info after update:", infoError);
         }
       } else {
         toast.error("Failed to set webhook");
@@ -176,6 +189,8 @@ const TelegramAdmin = () => {
   };
 
   const handleDeleteWebhook = async () => {
+    if (isSaving) return;
+    
     setIsSaving(true);
     setWebhookSetupError(null);
     
@@ -185,7 +200,12 @@ const TelegramAdmin = () => {
       if (success) {
         setWebhookUrl("");
         toast.success("Webhook deleted successfully");
-        await getWebhookInfo();
+        
+        try {
+          await getWebhookInfo();
+        } catch (infoError) {
+          console.error("Error getting webhook info after delete:", infoError);
+        }
       } else {
         toast.error("Failed to delete webhook");
         setWebhookSetupError("Failed to delete webhook. Check console for details.");
@@ -202,6 +222,8 @@ const TelegramAdmin = () => {
   };
 
   const handleSetCommands = async () => {
+    if (isSettingCommands) return;
+    
     setIsSettingCommands(true);
     try {
       const data = await setCommands();
@@ -221,7 +243,7 @@ const TelegramAdmin = () => {
   };
 
   const handleAddAuthorizedChat = async () => {
-    if (!newChatId) {
+    if (!newChatId || isAddingChat) {
       toast.error("Please enter a Chat ID");
       return;
     }
@@ -283,7 +305,7 @@ const TelegramAdmin = () => {
   };
 
   const handleSendTestMessage = async () => {
-    if (!testMessage || !selectedChatId) {
+    if (!testMessage || !selectedChatId || isSendingTest) {
       toast.error("Please enter a message and select a chat");
       return;
     }
@@ -310,16 +332,13 @@ const TelegramAdmin = () => {
     setIsPollingEnabled(true);
     errorCountRef.current = 0;
     
-    if (isLoadingWebhookInfo) return;
-    
-    setIsLoadingWebhookInfo(true);
-    setWebhookSetupError(null);
-    
     try {
       const info = await getWebhookInfo();
       
       if (info?.result?.last_error_message) {
         setWebhookSetupError(info.result.last_error_message);
+      } else {
+        setWebhookSetupError(null);
       }
       toast.success("Webhook status refreshed");
     } catch (error) {
@@ -330,12 +349,12 @@ const TelegramAdmin = () => {
         setWebhookSetupError("Unknown error fetching webhook info");
       }
       toast.error("Failed to refresh webhook status");
-    } finally {
-      setIsLoadingWebhookInfo(false);
     }
   };
 
   const fetchDebugInfo = async () => {
+    if (debugInfo?.loading) return;
+    
     try {
       setDebugInfo({ loading: true });
       

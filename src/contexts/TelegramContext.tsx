@@ -12,7 +12,7 @@ interface TelegramContextType {
   webhookInfo: WebhookInfo | null;
   isLoading: boolean;
   isRefreshing: boolean;
-  refreshData: () => Promise<void>;
+  refreshData: (force?: boolean) => Promise<void>;
   updateWebhook: (url: string) => Promise<boolean>;
   deleteWebhook: () => Promise<boolean>;
   addAuthorizedChat: (chatId: string, chatName: string) => Promise<boolean>;
@@ -33,24 +33,55 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
+  const refreshTimeoutId = React.useRef<number | null>(null);
+  
   const telegramConfig = useTelegramConfig();
   const telegramChats = useTelegramChats();
   const telegramWebhook = useTelegramWebhook();
 
-  const refreshData = useCallback(async () => {
-    if (isRefreshing) return;
+  // Cleanup function for timers when component unmounts
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutId.current) {
+        window.clearTimeout(refreshTimeoutId.current);
+        refreshTimeoutId.current = null;
+      }
+      
+      // Cleanup any in-progress webhook requests
+      telegramWebhook.cleanup();
+    };
+  }, [telegramWebhook]);
+  
+  const refreshData = useCallback(async (force = false) => {
+    // Prevent concurrent refreshes
+    if (isRefreshing && !force) return;
+    
+    // Implement rate limiting - don't refresh more often than every 5 seconds unless forced
+    const now = Date.now();
+    if (now - lastRefreshTime < 5000 && !force) {
+      console.log("Skipping refresh - too soon since last refresh");
+      return;
+    }
     
     try {
       setIsRefreshing(true);
+      setLastRefreshTime(now);
       
       if (!initialLoadComplete) {
         setIsLoading(true);
       }
       
+      // Load config first
       await telegramConfig.loadConfig();
-      await telegramChats.loadChats();
       
+      // Then chats
       if (telegramConfig.config) {
+        await telegramChats.loadChats();
+      }
+      
+      // Then webhook info (only if on the setup tab)
+      if (telegramConfig.config && window.location.hash.includes('setup')) {
         await telegramWebhook.getWebhookInfo();
       }
       
@@ -61,11 +92,11 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsRefreshing(false);
       setIsLoading(false);
     }
-  }, [initialLoadComplete, isRefreshing, telegramConfig, telegramChats, telegramWebhook]);
+  }, [initialLoadComplete, isRefreshing, lastRefreshTime, telegramConfig, telegramChats, telegramWebhook]);
 
   useEffect(() => {
     if (!initialLoadComplete) {
-      refreshData();
+      refreshData(true);
     }
   }, [initialLoadComplete, refreshData]);
 
@@ -77,7 +108,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     isLoading,
     isRefreshing,
     refreshData,
-    updateWebhook: (url: string) => telegramWebhook.updateWebhook(url, telegramConfig.config?.id, telegramConfig.config?.webhook_secret),
+    updateWebhook: (url: string) => telegramWebhook.updateWebhook(url, telegramConfig.config?.id),
     deleteWebhook: telegramWebhook.deleteWebhook,
     addAuthorizedChat: telegramChats.addAuthorizedChat,
     toggleChatStatus: telegramChats.toggleChatStatus,
