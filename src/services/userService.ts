@@ -31,6 +31,7 @@ export const userService = {
       role: user.role as UserRole, // Cast the role to UserRole
       branch: user.branch,
       isActive: user.is_active,
+      hasSetPassword: user.has_set_password,
       createdAt: user.created_at,
       updatedAt: user.updated_at
     }));
@@ -58,25 +59,25 @@ export const userService = {
       console.error('Error creating user in auth system:', authError);
       throw authError;
     }
+
+    if (!authData.user) {
+      throw new Error('Failed to create auth user, no user data returned');
+    }
     
     // Determine has_set_password value based on whether password was provided
     const hasSetPassword = !!user.password && user.password.length >= 8;
     
-    // Now create the app_user record
-    const { data: userData, error: userError } = await supabase
-      .from('app_users')
-      .insert({
-        id: authData.user?.id, // Use the ID from the auth user
-        name: user.name,
-        email: user.email,
-        mobile: user.mobile,
-        role: user.role,
-        branch: user.branch,
-        is_active: user.isActive,
-        has_set_password: hasSetPassword
-      })
-      .select()
-      .single();
+    // Create the app_user record using service role to bypass RLS
+    const { data: userData, error: userError } = await supabase.rpc('create_app_user', {
+      user_id: authData.user.id,
+      user_name: user.name,
+      user_email: user.email,
+      user_mobile: user.mobile,
+      user_role: user.role,
+      user_branch: user.branch,
+      user_is_active: user.isActive,
+      user_has_set_password: hasSetPassword
+    });
     
     if (userError) {
       console.error('Error creating user in app_users:', userError);
@@ -84,15 +85,16 @@ export const userService = {
     }
     
     return {
-      id: userData.id,
-      name: userData.name,
-      email: userData.email,
-      mobile: userData.mobile,
-      role: userData.role as UserRole,
-      branch: userData.branch,
-      isActive: userData.is_active,
-      createdAt: userData.created_at,
-      updatedAt: userData.updated_at
+      id: authData.user.id,
+      name: user.name,
+      email: user.email,
+      mobile: user.mobile,
+      role: user.role as UserRole,
+      branch: user.branch,
+      isActive: user.isActive,
+      hasSetPassword: hasSetPassword,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
   },
   
@@ -129,6 +131,7 @@ export const userService = {
       role: data.role as UserRole,
       branch: data.branch,
       isActive: data.is_active,
+      hasSetPassword: data.has_set_password,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     };
