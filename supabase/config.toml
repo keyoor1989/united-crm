@@ -8,3 +8,5 @@ verify_jwt = false
 [functions.telegram-process-command]
 verify_jwt = false
 
+[functions.telegram-send-message]
+verify_jwt = false
