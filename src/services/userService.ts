@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { User, UserRole } from "@/types/auth";
 
@@ -23,6 +24,14 @@ export const userService = {
    * Get all users
    */
   async getUsers(): Promise<User[]> {
+    // Get the current session to see if the user is authenticated
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      console.error('User not authenticated');
+      throw new Error('Authentication required to fetch users');
+    }
+    
+    // Fetch users from app_users table
     const { data, error } = await supabase
       .from('app_users')
       .select('*')

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { 
   User as UserIcon, 
@@ -14,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import UserFormDialog from "./UserFormDialog";
 import UserTable from "./UserTable";
 import UserRolesInfo from "./UserRolesInfo";
+import { supabase } from "@/integrations/supabase/client";
 
 const UserManagement: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -27,12 +29,34 @@ const UserManagement: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    
+    // Set up a subscription to user changes
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'app_users'
+        },
+        (payload) => {
+          console.log('User data changed:', payload);
+          fetchUsers(); // Refresh users when data changes
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
       const fetchedUsers = await userService.getUsers();
+      console.log('Fetched users:', fetchedUsers);
       setUsers(fetchedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
