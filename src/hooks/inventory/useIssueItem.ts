@@ -88,12 +88,13 @@ export const useIssueItem = () => {
       // Invalidate relevant queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
       queryClient.invalidateQueries({ queryKey: ['engineer_inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['sales_inventory_items'] });
       
-      toast.success("Item issued successfully");
+      toast.success("Inventory updated successfully");
     },
     onError: (error) => {
       console.error('Error issuing item:', error);
-      toast.error("Failed to issue item. Please try again.");
+      toast.error("Failed to update inventory. Please try again.");
     }
   });
 };

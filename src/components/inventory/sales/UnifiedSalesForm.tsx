@@ -12,6 +12,7 @@ import { GstHandlingSection, GstMode } from "./components/GstHandlingSection";
 import { CustomerType } from "@/types/customer";
 import { SalesItem } from "./SalesTable";
 import { useSalesInventoryItems } from "@/hooks/inventory/useSalesInventoryItems";
+import { useIssueItem } from "@/hooks/inventory/useIssueItem";
 
 interface UnifiedSalesFormProps {
   open: boolean;
@@ -59,6 +60,7 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   const [isScanning, setIsScanning] = useState(false);
   
   const { data: inventoryItems = [], isLoading: isLoadingItems } = useSalesInventoryItems();
+  const { mutateAsync: issueItemFromInventory } = useIssueItem();
   
   const [gstMode, setGstMode] = useState<GstMode>('exclusive');
   const [gstRate, setGstRate] = useState(18);
@@ -201,7 +203,7 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     toast.success(`Customer "${customer.name}" selected`);
   };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!customerName) {
       toast.error("Please enter customer name");
       return;
@@ -233,10 +235,35 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       dueDate: isCredit ? dueDate : undefined,
     };
     
-    onSaveSale(newSale);
-    toast.success(`Sale created with ${items.length} items`);
-    onClose();
-    resetForm();
+    try {
+      const deductionPromises = items.map(item => {
+        const inventoryItem = inventoryItems.find(invItem => invItem.id === item.id);
+        if (inventoryItem) {
+          return issueItemFromInventory({
+            itemId: item.id,
+            engineerId: "sales-system",
+            engineerName: "Sales System",
+            itemName: item.itemName,
+            quantity: item.quantity,
+            warehouseId: null,
+            warehouseName: null,
+            modelNumber: null,
+            modelBrand: null
+          });
+        }
+        return Promise.resolve();
+      });
+      
+      await Promise.all(deductionPromises);
+      
+      onSaveSale(newSale);
+      toast.success(`Sale created with ${items.length} items`);
+      onClose();
+      resetForm();
+    } catch (error) {
+      console.error("Error deducting inventory:", error);
+      toast.error("Failed to update inventory. Please try again.");
+    }
   };
 
   return (
