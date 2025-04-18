@@ -33,16 +33,24 @@ interface ItemHistoryDialogProps {
 }
 
 export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryDialogProps) => {
-  // Query for engineer assignments with exact matching
+  // Query for engineer assignments using full_item_name
   const { data: engineerAssignments } = useQuery({
     queryKey: ['engineer_assignments', itemName],
     queryFn: async () => {
       if (!itemName) return [];
       
+      const { data: stockEntry } = await supabase
+        .from('opening_stock_entries')
+        .select('full_item_name')
+        .eq('part_name', itemName)
+        .single();
+      
+      if (!stockEntry) return [];
+      
       const { data, error } = await supabase
         .from('engineer_inventory')
         .select('*')
-        .eq('item_name', itemName)  // Use exact match
+        .eq('item_name', stockEntry.full_item_name)
         .order('assigned_date', { ascending: false });
       
       if (error) {
@@ -55,18 +63,25 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for sales history with exact matching
-  const { data: salesHistory, isLoading: isSalesLoading, error: salesError } = useQuery({
+  // Query for sales history using full_item_name
+  const { data: salesHistory } = useQuery({
     queryKey: ['sales_history', itemName],
     queryFn: async () => {
       if (!itemName) return [];
-      console.log('Fetching sales history for item:', itemName);
       
-      // First find all sales_items that match our item name exactly
+      const { data: stockEntry } = await supabase
+        .from('opening_stock_entries')
+        .select('full_item_name')
+        .eq('part_name', itemName)
+        .single();
+      
+      if (!stockEntry) return [];
+      
+      // First find all sales_items that match our item name
       const { data: salesItemsData, error: salesItemsError } = await supabase
         .from('sales_items')
         .select('id, sale_id, item_name, quantity, unit_price, total, category')
-        .eq('item_name', itemName);  // Use exact match
+        .eq('item_name', stockEntry.full_item_name);
       
       if (salesItemsError) {
         console.error("Error fetching sales items:", salesItemsError);
@@ -106,15 +121,24 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for returns history with exact matching
+  // Query for returns history using full_item_name
   const { data: returnsHistory } = useQuery({
     queryKey: ['returns_history', itemName],
     queryFn: async () => {
       if (!itemName) return [];
+      
+      const { data: stockEntry } = await supabase
+        .from('opening_stock_entries')
+        .select('full_item_name')
+        .eq('part_name', itemName)
+        .single();
+      
+      if (!stockEntry) return [];
+      
       const { data, error } = await supabase
         .from('inventory_returns')
         .select('*')
-        .eq('item_name', itemName)  // Use exact match
+        .eq('item_name', stockEntry.full_item_name)
         .order('return_date', { ascending: false });
       
       if (error) throw error;
@@ -132,7 +156,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       const { data, error } = await supabase
         .from('purchase_orders')
         .select('*')
-        .contains('items', [{ item_name: itemName }])  // Exact match in JSON array
+        .contains('items', [{ item_name: itemName }])
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -141,7 +165,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       const purchases = data?.map(po => {
         const itemsArray = typeof po.items === 'string' ? JSON.parse(po.items) : po.items;
         const itemDetails = Array.isArray(itemsArray) 
-          ? itemsArray.find((item: any) => item.item_name === itemName)  // Exact match
+          ? itemsArray.find((item: any) => item.item_name === itemName)
           : null;
           
         if (!itemDetails) return null;

@@ -919,6 +919,7 @@ export type Database = {
           compatible_models: Json | null
           created_at: string
           created_by: string | null
+          full_item_name: string | null
           id: string
           min_stock: number
           part_name: string
@@ -934,6 +935,7 @@ export type Database = {
           compatible_models?: Json | null
           created_at?: string
           created_by?: string | null
+          full_item_name?: string | null
           id?: string
           min_stock?: number
           part_name: string
@@ -949,6 +951,7 @@ export type Database = {
           compatible_models?: Json | null
           created_at?: string
           created_by?: string | null
+          full_item_name?: string | null
           id?: string
           min_stock?: number
           part_name?: string
