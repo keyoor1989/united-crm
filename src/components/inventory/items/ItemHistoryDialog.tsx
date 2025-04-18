@@ -52,25 +52,60 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for sales history - Fixed by removing created_at sorting and using sales table's date field
+  // Query for sales history - Completely rewritten query
   const { data: salesHistory, isLoading: isSalesLoading, error: salesError } = useQuery({
     queryKey: ['sales_history', itemName],
     queryFn: async () => {
       if (!itemName) return [];
       console.log('Fetching sales history for item:', itemName);
       
-      const { data, error } = await supabase
+      // First find all sales_items that match our item name
+      const { data: salesItemsData, error: salesItemsError } = await supabase
         .from('sales_items')
-        .select('*, sales!inner(id, date, customer_name, status)')
+        .select('id, sale_id, item_name, quantity, unit_price, total')
         .eq('item_name', itemName);
       
-      if (error) {
-        console.error("Error fetching sales history:", error);
-        throw error;
+      if (salesItemsError) {
+        console.error("Error fetching sales items:", salesItemsError);
+        throw salesItemsError;
       }
       
-      console.log('Sales history data:', data);
-      return data || [];
+      if (!salesItemsData || salesItemsData.length === 0) {
+        console.log('No sales items found for:', itemName);
+        return [];
+      }
+      
+      console.log('Found sales items:', salesItemsData);
+      
+      // Extract all sale_ids to fetch the corresponding sales records
+      const saleIds = salesItemsData.map(item => item.sale_id);
+      
+      // Fetch the sales records
+      const { data: salesData, error: salesError } = await supabase
+        .from('sales')
+        .select('id, date, customer_name, status, payment_status')
+        .in('id', saleIds);
+      
+      if (salesError) {
+        console.error("Error fetching sales:", salesError);
+        throw salesError;
+      }
+      
+      // Combine the data from both tables
+      const combinedData = salesItemsData.map(item => {
+        const saleRecord = salesData.find(sale => sale.id === item.sale_id);
+        return {
+          id: item.id,
+          item_name: item.item_name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: item.total,
+          sales: saleRecord || { date: null, customer_name: 'Unknown', status: 'unknown' }
+        };
+      });
+      
+      console.log('Combined sales history data:', combinedData);
+      return combinedData;
     },
     enabled: !!itemName
   });
@@ -135,10 +170,11 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
   if (!itemName) return null;
 
   const formatDate = (date: string) => {
+    if (!date) return 'N/A';
     try {
       return format(new Date(date), 'dd MMM yyyy');
     } catch (e) {
-      return date;
+      return date || 'N/A';
     }
   };
 
@@ -257,7 +293,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
                       {salesHistory && salesHistory.length > 0 ? (
                         salesHistory.map((sale) => (
                           <TableRow key={sale.id}>
-                            <TableCell>{formatDate(sale.sales?.date || '')}</TableCell>
+                            <TableCell>{formatDate(sale.sales?.date)}</TableCell>
                             <TableCell>{sale.sales?.customer_name || 'Unknown'}</TableCell>
                             <TableCell>{sale.quantity}</TableCell>
                             <TableCell>₹{sale.unit_price}</TableCell>
