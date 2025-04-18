@@ -1,19 +1,21 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 
 // Import components
 import { SalesHeader } from "@/components/inventory/sales/SalesHeader";
 import { SalesFilters } from "@/components/inventory/sales/SalesFilters";
 import { SalesTable, SalesItem } from "@/components/inventory/sales/SalesTable";
-import { NewSaleDialog } from "@/components/inventory/sales/NewSaleDialog";
+import { UnifiedSalesForm } from "@/components/inventory/sales/UnifiedSalesForm";
 import { SaleDetailsDialog } from "@/components/inventory/sales/SaleDetailsDialog";
 import { RecordPaymentDialog } from "@/components/inventory/sales/RecordPaymentDialog";
 import { useSalesManagement } from "@/components/inventory/sales/hooks/useSalesManagement";
+import { CustomerTypeChart } from "@/components/inventory/sales/charts/CustomerTypeChart";
+import { PaymentMethodChart } from "@/components/inventory/sales/charts/PaymentMethodChart";
 
 // Payment method data
 import { 
@@ -28,10 +30,10 @@ import {
 
 const paymentMethods = [
   { value: "Cash", label: "Cash", icon: Wallet },
+  { value: "Credit", label: "Credit (Due Payment)", icon: Calendar },
   { value: "Credit Card", label: "Credit Card", icon: CreditCard },
   { value: "Bank Transfer", label: "Bank Transfer", icon: Building2 },
   { value: "UPI", label: "UPI", icon: IndianRupee },
-  { value: "Credit", label: "Credit (Due Payment)", icon: Calendar },
   { value: "Cheque", label: "Cheque", icon: BanknoteIcon },
   { value: "Online", label: "Online Payment", icon: CheckSquare },
 ];
@@ -54,6 +56,7 @@ const productCategories = [
 const InventorySales = () => {
   // Use the custom hook to manage sales state and operations
   const {
+    salesData,
     filteredSalesData,
     loading,
     searchQuery,
@@ -76,6 +79,7 @@ const InventorySales = () => {
   const [isSaleDetailsDialogOpen, setIsSaleDetailsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<SalesItem | null>(null);
+  const [activeTab, setActiveTab] = useState("sales");
 
   // Handle view details
   const handleViewDetails = (sale: SalesItem) => {
@@ -116,13 +120,21 @@ const InventorySales = () => {
       />
 
       {/* Main content */}
-      <Tabs defaultValue="sales" className="w-full">
+      <Tabs 
+        defaultValue="sales" 
+        value={activeTab} 
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
         <TabsList>
           <TabsTrigger value="sales" className="gap-2">
             <ShoppingBag size={16} />
-            Sales
+            Sales List
           </TabsTrigger>
-          {/* Additional tabs can be added here */}
+          <TabsTrigger value="analytics" className="gap-2">
+            <BarChart3 size={16} />
+            Analytics
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales" className="space-y-4 mt-4">
@@ -159,10 +171,38 @@ const InventorySales = () => {
             </CardContent>
           </Card>
         </TabsContent>
+        
+        <TabsContent value="analytics" className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sales by Customer Type</CardTitle>
+                <CardDescription>
+                  Distribution of sales across different customer types
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-80">
+                <CustomerTypeChart salesData={salesData} />
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Method Distribution</CardTitle>
+                <CardDescription>
+                  Sales distribution by payment methods
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-80">
+                <PaymentMethodChart salesData={salesData} />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}
-      <NewSaleDialog 
+      <UnifiedSalesForm 
         open={isNewSaleDialogOpen}
         onClose={() => setIsNewSaleDialogOpen(false)}
         productCategories={productCategories}
