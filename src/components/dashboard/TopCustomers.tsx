@@ -1,60 +1,27 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Star, Building2, Users } from "lucide-react";
+import { Users } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { CustomerType } from "@/types/customer";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TopCustomersProps {
   className?: string;
 }
 
-const TopCustomers: React.FC<TopCustomersProps> = ({ className }) => {
-  const [topCustomers, setTopCustomers] = useState<CustomerType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchTopCustomers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('customers')
-          .select('id, name, area, phone, email, lead_status')
-          .order('created_at', { ascending: false })
-          .limit(5);
-        
-        if (error) {
-          console.error("Error fetching top customers:", error);
-          return;
-        }
-        
-        if (data) {
-          const customers = data.map(customer => ({
-            id: customer.id,
-            name: customer.name,
-            location: customer.area,
-            phone: customer.phone,
-            email: customer.email || "",
-            lastContact: "Recent",
-            machines: [],
-            status: customer.lead_status === "Converted" ? "Active" : "Prospect" as CustomerType["status"]
-          }));
-          
-          setTopCustomers(customers);
-        }
-      } catch (error) {
-        console.error("Error in fetchTopCustomers:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchTopCustomers();
-  }, []);
-
-  const getCustomerIcon = (type: string) => {
-    // Determine icon based on lead_status or other properties
-    return <Users className="h-4 w-4 text-purple-500" />;
-  };
+export const TopCustomers: React.FC<TopCustomersProps> = ({ className }) => {
+  const { data: topCustomers, isLoading } = useQuery({
+    queryKey: ['topCustomers'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customers')
+        .select('id, name, area, phone, email, lead_status')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      return data || [];
+    }
+  });
 
   if (isLoading) {
     return (
@@ -87,17 +54,19 @@ const TopCustomers: React.FC<TopCustomersProps> = ({ className }) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {topCustomers.map((customer) => (
+          {topCustomers?.map((customer) => (
             <div key={customer.id} className="flex items-center">
-              <div className="mr-2">{getCustomerIcon(customer.status)}</div>
+              <div className="mr-2">
+                <Users className="h-4 w-4 text-purple-500" />
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{customer.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {customer.location}
+                  {customer.area}
                 </p>
               </div>
               <div className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">
-                {customer.status}
+                {customer.lead_status}
               </div>
             </div>
           ))}
@@ -106,5 +75,3 @@ const TopCustomers: React.FC<TopCustomersProps> = ({ className }) => {
     </Card>
   );
 };
-
-export default TopCustomers;

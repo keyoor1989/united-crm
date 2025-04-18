@@ -1,27 +1,80 @@
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spinner } from "@/components/ui/spinner";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { statsIcons } from "@/components/dashboard/statsIcons";
+import { TaskDashboardSummary } from "@/components/tasks/TaskDashboardSummary";
+import { RecentServiceCalls } from "@/components/dashboard/RecentServiceCalls";
+import { TopCustomers } from "@/components/dashboard/TopCustomers";
+import { UpcomingTasks } from "@/components/dashboard/UpcomingTasks";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Fetch dashboard data
+  const { data: dashboardStats } = useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: async () => {
+      // Get total customers
+      const { count: customersCount } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true });
+
+      // Get monthly revenue from sales
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      const { data: monthlyRevenue } = await supabase
+        .from('sales')
+        .select('total_amount')
+        .gte('date', startOfMonth.toISOString());
+
+      const totalRevenue = monthlyRevenue?.reduce((sum, sale) => sum + (sale.total_amount || 0), 0) || 0;
+
+      // Get active service calls
+      const { count: activeServiceCalls } = await supabase
+        .from('service_calls')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['Open', 'In Progress']);
+
+      // Get AMC renewals due this month
+      const endOfMonth = new Date();
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+      endOfMonth.setDate(0);
+      
+      const { count: amcRenewals } = await supabase
+        .from('amc_contracts')
+        .select('*', { count: 'exact', head: true })
+        .lte('end_date', endOfMonth.toISOString())
+        .gte('end_date', startOfMonth.toISOString());
+
+      return {
+        customersCount: customersCount || 0,
+        monthlyRevenue: totalRevenue,
+        activeServiceCalls: activeServiceCalls || 0,
+        amcRenewals: amcRenewals || 0
+      };
+    },
+    enabled: isAuthenticated
+  });
+
   useEffect(() => {
-    // Only redirect when authentication check is complete
     if (!isLoading) {
       console.log("Index: Auth state determined - Authenticated:", isAuthenticated);
       
-      if (isAuthenticated) {
-        console.log("Index: User is authenticated, staying on dashboard");
-      } else {
+      if (!isAuthenticated) {
         console.log("Index: Not authenticated, redirecting to login");
         navigate("/login", { replace: true });
       }
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Show loading indicator while checking authentication
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -31,7 +84,6 @@ const Index = () => {
     );
   }
 
-  // If authenticated, render the dashboard content
   return isAuthenticated ? (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -42,34 +94,34 @@ const Index = () => {
           </p>
         </div>
       </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Customers"
-          value="2,543"
-          description="+180 from last month"
+          value={dashboardStats?.customersCount.toString() || "0"}
+          description="Active customer base"
           icon={statsIcons.customers}
         />
         <StatCard
           title="Monthly Revenue"
-          value="₹4.3L"
-          description="+7% from last month"
+          value={`₹${((dashboardStats?.monthlyRevenue || 0) / 1000).toFixed(1)}K`}
+          description="This month's revenue"
           icon={statsIcons.revenue}
         />
         <StatCard
           title="Active Service Calls"
-          value="18"
-          description="6 pending resolution"
+          value={dashboardStats?.activeServiceCalls.toString() || "0"}
+          description="Ongoing service requests"
           icon={statsIcons.serviceCall}
         />
         <StatCard
           title="AMC Renewals"
-          value="8"
+          value={dashboardStats?.amcRenewals.toString() || "0"}
           description="Due this month"
           icon={statsIcons.renewals}
         />
       </div>
 
-      {/* Task Summary Section */}
       <TaskDashboardSummary />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
