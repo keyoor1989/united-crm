@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -26,7 +27,7 @@ import { SalesStatusBadge } from "./SalesStatusBadge";
 import { PaymentMethodIcon } from "./PaymentMethodIcon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface SalesItem {
   id: string;
