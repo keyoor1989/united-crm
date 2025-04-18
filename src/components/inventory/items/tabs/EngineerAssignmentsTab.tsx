@@ -13,6 +13,7 @@ import {
 import { useEngineerAssignmentHistory } from '@/hooks/inventory/useEngineerAssignmentHistory';
 import { format } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
+import { Package } from "lucide-react";
 
 interface EngineerAssignmentsTabProps {
   itemName: string | null;
@@ -85,6 +86,11 @@ export const EngineerAssignmentsTab = ({ itemName }: EngineerAssignmentsTabProps
                           Brand: {assignment.model_brand}
                         </Badge>
                       )}
+                      {assignment.item_id && (
+                        <Badge variant="outline" className="w-fit text-xs">
+                          ID: {assignment.item_id}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -92,7 +98,10 @@ export const EngineerAssignmentsTab = ({ itemName }: EngineerAssignmentsTabProps
             ) : (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
-                  No engineer assignments found
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <Package className="h-10 w-10 text-muted-foreground/50" />
+                    <span>No engineer assignments found</span>
+                  </div>
                 </TableCell>
               </TableRow>
             )}
