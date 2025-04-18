@@ -13,14 +13,14 @@ import {
 import { useReturnsHistory } from '@/hooks/inventory/useReturnsHistory';
 import { format } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
-import { Undo2, AlertCircle } from "lucide-react";
+import { Undo2, AlertCircle, ShieldAlert } from "lucide-react";
 
 interface ReturnsHistoryTabProps {
   itemName: string | null;
 }
 
 export const ReturnsHistoryTab = ({ itemName }: ReturnsHistoryTabProps) => {
-  const { data: returnsHistory, isLoading } = useReturnsHistory(itemName);
+  const { data: returnsHistory, isLoading, error } = useReturnsHistory(itemName);
 
   const formatDate = (date: string) => {
     if (!date) return 'N/A';
@@ -47,6 +47,20 @@ export const ReturnsHistoryTab = ({ itemName }: ReturnsHistoryTabProps) => {
                 <Skeleton className="h-12 w-full" />
               </div>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center gap-2 py-6 text-destructive">
+            <ShieldAlert className="h-10 w-10" />
+            <span>Error loading returns history</span>
+            <span className="text-xs text-muted-foreground">{String(error)}</span>
           </div>
         </CardContent>
       </Card>

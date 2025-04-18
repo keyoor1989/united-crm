@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { ReplyAll } from "lucide-react";
+import { AlertCircle, ReplyAll } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import WarehouseSelector from "@/components/inventory/warehouses/WarehouseSelector";
 import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
@@ -19,6 +20,8 @@ import { useEngineerItems } from "@/hooks/inventory/useEngineerItems";
 import { useReturnItem, ReturnReason, ItemCondition } from "@/hooks/inventory/useReturnItem";
 import { useReturnedItems } from "@/hooks/inventory/useReturnedItems";
 import ReturnHistoryTable from "./ReturnHistoryTable";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 const ReturnForm = () => {
   // State
@@ -30,6 +33,7 @@ const ReturnForm = () => {
   const [itemCondition, setItemCondition] = useState<ItemCondition>("Good");
   const [returnNotes, setReturnNotes] = useState("");
   const [activeTab, setActiveTab] = useState("form");
+  const [error, setError] = useState<string | null>(null);
 
   // Hooks
   const { warehouses, isLoadingWarehouses } = useWarehouses();
@@ -40,27 +44,36 @@ const ReturnForm = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!selectedEngineer) {
+      setError("Please select an engineer");
       return;
     }
 
     if (!selectedReturnItem) {
+      setError("Please select an item to return");
       return;
     }
 
     if (returnQuantity <= 0) {
+      setError("Quantity must be greater than 0");
       return;
     }
 
     if (!selectedWarehouse) {
+      setError("Please select a warehouse for return");
       return;
     }
 
     const item = engineerItems.find(item => item.id === selectedReturnItem);
-    if (!item) return;
+    if (!item) {
+      setError("Selected item not found in engineer's inventory");
+      return;
+    }
 
     if (returnQuantity > item.quantity) {
+      setError(`Cannot return more than the available quantity (${item.quantity})`);
       return;
     }
 
@@ -87,6 +100,8 @@ const ReturnForm = () => {
         setReturnReason("Unused");
         setItemCondition("Good");
         setReturnNotes("");
+        setError(null);
+        toast.success("Item successfully returned to inventory");
       }
     });
   };
@@ -103,6 +118,22 @@ const ReturnForm = () => {
       </TabsList>
       
       <TabsContent value="form">
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {returnMutation.error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Submission Error</AlertTitle>
+            <AlertDescription>{returnMutation.error.message}</AlertDescription>
+          </Alert>
+        )}
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="mb-6">
             <Label className="text-base font-medium block mb-2">Return To Warehouse</Label>
@@ -119,7 +150,10 @@ const ReturnForm = () => {
               <Label htmlFor="engineer">Select Engineer</Label>
               <Select 
                 value={selectedEngineer} 
-                onValueChange={setSelectedEngineer}
+                onValueChange={(value) => {
+                  setSelectedEngineer(value);
+                  setSelectedReturnItem(""); // Reset item selection when engineer changes
+                }}
               >
                 <SelectTrigger id="engineer">
                   <SelectValue placeholder="Select engineer" />
@@ -158,7 +192,7 @@ const ReturnForm = () => {
                   ) : (
                     engineerItems.map(item => (
                       <SelectItem key={item.id} value={item.id}>
-                        {item.item_name} (Qty: {item.quantity})
+                        {item.item_name} ({item.modelNumber ? `${item.modelNumber}, ` : ''}Qty: {item.quantity})
                       </SelectItem>
                     ))
                   )}
