@@ -2,8 +2,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import UnifiedOpeningStockForm from "@/components/inventory/items/UnifiedOpeningStockForm";
 import { useInventoryItems } from "@/hooks/inventory/useInventoryItems";
 import InventoryTable from "@/components/inventory/InventoryTable";
@@ -54,15 +53,12 @@ const InventoryItems = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button onClick={() => setOpenItemDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add New
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
           <InventoryTable
             searchQuery={searchQuery}
+            onAddNew={() => setOpenItemDialog(true)}
           />
         </CardContent>
       </Card>
