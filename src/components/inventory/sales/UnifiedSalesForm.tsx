@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { useSalesInventoryItems, SalesInventoryItem } from "@/hooks/inventory/useSalesInventoryItems";
 import { 
@@ -219,12 +218,12 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     if (foundItem) {
       setCurrentItem({
         ...currentItem,
-        itemName: foundItem.part_name,
+        itemName: foundItem.display_name || foundItem.part_name,
         category: foundItem.category,
-        unitPrice: foundItem.purchase_price * 1.3, // 30% markup by default
+        unitPrice: foundItem.purchase_price * 1.3,
         barcode: ""
       });
-      toast.success(`Found: ${foundItem.part_name}`);
+      toast.success(`Found: ${foundItem.display_name || foundItem.part_name}`);
     } else {
       toast.error("Product not found");
       setCurrentItem({
@@ -283,7 +282,7 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       itemName: firstItem.itemName,
       quantity: firstItem.quantity,
       unitPrice: firstItem.unitPrice,
-      total: grandTotal, // Using the grand total for all items
+      total: grandTotal,
       status,
       paymentMethod: paymentMethods.find(method => method.value === paymentMethod)?.label || paymentMethod,
       paymentStatus,
@@ -424,24 +423,32 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
                     <Select 
                       value={currentItem.itemName} 
                       onValueChange={(value) => {
-                        const item = inventoryItems.find(i => i.part_name === value);
+                        const item = inventoryItems.find(i => 
+                          i.display_name === value || i.part_name === value
+                        );
                         if (item) {
                           setCurrentItem({
                             ...currentItem,
-                            itemName: item.part_name,
+                            itemName: item.display_name || item.part_name,
                             category: item.category,
-                            unitPrice: item.purchase_price * 1.3 // 30% markup
+                            unitPrice: item.purchase_price * 1.3
                           });
                         }
                       }}
                     >
-                      <SelectTrigger id="item-name">
+                      <SelectTrigger id="item-name" className="truncate">
                         <SelectValue placeholder="Select item" />
                       </SelectTrigger>
                       <SelectContent>
                         {inventoryItems.map((item) => (
-                          <SelectItem key={item.id} value={item.part_name}>
-                            {item.part_name} ({item.quantity} in stock)
+                          <SelectItem 
+                            key={item.id} 
+                            value={item.display_name || item.part_name}
+                            className="flex flex-col items-start"
+                          >
+                            <div className="truncate max-w-[300px]">
+                              {item.display_name || item.part_name} ({item.quantity} in stock)
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -543,7 +550,9 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
                     ) : (
                       items.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.itemName}</TableCell>
+                          <TableCell className="font-medium max-w-[300px] truncate">
+                            {item.itemName}
+                          </TableCell>
                           <TableCell>{item.category}</TableCell>
                           <TableCell className="text-right">{item.quantity}</TableCell>
                           <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>

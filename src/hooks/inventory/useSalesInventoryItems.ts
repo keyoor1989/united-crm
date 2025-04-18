@@ -11,6 +11,8 @@ export interface SalesInventoryItem {
   purchase_price: number;
   brand?: string;
   part_number?: string;
+  compatible_models?: string[];
+  display_name?: string; // New field for display purposes
 }
 
 export const useSalesInventoryItems = () => {
@@ -29,15 +31,34 @@ export const useSalesInventoryItems = () => {
       }
 
       // Map database items to SalesInventoryItem interface
-      return data.map((item): SalesInventoryItem => ({
-        id: item.id,
-        part_name: item.part_name,
-        category: item.category,
-        quantity: item.quantity,
-        purchase_price: item.purchase_price,
-        brand: item.brand,
-        part_number: item.part_number
-      }));
+      return data.map((item): SalesInventoryItem => {
+        // Create a display name that includes brand and model information
+        let modelInfo = '';
+        if (item.compatible_models && Array.isArray(item.compatible_models)) {
+          modelInfo = item.compatible_models.slice(0, 2).join(', ');
+          if (item.compatible_models.length > 2) {
+            modelInfo += '...';
+          }
+        }
+        
+        const displayName = [
+          item.part_name,
+          item.brand ? `(${item.brand}` : '',
+          modelInfo ? ` - ${modelInfo})` : item.brand ? ')' : ''
+        ].filter(Boolean).join(' ');
+
+        return {
+          id: item.id,
+          part_name: item.part_name,
+          category: item.category,
+          quantity: item.quantity,
+          purchase_price: item.purchase_price,
+          brand: item.brand,
+          part_number: item.part_number,
+          compatible_models: item.compatible_models,
+          display_name: displayName
+        };
+      });
     }
   });
 };
