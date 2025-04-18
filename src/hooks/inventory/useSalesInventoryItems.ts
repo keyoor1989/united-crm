@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types"; // Import the Json type from supabase
 
 export interface SalesInventoryItem {
   id: string;
@@ -37,17 +38,26 @@ export const useSalesInventoryItems = () => {
         
         // Check if compatible_models exists and convert it to an array if needed
         if (item.compatible_models) {
-          // If it's already an array, use it directly
+          // If it's already a string array, use it directly
           if (Array.isArray(item.compatible_models)) {
-            compatibleModels = item.compatible_models;
+            compatibleModels = item.compatible_models.map(model => 
+              typeof model === 'string' ? model : String(model)
+            );
           } 
-          // If it's a string (could happen with JSON conversion), try to parse it
-          else if (typeof item.compatible_models === 'string') {
+          // If it's a JSON object from the database, parse it safely
+          else {
             try {
-              const parsed = JSON.parse(item.compatible_models);
-              compatibleModels = Array.isArray(parsed) ? parsed : [];
+              const parsed = typeof item.compatible_models === 'string' 
+                ? JSON.parse(item.compatible_models) 
+                : item.compatible_models;
+                
+              if (Array.isArray(parsed)) {
+                compatibleModels = parsed.map(model => 
+                  typeof model === 'string' ? model : String(model)
+                );
+              }
             } catch (e) {
-              // If parsing fails, use empty array
+              console.error("Error parsing compatible_models:", e);
               compatibleModels = [];
             }
           }

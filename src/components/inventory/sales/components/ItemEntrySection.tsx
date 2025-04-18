@@ -9,18 +9,20 @@ import { Barcode, Plus } from "lucide-react";
 import { SalesInventoryItem } from "@/hooks/inventory/useSalesInventoryItems";
 import { formatCurrency } from "@/utils/finance/financeUtils";
 
+interface CurrentItemType {
+  itemName: string;
+  category: string;
+  quantity: number;
+  unitPrice: number;
+  barcode: string;
+}
+
 interface ItemEntrySectionProps {
-  currentItem: {
-    itemName: string;
-    category: string;
-    quantity: number;
-    unitPrice: number;
-    barcode: string;
-  };
+  currentItem: CurrentItemType;
   isScanning: boolean;
   inventoryItems: SalesInventoryItem[];
   isLoadingItems: boolean;
-  onItemChange: (item: Partial<typeof currentItem>) => void;
+  onItemChange: (item: Partial<CurrentItemType>) => void;
   onAddItem: () => void;
   onToggleScanner: () => void;
   onBarcodeSubmit: (e: React.FormEvent) => void;
