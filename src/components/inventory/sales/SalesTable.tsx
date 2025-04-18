@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -143,42 +144,58 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                   {sale.shipmentMethod || 'Not Shipped'}
                 </TableCell>
                 <TableCell className="text-right">
+                  {/* Modified dropdown implementation to improve menu behavior */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0 focus:ring-0">
                         <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Actions</span>
+                        <span className="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onViewDetails(sale)}>
+                    <DropdownMenuContent align="end" className="w-[180px] bg-white">
+                      <DropdownMenuItem 
+                        onClick={() => onViewDetails(sale)}
+                        className="cursor-pointer"
+                      >
                         <Eye className="mr-2 h-4 w-4" />
                         View details
                       </DropdownMenuItem>
                       
                       {!sale.billGenerated && (
-                        <DropdownMenuItem onClick={() => onGenerateBill(sale)}>
+                        <DropdownMenuItem 
+                          onClick={() => onGenerateBill(sale)}
+                          className="cursor-pointer"
+                        >
                           <FileText className="mr-2 h-4 w-4" />
                           Generate bill
                         </DropdownMenuItem>
                       )}
                       
                       {sale.billGenerated && sale.invoiceNumber && (
-                        <DropdownMenuItem onClick={() => onPrintInvoice(sale)}>
+                        <DropdownMenuItem 
+                          onClick={() => onPrintInvoice(sale)}
+                          className="cursor-pointer"
+                        >
                           <FileText className="mr-2 h-4 w-4" />
                           Print invoice
                         </DropdownMenuItem>
                       )}
                       
                       {sale.paymentStatus === "Due" && (
-                        <DropdownMenuItem onClick={() => onRecordPayment(sale)}>
+                        <DropdownMenuItem 
+                          onClick={() => onRecordPayment(sale)}
+                          className="cursor-pointer"
+                        >
                           <DollarSign className="mr-2 h-4 w-4" />
                           Record payment
                         </DropdownMenuItem>
                       )}
 
                       {onUpdateShipment && (
-                        <DropdownMenuItem onClick={() => onUpdateShipment(sale)}>
+                        <DropdownMenuItem 
+                          onClick={() => onUpdateShipment(sale)}
+                          className="cursor-pointer"
+                        >
                           <Truck className="mr-2 h-4 w-4" />
                           Update shipment
                         </DropdownMenuItem>
