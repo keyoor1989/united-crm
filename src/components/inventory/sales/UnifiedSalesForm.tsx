@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { useSalesInventoryItems, SalesInventoryItem } from "@/hooks/inventory/useSalesInventoryItems";
 import { 
@@ -44,6 +45,8 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { SalesItem } from "./SalesTable";
 import { formatCurrency } from "@/utils/finance/financeUtils";
+import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
+import { CustomerType } from "@/types/customer";
 
 interface SaleItemData {
   id: string;
@@ -75,6 +78,10 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   const [customerName, setCustomerName] = useState("");
   const [customerType, setCustomerType] = useState("Customer");
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerLocation, setCustomerLocation] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | null>(null);
   
   // Payment information
   const [paymentMethod, setPaymentMethod] = useState("Cash");
@@ -131,6 +138,10 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       barcode: ""
     });
     setIsScanning(false);
+    setSelectedCustomer(null);
+    setCustomerPhone("");
+    setCustomerEmail("");
+    setCustomerLocation("");
     
     const date = new Date();
     date.setDate(date.getDate() + 30);
@@ -227,6 +238,26 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     }
   };
   
+  const handleCustomerSelect = (customer: CustomerType) => {
+    setSelectedCustomer(customer);
+    setCustomerName(customer.name);
+    setCustomerPhone(customer.phone);
+    setCustomerEmail(customer.email || "");
+    setCustomerLocation(customer.location || "");
+    
+    // Set customer type based on customer information if available
+    if (customer.name.toLowerCase().includes("govt") || 
+        customer.name.toLowerCase().includes("government")) {
+      setCustomerType("Government");
+    } else if (customer.name.toLowerCase().includes("dealer")) {
+      setCustomerType("Dealer");
+    }
+    
+    setShowCustomerSearch(false);
+    
+    toast.success(`Customer "${customer.name}" selected`);
+  };
+  
   const handleSubmit = () => {
     if (!customerName) {
       toast.error("Please enter customer name");
@@ -296,31 +327,18 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
               <CardTitle className="text-base">Customer Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex space-x-2">
-                <div className="flex-1">
-                  <Label htmlFor="customer-name">Customer Name</Label>
-                  <Input
-                    id="customer-name"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Enter customer name"
-                  />
-                </div>
-                <div className="mt-6">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => setShowCustomerSearch(!showCustomerSearch)}
-                    type="button"
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <CustomerSearch 
+                onSelectCustomer={handleCustomerSelect}
+                showSearch={showCustomerSearch}
+                onToggleSearch={() => setShowCustomerSearch(!showCustomerSearch)}
+                customerName={customerName}
+              />
               
-              {showCustomerSearch && (
-                <div className="border rounded-md p-2 bg-muted/50">
-                  <p className="text-sm text-muted-foreground">Customer search will be integrated here</p>
+              {selectedCustomer && (
+                <div className="text-sm space-y-1 border-l-2 border-primary/20 pl-2">
+                  {customerPhone && <p className="text-muted-foreground">Phone: {customerPhone}</p>}
+                  {customerEmail && <p className="text-muted-foreground">Email: {customerEmail}</p>}
+                  {customerLocation && <p className="text-muted-foreground">Location: {customerLocation}</p>}
                 </div>
               )}
               
