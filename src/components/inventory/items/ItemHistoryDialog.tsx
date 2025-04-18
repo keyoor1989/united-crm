@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Dialog,
@@ -99,7 +100,14 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       
       // Extract relevant purchase information for the specific item
       const purchases = data?.map(po => {
-        const itemDetails = po.items.find((item: any) => item.item_name === itemName);
+        // Handle the case where items might be a string (JSON) or already parsed
+        const itemsArray = typeof po.items === 'string' ? JSON.parse(po.items) : po.items;
+        
+        // Find the specific item in the array
+        const itemDetails = Array.isArray(itemsArray) 
+          ? itemsArray.find((item: any) => item.item_name === itemName)
+          : null;
+          
         return {
           id: po.id,
           date: po.created_at,
