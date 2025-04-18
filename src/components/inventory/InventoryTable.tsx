@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/pagination";
 import { useInventoryItems, useDeleteInventoryItem } from "@/hooks/inventory/useInventoryItems";
 import { InventoryItem } from "@/types/inventory";
-import { ItemHistoryDialog } from './items/ItemHistoryDialog';
+import ItemHistoryDialog from "./ItemHistoryDialog";
 
 interface InventoryTableProps {
   searchQuery?: string;
@@ -42,7 +42,7 @@ const InventoryTable = ({
 }: InventoryTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [selectedItemForHistory, setSelectedItemForHistory] = useState<string | null>(null);
+  const [selectedItemForHistory, setSelectedItemForHistory] = useState<InventoryItem | null>(null);
   const { items, isLoading } = useInventoryItems(null);
   const { mutate: deleteItem } = useDeleteInventoryItem();
   
@@ -124,7 +124,7 @@ const InventoryTable = ({
 
   const actionButtons = (item: InventoryItem) => (
     <div className="flex justify-end gap-2">
-      <Button variant="ghost" size="icon" onClick={() => setSelectedItemForHistory(item.part_name)}>
+      <Button variant="ghost" size="icon" onClick={() => setSelectedItemForHistory(item)}>
         <History className="h-4 w-4" />
       </Button>
       <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
@@ -305,11 +305,13 @@ const InventoryTable = ({
         />
       )}
 
-      <ItemHistoryDialog
-        open={!!selectedItemForHistory}
-        onOpenChange={(open) => !open && setSelectedItemForHistory(null)}
-        itemName={selectedItemForHistory}
-      />
+      {selectedItemForHistory && (
+        <ItemHistoryDialog
+          open={!!selectedItemForHistory}
+          onOpenChange={(open) => !open && setSelectedItemForHistory(null)}
+          item={selectedItemForHistory}
+        />
+      )}
     </>
   );
 };

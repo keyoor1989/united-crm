@@ -26,24 +26,11 @@ import { InventoryItem } from "@/types/inventory";
 import { Clock, Package, ArrowDownToLine, ArrowUpRightFromCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-
-// Mock data for demonstration - in a real implementation, this would come from the API
-const mockPurchaseHistory = [
-  { id: 1, date: "2023-11-10", quantity: 10, vendor: "Kyocera Official", rate: 2800, invoiceNo: "INV-2023-110" },
-  { id: 2, date: "2023-07-22", quantity: 5, vendor: "Tech Supplies Ltd", rate: 2750, invoiceNo: "INV-2023-085" },
-  { id: 3, date: "2023-03-15", quantity: 15, vendor: "Office Solutions", rate: 2900, invoiceNo: "INV-2023-042" },
-];
-
-const mockIssueHistory = [
-  { id: 1, date: "2023-12-18", quantity: 2, issuedTo: "John Smith (Engineer)", serviceCaseId: "SVC-2023-042" },
-  { id: 2, date: "2023-11-05", quantity: 1, issuedTo: "Metro Office (Customer)", serviceCaseId: "SVC-2023-039" },
-  { id: 3, date: "2023-09-28", quantity: 3, issuedTo: "Jane Cooper (Engineer)", serviceCaseId: "SVC-2023-031" },
-];
-
-const mockReturnHistory = [
-  { id: 1, date: "2023-12-20", quantity: 1, returnedBy: "John Smith", condition: "Good", reason: "Unused" },
-  { id: 2, date: "2023-10-15", quantity: 2, returnedBy: "Sarah Johnson", condition: "Damaged", reason: "Defective" },
-];
+import { usePurchaseHistory } from "@/hooks/inventory/usePurchaseHistory";
+import { useEngineerAssignmentHistory } from "@/hooks/inventory/useEngineerAssignmentHistory";
+import { useSalesHistory } from "@/hooks/inventory/useSalesHistory";
+import { useReturnsHistory } from "@/hooks/inventory/useReturnsHistory";
+import { Loader2 } from "lucide-react";
 
 interface ItemHistoryDialogProps {
   open: boolean;
@@ -57,6 +44,14 @@ const ItemHistoryDialog: React.FC<ItemHistoryDialogProps> = ({
   item,
 }) => {
   if (!item) return null;
+  
+  // Fetch all history data
+  const { data: purchaseHistory, isLoading: purchaseLoading } = usePurchaseHistory(item.part_name || item.name);
+  const { data: engineerHistory, isLoading: engineerLoading } = useEngineerAssignmentHistory(item.part_name || item.name);
+  const { data: salesHistory, isLoading: salesLoading } = useSalesHistory(item.part_name || item.name);
+  const { data: returnsHistory, isLoading: returnsLoading } = useReturnsHistory(item.part_name || item.name);
+  
+  const isLoading = purchaseLoading || engineerLoading || salesLoading || returnsLoading;
 
   const formatDate = (dateString: string) => {
     try {
@@ -72,115 +67,182 @@ const ItemHistoryDialog: React.FC<ItemHistoryDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Item History: {item.name}
+            Item History: {item.name || item.part_name}
           </DialogTitle>
           <DialogDescription>
-            Complete transaction history for {item.part_number || "N/A"} - Current Stock: {item.currentStock}
+            Complete transaction history for {item.part_number || "N/A"} - Current Stock: {item.currentStock || item.quantity}
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="purchase" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="purchase">Purchase History</TabsTrigger>
-            <TabsTrigger value="issue">Issue History</TabsTrigger>
-            <TabsTrigger value="return">Return History</TabsTrigger>
-          </TabsList>
+        {isLoading ? (
+          <div className="flex justify-center items-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Loading item history...</span>
+          </div>
+        ) : (
+          <Tabs defaultValue="purchase" className="mt-4">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="purchase">Purchase</TabsTrigger>
+              <TabsTrigger value="issue">Engineer Issues</TabsTrigger>
+              <TabsTrigger value="sales">Sales</TabsTrigger>
+              <TabsTrigger value="return">Returns</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="purchase" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Vendor</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead className="text-right">Rate (₹)</TableHead>
-                      <TableHead>Invoice No.</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockPurchaseHistory.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>{formatDate(record.date)}</TableCell>
-                        <TableCell>{record.vendor}</TableCell>
-                        <TableCell className="text-right">{record.quantity}</TableCell>
-                        <TableCell className="text-right">₹{record.rate.toLocaleString()}</TableCell>
-                        <TableCell>{record.invoiceNo}</TableCell>
+            <TabsContent value="purchase" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead className="text-right">Rate (₹)</TableHead>
+                        <TableHead>Invoice No.</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    </TableHeader>
+                    <TableBody>
+                      {purchaseHistory && purchaseHistory.length > 0 ? (
+                        purchaseHistory.map((record) => (
+                          <TableRow key={record.id}>
+                            <TableCell>{formatDate(record.date)}</TableCell>
+                            <TableCell>{record.vendor}</TableCell>
+                            <TableCell className="text-right">{record.quantity}</TableCell>
+                            <TableCell className="text-right">₹{record.rate?.toLocaleString()}</TableCell>
+                            <TableCell>{record.invoiceNo}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center">No purchase history found</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="issue" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Issued To</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead>Service Case</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockIssueHistory.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>{formatDate(record.date)}</TableCell>
-                        <TableCell>{record.issuedTo}</TableCell>
-                        <TableCell className="text-right">{record.quantity}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono">
-                            {record.serviceCaseId}
-                          </Badge>
-                        </TableCell>
+            <TabsContent value="issue" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Issued To</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead>Service Case</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    </TableHeader>
+                    <TableBody>
+                      {engineerHistory && engineerHistory.length > 0 ? (
+                        engineerHistory.map((record) => (
+                          <TableRow key={record.id}>
+                            <TableCell>{formatDate(record.assigned_date)}</TableCell>
+                            <TableCell>{record.engineer_name}</TableCell>
+                            <TableCell className="text-right">{record.quantity}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="font-mono">
+                                {record.service_case_id || 'N/A'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center">No engineer assignments found</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="return" className="mt-4">
-            <Card>
-              <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Returned By</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead>Condition</TableHead>
-                      <TableHead>Reason</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {mockReturnHistory.map((record) => (
-                      <TableRow key={record.id}>
-                        <TableCell>{formatDate(record.date)}</TableCell>
-                        <TableCell>{record.returnedBy}</TableCell>
-                        <TableCell className="text-right">{record.quantity}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={record.condition === "Good" ? "success" : "destructive"}
-                          >
-                            {record.condition}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{record.reason}</TableCell>
+            <TabsContent value="sales" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                    </TableHeader>
+                    <TableBody>
+                      {salesHistory && salesHistory.length > 0 ? (
+                        salesHistory.map((record) => (
+                          <TableRow key={record.id}>
+                            <TableCell>{formatDate(record.sales?.date)}</TableCell>
+                            <TableCell>{record.sales?.customer_name || "Unknown"}</TableCell>
+                            <TableCell className="text-right">{record.quantity}</TableCell>
+                            <TableCell className="text-right">₹{record.unit_price?.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">₹{record.total?.toLocaleString()}</TableCell>
+                            <TableCell>
+                              <Badge variant={record.sales?.status === 'completed' ? 'success' : 'secondary'}>
+                                {record.sales?.status || 'Pending'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center">No sales history found</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="return" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Returned By</TableHead>
+                        <TableHead className="text-right">Quantity</TableHead>
+                        <TableHead>Condition</TableHead>
+                        <TableHead>Reason</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {returnsHistory && returnsHistory.length > 0 ? (
+                        returnsHistory.map((record) => (
+                          <TableRow key={record.id}>
+                            <TableCell>{formatDate(record.return_date)}</TableCell>
+                            <TableCell>{record.engineer_name}</TableCell>
+                            <TableCell className="text-right">{record.quantity}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={record.condition === "Good" ? "success" : "destructive"}
+                              >
+                                {record.condition}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{record.reason}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center">No returns history found</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        )}
       </DialogContent>
     </Dialog>
   );
