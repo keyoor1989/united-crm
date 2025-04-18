@@ -17,8 +17,8 @@ interface DeleteConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   itemName: string;
-  itemId: number;
-  onConfirmDelete: (id: number) => void;
+  itemId: string;
+  onConfirmDelete: (id: string) => void;
 }
 
 const DeleteConfirmationDialog = ({

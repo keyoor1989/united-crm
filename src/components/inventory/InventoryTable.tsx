@@ -295,7 +295,7 @@ const InventoryTable = ({
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           itemId={itemToDelete.id}
-          itemName={itemToDelete.itemName || itemToDelete.name}
+          itemName={itemToDelete.name}
           onConfirmDelete={handleDeleteItem}
         />
       )}
