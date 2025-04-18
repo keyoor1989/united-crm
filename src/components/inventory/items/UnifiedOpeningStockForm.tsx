@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Brand, Model } from "@/types/inventory";
+import { Brand, Model, dbAdapter } from "@/types/inventory";
 
 interface UnifiedOpeningStockFormProps {
   open: boolean;
@@ -52,7 +52,8 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
         .order('name');
       
       if (error) throw error;
-      return data as Brand[];
+      // Use the adapter to convert from DB format to our TypeScript interface format
+      return (data || []).map(brand => dbAdapter.adaptBrand(brand));
     }
   });
 
@@ -69,7 +70,8 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
         .order('name');
       
       if (error) throw error;
-      return data as Model[];
+      // Use the adapter to convert from DB format to our TypeScript interface format
+      return (data || []).map(model => dbAdapter.adaptModel(model));
     },
     enabled: !!formData.brand
   });
