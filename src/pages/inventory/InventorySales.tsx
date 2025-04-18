@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,21 +25,20 @@ import {
   Wallet, 
   Building2, 
   CheckSquare,
-  BanknoteIcon,
-  Bank
+  BanknoteIcon
 } from "lucide-react";
 
 const paymentMethods = [
   { value: "Cash", label: "Cash", icon: Wallet },
   { value: "Credit", label: "Credit (Due Payment)", icon: Calendar },
-  { value: "CB Bank", label: "CB Bank", icon: Bank },
-  { value: "UC Bank", label: "UC Bank", icon: Bank },
+  { value: "CB Bank", label: "CB Bank", icon: Building2 },
+  { value: "UC Bank", label: "UC Bank", icon: Building2 },
   { value: "UC Online", label: "UC Online", icon: CheckSquare },
   { value: "CB Online", label: "CB Online", icon: CheckSquare },
-  { value: "Keyoor Bank", label: "Keyoor Bank", icon: Bank },
-  { value: "Nitesh Bank", label: "Nitesh Bank", icon: Bank },
-  { value: "Jyoti Bank", label: "Jyoti Bank", icon: Bank },
-  { value: "SY Bank", label: "SY Bank", icon: Bank },
+  { value: "Keyoor Bank", label: "Keyoor Bank", icon: Building2 },
+  { value: "Nitesh Bank", label: "Nitesh Bank", icon: Building2 },
+  { value: "Jyoti Bank", label: "Jyoti Bank", icon: Building2 },
+  { value: "SY Bank", label: "SY Bank", icon: Building2 },
 ];
 
 const customerTypes = [
