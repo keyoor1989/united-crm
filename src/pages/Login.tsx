@@ -1,8 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 import {
@@ -35,10 +36,19 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const Login: React.FC = () => {
-  const { login, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      console.log("Login: User is authenticated, redirecting to dashboard");
+      navigate("/", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -56,7 +66,7 @@ const Login: React.FC = () => {
       console.log(`Attempting login for: ${data.email}`);
       
       await login(data.email, data.password);
-      // Successful login will redirect via AuthContext
+      // Redirect will happen via useEffect when auth state updates
     } catch (error) {
       console.error("Login failed:", error);
       
@@ -78,10 +88,6 @@ const Login: React.FC = () => {
           default:
             errorMessage = error.message;
         }
-      } else if (typeof error === 'object' && error !== null) {
-        const anyError = error as any;
-        console.error("Detailed error object:", anyError);
-        errorMessage = anyError.message || anyError.error_description || "Login failed";
       }
       
       setLoginError(errorMessage);
@@ -90,9 +96,10 @@ const Login: React.FC = () => {
     }
   };
 
-  // Show combined loading state from both form submission and auth context
+  // Show loading indicator for both form submission and auth context
   const isLoading = isSubmitting || authLoading;
 
+  // Render the rest of the component
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">

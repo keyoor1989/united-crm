@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { User, UserRole, Permission } from "@/types/auth";
 import { rolePermissions } from "@/utils/rbac/rolePermissions";
@@ -29,6 +28,7 @@ export const useAuthProvider = () => {
             } else if (event === 'SIGNED_OUT') {
               setUser(null);
               localStorage.removeItem("currentUser");
+              setIsLoading(false);
             }
           }
         );
@@ -48,7 +48,6 @@ export const useAuthProvider = () => {
         };
       } catch (error) {
         console.error("Session check error:", error);
-        // Clear any invalid session data
         localStorage.removeItem("currentUser");
         setIsLoading(false);
       }
@@ -186,79 +185,23 @@ export const useAuthProvider = () => {
       console.log('Attempting login for:', email);
       setIsLoading(true);
       
-      // Additional logging for debugging
-      console.log('Attempting Supabase authentication');
-      
-      // Try to authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
-      // Log the complete authentication response for debugging
-      console.log('Full authentication response:', { 
-        authData, 
-        authError,
-        user: authData?.user,
-        session: authData?.session
-      });
+      if (authError) throw authError;
       
-      if (authError) {
-        console.error('Detailed Auth Error:', {
-          name: authError.name,
-          message: authError.message,
-          status: authError.status,
-          code: authError.code
-        });
-        throw authError;
-      }
-      
-      if (authData.user) {
-        console.log('Auth successful, user ID:', authData.user.id);
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
-        navigate("/");
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      
-      let errorMessage = "Failed to login. Please check your credentials.";
-      if (error instanceof Error) {
-        console.error("Detailed error:", error.message);
-        
-        // More specific error messages
-        switch (error.message.toLowerCase()) {
-          case "invalid login credentials":
-            errorMessage = "Incorrect email or password. Please try again.";
-            break;
-          case "user not found":
-            errorMessage = "No account found with this email. Please sign up.";
-            break;
-          case "email not confirmed":
-            errorMessage = "Please confirm your email before logging in.";
-            break;
-          default:
-            errorMessage = error.message;
-        }
-      } else if (typeof error === 'object' && error !== null) {
-        const anyError = error as any;
-        console.error("Detailed error object:", anyError);
-        errorMessage = anyError.message || anyError.error_description || "Login failed";
-      }
+      // Auth state change listener will handle profile fetching and state updates
+      // No need to navigate here as the Login component will handle it
       
       toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: errorMessage,
+        title: "Login successful",
+        description: "Welcome back!",
       });
+    } catch (error) {
+      console.error('Login error:', error);
       throw error;
-    } finally {
-      // Reset loading state if we need to
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 0);
     }
   };
 
