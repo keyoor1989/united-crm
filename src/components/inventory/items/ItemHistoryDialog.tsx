@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -34,36 +33,41 @@ interface ItemHistoryDialogProps {
 }
 
 export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryDialogProps) => {
-  // Query for engineer assignments
+  // Query for engineer assignments with LIKE query
   const { data: engineerAssignments } = useQuery({
     queryKey: ['engineer_assignments', itemName],
     queryFn: async () => {
       if (!itemName) return [];
+      
+      // Use ILIKE for case-insensitive partial matching
       const { data, error } = await supabase
         .from('engineer_inventory')
         .select('*')
-        .eq('item_name', itemName)
+        .or(`item_name.ilike.%${itemName}%,item_name.eq.${itemName}`)
         .order('assigned_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Engineer assignments error:', error);
+        throw error;
+      }
       console.log('Engineer assignments:', data);
       return data;
     },
     enabled: !!itemName
   });
 
-  // Query for sales history - Completely rewritten query
-  const { data: salesHistory, isLoading: isSalesLoading, error: salesError } = useQuery({
+  // Query for sales history with improved matching
+  const { data: salesHistory } = useQuery({
     queryKey: ['sales_history', itemName],
     queryFn: async () => {
       if (!itemName) return [];
       console.log('Fetching sales history for item:', itemName);
       
-      // First find all sales_items that match our item name
+      // First find all sales_items that match our item name with ILIKE
       const { data: salesItemsData, error: salesItemsError } = await supabase
         .from('sales_items')
         .select('id, sale_id, item_name, quantity, unit_price, total')
-        .eq('item_name', itemName);
+        .or(`item_name.ilike.%${itemName}%,item_name.eq.${itemName}`);
       
       if (salesItemsError) {
         console.error("Error fetching sales items:", salesItemsError);
@@ -110,7 +114,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for returns history
+  // Query for returns history with improved matching
   const { data: returnsHistory } = useQuery({
     queryKey: ['returns_history', itemName],
     queryFn: async () => {
@@ -118,7 +122,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       const { data, error } = await supabase
         .from('inventory_returns')
         .select('*')
-        .eq('item_name', itemName)
+        .or(`item_name.ilike.%${itemName}%,item_name.eq.${itemName}`)
         .order('return_date', { ascending: false });
       
       if (error) throw error;
@@ -128,7 +132,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for purchase history from purchase orders
+  // Query for purchase history from purchase orders with improved matching
   const { data: purchaseHistory } = useQuery({
     queryKey: ['purchase_history', itemName],
     queryFn: async () => {
@@ -143,14 +147,18 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       
       // Extract relevant purchase information for the specific item
       const purchases = data?.map(po => {
-        // Handle the case where items might be a string (JSON) or already parsed
         const itemsArray = typeof po.items === 'string' ? JSON.parse(po.items) : po.items;
-        
-        // Find the specific item in the array
         const itemDetails = Array.isArray(itemsArray) 
-          ? itemsArray.find((item: any) => item.item_name === itemName)
+          ? itemsArray.find((item: any) => {
+              const itemNameMatch = item.item_name === itemName ||
+                                  item.item_name.includes(itemName) ||
+                                  itemName.includes(item.item_name);
+              return itemNameMatch;
+            })
           : null;
           
+        if (!itemDetails) return null;
+        
         return {
           id: po.id,
           date: po.created_at,
@@ -159,7 +167,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
           rate: itemDetails?.unit_price || 0,
           invoiceNo: po.po_number
         };
-      }) || [];
+      }).filter(Boolean) || [];
       
       console.log('Purchase history:', purchases);
       return purchases;
