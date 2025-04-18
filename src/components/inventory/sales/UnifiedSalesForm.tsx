@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useSalesInventoryItems, SalesInventoryItem } from "@/hooks/inventory/useSalesInventoryItems";
 import { 
   Dialog, 
   DialogContent, 
@@ -100,6 +101,9 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const [isScanning, setIsScanning] = useState(false);
   
+  // Fetch inventory items
+  const { data: inventoryItems = [], isLoading: isLoadingItems } = useSalesInventoryItems();
+  
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const gstRate = 18; // Default GST rate (can be made configurable)
@@ -148,9 +152,22 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       toast.error("Please enter a valid price");
       return;
     }
+
+    // Check if item exists and has enough stock
+    const inventoryItem = inventoryItems.find(item => item.part_name === currentItem.itemName);
     
-    const newItem: SaleItemData = {
-      id: uuidv4(),
+    if (!inventoryItem) {
+      toast.error("Item not found in inventory");
+      return;
+    }
+
+    if (currentItem.quantity > inventoryItem.quantity) {
+      toast.error(`Only ${inventoryItem.quantity} units available in stock`);
+      return;
+    }
+
+    const newItem = {
+      id: inventoryItem.id,
       itemName: currentItem.itemName,
       category: currentItem.category,
       quantity: currentItem.quantity,
@@ -160,7 +177,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     
     setItems([...items, newItem]);
     
-    // Reset current item (but keep category)
     setCurrentItem({
       itemName: "",
       category: currentItem.category,
@@ -169,7 +185,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       barcode: ""
     });
     
-    // If in scanning mode, focus back on barcode input
     if (isScanning && barcodeInputRef.current) {
       barcodeInputRef.current.focus();
     }
@@ -187,25 +202,18 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       return;
     }
     
-    // In a real app, you would lookup the barcode in your database
-    // For this example, we'll simulate finding a product
-    const mockProducts = [
-      { barcode: "123456", name: "Canon Toner 2520", price: 2500, category: "Toner" },
-      { barcode: "789012", name: "HP Drum 88A", price: 3200, category: "Drum" },
-      { barcode: "345678", name: "Photocopier Paper A4", price: 300, category: "Spare Parts" },
-    ];
+    // Look up item by part number
+    const foundItem = inventoryItems.find(item => item.part_number === currentItem.barcode);
     
-    const foundProduct = mockProducts.find(p => p.barcode === currentItem.barcode);
-    
-    if (foundProduct) {
+    if (foundItem) {
       setCurrentItem({
         ...currentItem,
-        itemName: foundProduct.name,
-        category: foundProduct.category,
-        unitPrice: foundProduct.price,
+        itemName: foundItem.part_name,
+        category: foundItem.category,
+        unitPrice: foundItem.purchase_price * 1.3, // 30% markup by default
         barcode: ""
       });
-      toast.success(`Found: ${foundProduct.name}`);
+      toast.success(`Found: ${foundItem.part_name}`);
     } else {
       toast.error("Product not found");
       setCurrentItem({
@@ -214,7 +222,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       });
     }
     
-    // Keep focus on barcode input for continuous scanning
     if (barcodeInputRef.current) {
       barcodeInputRef.current.focus();
     }
@@ -369,7 +376,10 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
           {/* Item Entry Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Item Details</CardTitle>
+              <CardTitle className="text-base">
+                Item Details
+                {isLoadingItems && " (Loading...)"}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {isScanning ? (
@@ -393,31 +403,41 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="item-name">Item Name</Label>
-                    <Input
-                      id="item-name"
-                      value={currentItem.itemName}
-                      onChange={(e) => setCurrentItem({...currentItem, itemName: e.target.value})}
-                      placeholder="Enter item name"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="category">Category</Label>
                     <Select 
-                      value={currentItem.category} 
-                      onValueChange={(value) => setCurrentItem({...currentItem, category: value})}
+                      value={currentItem.itemName} 
+                      onValueChange={(value) => {
+                        const item = inventoryItems.find(i => i.part_name === value);
+                        if (item) {
+                          setCurrentItem({
+                            ...currentItem,
+                            itemName: item.part_name,
+                            category: item.category,
+                            unitPrice: item.purchase_price * 1.3 // 30% markup
+                          });
+                        }
+                      }}
                     >
-                      <SelectTrigger id="category">
-                        <SelectValue placeholder="Select category" />
+                      <SelectTrigger id="item-name">
+                        <SelectValue placeholder="Select item" />
                       </SelectTrigger>
                       <SelectContent>
-                        {productCategories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
+                        {inventoryItems.map((item) => (
+                          <SelectItem key={item.id} value={item.part_name}>
+                            {item.part_name} ({item.quantity} in stock)
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <Input
+                      id="category"
+                      value={currentItem.category}
+                      readOnly
+                      className="bg-muted"
+                    />
                   </div>
                 </div>
               )}
