@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Task } from "@/types/task";
+import { Task, User } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTaskOperations } from "@/hooks/useTaskOperations";
 import { useTaskUsers } from "@/hooks/useTaskUsers";
