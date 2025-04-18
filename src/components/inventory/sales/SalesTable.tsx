@@ -144,18 +144,27 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                   {sale.shipmentMethod || 'Not Shipped'}
                 </TableCell>
                 <TableCell className="text-right">
-                  {/* Modified dropdown implementation to improve menu behavior */}
+                  {/* Further improved dropdown to fix glitching issues */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0 focus:ring-0">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 p-0 focus:ring-0 rounded-full hover:bg-slate-100"
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[180px] bg-white">
+                    <DropdownMenuContent 
+                      align="end" 
+                      className="w-[180px] bg-white shadow-md"
+                      sideOffset={5}
+                      avoidCollisions
+                    >
                       <DropdownMenuItem 
                         onClick={() => onViewDetails(sale)}
-                        className="cursor-pointer"
+                        className="cursor-pointer hover:bg-slate-50"
                       >
                         <Eye className="mr-2 h-4 w-4" />
                         View details
@@ -164,7 +173,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                       {!sale.billGenerated && (
                         <DropdownMenuItem 
                           onClick={() => onGenerateBill(sale)}
-                          className="cursor-pointer"
+                          className="cursor-pointer hover:bg-slate-50"
                         >
                           <FileText className="mr-2 h-4 w-4" />
                           Generate bill
@@ -174,7 +183,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                       {sale.billGenerated && sale.invoiceNumber && (
                         <DropdownMenuItem 
                           onClick={() => onPrintInvoice(sale)}
-                          className="cursor-pointer"
+                          className="cursor-pointer hover:bg-slate-50"
                         >
                           <FileText className="mr-2 h-4 w-4" />
                           Print invoice
@@ -184,7 +193,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                       {sale.paymentStatus === "Due" && (
                         <DropdownMenuItem 
                           onClick={() => onRecordPayment(sale)}
-                          className="cursor-pointer"
+                          className="cursor-pointer hover:bg-slate-50"
                         >
                           <DollarSign className="mr-2 h-4 w-4" />
                           Record payment
@@ -194,7 +203,7 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                       {onUpdateShipment && (
                         <DropdownMenuItem 
                           onClick={() => onUpdateShipment(sale)}
-                          className="cursor-pointer"
+                          className="cursor-pointer hover:bg-slate-50"
                         >
                           <Truck className="mr-2 h-4 w-4" />
                           Update shipment
