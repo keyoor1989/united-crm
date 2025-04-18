@@ -52,8 +52,8 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for sales history
-  const { data: salesHistory, isLoading: isSalesLoading } = useQuery({
+  // Query for sales history - Fixed by removing created_at sorting and using sales table's date field
+  const { data: salesHistory, isLoading: isSalesLoading, error: salesError } = useQuery({
     queryKey: ['sales_history', itemName],
     queryFn: async () => {
       if (!itemName) return [];
@@ -61,9 +61,8 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       
       const { data, error } = await supabase
         .from('sales_items')
-        .select('*, sales!inner(*)')
-        .eq('item_name', itemName)
-        .order('created_at', { ascending: false });
+        .select('*, sales!inner(id, date, customer_name, status)')
+        .eq('item_name', itemName);
       
       if (error) {
         console.error("Error fetching sales history:", error);
@@ -238,6 +237,10 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
               <CardContent className="pt-6">
                 {isSalesLoading ? (
                   <div className="text-center py-4">Loading sales data...</div>
+                ) : salesError ? (
+                  <div className="text-center py-4 text-red-500">
+                    Error loading sales data. Please try again.
+                  </div>
                 ) : (
                   <Table>
                     <TableHeader>
