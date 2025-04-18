@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import {
   Table,
@@ -42,42 +41,34 @@ const InventoryTable = ({
 }: InventoryTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  // Use the hook directly here to get the items
   const { items, isLoading } = useInventoryItems(null);
   const { mutate: deleteItem } = useDeleteInventoryItem();
   
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   
-  // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null);
   
-  // Function to open modal for editing an item
   const handleEditItem = (item: any) => {
     setSelectedItem(item);
     setIsModalOpen(true);
   };
 
-  // Function to open modal for adding a new item
   const handleAddItem = () => {
     setSelectedItem(null);
     setIsModalOpen(true);
   };
 
-  // Function to open delete confirmation dialog
   const handleDeleteClick = (id: string, name: string) => {
     setItemToDelete({ id, name });
     setIsDeleteDialogOpen(true);
   };
 
-  // Function to handle deletion
   const handleDeleteItem = (id: string) => {
     deleteItem(id);
   };
 
-  // Function to get status badge color
   const getBadgeVariant = (status: string) => {
     switch (status) {
       case "Out of Stock":
@@ -91,29 +82,24 @@ const InventoryTable = ({
     }
   };
   
-  // Determine inventory status
   const getInventoryStatus = (item: InventoryItem): string => {
     if (item.quantity <= 0) return "Out of Stock";
     if (item.quantity < item.min_stock) return "Low Stock";
     return "In Stock";
   };
   
-  // Filter items based on search query and filters
   const filteredItems = useMemo(() => {
     if (!items) return [];
     
     return items.filter(item => {
-      // Search query filter
       const matchesSearch = searchQuery === '' || 
         (item.name && item.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (item.part_name && item.part_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (item.part_number && item.part_number.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      // Category filter
       const matchesCategory = categoryFilter === 'all' || 
         (item.category && item.category.toLowerCase() === categoryFilter.toLowerCase());
       
-      // Location filter
       const matchesLocation = locationFilter === 'all' || 
         (item.location && item.location.toLowerCase().includes(locationFilter.toLowerCase()));
       
@@ -121,18 +107,15 @@ const InventoryTable = ({
     });
   }, [searchQuery, categoryFilter, locationFilter, items]);
   
-  // Reset to first page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, categoryFilter, locationFilter]);
   
-  // Calculate pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   
-  // Handle page navigation
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -173,7 +156,7 @@ const InventoryTable = ({
               <TableHead>SKU/Part Number</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Quantity</TableHead>
-              <TableHead>Brand</TableHead>
+              <TableHead>Brand & Models</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -202,7 +185,23 @@ const InventoryTable = ({
                   <TableCell>{item.part_number || "N/A"}</TableCell>
                   <TableCell>{item.category}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{item.brand || "N/A"}</TableCell>
+                  <TableCell>
+                    {item.brand ? (
+                      <div>
+                        <span className="font-medium">{item.brand}</span>
+                        {item.compatible_models && item.compatible_models.length > 0 && (
+                          <div className="text-sm text-muted-foreground">
+                            {Array.isArray(item.compatible_models) 
+                              ? item.compatible_models.slice(0, 2).join(', ') + 
+                                (item.compatible_models.length > 2 ? '...' : '')
+                              : item.compatible_models}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      "N/A"
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">₹{item.purchase_price ? item.purchase_price.toLocaleString() : "N/A"}</TableCell>
                   <TableCell>
                     <Badge variant={getBadgeVariant(getInventoryStatus(item)) as any}>
@@ -230,7 +229,6 @@ const InventoryTable = ({
         </Table>
       </div>
       
-      {/* Pagination - only show if we have items */}
       {filteredItems.length > 0 && (
         <div className="mt-4">
           <Pagination>
@@ -282,14 +280,12 @@ const InventoryTable = ({
         </div>
       )}
 
-      {/* Form Modal for Add/Edit */}
       <InventoryFormModal 
         open={isModalOpen} 
         onOpenChange={setIsModalOpen} 
         itemToEdit={selectedItem} 
       />
 
-      {/* Delete Confirmation Dialog */}
       {itemToDelete && (
         <DeleteConfirmationDialog
           open={isDeleteDialogOpen}
