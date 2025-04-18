@@ -8,7 +8,8 @@ import {
   Calendar,
   RefreshCcw,
   CircleDollarSign,
-  BanknoteIcon
+  BanknoteIcon,
+  Bank
 } from "lucide-react";
 
 interface PaymentMethodIconProps {
@@ -25,10 +26,16 @@ export const PaymentMethodIcon: React.FC<PaymentMethodIconProps> = ({
   if (methodLower.includes("credit card")) return <CreditCard className={className} />;
   if (methodLower.includes("cash")) return <Wallet className={className} />;
   if (methodLower.includes("bank")) return <Building2 className={className} />;
+  if (methodLower.includes("cb bank")) return <Bank className={className} />;
+  if (methodLower.includes("uc bank")) return <Bank className={className} />;
+  if (methodLower.includes("keyoor bank")) return <Bank className={className} />;
+  if (methodLower.includes("nitesh bank")) return <Bank className={className} />;
+  if (methodLower.includes("jyoti bank")) return <Bank className={className} />;
+  if (methodLower.includes("sy bank")) return <Bank className={className} />;
+  if (methodLower.includes("online")) return <CircleDollarSign className={className} />;
   if (methodLower.includes("upi")) return <IndianRupee className={className} />;
   if (methodLower.includes("due") || methodLower.includes("credit")) return <Calendar className={className} />;
   if (methodLower.includes("cheque")) return <BanknoteIcon className={className} />;
-  if (methodLower.includes("online")) return <CircleDollarSign className={className} />;
   
   // Default icon for other payment methods
   return <RefreshCcw className={className} />;

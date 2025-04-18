@@ -69,7 +69,10 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      dueDate: sale.due_date
+      dueDate: sale.due_date,
+      createdBy: sale.created_by,
+      shipmentMethod: sale.shipment_method,
+      shipmentDetails: sale.shipment_details
     }));
 
     return salesItems;
@@ -119,7 +122,10 @@ export const getCreditSales = async (): Promise<SalesItem[]> => {
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      dueDate: sale.credit_terms?.[0]?.due_date || sale.due_date
+      dueDate: sale.credit_terms?.[0]?.due_date || sale.due_date,
+      createdBy: sale.created_by,
+      shipmentMethod: sale.shipment_method,
+      shipmentDetails: sale.shipment_details
     }));
 
     return salesItems;
@@ -156,7 +162,10 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
         payment_terms: sale.payment_terms,
         gst_number: sale.gst_number,
         shipping_address: sale.shipping_address,
-        billing_address: sale.billing_address
+        billing_address: sale.billing_address,
+        created_by: sale.created_by || 'Admin', // Default to Admin if not provided
+        shipment_method: sale.shipment_method, // New field for shipment method
+        shipment_details: sale.shipment_details // New field for shipment details
       })
       .select()
       .single();
@@ -271,6 +280,32 @@ export const recordPayment = async (payment: any): Promise<boolean> => {
   }
 };
 
+// Update shipment details
+export const updateShipmentDetails = async (saleId: string, shipmentData: any): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('sales')
+      .update({
+        shipment_method: shipmentData.shipmentMethod,
+        shipment_details: shipmentData.shipmentDetails
+      })
+      .eq('id', saleId);
+
+    if (error) {
+      console.error("Error updating shipment details:", error);
+      toast.error("Failed to update shipment details");
+      return false;
+    }
+
+    toast.success("Shipment details updated successfully");
+    return true;
+  } catch (error) {
+    console.error("Error updating shipment details:", error);
+    toast.error("Failed to update shipment details");
+    return false;
+  }
+};
+
 // Fetch sales data for reports with date filtering
 export const fetchSalesReportData = async (startDate: Date, endDate: Date): Promise<SalesItem[]> => {
   try {
@@ -300,8 +335,10 @@ export const fetchSalesReportData = async (startDate: Date, endDate: Date): Prom
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      // The due_date property doesn't exist in the sales table, so we'll set it to null
-      dueDate: null
+      dueDate: sale.due_date,
+      createdBy: sale.created_by,
+      shipmentMethod: sale.shipment_method,
+      shipmentDetails: sale.shipment_details
     }));
 
     return salesData;

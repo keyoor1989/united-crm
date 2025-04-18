@@ -9,12 +9,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { 
-  FileText, 
-  Eye, 
-  CreditCard, 
+import {
   MoreHorizontal,
-  RefreshCw
+  FileText,
+  DollarSign,
+  Eye,
+  Truck
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,10 +22,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SalesStatusBadge } from "./SalesStatusBadge";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
+import { SalesStatusBadge } from "./SalesStatusBadge";
 import { PaymentMethodIcon } from "./PaymentMethodIcon";
-import { formatCurrency } from "@/utils/finance/financeUtils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface SalesItem {
   id: string;
@@ -42,52 +42,62 @@ export interface SalesItem {
   billGenerated: boolean;
   invoiceNumber: string | null;
   dueDate?: string;
+  createdBy?: string;
+  shipmentMethod?: string;
+  shipmentDetails?: string;
 }
 
 interface SalesTableProps {
   salesData: SalesItem[];
-  loading?: boolean;
+  loading: boolean;
   onGenerateBill: (sale: SalesItem) => void;
   onPrintInvoice: (sale: SalesItem) => void;
   onViewDetails: (sale: SalesItem) => void;
   onRecordPayment: (sale: SalesItem) => void;
+  onUpdateShipment?: (sale: SalesItem) => void;
 }
 
 export const SalesTable: React.FC<SalesTableProps> = ({
   salesData,
-  loading = false,
+  loading,
   onGenerateBill,
   onPrintInvoice,
   onViewDetails,
   onRecordPayment,
+  onUpdateShipment
 }) => {
   return (
     <div className="border rounded-md">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Date</TableHead>
+            <TableHead>Date</TableHead>
             <TableHead>Customer</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Item</TableHead>
             <TableHead className="text-right">Amount</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Payment</TableHead>
+            <TableHead>Created By</TableHead>
+            <TableHead>Shipment</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center h-48">
-                <div className="flex flex-col items-center justify-center">
-                  <RefreshCw className="h-8 w-8 animate-spin text-primary mb-2" />
-                  <p>Loading sales data...</p>
-                </div>
-              </TableCell>
-            </TableRow>
+            // Loading skeleton
+            Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`}>
+                {Array.from({ length: 10 }).map((_, cellIndex) => (
+                  <TableCell key={`cell-${cellIndex}`}>
+                    <Skeleton className="h-6 w-full" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
           ) : salesData.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center h-24">
+              <TableCell colSpan={10} className="text-center py-10 text-muted-foreground">
                 No sales records found
               </TableCell>
             </TableRow>
@@ -97,60 +107,74 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                 <TableCell>
                   {new Date(sale.date).toLocaleDateString()}
                 </TableCell>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{sale.customer}</p>
-                    <p className="text-xs text-muted-foreground">{sale.customerType}</p>
-                  </div>
+                <TableCell className="font-medium max-w-[150px] truncate" title={sale.customer}>
+                  {sale.customer}
                 </TableCell>
                 <TableCell>
-                  <div>
-                    <p className="font-medium">{sale.itemName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {sale.quantity} x {formatCurrency(sale.unitPrice)}
-                    </p>
-                  </div>
+                  <span className="text-xs px-2 py-1 bg-slate-100 rounded-full">
+                    {sale.customerType}
+                  </span>
+                </TableCell>
+                <TableCell className="max-w-[150px] truncate" title={sale.itemName}>
+                  {sale.itemName}
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  {formatCurrency(sale.total)}
+                  ₹{sale.total.toFixed(2)}
                 </TableCell>
                 <TableCell>
                   <SalesStatusBadge status={sale.status} />
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-1.5">
                     <PaymentMethodIcon method={sale.paymentMethod} />
                     <PaymentStatusBadge status={sale.paymentStatus} />
                   </div>
+                </TableCell>
+                <TableCell>
+                  {sale.createdBy || 'Admin'}
+                </TableCell>
+                <TableCell>
+                  {sale.shipmentMethod || 'Not Shipped'}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
                         <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => onViewDetails(sale)}>
                         <Eye className="mr-2 h-4 w-4" />
-                        View Details
+                        View details
                       </DropdownMenuItem>
+                      
                       {!sale.billGenerated && (
                         <DropdownMenuItem onClick={() => onGenerateBill(sale)}>
                           <FileText className="mr-2 h-4 w-4" />
-                          Generate Bill
+                          Generate bill
                         </DropdownMenuItem>
                       )}
+                      
                       {sale.billGenerated && sale.invoiceNumber && (
                         <DropdownMenuItem onClick={() => onPrintInvoice(sale)}>
                           <FileText className="mr-2 h-4 w-4" />
-                          Print Invoice
+                          Print invoice
                         </DropdownMenuItem>
                       )}
-                      {sale.paymentStatus !== "Paid" && (
+                      
+                      {sale.paymentStatus === "Due" && (
                         <DropdownMenuItem onClick={() => onRecordPayment(sale)}>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Record Payment
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          Record payment
+                        </DropdownMenuItem>
+                      )}
+
+                      {onUpdateShipment && (
+                        <DropdownMenuItem onClick={() => onUpdateShipment(sale)}>
+                          <Truck className="mr-2 h-4 w-4" />
+                          Update shipment
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>

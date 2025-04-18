@@ -13,6 +13,7 @@ import { SalesTable, SalesItem } from "@/components/inventory/sales/SalesTable";
 import UnifiedSalesForm from "@/components/inventory/sales/UnifiedSalesForm";
 import { SaleDetailsDialog } from "@/components/inventory/sales/SaleDetailsDialog";
 import { RecordPaymentDialog } from "@/components/inventory/sales/RecordPaymentDialog";
+import { ShipmentDetailsDialog } from "@/components/inventory/sales/ShipmentDetailsDialog";
 import { useSalesManagement } from "@/components/inventory/sales/hooks/useSalesManagement";
 import { CustomerTypeChart } from "@/components/inventory/sales/charts/CustomerTypeChart";
 import { PaymentMethodChart } from "@/components/inventory/sales/charts/PaymentMethodChart";
@@ -25,17 +26,21 @@ import {
   Wallet, 
   Building2, 
   CheckSquare,
-  BanknoteIcon
+  BanknoteIcon,
+  Bank
 } from "lucide-react";
 
 const paymentMethods = [
   { value: "Cash", label: "Cash", icon: Wallet },
   { value: "Credit", label: "Credit (Due Payment)", icon: Calendar },
-  { value: "Credit Card", label: "Credit Card", icon: CreditCard },
-  { value: "Bank Transfer", label: "Bank Transfer", icon: Building2 },
-  { value: "UPI", label: "UPI", icon: IndianRupee },
-  { value: "Cheque", label: "Cheque", icon: BanknoteIcon },
-  { value: "Online", label: "Online Payment", icon: CheckSquare },
+  { value: "CB Bank", label: "CB Bank", icon: Bank },
+  { value: "UC Bank", label: "UC Bank", icon: Bank },
+  { value: "UC Online", label: "UC Online", icon: CheckSquare },
+  { value: "CB Online", label: "CB Online", icon: CheckSquare },
+  { value: "Keyoor Bank", label: "Keyoor Bank", icon: Bank },
+  { value: "Nitesh Bank", label: "Nitesh Bank", icon: Bank },
+  { value: "Jyoti Bank", label: "Jyoti Bank", icon: Bank },
+  { value: "SY Bank", label: "SY Bank", icon: Bank },
 ];
 
 const customerTypes = [
@@ -71,13 +76,16 @@ const InventorySales = () => {
     addSale,
     generateBill,
     recordPayment,
+    updateShipmentDetails,
     exportSalesData,
+    loadSalesData,
   } = useSalesManagement();
 
   // State for dialog visibility
   const [isNewSaleDialogOpen, setIsNewSaleDialogOpen] = useState(false);
   const [isSaleDetailsDialogOpen, setIsSaleDetailsDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isShipmentDialogOpen, setIsShipmentDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<SalesItem | null>(null);
   const [activeTab, setActiveTab] = useState("sales");
 
@@ -105,6 +113,18 @@ const InventorySales = () => {
   const handleOpenPaymentDialog = (sale: SalesItem) => {
     setSelectedSale(sale);
     setIsPaymentDialogOpen(true);
+  };
+
+  // Handle opening shipment dialog
+  const handleOpenShipmentDialog = (sale: SalesItem) => {
+    setSelectedSale(sale);
+    setIsShipmentDialogOpen(true);
+  };
+
+  // Handle shipment updated
+  const handleShipmentUpdated = () => {
+    loadSalesData();
+    toast.success("Shipment details updated successfully");
   };
 
   return (
@@ -167,6 +187,7 @@ const InventorySales = () => {
                 onPrintInvoice={handlePrintInvoice}
                 onViewDetails={handleViewDetails}
                 onRecordPayment={handleOpenPaymentDialog}
+                onUpdateShipment={handleOpenShipmentDialog}
               />
             </CardContent>
           </Card>
@@ -226,6 +247,13 @@ const InventorySales = () => {
         sale={selectedSale}
         paymentMethods={paymentMethods}
         onSavePayment={recordPayment}
+      />
+
+      <ShipmentDetailsDialog
+        open={isShipmentDialogOpen}
+        onClose={() => setIsShipmentDialogOpen(false)}
+        sale={selectedSale}
+        onShipmentUpdated={handleShipmentUpdated}
       />
     </div>
   );

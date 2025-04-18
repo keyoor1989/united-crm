@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { SalesItem } from "../SalesTable";
 import { toast } from "sonner";
@@ -6,7 +7,8 @@ import {
   addSale, 
   generateBill as generateBillService, 
   recordPayment as recordPaymentService,
-  getCreditSales 
+  getCreditSales,
+  updateShipmentDetails as updateShipmentDetailsService 
 } from "@/services/salesService";
 
 export const useSalesManagement = (initialData?: SalesItem[]) => {
@@ -49,7 +51,8 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
       searchQuery === "" ||
       item.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.itemName && item.itemName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.invoiceNumber && item.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+      (item.invoiceNumber && item.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.createdBy && item.createdBy.toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Payment status filter
     const matchesPayment =
@@ -79,6 +82,9 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
 
   // Add a new sale
   const addNewSale = async (sale: SalesItem): Promise<string | null> => {
+    // Get the current user or default to Admin
+    const currentUser = "Admin"; // This would come from your auth context
+    
     // Convert SalesItem to the format expected by the service
     const saleRecord = {
       date: new Date().toISOString(),
@@ -91,7 +97,10 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
       bill_generated: sale.billGenerated,
       subtotal: sale.total, // For simplicity, assuming total is subtotal
       tax_amount: 0, // To be implemented
-      total_amount: sale.total
+      total_amount: sale.total,
+      created_by: currentUser, // Add the current user
+      shipment_method: sale.shipmentMethod,
+      shipment_details: sale.shipmentDetails
     };
 
     const saleItem = {
@@ -160,10 +169,20 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
     return false;
   };
 
+  // Update shipment details
+  const updateShipmentDetails = async (saleId: string, shipmentData: any): Promise<boolean> => {
+    const success = await updateShipmentDetailsService(saleId, shipmentData);
+    if (success) {
+      loadSalesData();
+      return true;
+    }
+    return false;
+  };
+
   // Export sales data to CSV
   const exportSalesData = () => {
     // Create CSV content
-    const headers = ["Date", "Customer", "Type", "Item", "Quantity", "Unit Price", "Total", "Status", "Payment Status", "Invoice"];
+    const headers = ["Date", "Customer", "Type", "Item", "Quantity", "Unit Price", "Total", "Status", "Payment Status", "Invoice", "Created By", "Shipment"];
     const rows = filteredSalesData.map(sale => [
       new Date(sale.date).toLocaleDateString(),
       sale.customer,
@@ -174,7 +193,9 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
       sale.total,
       sale.status,
       sale.paymentStatus,
-      sale.invoiceNumber || ""
+      sale.invoiceNumber || "",
+      sale.createdBy || "Admin",
+      sale.shipmentMethod || "Not Shipped"
     ]);
     
     // Convert to CSV string
@@ -214,6 +235,7 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
     addSale: addNewSale,
     generateBill,
     recordPayment,
+    updateShipmentDetails,
     exportSalesData,
     loadSalesData
   };
