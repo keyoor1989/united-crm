@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { CustomerType } from "@/types/customer";
 import { SalesItem } from "./SalesTable";
 import { useSalesInventoryItems } from "@/hooks/inventory/useSalesInventoryItems";
 import { useIssueItem } from "@/hooks/inventory/useIssueItem";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UnifiedSalesFormProps {
   open: boolean;
@@ -236,33 +238,69 @@ const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     };
     
     try {
-      const deductionPromises = items.map(item => {
-        const inventoryItem = inventoryItems.find(invItem => invItem.id === item.id);
-        if (inventoryItem) {
-          return issueItemFromInventory({
-            itemId: item.id,
-            engineerId: "sales-system",
-            engineerName: "Sales System",
-            itemName: item.itemName,
-            quantity: item.quantity,
-            warehouseId: null,
-            warehouseName: null,
-            modelNumber: null,
-            modelBrand: null
-          });
-        }
-        return Promise.resolve();
-      });
+      console.log("Starting sale process...");
+      console.log("Items to deduct from inventory:", items);
       
-      await Promise.all(deductionPromises);
-      
+      // First, save the sale to get the sale ID
       const saleId = await onSaveSale(newSale);
       
-      if (saleId !== null) {
-        toast.success(`Sale created successfully!`);
-        onClose();
-        resetForm();
+      if (saleId === null) {
+        toast.error("Failed to create sale record");
+        return;
       }
+      
+      console.log("Sale created with ID:", saleId);
+      
+      // Now deduct items from inventory one by one
+      for (const item of items) {
+        const inventoryItem = inventoryItems.find(invItem => invItem.id === item.id);
+        
+        if (!inventoryItem) {
+          console.error(`Item ${item.id} not found in inventory`);
+          continue;
+        }
+        
+        console.log(`Deducting ${item.quantity} units of ${item.itemName} (ID: ${item.id})`);
+        
+        // Direct database update approach
+        const { error: updateError } = await supabase
+          .from('opening_stock_entries')
+          .update({ 
+            quantity: Math.max(0, inventoryItem.quantity - item.quantity) 
+          })
+          .eq('id', item.id);
+        
+        if (updateError) {
+          console.error(`Error updating inventory for item ${item.id}:`, updateError);
+          toast.error(`Failed to update inventory for ${item.itemName}`);
+        } else {
+          console.log(`Successfully updated inventory for ${item.itemName}`);
+          
+          // Also try to use the issue item function as a backup/alternative method
+          try {
+            await issueItemFromInventory({
+              itemId: item.id,
+              engineerId: "sales-system",
+              engineerName: "Sales System",
+              itemName: item.itemName,
+              quantity: item.quantity,
+              warehouseId: null,
+              warehouseName: null,
+              modelNumber: null,
+              modelBrand: null
+            });
+            console.log(`Successfully issued item ${item.itemName} through issueItemFromInventory`);
+          } catch (issueError) {
+            console.error(`Error issuing item ${item.id} through useIssueItem:`, issueError);
+            // We don't show a toast error here since we already updated the inventory directly
+          }
+        }
+      }
+      
+      toast.success(`Sale created successfully!`);
+      onClose();
+      resetForm();
+      
     } catch (error) {
       console.error("Error processing sale:", error);
       toast.error("Failed to process sale. Please try again.");

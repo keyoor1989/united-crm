@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingBag, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Import components
 import { SalesHeader } from "@/components/inventory/sales/SalesHeader";
@@ -88,6 +88,8 @@ const InventorySales = () => {
   const [selectedSale, setSelectedSale] = useState<SalesItem | null>(null);
   const [activeTab, setActiveTab] = useState("sales");
   
+  const queryClient = useQueryClient();
+
   // Load sales data when component mounts or tab changes
   useEffect(() => {
     if (activeTab === "analytics" && (!salesData || salesData.length === 0)) {
@@ -131,6 +133,20 @@ const InventorySales = () => {
   const handleShipmentUpdated = () => {
     loadSalesData();
     toast.success("Shipment details updated successfully");
+  };
+
+  // Add a function to handle adding a new sale that also refreshes inventory
+  const handleAddSale = async (sale: SalesItem) => {
+    const saleId = await addSale(sale);
+    
+    // After sale is added, refresh inventory data
+    if (saleId) {
+      // Invalidate inventory queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
+      queryClient.invalidateQueries({ queryKey: ['sales_inventory_items'] });
+    }
+    
+    return saleId;
   };
 
   return (
@@ -235,7 +251,7 @@ const InventorySales = () => {
         productCategories={productCategories}
         customerTypes={customerTypes}
         paymentMethods={paymentMethods}
-        onSaveSale={addSale}
+        onSaveSale={handleAddSale}
       />
       
       <SaleDetailsDialog 

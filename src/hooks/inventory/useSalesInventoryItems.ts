@@ -20,6 +20,7 @@ export const useSalesInventoryItems = () => {
   return useQuery({
     queryKey: ['sales_inventory_items'],
     queryFn: async () => {
+      console.log("Fetching inventory items for sales");
       const { data, error } = await supabase
         .from('opening_stock_entries')
         .select('*')
@@ -31,8 +32,10 @@ export const useSalesInventoryItems = () => {
         return [];
       }
 
+      console.log("Raw data from Supabase:", data);
+
       // Map database items to SalesInventoryItem interface
-      return data.map((item): SalesInventoryItem => {
+      const adaptedItems = data.map((item): SalesInventoryItem => {
         // Handle compatible_models safely, ensuring it's always an array
         let compatibleModels: string[] = [];
         
@@ -90,6 +93,12 @@ export const useSalesInventoryItems = () => {
           display_name: displayName
         };
       });
-    }
+
+      console.log("Adapted items:", adaptedItems);
+      return adaptedItems;
+    },
+    refetchInterval: 30000, // Refresh data every 30 seconds
+    refetchOnWindowFocus: true, // Refresh when window gets focus
+    refetchOnMount: true, // Refresh when component mounts
   });
 };

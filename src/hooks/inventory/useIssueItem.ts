@@ -65,8 +65,11 @@ export const useIssueItem = () => {
           throw new Error('Invalid item data received');
         }
         
+        console.log("Current quantity before update:", itemData.quantity);
+        
         // Calculate new quantity, ensuring we don't go below zero
         const newQuantity = Math.max(0, itemData.quantity - params.quantity);
+        console.log("New quantity to set:", newQuantity);
         
         // Update the quantity
         const { error: updateError } = await supabase
@@ -80,6 +83,8 @@ export const useIssueItem = () => {
         }
         
         console.log("Successfully updated stock quantity to:", newQuantity);
+      } else {
+        console.error("No item ID provided for inventory update");
       }
       
       return data;
