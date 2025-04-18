@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { toast } from "sonner";
@@ -5,13 +6,30 @@ import { toast } from "sonner";
 // Helper function to get next sales number
 async function getNextSalesNumber(): Promise<string> {
   try {
-    const { data } = await supabase
-      .rpc('nextval', { seq_name: 'sales_number_seq' });
+    // Use a direct SQL query instead of RPC function
+    const { data, error } = await supabase
+      .from('sales')
+      .select('sales_number')
+      .order('created_at', { ascending: false })
+      .limit(1);
     
-    return `SALE-${data.toString().padStart(4, '0')}`;
+    if (error) {
+      throw error;
+    }
+    
+    // If there are existing sales, generate the next number
+    if (data && data.length > 0 && data[0].sales_number) {
+      const lastSaleNumber = data[0].sales_number;
+      const lastNumber = parseInt(lastSaleNumber.split('-')[1]);
+      const nextNumber = lastNumber + 1;
+      return `SALE-${nextNumber.toString().padStart(4, '0')}`;
+    }
+    
+    // For the first sale ever
+    return 'SALE-0001';
   } catch (error) {
     console.error('Error getting next sales number:', error);
-    // Fallback format if the sequence fails
+    // Fallback format if the query fails
     return `SALE-${new Date().getTime()}`;
   }
 }
