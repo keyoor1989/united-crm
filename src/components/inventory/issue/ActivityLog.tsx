@@ -3,18 +3,17 @@ import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import IssuedItemsTable from "./IssuedItemsTable";
 import ReturnHistoryTable from "./ReturnHistoryTable";
-import { useIssuedItems } from "@/hooks/inventory/useEngineerItems";
+import { useEngineerItems } from "@/hooks/inventory/useEngineerItems";
 import { useReturnedItems } from "@/hooks/inventory/useReturnedItems";
-import { EngineerInventoryItem as InventoryHookItem } from "@/hooks/inventory/useEngineerItems";
-import { EngineerInventoryItem as EngineerInventoryDisplayItem } from "@/hooks/inventory/useEngineerInventory";
+import { EngineerInventoryItem } from "@/hooks/inventory/useEngineerInventory";
 
 const ActivityLog = () => {
   const [activeTab, setActiveTab] = useState("issues");
-  const { items: issuedItemsRaw, isLoading: isLoadingIssuedItems } = useIssuedItems();
+  const { items: engineerItems, isLoading: isLoadingEngineerItems } = useEngineerItems();
   const { items: returnedItems, isLoading: isLoadingReturnedItems } = useReturnedItems();
 
   // Map the items from useEngineerItems format to useEngineerInventory format
-  const issuedItems: EngineerInventoryDisplayItem[] = issuedItemsRaw.map(item => ({
+  const issuedItems: EngineerInventoryItem[] = engineerItems.map(item => ({
     id: item.id,
     engineerId: item.engineer_id,
     engineerName: item.engineer_name,
@@ -22,14 +21,11 @@ const ActivityLog = () => {
     itemName: item.item_name,
     assignedQuantity: item.quantity,
     remainingQuantity: item.quantity,
-    modelNumber: item.model_number || null,
-    modelBrand: item.model_brand || null,
+    modelNumber: item.modelNumber,
+    modelBrand: item.modelBrand,
     lastUpdated: item.assigned_date,
     createdAt: item.assigned_date
   }));
-
-  console.log("Issued items raw:", issuedItemsRaw);
-  console.log("Transformed issued items:", issuedItems);
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -39,7 +35,7 @@ const ActivityLog = () => {
       </TabsList>
       
       <TabsContent value="issues">
-        <IssuedItemsTable items={issuedItems} isLoading={isLoadingIssuedItems} />
+        <IssuedItemsTable items={issuedItems} isLoading={isLoadingEngineerItems} />
       </TabsContent>
       
       <TabsContent value="returns">
