@@ -1158,6 +1158,7 @@ export type Database = {
           billing_address: string | null
           created_at: string | null
           created_by: string | null
+          created_by_user_id: string | null
           customer_id: string | null
           customer_name: string
           customer_type: string
@@ -1183,6 +1184,7 @@ export type Database = {
           billing_address?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_user_id?: string | null
           customer_id?: string | null
           customer_name: string
           customer_type: string
@@ -1208,6 +1210,7 @@ export type Database = {
           billing_address?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_user_id?: string | null
           customer_id?: string | null
           customer_name?: string
           customer_type?: string

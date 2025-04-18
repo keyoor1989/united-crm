@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,8 @@ import { SalesItem } from "./SalesTable";
 import { useSalesInventoryItems } from "@/hooks/inventory/useSalesInventoryItems";
 import { useIssueItem } from "@/hooks/inventory/useIssueItem";
 import { supabase } from "@/integrations/supabase/client";
+import { UserSelector } from "./components/UserSelector";
+import { Label } from "@/components/ui/label";
 
 interface UnifiedSalesFormProps {
   open: boolean;
@@ -67,6 +68,8 @@ const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   const [gstMode, setGstMode] = useState<GstMode>('exclusive');
   const [gstRate, setGstRate] = useState(18);
   
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const gstAmount = gstMode === 'no-gst' ? 0 : 
     gstMode === 'inclusive' ? 
@@ -99,6 +102,7 @@ const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     const date = new Date();
     date.setDate(date.getDate() + 30);
     setDueDate(date.toISOString().split('T')[0]);
+    setSelectedUserId("");
   };
   
   const handlePaymentMethodChange = (value: string) => {
@@ -211,6 +215,11 @@ const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       return;
     }
     
+    if (!selectedUserId) {
+      toast.error("Please select a sales person");
+      return;
+    }
+    
     if (items.length === 0) {
       toast.error("Please add at least one item");
       return;
@@ -235,6 +244,7 @@ const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       billGenerated: !isCredit,
       invoiceNumber: null,
       dueDate: isCredit ? dueDate : undefined,
+      created_by_user_id: selectedUserId
     };
     
     try {
@@ -320,6 +330,15 @@ const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Add User Selector before Customer Section */}
+          <div className="space-y-2">
+            <Label>Sales Person</Label>
+            <UserSelector 
+              value={selectedUserId}
+              onValueChange={setSelectedUserId}
+            />
+          </div>
+          
           <CustomerSection 
             customerName={customerName}
             customerPhone={customerPhone}

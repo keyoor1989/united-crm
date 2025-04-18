@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -26,6 +25,8 @@ import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { SalesStatusBadge } from "./SalesStatusBadge";
 import { PaymentMethodIcon } from "./PaymentMethodIcon";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 export interface SalesItem {
   id: string;
@@ -52,6 +53,7 @@ export interface SalesItem {
     additional_details?: string;
     status?: string;
   } | null;
+  created_by_user_id?: string;
 }
 
 interface SalesTableProps {
@@ -73,6 +75,26 @@ export const SalesTable: React.FC<SalesTableProps> = ({
   onRecordPayment,
   onUpdateShipment
 }) => {
+  const { data: users } = useQuery({
+    queryKey: ['app_users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('app_users')
+        .select('id, name');
+      if (error) {
+        console.error('Error fetching users:', error);
+        return [];
+      }
+      return data;
+    }
+  });
+
+  const getUserName = (userId: string | undefined) => {
+    if (!userId) return 'N/A';
+    const user = users?.find(u => u.id === userId);
+    return user?.name || 'Unknown';
+  };
+
   return (
     <div className="border rounded-md">
       <Table>
@@ -87,12 +109,12 @@ export const SalesTable: React.FC<SalesTableProps> = ({
             <TableHead>Payment</TableHead>
             <TableHead>Created By</TableHead>
             <TableHead>Shipment</TableHead>
+            <TableHead className="text-right">Sales Person</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {loading ? (
-            // Loading skeleton
             Array.from({ length: 5 }).map((_, index) => (
               <TableRow key={`skeleton-${index}`}>
                 {Array.from({ length: 10 }).map((_, cellIndex) => (
@@ -143,8 +165,10 @@ export const SalesTable: React.FC<SalesTableProps> = ({
                 <TableCell>
                   {sale.shipmentMethod || 'Not Shipped'}
                 </TableCell>
+                <TableCell>
+                  {getUserName(sale.created_by_user_id)}
+                </TableCell>
                 <TableCell className="text-right">
-                  {/* Further improved dropdown to fix glitching issues */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
