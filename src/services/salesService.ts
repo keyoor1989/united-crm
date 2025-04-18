@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { toast } from "sonner";
@@ -6,23 +5,13 @@ import { toast } from "sonner";
 // Helper function to get next sales number
 async function getNextSalesNumber(): Promise<string> {
   try {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get_next_sales_number`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-      }
-    });
+    const { data } = await supabase
+      .rpc('nextval', { seq_name: 'sales_number_seq' });
     
-    if (!response.ok) {
-      throw new Error('Failed to get next sales number');
-    }
-    
-    const number = await response.json();
-    return `SALE-${number.toString().padStart(4, '0')}`;
+    return `SALE-${data.toString().padStart(4, '0')}`;
   } catch (error) {
     console.error('Error getting next sales number:', error);
-    // Fallback format if the function fails
+    // Fallback format if the sequence fails
     return `SALE-${new Date().getTime()}`;
   }
 }
@@ -30,35 +19,42 @@ async function getNextSalesNumber(): Promise<string> {
 // Fetch all sales
 export const fetchSales = async (): Promise<SalesItem[]> => {
   try {
-    const { data, error } = await supabase
+    const { data: salesData, error: salesError } = await supabase
       .from('sales')
-      .select('*');
+      .select(`
+        *,
+        sales_items (
+          item_name,
+          quantity,
+          unit_price,
+          total
+        )
+      `);
 
-    if (error) {
-      console.error("Error fetching sales:", error);
-      throw error;
+    if (salesError) {
+      console.error("Error fetching sales:", salesError);
+      throw salesError;
     }
 
     // Map the data to the SalesItem type
-    const salesData: SalesItem[] = data.map((sale) => ({
+    const salesItems: SalesItem[] = salesData.map((sale) => ({
       id: sale.id,
       date: sale.date,
       customer: sale.customer_name,
       customerType: sale.customer_type,
-      itemName: 'Sample Item', // Assuming item_name is stored elsewhere
-      quantity: 1, // Assuming quantity is stored elsewhere
-      unitPrice: 100, // Default value
+      itemName: sale.sales_items?.[0]?.item_name || 'N/A',
+      quantity: sale.sales_items?.[0]?.quantity || 0,
+      unitPrice: sale.sales_items?.[0]?.unit_price || 0,
       total: sale.total_amount,
       status: sale.status,
       paymentMethod: sale.payment_method,
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      // The due_date property doesn't exist in the sales table, so we'll set it to null
-      dueDate: null
+      dueDate: sale.due_date
     }));
 
-    return salesData;
+    return salesItems;
   } catch (error) {
     console.error("Error fetching sales:", error);
     throw error;
@@ -68,36 +64,47 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
 // Fetch credit sales only
 export const getCreditSales = async (): Promise<SalesItem[]> => {
   try {
-    const { data, error } = await supabase
+    const { data: salesData, error: salesError } = await supabase
       .from('sales')
-      .select('*')
+      .select(`
+        *,
+        sales_items (
+          item_name,
+          quantity,
+          unit_price,
+          total
+        ),
+        credit_terms (
+          due_date,
+          status
+        )
+      `)
       .eq('payment_status', 'Due');
 
-    if (error) {
-      console.error("Error fetching credit sales:", error);
-      throw error;
+    if (salesError) {
+      console.error("Error fetching credit sales:", salesError);
+      throw salesError;
     }
 
     // Map the data to the SalesItem type
-    const salesData: SalesItem[] = data.map((sale) => ({
+    const salesItems: SalesItem[] = salesData.map((sale) => ({
       id: sale.id,
       date: sale.date,
       customer: sale.customer_name,
       customerType: sale.customer_type,
-      itemName: 'Sample Item', // Assuming item_name is stored elsewhere
-      quantity: 1, // Assuming quantity is stored elsewhere
-      unitPrice: 100, // Default value
+      itemName: sale.sales_items?.[0]?.item_name || 'N/A',
+      quantity: sale.sales_items?.[0]?.quantity || 0,
+      unitPrice: sale.sales_items?.[0]?.unit_price || 0,
       total: sale.total_amount,
       status: sale.status,
       paymentMethod: sale.payment_method,
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      // The due_date property doesn't exist in the sales table, so we'll set it to null
-      dueDate: null
+      dueDate: sale.credit_terms?.[0]?.due_date || sale.due_date
     }));
 
-    return salesData;
+    return salesItems;
   } catch (error) {
     console.error("Error fetching credit sales:", error);
     throw error;
@@ -125,7 +132,13 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
         invoice_number: sale.invoice_number,
         subtotal: sale.subtotal,
         tax_amount: sale.tax_amount || 0,
-        total_amount: sale.total_amount
+        total_amount: sale.total_amount,
+        due_date: sale.due_date,
+        sales_type: sale.sales_type || 'direct',
+        payment_terms: sale.payment_terms,
+        gst_number: sale.gst_number,
+        shipping_address: sale.shipping_address,
+        billing_address: sale.billing_address
       })
       .select()
       .single();
@@ -137,21 +150,40 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
     
     // Create sale items
     if (data && saleItems.length > 0) {
-      for (const item of saleItems) {
-        const { error: itemError } = await supabase
-          .from('sales_items') // Changed from 'sale_items' to 'sales_items'
-          .insert({
-            sale_id: data.id,
-            item_name: item.item_name,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total: item.total
-          });
+      const { error: itemsError } = await supabase
+        .from('sales_items')
+        .insert(saleItems.map(item => ({
+          sale_id: data.id,
+          item_id: item.item_id,
+          item_name: item.item_name,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total: item.total,
+          category: item.category,
+          description: item.description,
+          gst_percent: item.gst_percent || 0,
+          gst_amount: item.gst_amount || 0
+        })));
           
-        if (itemError) {
-          console.error('Error creating sale item:', itemError);
-          // Continue anyway to at least record the other items
-        }
+      if (itemsError) {
+        console.error('Error creating sale items:', itemsError);
+        // Continue anyway to at least record the sale
+      }
+    }
+
+    // If it's a credit sale, create credit terms
+    if (sale.payment_status === 'Due' && sale.due_date) {
+      const { error: creditError } = await supabase
+        .from('credit_terms')
+        .insert({
+          sale_id: data.id,
+          due_date: sale.due_date,
+          credit_limit: sale.credit_limit,
+          status: 'Active'
+        });
+
+      if (creditError) {
+        console.error('Error creating credit terms:', creditError);
       }
     }
     
@@ -191,7 +223,7 @@ export const generateBill = async (saleId: string, invoiceNumber: string): Promi
 export const recordPayment = async (payment: any): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('sale_payments') // Changed from 'payments' to 'sale_payments'
+      .from('sale_payments')
       .insert(payment);
 
     if (error) {

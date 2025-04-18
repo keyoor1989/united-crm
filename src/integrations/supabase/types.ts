@@ -1155,18 +1155,24 @@ export type Database = {
       sales: {
         Row: {
           bill_generated: boolean | null
+          billing_address: string | null
           created_at: string | null
           created_by: string | null
           customer_id: string | null
           customer_name: string
           customer_type: string
           date: string
+          due_date: string | null
+          gst_number: string | null
           id: string
           invoice_number: string | null
           notes: string | null
           payment_method: string | null
           payment_status: string
+          payment_terms: string | null
           sales_number: string
+          sales_type: string | null
+          shipping_address: string | null
           status: string
           subtotal: number
           tax_amount: number | null
@@ -1174,18 +1180,24 @@ export type Database = {
         }
         Insert: {
           bill_generated?: boolean | null
+          billing_address?: string | null
           created_at?: string | null
           created_by?: string | null
           customer_id?: string | null
           customer_name: string
           customer_type: string
           date?: string
+          due_date?: string | null
+          gst_number?: string | null
           id?: string
           invoice_number?: string | null
           notes?: string | null
           payment_method?: string | null
           payment_status: string
+          payment_terms?: string | null
           sales_number: string
+          sales_type?: string | null
+          shipping_address?: string | null
           status: string
           subtotal: number
           tax_amount?: number | null
@@ -1193,18 +1205,24 @@ export type Database = {
         }
         Update: {
           bill_generated?: boolean | null
+          billing_address?: string | null
           created_at?: string | null
           created_by?: string | null
           customer_id?: string | null
           customer_name?: string
           customer_type?: string
           date?: string
+          due_date?: string | null
+          gst_number?: string | null
           id?: string
           invoice_number?: string | null
           notes?: string | null
           payment_method?: string | null
           payment_status?: string
+          payment_terms?: string | null
           sales_number?: string
+          sales_type?: string | null
+          shipping_address?: string | null
           status?: string
           subtotal?: number
           tax_amount?: number | null
