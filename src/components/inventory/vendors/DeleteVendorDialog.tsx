@@ -1,46 +1,43 @@
 
-import React from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface DeleteVendorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  handleDeleteVendor: () => void;
+  onDelete: () => void;
+  vendorName: string;
 }
 
-const DeleteVendorDialog: React.FC<DeleteVendorDialogProps> = ({
+export const DeleteVendorDialog: React.FC<DeleteVendorDialogProps> = ({
   open,
   onOpenChange,
-  handleDeleteVendor,
+  onDelete,
+  vendorName,
 }) => {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Delete Vendor</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this vendor? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button variant="destructive" onClick={handleDeleteVendor}>
-            Delete
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Vendor</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete <strong>{vendorName}</strong>? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={onDelete}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
-
-export default DeleteVendorDialog;

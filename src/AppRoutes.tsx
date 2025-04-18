@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -10,7 +11,6 @@ import FinanceDashboard from "@/pages/finance/FinanceDashboard";
 import DepartmentRevenue from "@/pages/finance/DepartmentRevenue";
 import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
 import CashRegister from "@/pages/finance/CashRegister";
-import Vendors from "@/pages/inventory/Vendors";
 import Service from "@/pages/Service";
 import ServiceCallForm from "@/pages/ServiceCallForm";
 import ServiceBilling from "@/pages/ServiceBilling";
@@ -22,7 +22,6 @@ import CustomerFollowUps from "@/pages/customers/CustomerFollowUps";
 import EngineerPerformanceDashboard from "@/pages/EngineerPerformanceDashboard";
 import ServiceInventoryManagement from "@/pages/ServiceInventoryManagement";
 import Inventory from "@/pages/Inventory";
-import InventoryVendors from "@/pages/inventory/InventoryVendors";
 import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
 import ProfitReport from "@/pages/inventory/ProfitReport";
 import InventoryItems from "@/pages/inventory/InventoryItems";
@@ -52,6 +51,7 @@ import SalesReports from "@/pages/inventory/SalesReports";
 import UserManagement from "@/pages/user-management/UserManagement";
 import BranchTransfer from "@/pages/inventory/BranchTransfer";
 import NotFound from "@/pages/NotFound";
+import InventoryVendors from "@/pages/inventory/InventoryVendors";
 
 const AppRoutes = () => {
   return (

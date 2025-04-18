@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -12,33 +12,95 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Vendor } from "@/types/inventory";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+
+const formSchema = z.object({
+  name: z.string().min(2, { message: "Vendor name must be at least 2 characters." }),
+  gstNo: z.string().optional(),
+  phone: z.string().min(10, { message: "Phone number must be at least 10 characters." }),
+  email: z.string().email({ message: "Invalid email address." }).optional().or(z.string().length(0)),
+  address: z.string().min(3, { message: "Address must be at least 3 characters." }),
+  contactPerson: z.string().optional(),
+});
+
+type VendorFormValues = z.infer<typeof formSchema>;
 
 interface VendorFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedVendor: Vendor | null;
-  formData: {
-    id: string;
-    name: string;
-    gstNo: string;
-    phone: string;
-    email: string;
-    address: string;
-  };
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleSaveVendor: () => void;
+  onSave: (data: VendorFormValues) => Promise<void>;
 }
 
 const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
   open,
   onOpenChange,
   selectedVendor,
-  formData,
-  handleInputChange,
-  handleSaveVendor,
+  onSave,
 }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<VendorFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: selectedVendor?.name || "",
+      gstNo: selectedVendor?.gstNo || "",
+      phone: selectedVendor?.phone || "",
+      email: selectedVendor?.email || "",
+      address: selectedVendor?.address || "",
+      contactPerson: selectedVendor?.contactPerson || "",
+    },
+  });
+
+  React.useEffect(() => {
+    if (open) {
+      if (selectedVendor) {
+        form.reset({
+          name: selectedVendor.name,
+          gstNo: selectedVendor.gstNo || "",
+          phone: selectedVendor.phone,
+          email: selectedVendor.email || "",
+          address: selectedVendor.address || "",
+          contactPerson: selectedVendor.contactPerson || "",
+        });
+      } else {
+        form.reset({
+          name: "",
+          gstNo: "",
+          phone: "",
+          email: "",
+          address: "",
+          contactPerson: "",
+        });
+      }
+    }
+  }, [selectedVendor, form, open]);
+
+  // Handle dialog close - prevent closing if form is submitting
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!isSubmitting) {
+      onOpenChange(newOpen);
+    }
+  };
+
+  async function onSubmit(data: VendorFormValues) {
+    setIsSubmitting(true);
+    try {
+      await onSave(data);
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error saving vendor:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{selectedVendor ? "Edit Vendor" : "Add New Vendor"}</DialogTitle>
@@ -49,82 +111,139 @@ const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
             }
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="name" className="text-right">
-              Vendor Name*
-            </Label>
-            <Input
-              id="name"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
               name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Enter vendor name"
-              className="col-span-3"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="name" className="text-right">
+                    Vendor Name*
+                  </Label>
+                  <FormControl>
+                    <Input
+                      id="name"
+                      placeholder="Enter vendor name"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="gstNo" className="text-right">
-              GST Number
-            </Label>
-            <Input
-              id="gstNo"
+            
+            <FormField
+              control={form.control}
               name="gstNo"
-              value={formData.gstNo}
-              onChange={handleInputChange}
-              placeholder="Enter GST number (optional)"
-              className="col-span-3"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="gstNo" className="text-right">
+                    GST Number
+                  </Label>
+                  <FormControl>
+                    <Input
+                      id="gstNo"
+                      placeholder="Enter GST number (optional)"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="phone" className="text-right">
-              Phone Number*
-            </Label>
-            <Input
-              id="phone"
+            
+            <FormField
+              control={form.control}
               name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              placeholder="Enter phone number"
-              className="col-span-3"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="phone" className="text-right">
+                    Phone Number*
+                  </Label>
+                  <FormControl>
+                    <Input
+                      id="phone"
+                      placeholder="Enter phone number"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="email" className="text-right">
-              Email Address*
-            </Label>
-            <Input
-              id="email"
+            
+            <FormField
+              control={form.control}
               name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="Enter email address"
-              className="col-span-3"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="email" className="text-right">
+                    Email Address
+                  </Label>
+                  <FormControl>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Enter email address"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          <div className="grid grid-cols-1 gap-2">
-            <Label htmlFor="address" className="text-right">
-              Address*
-            </Label>
-            <Input
-              id="address"
+            
+            <FormField
+              control={form.control}
               name="address"
-              value={formData.address}
-              onChange={handleInputChange}
-              placeholder="Enter complete address"
-              className="col-span-3"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="address" className="text-right">
+                    Address*
+                  </Label>
+                  <FormControl>
+                    <Input
+                      id="address"
+                      placeholder="Enter complete address"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveVendor}>
-            {selectedVendor ? "Update Vendor" : "Add Vendor"}
-          </Button>
-        </DialogFooter>
+            
+            <FormField
+              control={form.control}
+              name="contactPerson"
+              render={({ field }) => (
+                <FormItem>
+                  <Label htmlFor="contactPerson" className="text-right">
+                    Contact Person
+                  </Label>
+                  <FormControl>
+                    <Input
+                      id="contactPerson"
+                      placeholder="Enter contact person"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : selectedVendor ? "Update Vendor" : "Add Vendor"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
