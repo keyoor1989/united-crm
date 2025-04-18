@@ -1,60 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useSalesInventoryItems, SalesInventoryItem } from "@/hooks/inventory/useSalesInventoryItems";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogFooter 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { toast } from "sonner";
-import { 
-  Barcode, 
-  Trash2, 
-  Plus, 
-  Save, 
-  Search, 
-  CreditCard, 
-  Receipt
-} from "lucide-react";
-import { v4 as uuidv4 } from 'uuid';
-import { SalesItem } from "./SalesTable";
-import { formatCurrency } from "@/utils/finance/financeUtils";
-import CustomerSearch from "@/components/chat/quotation/CustomerSearch";
-import { CustomerType } from "@/types/customer";
 
-interface SaleItemData {
-  id: string;
-  itemName: string;
-  category?: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-}
+import React, { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { CreditCard, Receipt } from "lucide-react";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from 'uuid';
+import { CustomerSection } from "./components/CustomerSection";
+import { PaymentSection } from "./components/PaymentSection";
+import { ItemEntrySection } from "./components/ItemEntrySection";
+import { CartSection } from "./components/CartSection";
+import { CustomerType } from "@/types/customer";
+import { SalesItem } from "./SalesTable";
+import { useSalesInventoryItems } from "@/hooks/inventory/useSalesInventoryItems";
 
 interface UnifiedSalesFormProps {
   open: boolean;
@@ -73,7 +30,7 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   paymentMethods,
   onSaveSale,
 }) => {
-  // Customer details
+  // Customer details state
   const [customerName, setCustomerName] = useState("");
   const [customerType, setCustomerType] = useState("Customer");
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
@@ -82,7 +39,7 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   const [customerLocation, setCustomerLocation] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | null>(null);
   
-  // Payment information
+  // Payment information state
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [isCredit, setIsCredit] = useState(false);
   const [dueDate, setDueDate] = useState(() => {
@@ -91,10 +48,10 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     return date.toISOString().split('T')[0];
   });
   
-  // Cart items
-  const [items, setItems] = useState<SaleItemData[]>([]);
+  // Cart items state
+  const [items, setItems] = useState<any[]>([]);
   
-  // Current item being added
+  // Current item being added state
   const [currentItem, setCurrentItem] = useState({
     itemName: "",
     category: productCategories[0] || "",
@@ -103,8 +60,7 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     barcode: ""
   });
   
-  // For barcode scanner
-  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  // Barcode scanner state
   const [isScanning, setIsScanning] = useState(false);
   
   // Fetch inventory items
@@ -112,16 +68,9 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-  const gstRate = 18; // Default GST rate (can be made configurable)
+  const gstRate = 18;
   const gstAmount = (subtotal * gstRate) / 100;
   const grandTotal = subtotal + gstAmount;
-  
-  // Focus barcode input when scanning mode is activated
-  useEffect(() => {
-    if (isScanning && barcodeInputRef.current) {
-      barcodeInputRef.current.focus();
-    }
-  }, [isScanning]);
   
   const resetForm = () => {
     setCustomerName("");
@@ -163,8 +112,9 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       return;
     }
 
-    // Check if item exists and has enough stock
-    const inventoryItem = inventoryItems.find(item => item.part_name === currentItem.itemName);
+    const inventoryItem = inventoryItems.find(item => 
+      item.display_name === currentItem.itemName || item.part_name === currentItem.itemName
+    );
     
     if (!inventoryItem) {
       toast.error("Item not found in inventory");
@@ -186,7 +136,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     };
     
     setItems([...items, newItem]);
-    
     setCurrentItem({
       itemName: "",
       category: currentItem.category,
@@ -194,10 +143,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       unitPrice: 0,
       barcode: ""
     });
-    
-    if (isScanning && barcodeInputRef.current) {
-      barcodeInputRef.current.focus();
-    }
   };
   
   const handleRemoveItem = (id: string) => {
@@ -212,7 +157,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       return;
     }
     
-    // Look up item by part number
     const foundItem = inventoryItems.find(item => item.part_number === currentItem.barcode);
     
     if (foundItem) {
@@ -231,10 +175,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
         barcode: ""
       });
     }
-    
-    if (barcodeInputRef.current) {
-      barcodeInputRef.current.focus();
-    }
   };
   
   const handleCustomerSelect = (customer: CustomerType) => {
@@ -244,7 +184,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     setCustomerEmail(customer.email || "");
     setCustomerLocation(customer.location || "");
     
-    // Set customer type based on customer information if available
     if (customer.name.toLowerCase().includes("govt") || 
         customer.name.toLowerCase().includes("government")) {
       setCustomerType("Government");
@@ -253,7 +192,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     }
     
     setShowCustomerSearch(false);
-    
     toast.success(`Customer "${customer.name}" selected`);
   };
   
@@ -268,8 +206,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       return;
     }
     
-    // Create a new sale from the first item (to maintain compatibility)
-    // In a real implementation, you'd want to store all items in the database
     const firstItem = items[0];
     const status = isCredit ? "Credit Sale" : "Completed";
     const paymentStatus = isCredit ? "Due" : "Paid";
@@ -296,17 +232,7 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     onClose();
     resetForm();
   };
-  
-  const toggleScanner = () => {
-    setIsScanning(!isScanning);
-    // Focus on barcode input when enabled
-    if (!isScanning && barcodeInputRef.current) {
-      setTimeout(() => {
-        barcodeInputRef.current?.focus();
-      }, 100);
-    }
-  };
-  
+
   return (
     <Dialog open={open} onOpenChange={(open) => {
       if (!open) {
@@ -320,277 +246,56 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Customer & Payment Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Customer Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <CustomerSearch 
-                onSelectCustomer={handleCustomerSelect}
-                showSearch={showCustomerSearch}
-                onToggleSearch={() => setShowCustomerSearch(!showCustomerSearch)}
-                customerName={customerName}
-              />
-              
-              {selectedCustomer && (
-                <div className="text-sm space-y-1 border-l-2 border-primary/20 pl-2">
-                  {customerPhone && <p className="text-muted-foreground">Phone: {customerPhone}</p>}
-                  {customerEmail && <p className="text-muted-foreground">Email: {customerEmail}</p>}
-                  {customerLocation && <p className="text-muted-foreground">Location: {customerLocation}</p>}
-                </div>
-              )}
-              
-              <div>
-                <Label htmlFor="customer-type">Customer Type</Label>
-                <Select value={customerType} onValueChange={setCustomerType}>
-                  <SelectTrigger id="customer-type">
-                    <SelectValue placeholder="Select customer type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customerTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="payment-method">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={handlePaymentMethodChange}>
-                  <SelectTrigger id="payment-method">
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentMethods.map((method) => (
-                      <SelectItem key={method.value} value={method.value}>
-                        <div className="flex items-center">
-                          {React.createElement(method.icon, { className: "mr-2 h-4 w-4" })}
-                          {method.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {isCredit && (
-                <div>
-                  <Label htmlFor="due-date">Due Date</Label>
-                  <Input
-                    id="due-date"
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Customer Section */}
+          <CustomerSection 
+            customerName={customerName}
+            customerPhone={customerPhone}
+            customerEmail={customerEmail}
+            customerLocation={customerLocation}
+            customerType={customerType}
+            selectedCustomer={selectedCustomer}
+            showCustomerSearch={showCustomerSearch}
+            customerTypes={customerTypes}
+            onCustomerSelect={handleCustomerSelect}
+            onCustomerTypeChange={setCustomerType}
+            onToggleSearch={() => setShowCustomerSearch(!showCustomerSearch)}
+          />
           
           {/* Item Entry Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">
-                Item Details
-                {isLoadingItems && " (Loading...)"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isScanning ? (
-                <form onSubmit={handleBarcodeSubmit} className="space-y-4">
-                  <div className="flex items-end space-x-2">
-                    <div className="flex-1">
-                      <Label htmlFor="barcode">Scan Barcode</Label>
-                      <Input
-                        id="barcode"
-                        ref={barcodeInputRef}
-                        value={currentItem.barcode}
-                        onChange={(e) => setCurrentItem({...currentItem, barcode: e.target.value})}
-                        placeholder="Scan barcode..."
-                        autoComplete="off"
-                      />
-                    </div>
-                    <Button type="submit" size="sm">Find</Button>
-                  </div>
-                </form>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="item-name">Item Name</Label>
-                    <Select 
-                      value={currentItem.itemName} 
-                      onValueChange={(value) => {
-                        const item = inventoryItems.find(i => 
-                          i.display_name === value || i.part_name === value
-                        );
-                        if (item) {
-                          setCurrentItem({
-                            ...currentItem,
-                            itemName: item.display_name || item.part_name,
-                            category: item.category,
-                            unitPrice: item.purchase_price * 1.3
-                          });
-                        }
-                      }}
-                    >
-                      <SelectTrigger id="item-name" className="truncate">
-                        <SelectValue placeholder="Select item" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {inventoryItems.map((item) => (
-                          <SelectItem 
-                            key={item.id} 
-                            value={item.display_name || item.part_name}
-                            className="flex flex-col items-start"
-                          >
-                            <div className="truncate max-w-[300px]">
-                              {item.display_name || item.part_name} ({item.quantity} in stock)
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Input
-                      id="category"
-                      value={currentItem.category}
-                      readOnly
-                      className="bg-muted"
-                    />
-                  </div>
-                </div>
-              )}
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="quantity">Quantity</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    value={currentItem.quantity}
-                    onChange={(e) => setCurrentItem({...currentItem, quantity: parseInt(e.target.value) || 1})}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="unit-price">Unit Price (₹)</Label>
-                  <Input
-                    id="unit-price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={currentItem.unitPrice}
-                    onChange={(e) => setCurrentItem({...currentItem, unitPrice: parseFloat(e.target.value) || 0})}
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={toggleScanner}
-                  className="flex items-center gap-1"
-                >
-                  <Barcode className="h-4 w-4 mr-1" />
-                  {isScanning ? "Manual Entry" : "Scan Barcode"}
-                </Button>
-                
-                <Button
-                  type="button"
-                  onClick={handleAddItem}
-                  disabled={!currentItem.itemName || currentItem.unitPrice <= 0}
-                  className="flex items-center gap-1"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add to Cart
-                </Button>
-              </div>
-              
-              <div className="text-sm text-right">
-                <p>Item Total: {formatCurrency(currentItem.quantity * currentItem.unitPrice)}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <ItemEntrySection 
+            currentItem={currentItem}
+            isScanning={isScanning}
+            inventoryItems={inventoryItems}
+            isLoadingItems={isLoadingItems}
+            onItemChange={(changes) => setCurrentItem({ ...currentItem, ...changes })}
+            onAddItem={handleAddItem}
+            onToggleScanner={() => setIsScanning(!isScanning)}
+            onBarcodeSubmit={handleBarcodeSubmit}
+          />
         </div>
         
         {/* Cart Section */}
         <div className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Cart Items</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead className="text-right">Unit Price</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                          No items added yet. Add items to the cart above.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      items.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium max-w-[300px] truncate">
-                            {item.itemName}
-                          </TableCell>
-                          <TableCell>{item.category}</TableCell>
-                          <TableCell className="text-right">{item.quantity}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(item.total)}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveItem(item.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-              
-              <div className="mt-6 flex justify-end">
-                <div className="w-80 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal:</span>
-                    <span>{formatCurrency(subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>GST ({gstRate}%):</span>
-                    <span>{formatCurrency(gstAmount)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold pt-2 border-t">
-                    <span>Total:</span>
-                    <span>{formatCurrency(grandTotal)}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CartSection 
+            items={items}
+            subtotal={subtotal}
+            gstRate={gstRate}
+            gstAmount={gstAmount}
+            grandTotal={grandTotal}
+            onRemoveItem={handleRemoveItem}
+          />
+        </div>
+        
+        {/* Payment Section */}
+        <div className="mt-6">
+          <PaymentSection 
+            paymentMethod={paymentMethod}
+            isCredit={isCredit}
+            dueDate={dueDate}
+            paymentMethods={paymentMethods}
+            onPaymentMethodChange={handlePaymentMethodChange}
+            onDueDateChange={setDueDate}
+          />
         </div>
         
         <DialogFooter className="mt-6">
