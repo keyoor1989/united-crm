@@ -10,26 +10,33 @@ interface EngineerItem {
   modelNumber: string | null;
   modelBrand: string | null;
   warehouseSource: string | null;
+  engineer_id?: string;
+  engineer_name?: string;
+  return_date?: string;
 }
 
 export const useEngineerItems = (engineerId: string) => {
   const { data: items = [], isLoading, error } = useQuery({
     queryKey: ['engineerItems', engineerId],
     queryFn: async () => {
-      if (!engineerId) return [];
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from('engineer_inventory')
         .select('*')
-        .eq('engineer_id', engineerId)
-        .order('assigned_date', { ascending: false });
+        .order('created_at', { ascending: false });
+        
+      // Only filter by engineer_id if it's provided
+      if (engineerId) {
+        query = query.eq('engineer_id', engineerId);
+      }
+      
+      const { data, error } = await query;
         
       if (error) {
         console.error('Error fetching engineer items:', error);
         throw error;
       }
       
-      console.log(`Found ${data?.length || 0} items for engineer ${engineerId}`);
+      console.log(`Found ${data?.length || 0} items ${engineerId ? `for engineer ${engineerId}` : 'for all engineers'}`);
       
       return data.map(item => ({
         id: item.id,
@@ -38,10 +45,12 @@ export const useEngineerItems = (engineerId: string) => {
         quantity: item.quantity,
         modelNumber: item.model_number,
         modelBrand: item.model_brand,
-        warehouseSource: item.warehouse_source
+        warehouseSource: item.warehouse_source,
+        engineer_id: item.engineer_id,
+        engineer_name: item.engineer_name,
+        return_date: item.assigned_date
       })) as EngineerItem[];
     },
-    enabled: !!engineerId,
     staleTime: 30000 // Consider data fresh for 30 seconds
   });
 

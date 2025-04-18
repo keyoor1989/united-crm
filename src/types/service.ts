@@ -1,4 +1,3 @@
-
 import { ServiceExpense } from "@/types/serviceExpense";
 
 export interface ServiceCall {
@@ -88,4 +87,17 @@ export interface Feedback {
   rating: number;
   comment: string | null;
   date: string;
+}
+
+export interface EngineerItem {
+  id: string;
+  item_id: string;
+  item_name: string;
+  quantity: number;
+  modelNumber: string | null;
+  modelBrand: string | null;
+  warehouseSource: string | null;
+  engineer_id?: string;
+  engineer_name?: string;
+  return_date?: string;
 }

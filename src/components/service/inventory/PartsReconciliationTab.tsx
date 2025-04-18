@@ -356,6 +356,11 @@ const PartsReconciliationTab = ({
       
       <AddPartDialog 
         open={showAddPartDialog} 
+        onOpenChange={setShowAddPartDialog}
+        engineerId={selectedServiceCall?.engineerId || ""}
+        engineerName={selectedServiceCall?.engineerName || ""}
+        engineerItems={[]} // This should be populated with the correct engineer items
+        onPartAdded={handleAddPart}
         onClose={() => setShowAddPartDialog(false)}
         onSave={handleAddPart}
         serviceCall={selectedServiceCall}

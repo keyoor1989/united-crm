@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,9 @@ interface AddPartDialogProps {
   engineerName: string;
   engineerItems: EngineerItem[];
   onPartAdded: (part: any) => void;
+  onClose?: () => void; // Add optional onClose prop
+  onSave?: (part: any) => void; // Add optional onSave prop
+  serviceCall?: any; // Add optional serviceCall prop
 }
 
 const AddPartDialog = ({
@@ -36,7 +40,10 @@ const AddPartDialog = ({
   engineerId,
   engineerName,
   engineerItems,
-  onPartAdded
+  onPartAdded,
+  onClose,
+  onSave,
+  serviceCall
 }: AddPartDialogProps) => {
   const { toast } = useToast();
   const [selectedPart, setSelectedPart] = useState<{
@@ -69,12 +76,24 @@ const AddPartDialog = ({
       return;
     }
 
-    onPartAdded(selectedPart);
+    // Handle both onPartAdded and onSave callbacks
+    if (onSave) {
+      onSave(selectedPart);
+    } else {
+      onPartAdded(selectedPart);
+    }
+    
     toast({
       title: "Part Added",
       description: `${selectedPart.name} added to service call.`,
     });
-    onOpenChange(false);
+    
+    // Handle dialog closing
+    if (onClose) {
+      onClose();
+    } else {
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -132,7 +151,7 @@ const AddPartDialog = ({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="secondary" onClick={() => onClose ? onClose() : onOpenChange(false)}>
             Cancel
           </Button>
           <Button type="button" onClick={handleAddPart} disabled={!selectedPart}>

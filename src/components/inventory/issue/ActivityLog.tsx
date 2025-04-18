@@ -9,22 +9,24 @@ import { EngineerInventoryItem } from "@/hooks/inventory/useEngineerInventory";
 
 const ActivityLog = () => {
   const [activeTab, setActiveTab] = useState("issues");
-  const { items: engineerItems, isLoading: isLoadingEngineerItems } = useEngineerItems();
+  // Pass an empty string as engineerId to fetch all items
+  const { items: engineerItems, isLoading: isLoadingEngineerItems } = useEngineerItems("");
   const { items: returnedItems, isLoading: isLoadingReturnedItems } = useReturnedItems();
 
   // Map the items from useEngineerItems format to useEngineerInventory format
   const issuedItems: EngineerInventoryItem[] = engineerItems.map(item => ({
     id: item.id,
-    engineerId: item.engineer_id,
-    engineerName: item.engineer_name,
+    engineerId: item.engineer_id || "",
+    engineerName: item.engineer_name || "",
     itemId: item.item_id,
     itemName: item.item_name,
     assignedQuantity: item.quantity,
     remainingQuantity: item.quantity,
     modelNumber: item.modelNumber,
     modelBrand: item.modelBrand,
-    lastUpdated: item.assigned_date,
-    createdAt: item.assigned_date
+    lastUpdated: item.return_date || item.quantity ? new Date().toISOString() : new Date().toISOString(),
+    createdAt: item.return_date || item.quantity ? new Date().toISOString() : new Date().toISOString(),
+    warehouseSource: item.warehouseSource
   }));
 
   return (
