@@ -54,7 +54,8 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      dueDate: sale.due_date || null // Handle potentially missing due_date
+      // The due_date property doesn't exist in the sales table, so we'll set it to null
+      dueDate: null
     }));
 
     return salesData;
@@ -92,7 +93,8 @@ export const getCreditSales = async (): Promise<SalesItem[]> => {
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      dueDate: sale.due_date || null // Handle potentially missing due_date
+      // The due_date property doesn't exist in the sales table, so we'll set it to null
+      dueDate: null
     }));
 
     return salesData;
@@ -248,7 +250,8 @@ export const fetchSalesReportData = async (startDate: Date, endDate: Date): Prom
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      dueDate: sale.due_date || null // Handle potentially missing due_date
+      // The due_date property doesn't exist in the sales table, so we'll set it to null
+      dueDate: null
     }));
 
     return salesData;
