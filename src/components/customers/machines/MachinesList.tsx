@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { MachineItem } from "./MachineItem"; // Changed from default import to named import
+import { MachineItem } from "./MachineItem";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Machine } from "./types";
@@ -36,7 +36,7 @@ const MachinesList: React.FC<MachinesListProps> = ({
     enabled: !!customerId
   });
 
-  // Fetch machine interests for leads
+  // Fetch machine interests for non-converted customers
   const { data: machineInterests = [], isLoading: isLoadingInterests } = useQuery({
     queryKey: ['machine-interests', customerId],
     queryFn: async () => {
@@ -76,7 +76,7 @@ const MachinesList: React.FC<MachinesListProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Show interests section for leads */}
+      {/* Show interests section when not converted */}
       {!isCustomerConverted && machineInterests.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium">Interested In</h4>
@@ -94,7 +94,7 @@ const MachinesList: React.FC<MachinesListProps> = ({
         </div>
       )}
 
-      {/* Show owned machines section */}
+      {/* Show owned machines section for converted customers */}
       {isCustomerConverted && (
         <>
           <div className="flex justify-between items-center">

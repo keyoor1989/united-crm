@@ -57,7 +57,7 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
         
       if (error) throw error;
       
-      // If there's machine interest, save it
+      // If there's machine interest and this is a new customer, save it
       if (values.machineInterest && !selectedCustomer) {
         const { error: interestError } = await supabase
           .from('customer_machine_interests')
