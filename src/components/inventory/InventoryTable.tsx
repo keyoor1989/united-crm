@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Edit, Trash2, Plus } from "lucide-react";
+import { Package, Edit, Trash2, Plus, History } from "lucide-react";
 import { toast } from "sonner";
 import InventoryFormModal from "./InventoryFormModal";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/pagination";
 import { useInventoryItems, useDeleteInventoryItem } from "@/hooks/inventory/useInventoryItems";
 import { InventoryItem } from "@/types/inventory";
+import { ItemHistoryDialog } from './items/ItemHistoryDialog';
 
 interface InventoryTableProps {
   searchQuery?: string;
@@ -41,6 +42,7 @@ const InventoryTable = ({
 }: InventoryTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [selectedItemForHistory, setSelectedItemForHistory] = useState<string | null>(null);
   const { items, isLoading } = useInventoryItems(null);
   const { mutate: deleteItem } = useDeleteInventoryItem();
   
@@ -119,6 +121,24 @@ const InventoryTable = ({
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
+
+  const actionButtons = (item: InventoryItem) => (
+    <div className="flex justify-end gap-2">
+      <Button variant="ghost" size="icon" onClick={() => setSelectedItemForHistory(item.part_name)}>
+        <History className="h-4 w-4" />
+      </Button>
+      <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
+        <Edit className="h-4 w-4" />
+      </Button>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => handleDeleteClick(item.id, item.part_name || item.name)}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 
   return (
     <>
@@ -209,18 +229,7 @@ const InventoryTable = ({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDeleteClick(item.id, item.part_name || item.name)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {actionButtons(item)}
                   </TableCell>
                 </TableRow>
               ))
@@ -295,6 +304,12 @@ const InventoryTable = ({
           onConfirmDelete={handleDeleteItem}
         />
       )}
+
+      <ItemHistoryDialog
+        open={!!selectedItemForHistory}
+        onOpenChange={(open) => !open && setSelectedItemForHistory(null)}
+        itemName={selectedItemForHistory}
+      />
     </>
   );
 };
