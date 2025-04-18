@@ -12,13 +12,15 @@ import {
 } from "@/components/ui/table";
 import { useReturnsHistory } from '@/hooks/inventory/useReturnsHistory';
 import { format } from 'date-fns';
+import { Skeleton } from "@/components/ui/skeleton";
+import { Package, Undo2 } from "lucide-react";
 
 interface ReturnsHistoryTabProps {
   itemName: string | null;
 }
 
 export const ReturnsHistoryTab = ({ itemName }: ReturnsHistoryTabProps) => {
-  const { data: returnsHistory } = useReturnsHistory(itemName);
+  const { data: returnsHistory, isLoading } = useReturnsHistory(itemName);
 
   const formatDate = (date: string) => {
     if (!date) return 'N/A';
@@ -28,6 +30,28 @@ export const ReturnsHistoryTab = ({ itemName }: ReturnsHistoryTabProps) => {
       return date || 'N/A';
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <div className="flex space-x-4">
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-4 w-1/4" />
+            </div>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex space-x-4">
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -40,7 +64,7 @@ export const ReturnsHistoryTab = ({ itemName }: ReturnsHistoryTabProps) => {
               <TableHead>Quantity</TableHead>
               <TableHead>Condition</TableHead>
               <TableHead>Reason</TableHead>
-              <TableHead>Notes</TableHead>
+              <TableHead>Details</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -58,13 +82,34 @@ export const ReturnsHistoryTab = ({ itemName }: ReturnsHistoryTabProps) => {
                     </Badge>
                   </TableCell>
                   <TableCell>{return_item.reason}</TableCell>
-                  <TableCell>{return_item.notes || '-'}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      {return_item.notes && (
+                        <span className="text-sm text-muted-foreground truncate max-w-[150px]" title={return_item.notes}>
+                          {return_item.notes}
+                        </span>
+                      )}
+                      {return_item.item_id && (
+                        <Badge variant="outline" className="w-fit text-xs">
+                          ID: {return_item.item_id}
+                        </Badge>
+                      )}
+                      {return_item.warehouse_name && (
+                        <Badge variant="outline" className="w-fit text-xs">
+                          To: {return_item.warehouse_name}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                  No returns history found
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <Undo2 className="h-10 w-10 text-muted-foreground/50" />
+                    <span>No returns history found</span>
+                  </div>
                 </TableCell>
               </TableRow>
             )}

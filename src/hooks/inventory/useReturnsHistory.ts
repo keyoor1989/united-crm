@@ -27,22 +27,18 @@ export const useReturnsHistory = (itemName: string | null) => {
         console.log('Found item details:', stockItem);
         
         // Step 2: Query inventory_returns using both item_id and name matching
-        const query = supabase
+        let query = supabase
           .from('inventory_returns')
           .select('*')
           .order('return_date', { ascending: false });
           
         // If we found the item in opening_stock_entries, use its ID for matching
         if (stockItem?.id) {
-          query.or(`item_id.eq.${stockItem.id},item_name.ilike.%${itemName}%`);
+          // Exact match by item_id
+          query = query.eq('item_id', stockItem.id);
         } else {
           // Fallback to flexible name matching
-          query.or(`item_name.ilike.%${itemName}%`);
-          
-          // Add part_name matching if available
-          if (stockItem?.part_name) {
-            query.or(`item_name.ilike.%${stockItem.part_name}%`);
-          }
+          query = query.ilike('item_name', `%${itemName}%`);
         }
         
         const { data, error } = await query;
