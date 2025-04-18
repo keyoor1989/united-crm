@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { toast } from "sonner";
@@ -44,16 +45,16 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
       date: sale.date,
       customer: sale.customer_name,
       customerType: sale.customer_type,
-      itemName: 'Sample Item', //sale.item_name, // Assuming item_name is stored in sale_items
-      quantity: 1, //sale.quantity, // Assuming quantity is stored in sale_items
-      unitPrice: sale.unit_price || 100,
+      itemName: 'Sample Item', // Assuming item_name is stored elsewhere
+      quantity: 1, // Assuming quantity is stored elsewhere
+      unitPrice: 100, // Default value
       total: sale.total_amount,
       status: sale.status,
       paymentMethod: sale.payment_method,
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      dueDate: sale.due_date
+      dueDate: sale.due_date || null // Handle potentially missing due_date
     }));
 
     return salesData;
@@ -82,16 +83,16 @@ export const getCreditSales = async (): Promise<SalesItem[]> => {
       date: sale.date,
       customer: sale.customer_name,
       customerType: sale.customer_type,
-      itemName: 'Sample Item', //sale.item_name, // Assuming item_name is stored in sale_items
-      quantity: 1, //sale.quantity, // Assuming quantity is stored in sale_items
-      unitPrice: sale.unit_price || 100,
+      itemName: 'Sample Item', // Assuming item_name is stored elsewhere
+      quantity: 1, // Assuming quantity is stored elsewhere
+      unitPrice: 100, // Default value
       total: sale.total_amount,
       status: sale.status,
       paymentMethod: sale.payment_method,
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      dueDate: sale.due_date
+      dueDate: sale.due_date || null // Handle potentially missing due_date
     }));
 
     return salesData;
@@ -136,7 +137,7 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
     if (data && saleItems.length > 0) {
       for (const item of saleItems) {
         const { error: itemError } = await supabase
-          .from('sale_items')
+          .from('sales_items') // Changed from 'sale_items' to 'sales_items'
           .insert({
             sale_id: data.id,
             item_name: item.item_name,
@@ -188,7 +189,7 @@ export const generateBill = async (saleId: string, invoiceNumber: string): Promi
 export const recordPayment = async (payment: any): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from('payments')
+      .from('sale_payments') // Changed from 'payments' to 'sale_payments'
       .insert(payment);
 
     if (error) {
@@ -240,14 +241,14 @@ export const fetchSalesReportData = async (startDate: Date, endDate: Date): Prom
       customerType: sale.customer_type,
       itemName: 'Sample Item', // This will be updated once we implement full item details
       quantity: 1, 
-      unitPrice: sale.unit_price || 100,
+      unitPrice: 100, // Default value since unit_price is not in the sales table
       total: sale.total_amount,
       status: sale.status,
       paymentMethod: sale.payment_method,
       paymentStatus: sale.payment_status,
       billGenerated: sale.bill_generated,
       invoiceNumber: sale.invoice_number,
-      dueDate: sale.due_date
+      dueDate: sale.due_date || null // Handle potentially missing due_date
     }));
 
     return salesData;
