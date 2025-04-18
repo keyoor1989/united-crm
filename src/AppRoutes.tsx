@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -51,7 +50,6 @@ import TaskDashboard from "@/pages/tasks/TaskDashboard";
 // Inventory Sales pages
 import InventorySales from "@/pages/inventory/InventorySales";
 import CashPurchase from "@/pages/inventory/CashPurchase";
-import CreditSales from "@/pages/inventory/CreditSales";
 import SalesReports from "@/pages/inventory/SalesReports";
 // User Management page
 import UserManagement from "@/pages/user-management/UserManagement";
@@ -96,7 +94,6 @@ const AppRoutes = () => {
         <Route path="/inventory/amc-tracker" element={<ProtectedRoute><AmcTracker /></ProtectedRoute>} />
         <Route path="/inventory/cash-purchase" element={<ProtectedRoute><CashPurchase /></ProtectedRoute>} />
         <Route path="/inventory/sales" element={<ProtectedRoute><InventorySales /></ProtectedRoute>} />
-        <Route path="/inventory/credit-sales" element={<ProtectedRoute><CreditSales /></ProtectedRoute>} />
         <Route path="/inventory/sales-reports" element={<ProtectedRoute><SalesReports /></ProtectedRoute>} />
         <Route path="/inventory/vendor-performance" element={<ProtectedRoute><VendorPerformanceDemo /></ProtectedRoute>} />
         <Route path="/inventory/profit-report" element={<ProtectedRoute><ProfitReport /></ProtectedRoute>} />

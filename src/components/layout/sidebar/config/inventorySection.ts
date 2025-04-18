@@ -1,5 +1,5 @@
 
-import { Box, CircleDollarSign, CreditCard, BarChart3, Package, Truck, History, Building2, ReceiptText, Tags, Archive } from "lucide-react";
+import { Box, CircleDollarSign, BarChart3, Package, Truck, History, Building2, ReceiptText, Tags, Archive } from "lucide-react";
 import { NavSection } from "../types/navTypes";
 
 export const inventorySection: NavSection = {
@@ -36,11 +36,6 @@ export const inventorySection: NavSection = {
       to: "/inventory/sales",
       icon: ReceiptText,
       label: "Sales"
-    },
-    {
-      to: "/inventory/credit-sales",
-      icon: CreditCard,
-      label: "Credit Sales"
     },
     {
       to: "/inventory/sales-reports",
