@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2 } from "lucide-react";
 import { formatCurrency } from "@/utils/finance/financeUtils";
+import { GstMode } from './GstHandlingSection';
 
 interface CartItem {
   id: string;
@@ -18,6 +19,7 @@ interface CartItem {
 interface CartSectionProps {
   items: CartItem[];
   subtotal: number;
+  gstMode: GstMode;
   gstRate: number;
   gstAmount: number;
   grandTotal: number;
@@ -27,6 +29,7 @@ interface CartSectionProps {
 export const CartSection: React.FC<CartSectionProps> = ({
   items,
   subtotal,
+  gstMode,
   gstRate,
   gstAmount,
   grandTotal,
@@ -86,15 +89,19 @@ export const CartSection: React.FC<CartSectionProps> = ({
         <div className="mt-6 flex justify-end">
           <div className="w-80 space-y-2">
             <div className="flex justify-between text-sm">
-              <span>Subtotal:</span>
+              <span>{gstMode === 'inclusive' ? 'Price (Incl. GST):' : 'Subtotal:'}</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>GST ({gstRate}%):</span>
-              <span>{formatCurrency(gstAmount)}</span>
-            </div>
+            
+            {gstMode !== 'no-gst' && (
+              <div className="flex justify-between text-sm">
+                <span>GST ({gstRate}%):</span>
+                <span>{formatCurrency(gstAmount)}</span>
+              </div>
+            )}
+            
             <div className="flex justify-between font-bold pt-2 border-t">
-              <span>Total:</span>
+              <span>Total{gstMode === 'inclusive' ? ' (Incl. GST)' : ''}:</span>
               <span>{formatCurrency(grandTotal)}</span>
             </div>
           </div>

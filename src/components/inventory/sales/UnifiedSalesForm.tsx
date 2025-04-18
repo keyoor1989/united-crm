@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { CustomerSection } from "./components/CustomerSection";
 import { PaymentSection } from "./components/PaymentSection";
 import { ItemEntrySection } from "./components/ItemEntrySection";
 import { CartSection } from "./components/CartSection";
+import { GstHandlingSection, GstMode } from "./components/GstHandlingSection";
 import { CustomerType } from "@/types/customer";
 import { SalesItem } from "./SalesTable";
 import { useSalesInventoryItems } from "@/hooks/inventory/useSalesInventoryItems";
@@ -30,7 +30,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   paymentMethods,
   onSaveSale,
 }) => {
-  // Customer details state
   const [customerName, setCustomerName] = useState("");
   const [customerType, setCustomerType] = useState("Customer");
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
@@ -39,7 +38,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   const [customerLocation, setCustomerLocation] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | null>(null);
   
-  // Payment information state
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [isCredit, setIsCredit] = useState(false);
   const [dueDate, setDueDate] = useState(() => {
@@ -48,10 +46,8 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     return date.toISOString().split('T')[0];
   });
   
-  // Cart items state
   const [items, setItems] = useState<any[]>([]);
   
-  // Current item being added state
   const [currentItem, setCurrentItem] = useState({
     itemName: "",
     category: productCategories[0] || "",
@@ -60,18 +56,23 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     barcode: ""
   });
   
-  // Barcode scanner state
   const [isScanning, setIsScanning] = useState(false);
   
-  // Fetch inventory items
   const { data: inventoryItems = [], isLoading: isLoadingItems } = useSalesInventoryItems();
   
-  // Calculate totals
-  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-  const gstRate = 18;
-  const gstAmount = (subtotal * gstRate) / 100;
-  const grandTotal = subtotal + gstAmount;
+  const [gstMode, setGstMode] = useState<GstMode>('exclusive');
+  const [gstRate, setGstRate] = useState(18);
   
+  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  const gstAmount = gstMode === 'no-gst' ? 0 : 
+    gstMode === 'inclusive' ? 
+      (subtotal * gstRate) / (100 + gstRate) : 
+      (subtotal * gstRate) / 100;
+      
+  const grandTotal = gstMode === 'inclusive' ? 
+    subtotal : // Price already includes GST
+    subtotal + (gstMode === 'no-gst' ? 0 : gstAmount);
+
   const resetForm = () => {
     setCustomerName("");
     setCustomerType("Customer");
@@ -126,13 +127,18 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       return;
     }
 
+    let finalUnitPrice = currentItem.unitPrice;
+    if (gstMode === 'inclusive') {
+      finalUnitPrice = (currentItem.unitPrice * 100) / (100 + gstRate);
+    }
+
     const newItem = {
       id: inventoryItem.id,
       itemName: currentItem.itemName,
       category: currentItem.category,
       quantity: currentItem.quantity,
-      unitPrice: currentItem.unitPrice,
-      total: currentItem.quantity * currentItem.unitPrice
+      unitPrice: finalUnitPrice,
+      total: finalUnitPrice * currentItem.quantity
     };
     
     setItems([...items, newItem]);
@@ -246,7 +252,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Customer Section */}
           <CustomerSection 
             customerName={customerName}
             customerPhone={customerPhone}
@@ -261,7 +266,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
             onToggleSearch={() => setShowCustomerSearch(!showCustomerSearch)}
           />
           
-          {/* Item Entry Section */}
           <ItemEntrySection 
             currentItem={currentItem}
             isScanning={isScanning}
@@ -274,11 +278,20 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
           />
         </div>
         
-        {/* Cart Section */}
+        <div className="mt-6">
+          <GstHandlingSection
+            gstMode={gstMode}
+            gstRate={gstRate}
+            onGstModeChange={setGstMode}
+            onGstRateChange={setGstRate}
+          />
+        </div>
+        
         <div className="mt-6">
           <CartSection 
             items={items}
             subtotal={subtotal}
+            gstMode={gstMode}
             gstRate={gstRate}
             gstAmount={gstAmount}
             grandTotal={grandTotal}
@@ -286,7 +299,6 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
           />
         </div>
         
-        {/* Payment Section */}
         <div className="mt-6">
           <PaymentSection 
             paymentMethod={paymentMethod}
