@@ -9,7 +9,9 @@ import {
   Tooltip, 
   Legend,
   PointElement,
-  LineElement
+  LineElement,
+  LineController,
+  BarController
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { SalesItem } from '@/components/inventory/sales/SalesTable';
@@ -23,6 +25,8 @@ ChartJS.register(
   BarElement,
   PointElement,
   LineElement,
+  LineController,
+  BarController,
   Title,
   Tooltip,
   Legend

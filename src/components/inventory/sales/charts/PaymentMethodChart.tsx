@@ -1,11 +1,11 @@
 
 import React, { useMemo } from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, PieController } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
 import { SalesItem } from '@/components/inventory/sales/SalesTable';
 
 // Register ChartJS components
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, PieController, Tooltip, Legend);
 
 interface PaymentMethodChartProps {
   salesData: SalesItem[];

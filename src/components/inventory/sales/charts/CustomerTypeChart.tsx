@@ -1,11 +1,28 @@
 
 import React, { useMemo } from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
+import { 
+  Chart as ChartJS, 
+  ArcElement, 
+  Tooltip, 
+  Legend, 
+  CategoryScale, 
+  LinearScale, 
+  BarElement,
+  BarController 
+} from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { SalesItem } from '@/components/inventory/sales/SalesTable';
 
 // Register ChartJS components
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale, 
+  LinearScale, 
+  BarElement, 
+  BarController,
+  ArcElement, 
+  Tooltip, 
+  Legend
+);
 
 interface CustomerTypeChartProps {
   salesData: SalesItem[];
