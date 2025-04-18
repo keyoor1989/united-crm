@@ -9,45 +9,77 @@ export const usePurchaseHistory = (itemName: string | null) => {
       if (!itemName) return [];
       
       try {
-        // This will use more flexible matching including ILIKE and fallbacks
-        const { data, error } = await supabase
-          .from('purchase_orders')
-          .select('*')
-          .contains('items', [{ item_name: itemName }])
-          .order('created_at', { ascending: false });
+        console.log('Fetching purchase history for item:', itemName);
         
-        if (error) {
-          console.error('Error fetching purchase history:', error);
+        // Step 1: Get the item details from opening_stock_entries
+        const { data: stockItem, error: stockError } = await supabase
+          .from('opening_stock_entries')
+          .select('id, part_name, full_item_name')
+          .or(`part_name.ilike.%${itemName}%,full_item_name.ilike.%${itemName}%`)
+          .limit(1)
+          .maybeSingle();
+        
+        if (stockError) {
+          console.error('Error fetching item details:', stockError);
           return [];
         }
         
-        // Extract the specific item details from the purchase orders
-        const purchaseRecords = data?.map(po => {
+        console.log('Found item details:', stockItem);
+        
+        // Step 2: Use both item_id and flexible name matching for maximum coverage
+        let purchaseQuery = supabase
+          .from('purchase_orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        // If we found the item, filter using its ID if present in the items array
+        const { data: purchaseOrders, error: poError } = await purchaseQuery;
+        
+        if (poError) {
+          console.error('Error fetching purchase orders:', poError);
+          return [];
+        }
+        
+        // Step 3: Extract and format the purchase records for this specific item
+        const purchaseRecords = purchaseOrders?.flatMap(po => {
           try {
             const itemsArray = typeof po.items === 'string' ? JSON.parse(po.items) : po.items;
-            // Look for the item by exact match or partial match
-            const itemDetails = Array.isArray(itemsArray) 
-              ? itemsArray.find((item: any) => 
-                  item.item_name === itemName || 
-                  (item.item_name && item.item_name.includes(itemName))
-                )
-              : null;
-              
-            if (!itemDetails) return null;
             
-            return {
-              id: po.id,
+            if (!Array.isArray(itemsArray)) return [];
+            
+            // Find relevant items in this purchase order
+            const matchingItems = itemsArray.filter((item: any) => {
+              // Match by item_id if available from our stock item
+              if (stockItem?.id && item.item_id === stockItem.id) return true;
+              
+              // Or do flexible name matching
+              return (
+                item.item_name && (
+                  item.item_name.toLowerCase().includes(itemName.toLowerCase()) ||
+                  (stockItem?.part_name && item.item_name.toLowerCase().includes(stockItem.part_name.toLowerCase())) ||
+                  (stockItem?.full_item_name && item.item_name.toLowerCase().includes(stockItem.full_item_name.toLowerCase()))
+                )
+              );
+            });
+            
+            // Map matching items to our desired format
+            return matchingItems.map((item: any) => ({
+              id: `${po.id}-${item.item_name}`,
               date: po.created_at,
               vendor: po.vendor_name,
-              quantity: itemDetails?.quantity || 0,
-              rate: itemDetails?.unit_price || 0,
-              invoiceNo: po.po_number
-            };
+              quantity: item?.quantity || 0,
+              rate: item?.unit_price || 0,
+              invoiceNo: po.po_number,
+              remarks: po.notes || '',
+              status: po.status
+            }));
           } catch (e) {
             console.error('Error parsing purchase order items:', e);
-            return null;
+            return [];
           }
         }).filter(Boolean) || [];
+        
+        console.log(`Found ${purchaseRecords.length} purchase records`);
         
         return purchaseRecords;
       } catch (error) {
