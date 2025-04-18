@@ -19,6 +19,7 @@ const InventoryItems = () => {
       console.log("Adding new item:", formData);
       // Here you would typically save to your database
       toast.success("Item added successfully");
+      setOpenItemDialog(false);
     } catch (error) {
       console.error("Error adding item:", error);
       toast.error("Failed to add item");
