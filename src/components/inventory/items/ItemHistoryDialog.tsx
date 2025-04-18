@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   Dialog,
@@ -64,7 +65,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
   });
 
   // Query for sales history using full_item_name
-  const { data: salesHistory } = useQuery({
+  const { data: salesHistory, isLoading: isSalesLoading, error: salesError } = useQuery({
     queryKey: ['sales_history', itemName],
     queryFn: async () => {
       if (!itemName) return [];
