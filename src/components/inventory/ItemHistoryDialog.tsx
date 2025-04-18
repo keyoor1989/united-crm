@@ -199,7 +199,6 @@ const ItemHistoryDialog: React.FC<ItemHistoryDialogProps> = ({
                           <TableHead>Date</TableHead>
                           <TableHead>Issued To</TableHead>
                           <TableHead className="text-right">Quantity</TableHead>
-                          <TableHead>Service Case</TableHead>
                           <TableHead>Warehouse</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -209,11 +208,6 @@ const ItemHistoryDialog: React.FC<ItemHistoryDialogProps> = ({
                             <TableCell>{formatDate(record.assigned_date)}</TableCell>
                             <TableCell>{record.engineer_name || "Unknown"}</TableCell>
                             <TableCell className="text-right">{record.quantity}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="font-mono">
-                                {record.service_case_id || 'N/A'}
-                              </Badge>
-                            </TableCell>
                             <TableCell>{record.warehouse_source || "Main"}</TableCell>
                           </TableRow>
                         ))}

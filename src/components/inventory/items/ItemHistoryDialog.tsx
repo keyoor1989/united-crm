@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from "react";
 import {
   Dialog,
   DialogContent,
@@ -108,7 +108,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
                       <TableHead>Date</TableHead>
                       <TableHead>Engineer</TableHead>
                       <TableHead className="text-right">Quantity</TableHead>
-                      <TableHead>Service Case</TableHead>
+                      <TableHead>Warehouse</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -117,11 +117,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
                         <TableCell>{formatDate(record.assigned_date)}</TableCell>
                         <TableCell>{record.engineer_name}</TableCell>
                         <TableCell className="text-right">{record.quantity}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono">
-                            {record.service_case_id || 'N/A'}
-                          </Badge>
-                        </TableCell>
+                        <TableCell>{record.warehouse_source || 'Main'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

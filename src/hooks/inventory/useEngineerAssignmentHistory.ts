@@ -29,7 +29,7 @@ export const useEngineerAssignmentHistory = (itemName: string | null) => {
         // Step 2: Use both item_id and flexible name matching for maximum coverage
         const query = supabase
           .from('engineer_inventory')
-          .select('id, engineer_id, engineer_name, quantity, assigned_date, item_name, item_id, warehouse_source, service_case_id')
+          .select('id, engineer_id, engineer_name, quantity, assigned_date, item_name, item_id, warehouse_source')
           .order('assigned_date', { ascending: false });
           
         // If we found the item in opening_stock_entries, we can use its ID

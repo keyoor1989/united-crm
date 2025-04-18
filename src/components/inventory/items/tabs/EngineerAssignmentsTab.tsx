@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/table";
 import { useEngineerAssignmentHistory } from '@/hooks/inventory/useEngineerAssignmentHistory';
 import { format } from 'date-fns';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface EngineerAssignmentsTabProps {
   itemName: string | null;
 }
 
 export const EngineerAssignmentsTab = ({ itemName }: EngineerAssignmentsTabProps) => {
-  const { data: engineerAssignments } = useEngineerAssignmentHistory(itemName);
+  const { data: engineerAssignments, isLoading } = useEngineerAssignmentHistory(itemName);
 
   const formatDate = (date: string) => {
     if (!date) return 'N/A';
@@ -27,6 +28,28 @@ export const EngineerAssignmentsTab = ({ itemName }: EngineerAssignmentsTabProps
       return date || 'N/A';
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="space-y-3">
+            <div className="flex space-x-4">
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-4 w-1/4" />
+            </div>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex space-x-4">
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -47,7 +70,7 @@ export const EngineerAssignmentsTab = ({ itemName }: EngineerAssignmentsTabProps
                   <TableCell>{formatDate(assignment.assigned_date)}</TableCell>
                   <TableCell>{assignment.engineer_name}</TableCell>
                   <TableCell>{assignment.quantity}</TableCell>
-                  <TableCell>{assignment.warehouse_source}</TableCell>
+                  <TableCell>{assignment.warehouse_source || 'Main'}</TableCell>
                 </TableRow>
               ))
             ) : (
