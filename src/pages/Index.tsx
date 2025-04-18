@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spinner } from "@/components/ui/spinner";
@@ -7,20 +7,28 @@ import { Spinner } from "@/components/ui/spinner";
 const Index = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   useEffect(() => {
-    // Only redirect when authentication check is complete
+    // Only redirect when authentication check is complete and we haven't attempted redirect yet
     if (!isLoading) {
+      console.log("Index: Auth state determined - Authenticated:", isAuthenticated);
+      
       if (isAuthenticated) {
+        console.log("Index: Redirecting to dashboard");
         navigate("/", { replace: true });
       } else {
+        console.log("Index: Redirecting to login");
         navigate("/login", { replace: true });
       }
+      
+      // Mark that we've attempted redirection
+      setRedirectAttempted(true);
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, redirectAttempted]);
 
   // Show loading indicator while checking authentication
-  if (isLoading) {
+  if (isLoading || !redirectAttempted) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Spinner className="h-8 w-8" />
