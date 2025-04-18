@@ -48,28 +48,27 @@ const Login: React.FC = () => {
   });
 
   const onSubmit = async (data: FormValues) => {
-    if (isSubmitting) return; // Prevent multiple form submissions
+    if (isSubmitting) return;
     
     try {
       setIsSubmitting(true);
       setLoginError(null);
+      console.log(`Attempting login for: ${data.email}`);
       
       await login(data.email, data.password);
       // Successful login will redirect via AuthContext
     } catch (error) {
       console.error("Login failed:", error);
       
-      // Extract error message from various error types
-      let errorMessage = "Failed to login. Please check your credentials and try again.";
+      // More detailed error handling
+      let errorMessage = "Failed to login. Please check your credentials.";
       if (error instanceof Error) {
+        console.error("Detailed error:", error.message);
         errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null) {
         const anyError = error as any;
-        if (anyError.message) {
-          errorMessage = anyError.message;
-        } else if (anyError.error_description) {
-          errorMessage = anyError.error_description;
-        }
+        console.error("Detailed error object:", anyError);
+        errorMessage = anyError.message || anyError.error_description || "Login failed";
       }
       
       setLoginError(errorMessage);
@@ -108,7 +107,7 @@ const Login: React.FC = () => {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="john.doe@example.com"
+                        placeholder="admin@unitedcopier.com"
                         {...field}
                         disabled={isLoading}
                         autoComplete="email"
