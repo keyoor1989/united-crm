@@ -99,11 +99,12 @@ export const useAuthProvider = () => {
         
         if (authUser) {
           console.log('Auth user found:', authUser);
-          // Special handling for copierbazar@gmail.com - assign super_admin role
-          const userRole: UserRole = 
-            authUser.email === "copierbazar@gmail.com" 
-              ? "super_admin" 
-              : "read_only";
+          
+          // Create a temporary admin user if the email matches admin pattern
+          // This helps administrators to bootstrap their accounts
+          const isAdmin = authUser.email?.includes("admin") || 
+                          authUser.email === "copierbazar@gmail.com";
+          const userRole: UserRole = isAdmin ? "super_admin" : "read_only";
             
           // Create a temporary basic user with appropriate permissions
           const tempUser: User = {
@@ -120,12 +121,42 @@ export const useAuthProvider = () => {
           setUser(tempUser);
           localStorage.setItem("currentUser", JSON.stringify(tempUser));
           
-          // Show a toast to notify the admin about the issue
-          toast({
-            title: "Limited Access",
-            description: "Your user profile is incomplete. Please contact an administrator.",
-            variant: "default"
-          });
+          // Show different message for admin vs regular users
+          if (isAdmin) {
+            toast({
+              title: "Admin access granted",
+              description: "Your profile is incomplete. Please create a full profile in User Management.",
+              variant: "default"
+            });
+            
+            // For admins, automatically create their profile in the database
+            try {
+              const { error: insertError } = await supabase
+                .from('app_users')
+                .insert({
+                  id: userId,
+                  name: tempUser.name,
+                  email: tempUser.email,
+                  mobile: '',
+                  role: 'super_admin',
+                  is_active: true
+                });
+                
+              if (insertError) {
+                console.error("Error creating admin user profile:", insertError);
+              } else {
+                console.log("Created admin profile in database");
+              }
+            } catch (err) {
+              console.error("Failed to create admin profile:", err);
+            }
+          } else {
+            toast({
+              title: "Limited Access",
+              description: "Your user profile is incomplete. Please contact an administrator.",
+              variant: "default"
+            });
+          }
         }
       }
     } catch (err) {
