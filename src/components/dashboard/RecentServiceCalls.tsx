@@ -78,3 +78,6 @@ export const RecentServiceCalls: React.FC<RecentServiceCallsProps> = ({ classNam
     </Card>
   );
 };
+
+// Add a default export
+export default RecentServiceCalls;

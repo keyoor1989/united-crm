@@ -75,3 +75,6 @@ export const TopCustomers: React.FC<TopCustomersProps> = ({ className }) => {
     </Card>
   );
 };
+
+// Add a default export
+export default TopCustomers;

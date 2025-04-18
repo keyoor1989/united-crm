@@ -3,12 +3,12 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spinner } from "@/components/ui/spinner";
-import { StatCard } from "@/components/dashboard/StatCard";
+import StatCard from "@/components/dashboard/StatCard";
 import { statsIcons } from "@/components/dashboard/statsIcons";
-import { TaskDashboardSummary } from "@/components/tasks/TaskDashboardSummary";
+import TaskDashboardSummary from "@/components/tasks/TaskDashboardSummary";
 import { RecentServiceCalls } from "@/components/dashboard/RecentServiceCalls";
 import { TopCustomers } from "@/components/dashboard/TopCustomers";
-import { UpcomingTasks } from "@/components/dashboard/UpcomingTasks";
+import UpcomingTasks from "@/components/dashboard/UpcomingTasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 

@@ -1,9 +1,9 @@
 
-import { UsersIcon, CurrencyDollarIcon, WrenchIcon, CalendarIcon } from "lucide-react";
+import { Users, DollarSign, Wrench, Calendar } from "lucide-react";
 
 export const statsIcons = {
-  customers: <UsersIcon className="h-4 w-4" />,
-  revenue: <CurrencyDollarIcon className="h-4 w-4" />,
-  serviceCall: <WrenchIcon className="h-4 w-4" />,
-  renewals: <CalendarIcon className="h-4 w-4" />,
+  customers: <Users className="h-4 w-4" />,
+  revenue: <DollarSign className="h-4 w-4" />,
+  serviceCall: <Wrench className="h-4 w-4" />,
+  renewals: <Calendar className="h-4 w-4" />,
 };

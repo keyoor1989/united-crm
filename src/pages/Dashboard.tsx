@@ -4,14 +4,14 @@ import StatCard from "@/components/dashboard/StatCard";
 import { 
   Users, 
   ArrowUpRight, 
-  CircleDollarSign, 
+  DollarSign, 
   ClipboardList, 
   BarChart3,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import RecentServiceCalls from "@/components/dashboard/RecentServiceCalls";
+import { RecentServiceCalls } from "@/components/dashboard/RecentServiceCalls";
 import UpcomingTasks from "@/components/dashboard/UpcomingTasks";
-import TopCustomers from "@/components/dashboard/TopCustomers";
+import { TopCustomers } from "@/components/dashboard/TopCustomers";
 import TaskDashboardSummary from "@/components/tasks/TaskDashboardSummary";
 
 const Dashboard = () => {
