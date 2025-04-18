@@ -20,7 +20,7 @@ interface UnifiedSalesFormProps {
   productCategories: string[];
   customerTypes: { value: string; label: string }[];
   paymentMethods: { value: string; label: string; icon: any }[];
-  onSaveSale: (sale: SalesItem) => void;
+  onSaveSale: (sale: SalesItem) => Promise<string | null>;
 }
 
 const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
@@ -236,7 +236,6 @@ const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     };
     
     try {
-      // Deduct inventory first
       const deductionPromises = items.map(item => {
         const inventoryItem = inventoryItems.find(invItem => invItem.id === item.id);
         if (inventoryItem) {
@@ -257,9 +256,9 @@ const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       
       await Promise.all(deductionPromises);
       
-      // Save the sale
       const saleId = await onSaveSale(newSale);
-      if (saleId) {
+      
+      if (saleId !== null) {
         toast.success(`Sale created successfully!`);
         onClose();
         resetForm();
