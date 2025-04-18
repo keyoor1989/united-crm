@@ -56,16 +56,26 @@ export type CreditTermsRecord = {
 
 // Helper function to get next sales number
 async function getNextSalesNumber(): Promise<string> {
-  const { data, error } = await supabase
-    .rpc('get_next_sales_number');
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get_next_sales_number`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      }
+    });
     
-  if (error) {
+    if (!response.ok) {
+      throw new Error('Failed to get next sales number');
+    }
+    
+    const number = await response.json();
+    return `SALE-${number.toString().padStart(4, '0')}`;
+  } catch (error) {
     console.error('Error getting next sales number:', error);
-    // Fallback format if the sequence fails
+    // Fallback format if the function fails
     return `SALE-${new Date().getTime()}`;
   }
-  
-  return `SALE-${data.toString().padStart(4, '0')}`;
 }
 
 // Fetch all sales
@@ -183,7 +193,7 @@ export const addSale = async (
       }
     }
     
-    toast.success('Sale recorded successfully');
+    toast.success(`Sale #${salesNumber} recorded successfully`);
     return sale.id;
   } catch (error) {
     console.error('Error in addSale:', error);

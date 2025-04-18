@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { SalesHeader } from "@/components/inventory/sales/SalesHeader";
 import { SalesFilters } from "@/components/inventory/sales/SalesFilters";
 import { SalesTable, SalesItem } from "@/components/inventory/sales/SalesTable";
-import { UnifiedSalesForm } from "@/components/inventory/sales/UnifiedSalesForm";
+import UnifiedSalesForm from "@/components/inventory/sales/UnifiedSalesForm";
 import { SaleDetailsDialog } from "@/components/inventory/sales/SaleDetailsDialog";
 import { RecordPaymentDialog } from "@/components/inventory/sales/RecordPaymentDialog";
 import { useSalesManagement } from "@/components/inventory/sales/hooks/useSalesManagement";
