@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Task, TaskDepartment, TaskPriority, TaskStatus, TaskType, User } from "@/types/task";
 import { toast } from "sonner";
@@ -76,12 +77,17 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       console.log("TaskContext - Fetched users:", allUsers);
       
       // Map users to the format expected by the Task components
-      const mappedUsers: User[] = allUsers.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        department: user.department as TaskDepartment || "Admin",
+      // Here we properly map the auth User type to our Task User type
+      const mappedUsers: User[] = allUsers.map(authUser => ({
+        id: authUser.id,
+        name: authUser.name,
+        email: authUser.email,
+        role: authUser.role,
+        // Since department isn't in the auth User type, we set a default department
+        department: (authUser.role === 'sales' ? 'Sales' : 
+                    authUser.role === 'service' ? 'Service' : 
+                    authUser.role === 'inventory' ? 'Inventory' : 
+                    authUser.role === 'finance' ? 'Admin' : 'Admin') as TaskDepartment,
       }));
       
       setUsers(mappedUsers);
