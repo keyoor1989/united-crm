@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -32,8 +31,7 @@ const SalesReports = () => {
     const loadData = async () => {
       setLoading(true);
       try {
-        // For now, just use the regular fetchSales function
-        // In future, we'd implement fetchSalesReportData with date filtering
+        // Use the fetchSalesReportData function
         const data = await fetchSalesReportData(
           dateRange.from as Date, 
           dateRange.to as Date

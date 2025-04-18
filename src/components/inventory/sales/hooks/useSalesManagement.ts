@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { SalesItem } from "../SalesTable";
 import { toast } from "sonner";
@@ -79,7 +78,7 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
   };
 
   // Add a new sale
-  const addNewSale = async (sale: SalesItem) => {
+  const addNewSale = async (sale: SalesItem): Promise<string | null> => {
     // Convert SalesItem to the format expected by the service
     const saleRecord = {
       date: new Date().toISOString(),
@@ -103,16 +102,17 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
     };
 
     const saleId = await addSale(saleRecord, [saleItem]);
+    
+    // Reload the sales data to include the new sale
     if (saleId) {
-      // Reload the sales data to include the new sale
       loadSalesData();
-      return true;
     }
-    return false;
+    
+    return saleId;
   };
 
   // Generate bill for a sale
-  const generateBill = async (sale: SalesItem) => {
+  const generateBill = async (sale: SalesItem): Promise<boolean> => {
     if (!sale.id) {
       toast.error("Sale ID is missing");
       return false;
@@ -137,13 +137,12 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
       });
       
       setSalesData(updatedSalesData);
-      return true;
     }
-    return false;
+    return success;
   };
 
   // Record payment for a sale
-  const recordPayment = async (saleId: string, paymentData: any) => {
+  const recordPayment = async (saleId: string, paymentData: any): Promise<boolean> => {
     const payment = {
       sale_id: saleId,
       payment_method: paymentData.paymentMethod,

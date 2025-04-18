@@ -1,4 +1,4 @@
-import { supabase } from "@/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { toast } from "sonner";
 
@@ -215,5 +215,44 @@ export const recordPayment = async (payment: any): Promise<boolean> => {
     console.error("Error recording payment:", error);
     toast.error("Failed to record payment");
     return false;
+  }
+};
+
+// Fetch sales data for reports with date filtering
+export const fetchSalesReportData = async (startDate: Date, endDate: Date): Promise<SalesItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*')
+      .gte('date', startDate.toISOString())
+      .lte('date', endDate.toISOString());
+
+    if (error) {
+      console.error("Error fetching sales report data:", error);
+      throw error;
+    }
+
+    // Map the data to the SalesItem type
+    const salesData: SalesItem[] = data.map((sale) => ({
+      id: sale.id,
+      date: sale.date,
+      customer: sale.customer_name,
+      customerType: sale.customer_type,
+      itemName: 'Sample Item', // This will be updated once we implement full item details
+      quantity: 1, 
+      unitPrice: sale.unit_price || 100,
+      total: sale.total_amount,
+      status: sale.status,
+      paymentMethod: sale.payment_method,
+      paymentStatus: sale.payment_status,
+      billGenerated: sale.bill_generated,
+      invoiceNumber: sale.invoice_number,
+      dueDate: sale.due_date
+    }));
+
+    return salesData;
+  } catch (error) {
+    console.error("Error fetching sales report data:", error);
+    throw error;
   }
 };
