@@ -1,11 +1,10 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskStatus, TaskPriority, TaskDepartment } from "@/types/task";
 import { v4 as uuidv4 } from "uuid";
 
 // Convert database task to app task
 export const mapDbTaskToTask = (dbTask: any): Task => {
-  console.log("mapDbTaskToTask - Raw DB task:", dbTask); // Debug log
+  console.log("mapDbTaskToTask - Raw DB task:", dbTask);
   
   return {
     id: dbTask.id,
@@ -18,6 +17,7 @@ export const mapDbTaskToTask = (dbTask: any): Task => {
       role: dbTask.assigned_to_user?.role || '',
       department: dbTask.department as TaskDepartment,
     },
+    assignedToUserId: dbTask.assigned_to_user_id,
     createdBy: {
       id: dbTask.created_by_user?.id || dbTask.created_by || "",
       name: dbTask.created_by_user?.name || 'Unknown User',
@@ -25,7 +25,8 @@ export const mapDbTaskToTask = (dbTask: any): Task => {
       role: dbTask.created_by_user?.role || '',
       department: dbTask.department as TaskDepartment,
     },
-    department: dbTask.department as TaskDepartment,
+    createdByUserId: dbTask.created_by_user_id,
+    department: dbTask.department,
     dueDate: new Date(dbTask.due_date),
     priority: dbTask.priority as TaskPriority,
     type: dbTask.type,
@@ -40,13 +41,15 @@ export const mapDbTaskToTask = (dbTask: any): Task => {
 
 // Convert app task to database format
 export const mapTaskToDbTask = (task: Partial<Task>): any => {
-  console.log("mapTaskToDbTask - Task to save:", task); // Debug log
+  console.log("mapTaskToDbTask - Task to save:", task);
   
   return {
     title: task.title,
     description: task.description,
     assigned_to: task.assignedTo?.id,
+    assigned_to_user_id: task.assignedToUserId || task.assignedTo?.id,
     created_by: task.createdBy?.id,
+    created_by_user_id: task.createdByUserId || task.createdBy?.id,
     department: task.department,
     due_date: task.dueDate?.toISOString(),
     priority: task.priority,

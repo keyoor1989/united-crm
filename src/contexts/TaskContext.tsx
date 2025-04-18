@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Task, User } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,7 +36,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   const myTasks = tasks.filter(task => 
     task.assignedTo.id === user?.id || 
-    task.assignedTo.email === user?.email
+    task.assignedToUserId === user?.id
   );
 
   useEffect(() => {

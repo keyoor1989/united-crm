@@ -1429,10 +1429,12 @@ export type Database = {
       tasks: {
         Row: {
           assigned_to: string
+          assigned_to_user_id: string | null
           attachments: string[] | null
           branch: string | null
           created_at: string
           created_by: string
+          created_by_user_id: string | null
           department: string
           description: string
           due_date: string
@@ -1446,10 +1448,12 @@ export type Database = {
         }
         Insert: {
           assigned_to: string
+          assigned_to_user_id?: string | null
           attachments?: string[] | null
           branch?: string | null
           created_at?: string
           created_by: string
+          created_by_user_id?: string | null
           department: string
           description: string
           due_date: string
@@ -1463,10 +1467,12 @@ export type Database = {
         }
         Update: {
           assigned_to?: string
+          assigned_to_user_id?: string | null
           attachments?: string[] | null
           branch?: string | null
           created_at?: string
           created_by?: string
+          created_by_user_id?: string | null
           department?: string
           description?: string
           due_date?: string
@@ -1478,7 +1484,22 @@ export type Database = {
           type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_assigned_to_user"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_created_by_user"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "app_users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       telegram_authorized_chats: {
         Row: {
