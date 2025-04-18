@@ -1,5 +1,6 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TaskDashboardSummary from "@/components/tasks/TaskDashboardSummary";
@@ -15,12 +16,37 @@ import { Task } from "@/types/task";
 import MyTasksTab from "./MyTasksTab";
 import AssignTaskTab from "./AssignTaskTab";
 import { useTaskContext } from "@/contexts/TaskContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Spinner } from "@/components/ui/spinner";
 
 const TaskDashboard = () => {
+  const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { tasks, myTasks, loading, updateTask, deleteTask, addTask } = useTaskContext();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   
+  // Redirect to login if user is not authenticated and not in loading state
+  useEffect(() => {
+    if (!isAuthenticated && !authLoading) {
+      navigate("/login", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  // Don't render anything while authentication is in progress
+  if (authLoading) {
+    return (
+      <div className="container mx-auto py-6 flex flex-col items-center justify-center min-h-[50vh]">
+        <Spinner className="h-8 w-8 mb-4" />
+        <p className="text-muted-foreground">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  // If not authenticated and not loading, don't render dashboard (should redirect)
+  if (!isAuthenticated && !authLoading) {
+    return null;
+  }
+
   // Filter tasks created by the current user (this is handled by RLS in Supabase)
   const tasksCreatedByMe = tasks;
 

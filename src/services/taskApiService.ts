@@ -172,8 +172,8 @@ export const fetchTasks = async (): Promise<Task[]> => {
         .from('tasks')
         .select(`
           *,
-          assigned_to_user:profiles(id, name, email, role),
-          created_by_user:profiles(id, name, email, role)
+          assigned_to_user:app_users(id, name, email, role),
+          created_by_user:app_users(id, name, email, role)
         `)
         .order('due_date', { ascending: true });
 

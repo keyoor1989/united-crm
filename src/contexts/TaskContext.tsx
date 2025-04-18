@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Task, User } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,7 +21,7 @@ const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { users, loadUsers } = useTaskUsers();
   const { 
     loading, 
@@ -40,21 +41,26 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
-    if (user) {
+    // Only load tasks when the user is authenticated and not in loading state
+    if (isAuthenticated && user && !authLoading) {
       console.log("TaskContext - Loading tasks for user:", user.id);
       const initializeData = async () => {
         const tasksData = await loadTasks();
         setTasks(tasksData);
-        await loadUsers();
+        try {
+          await loadUsers();
+        } catch (error) {
+          console.error("Failed to load users:", error);
+        }
       };
       initializeData();
     }
-  }, [user]);
+  }, [isAuthenticated, user, authLoading]);
 
   const contextValue: TaskContextType = {
     tasks,
     myTasks,
-    loading,
+    loading: loading || authLoading,
     error,
     addTask: async (taskData) => {
       const newTask = await addTask(taskData);
