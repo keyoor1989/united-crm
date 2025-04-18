@@ -24,17 +24,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-
-interface InventoryItem {
-  id: number;
-  name: string;
-  sku: string;
-  category: string;
-  quantity: number;
-  location: string;
-  price: number;
-  status: string;
-}
+import { useInventoryItems, useDeleteInventoryItem } from "@/hooks/inventory/useInventoryItems";
+import { InventoryItem } from "@/types/inventory";
 
 interface InventoryTableProps {
   searchQuery?: string;
@@ -51,7 +42,9 @@ const InventoryTable = ({
 }: InventoryTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  // Use the hook directly here to get the items
+  const { items, isLoading } = useInventoryItems(null);
+  const { mutate: deleteItem } = useDeleteInventoryItem();
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -59,7 +52,7 @@ const InventoryTable = ({
   
   // Delete confirmation dialog state
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{ id: number, name: string } | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null);
   
   // Function to open modal for editing an item
   const handleEditItem = (item: any) => {
@@ -74,16 +67,14 @@ const InventoryTable = ({
   };
 
   // Function to open delete confirmation dialog
-  const handleDeleteClick = (id: number, name: string) => {
+  const handleDeleteClick = (id: string, name: string) => {
     setItemToDelete({ id, name });
     setIsDeleteDialogOpen(true);
   };
 
-  // Function to handle deletion (would connect to API in real app)
-  const handleDeleteItem = (id: number) => {
-    // This would typically connect to an API or state management
-    console.log(`Delete item with ID: ${id}`);
-    // The toast is now handled in the DeleteConfirmationDialog component
+  // Function to handle deletion
+  const handleDeleteItem = (id: string) => {
+    deleteItem(id);
   };
 
   // Function to get status badge color
@@ -100,25 +91,35 @@ const InventoryTable = ({
     }
   };
   
+  // Determine inventory status
+  const getInventoryStatus = (item: InventoryItem): string => {
+    if (item.quantity <= 0) return "Out of Stock";
+    if (item.quantity < item.min_stock) return "Low Stock";
+    return "In Stock";
+  };
+  
   // Filter items based on search query and filters
   const filteredItems = useMemo(() => {
-    return inventoryItems.filter(item => {
+    if (!items) return [];
+    
+    return items.filter(item => {
       // Search query filter
       const matchesSearch = searchQuery === '' || 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.sku.toLowerCase().includes(searchQuery.toLowerCase());
+        (item.name && item.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.part_name && item.part_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (item.part_number && item.part_number.toLowerCase().includes(searchQuery.toLowerCase()));
       
       // Category filter
       const matchesCategory = categoryFilter === 'all' || 
-        item.category.toLowerCase() === categoryFilter.toLowerCase();
+        (item.category && item.category.toLowerCase() === categoryFilter.toLowerCase());
       
       // Location filter
       const matchesLocation = locationFilter === 'all' || 
-        item.location.toLowerCase().includes(locationFilter.toLowerCase());
+        (item.location && item.location.toLowerCase().includes(locationFilter.toLowerCase()));
       
       return matchesSearch && matchesCategory && matchesLocation;
     });
-  }, [searchQuery, categoryFilter, locationFilter, inventoryItems]);
+  }, [searchQuery, categoryFilter, locationFilter, items]);
   
   // Reset to first page when filters change
   React.useEffect(() => {
@@ -147,7 +148,9 @@ const InventoryTable = ({
               {searchQuery || categoryFilter !== 'all' || locationFilter !== 'all' ? ' (filtered)' : ''}
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">No items found</p>
+            <p className="text-sm text-muted-foreground">
+              {isLoading ? "Loading items..." : "No items found"}
+            </p>
           )}
         </div>
         <Button onClick={onAddNew || handleAddItem} className="flex items-center gap-1">
@@ -159,24 +162,31 @@ const InventoryTable = ({
       <div className="rounded-md border bg-card">
         <Table>
           <TableCaption>
-            {filteredItems.length === 0 ? 
-              'No inventory items found matching your criteria.' : 
-              'A list of your inventory items.'}
+            {isLoading ? 'Loading inventory items...' : 
+              filteredItems.length === 0 ? 
+                'No inventory items found matching your criteria.' : 
+                'A list of your inventory items.'}
           </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[300px]">Product Name</TableHead>
-              <TableHead>SKU</TableHead>
+              <TableHead>SKU/Part Number</TableHead>
               <TableHead>Category</TableHead>
               <TableHead>Quantity</TableHead>
-              <TableHead>Location</TableHead>
+              <TableHead>Brand</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentItems.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center">
+                  Loading inventory items...
+                </TableCell>
+              </TableRow>
+            ) : currentItems.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center">
                   No results found. Try adjusting your filters.
@@ -187,16 +197,16 @@ const InventoryTable = ({
                 <TableRow key={item.id}>
                   <TableCell className="font-medium flex items-center gap-2">
                     <Package className="h-4 w-4 text-muted-foreground" />
-                    {item.name}
+                    {item.part_name || item.name}
                   </TableCell>
-                  <TableCell>{item.sku}</TableCell>
+                  <TableCell>{item.part_number || "N/A"}</TableCell>
                   <TableCell>{item.category}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{item.location}</TableCell>
-                  <TableCell className="text-right">₹{item.price.toLocaleString()}</TableCell>
+                  <TableCell>{item.brand || "N/A"}</TableCell>
+                  <TableCell className="text-right">₹{item.purchase_price ? item.purchase_price.toLocaleString() : "N/A"}</TableCell>
                   <TableCell>
-                    <Badge variant={getBadgeVariant(item.status) as any}>
-                      {item.status}
+                    <Badge variant={getBadgeVariant(getInventoryStatus(item)) as any}>
+                      {getInventoryStatus(item)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -207,7 +217,7 @@ const InventoryTable = ({
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => handleDeleteClick(item.id, item.name)}
+                        onClick={() => handleDeleteClick(item.id, item.part_name || item.name)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -285,7 +295,7 @@ const InventoryTable = ({
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           itemId={itemToDelete.id}
-          itemName={itemToDelete.name}
+          itemName={itemToDelete.itemName || itemToDelete.name}
           onConfirmDelete={handleDeleteItem}
         />
       )}
