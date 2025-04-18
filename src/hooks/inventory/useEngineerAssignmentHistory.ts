@@ -11,7 +11,7 @@ export const useEngineerAssignmentHistory = (itemName: string | null) => {
       try {
         console.log('Fetching engineer assignment history for item:', itemName);
         
-        // Step 1: First try to get the item details from opening_stock_entries
+        // First get the item details
         const { data: stockItem, error: stockError } = await supabase
           .from('opening_stock_entries')
           .select('id, part_name, full_item_name')
@@ -24,20 +24,27 @@ export const useEngineerAssignmentHistory = (itemName: string | null) => {
           return [];
         }
         
-        console.log('Found item details:', stockItem);
-        
-        // Step 2: Use both item_id and flexible name matching for maximum coverage
+        // Query engineer_inventory with related service call information
         const query = supabase
           .from('engineer_inventory')
-          .select('id, engineer_id, engineer_name, quantity, assigned_date, item_name, item_id, warehouse_source')
+          .select(`
+            id,
+            engineer_id,
+            engineer_name,
+            quantity,
+            assigned_date,
+            item_name,
+            item_id,
+            warehouse_source,
+            model_number,
+            model_brand
+          `)
           .order('assigned_date', { ascending: false });
           
-        // If we found the item in opening_stock_entries, we can use its ID
         if (stockItem?.id) {
           query.or(`item_id.eq.${stockItem.id},item_name.ilike.%${itemName}%`);
         } else {
-          // Fallback to name-based search if item not found
-          query.or(`item_name.ilike.%${itemName}%,item_id.ilike.%${itemName}%`);
+          query.or(`item_name.ilike.%${itemName}%`);
         }
         
         const { data, error } = await query;

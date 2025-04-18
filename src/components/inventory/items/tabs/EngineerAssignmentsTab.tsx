@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -61,6 +62,7 @@ export const EngineerAssignmentsTab = ({ itemName }: EngineerAssignmentsTabProps
               <TableHead>Engineer</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Warehouse</TableHead>
+              <TableHead>Details</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -71,11 +73,25 @@ export const EngineerAssignmentsTab = ({ itemName }: EngineerAssignmentsTabProps
                   <TableCell>{assignment.engineer_name}</TableCell>
                   <TableCell>{assignment.quantity}</TableCell>
                   <TableCell>{assignment.warehouse_source || 'Main'}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      {assignment.model_number && (
+                        <Badge variant="outline" className="w-fit">
+                          Model: {assignment.model_number}
+                        </Badge>
+                      )}
+                      {assignment.model_brand && (
+                        <Badge variant="outline" className="w-fit">
+                          Brand: {assignment.model_brand}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                   No engineer assignments found
                 </TableCell>
               </TableRow>
