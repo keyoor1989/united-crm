@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -11,7 +12,6 @@ import DepartmentRevenue from "@/pages/finance/DepartmentRevenue";
 import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
 import CashRegister from "@/pages/finance/CashRegister";
 import Vendors from "@/pages/inventory/Vendors";
-import EngineerInventory from "@/pages/inventory/EngineerInventory";
 import Service from "@/pages/Service";
 import ServiceCallForm from "@/pages/ServiceCallForm";
 import ServiceBilling from "@/pages/ServiceBilling";
@@ -23,7 +23,6 @@ import CustomerFollowUps from "@/pages/customers/CustomerFollowUps";
 import EngineerPerformanceDashboard from "@/pages/EngineerPerformanceDashboard";
 import ServiceInventoryManagement from "@/pages/ServiceInventoryManagement";
 import Inventory from "@/pages/Inventory";
-import MachineParts from "@/pages/inventory/MachineParts";
 import InventoryVendors from "@/pages/inventory/InventoryVendors";
 import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
 import ProfitReport from "@/pages/inventory/ProfitReport";

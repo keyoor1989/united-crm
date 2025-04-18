@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Search } from "lucide-react";
 import UnifiedOpeningStockForm from "@/components/inventory/items/UnifiedOpeningStockForm";
 import { useInventoryItems } from "@/hooks/inventory/useInventoryItems";
-import { InventoryTable } from "@/components/inventory/InventoryTable";
+import InventoryTable from "@/components/inventory/InventoryTable";
+import { toast } from "sonner";
 
 const InventoryItems = () => {
   const [openItemDialog, setOpenItemDialog] = useState(false);
