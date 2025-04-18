@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Truck, Bus, Train, Mail } from "lucide-react";
 import { SalesItem } from "./SalesTable";
 import { updateShipmentDetails } from "@/services/salesService";
+import { ShipmentDetails, ShipmentMethodType } from "@/types/shipment";
 
 interface ShipmentDetailsDialogProps {
   open: boolean;
@@ -29,7 +30,9 @@ export const ShipmentDetailsDialog: React.FC<ShipmentDetailsDialogProps> = ({
   sale,
   onShipmentUpdated
 }) => {
-  const [shipmentMethod, setShipmentMethod] = useState<string>(sale?.shipmentMethod || 'By Hand');
+  const [shipmentMethod, setShipmentMethod] = useState<ShipmentMethodType>(
+    (sale?.shipmentMethod as ShipmentMethodType) || 'By Hand'
+  );
   const [trackingNumber, setTrackingNumber] = useState<string>("");
   const [courierName, setCourierName] = useState<string>("");
   const [busDetails, setBusDetails] = useState<string>("");
@@ -40,20 +43,30 @@ export const ShipmentDetailsDialog: React.FC<ShipmentDetailsDialogProps> = ({
   // Reset form when dialog opens with new sale
   React.useEffect(() => {
     if (sale && open) {
-      setShipmentMethod(sale.shipmentMethod || 'By Hand');
+      setShipmentMethod((sale.shipmentMethod as ShipmentMethodType) || 'By Hand');
       
       // Parse shipment details if available
       if (sale.shipmentDetails) {
-        try {
-          const details = JSON.parse(sale.shipmentDetails);
-          setTrackingNumber(details.trackingNumber || "");
-          setCourierName(details.courierName || "");
-          setBusDetails(details.busDetails || "");
-          setTrainDetails(details.trainDetails || "");
-          setAdditionalDetails(details.additionalDetails || "");
-        } catch (e) {
-          // If not JSON, just set as additional details
-          setAdditionalDetails(sale.shipmentDetails);
+        // Handle object or string type for shipmentDetails
+        if (typeof sale.shipmentDetails === 'string') {
+          try {
+            const details = JSON.parse(sale.shipmentDetails);
+            setTrackingNumber(details.tracking_number || "");
+            setCourierName(details.courier_name || "");
+            setBusDetails(details.bus_details || "");
+            setTrainDetails(details.train_details || "");
+            setAdditionalDetails(details.additional_details || "");
+          } catch (e) {
+            // If not valid JSON, just set as additional details
+            setAdditionalDetails(sale.shipmentDetails);
+          }
+        } else {
+          // Handle as object
+          setTrackingNumber(sale.shipmentDetails.tracking_number || "");
+          setCourierName(sale.shipmentDetails.courier_name || "");
+          setBusDetails(sale.shipmentDetails.bus_details || "");
+          setTrainDetails(sale.shipmentDetails.train_details || "");
+          setAdditionalDetails(sale.shipmentDetails.additional_details || "");
         }
       } else {
         // Reset all fields
@@ -72,39 +85,19 @@ export const ShipmentDetailsDialog: React.FC<ShipmentDetailsDialogProps> = ({
     setIsSubmitting(true);
     
     // Create shipment details object based on method
-    let shipmentDetails = {};
-    
-    switch (shipmentMethod) {
-      case 'By Courier':
-        shipmentDetails = {
-          trackingNumber,
-          courierName,
-          additionalDetails
-        };
-        break;
-      case 'By Bus':
-        shipmentDetails = {
-          busDetails,
-          additionalDetails
-        };
-        break;
-      case 'By Train':
-        shipmentDetails = {
-          trainDetails,
-          additionalDetails
-        };
-        break;
-      default:
-        shipmentDetails = {
-          additionalDetails
-        };
-    }
+    const shipmentDetails: ShipmentDetails = {
+      sale_id: sale.id,
+      shipment_method: shipmentMethod,
+      courier_name: courierName || undefined,
+      tracking_number: trackingNumber || undefined,
+      bus_details: busDetails || undefined,
+      train_details: trainDetails || undefined,
+      additional_details: additionalDetails || undefined,
+      status: 'Pending'
+    };
     
     // Call API to update shipment details
-    const success = await updateShipmentDetails(sale.id, {
-      shipmentMethod,
-      shipmentDetails: JSON.stringify(shipmentDetails)
-    });
+    const success = await updateShipmentDetails(sale.id, shipmentDetails);
     
     setIsSubmitting(false);
     
@@ -128,7 +121,7 @@ export const ShipmentDetailsDialog: React.FC<ShipmentDetailsDialogProps> = ({
             </Label>
             <Select 
               value={shipmentMethod} 
-              onValueChange={setShipmentMethod}
+              onValueChange={(value: ShipmentMethodType) => setShipmentMethod(value)}
             >
               <SelectTrigger id="shipment-method" className="col-span-3">
                 <SelectValue placeholder="Select shipment method" />

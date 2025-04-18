@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { toast } from "sonner";
@@ -107,6 +108,15 @@ export const getCreditSales = async (): Promise<SalesItem[]> => {
         credit_terms (
           due_date,
           status
+        ),
+        shipment_details (
+          shipment_method,
+          courier_name,
+          tracking_number,
+          bus_details,
+          train_details,
+          additional_details,
+          status
         )
       `)
       .eq('payment_status', 'Due');
@@ -133,8 +143,8 @@ export const getCreditSales = async (): Promise<SalesItem[]> => {
       invoiceNumber: sale.invoice_number,
       dueDate: sale.credit_terms?.[0]?.due_date || sale.due_date,
       createdBy: sale.created_by,
-      shipmentMethod: sale.shipment_method,
-      shipmentDetails: sale.shipment_details
+      shipmentMethod: sale.shipment_details?.[0]?.shipment_method || null,
+      shipmentDetails: sale.shipment_details?.[0] || null
     }));
 
     return salesItems;
@@ -173,9 +183,7 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
         shipping_address: sale.shipping_address,
         billing_address: sale.billing_address,
         created_by: sale.created_by || 'Admin', // Default to Admin if not provided
-        notes: sale.notes,
-        shipment_method: sale.shipment_method,
-        shipment_details: sale.shipment_details
+        notes: sale.notes
       })
       .select()
       .single();
@@ -221,6 +229,26 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
 
       if (creditError) {
         console.error('Error creating credit terms:', creditError);
+      }
+    }
+    
+    // If shipment details are provided, create shipment record
+    if (sale.shipment_method) {
+      const { error: shipmentError } = await supabase
+        .from('shipment_details')
+        .insert({
+          sale_id: data.id,
+          shipment_method: sale.shipment_method,
+          courier_name: sale.courier_name,
+          tracking_number: sale.tracking_number,
+          bus_details: sale.bus_details,
+          train_details: sale.train_details,
+          additional_details: sale.additional_details,
+          status: 'Pending'
+        });
+
+      if (shipmentError) {
+        console.error('Error creating shipment details:', shipmentError);
       }
     }
     
@@ -326,7 +354,18 @@ export const fetchSalesReportData = async (startDate: Date, endDate: Date): Prom
   try {
     const { data, error } = await supabase
       .from('sales')
-      .select('*')
+      .select(`
+        *,
+        shipment_details (
+          shipment_method,
+          courier_name,
+          tracking_number,
+          bus_details,
+          train_details,
+          additional_details,
+          status
+        )
+      `)
       .gte('date', startDate.toISOString())
       .lte('date', endDate.toISOString());
 
@@ -352,8 +391,8 @@ export const fetchSalesReportData = async (startDate: Date, endDate: Date): Prom
       invoiceNumber: sale.invoice_number,
       dueDate: sale.due_date,
       createdBy: sale.created_by,
-      shipmentMethod: sale.shipment_method,
-      shipmentDetails: sale.shipment_details
+      shipmentMethod: sale.shipment_details?.[0]?.shipment_method || null,
+      shipmentDetails: sale.shipment_details?.[0] || null
     }));
 
     return salesData;
