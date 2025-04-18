@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -85,6 +84,37 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
+  // Query for purchase history from purchase orders
+  const { data: purchaseHistory } = useQuery({
+    queryKey: ['purchase_history', itemName],
+    queryFn: async () => {
+      if (!itemName) return [];
+      const { data, error } = await supabase
+        .from('purchase_orders')
+        .select('*')
+        .contains('items', [{ item_name: itemName }])
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Extract relevant purchase information for the specific item
+      const purchases = data?.map(po => {
+        const itemDetails = po.items.find((item: any) => item.item_name === itemName);
+        return {
+          id: po.id,
+          date: po.created_at,
+          vendor: po.vendor_name,
+          quantity: itemDetails?.quantity || 0,
+          rate: itemDetails?.unit_price || 0,
+          invoiceNo: po.po_number
+        };
+      }) || [];
+      
+      return purchases;
+    },
+    enabled: !!itemName
+  });
+
   if (!itemName) return null;
 
   const formatDate = (date: string) => {
@@ -101,16 +131,54 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
         <DialogHeader>
           <DialogTitle>Item History: {itemName}</DialogTitle>
           <DialogDescription>
-            Complete transaction history showing engineer assignments, sales, and returns
+            Complete transaction history showing purchases, engineer assignments, sales, and returns
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="engineer_assignments" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="purchase_history" className="mt-4">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="purchase_history">Purchase History</TabsTrigger>
             <TabsTrigger value="engineer_assignments">Engineer Assignments</TabsTrigger>
             <TabsTrigger value="sales">Sales History</TabsTrigger>
             <TabsTrigger value="returns">Returns History</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="purchase_history">
+            <Card>
+              <CardContent className="pt-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                      <TableHead className="text-right">Rate (₹)</TableHead>
+                      <TableHead>PO Number</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {purchaseHistory && purchaseHistory.length > 0 ? (
+                      purchaseHistory.map((record) => (
+                        <TableRow key={record.id}>
+                          <TableCell>{formatDate(record.date)}</TableCell>
+                          <TableCell>{record.vendor}</TableCell>
+                          <TableCell className="text-right">{record.quantity}</TableCell>
+                          <TableCell className="text-right">₹{record.rate.toLocaleString()}</TableCell>
+                          <TableCell>{record.invoiceNo}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
+                          No purchase history found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="engineer_assignments">
             <Card>
