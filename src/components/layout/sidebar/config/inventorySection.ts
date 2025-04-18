@@ -1,5 +1,5 @@
 
-import { Box, CircleDollarSign, CreditCard, BarChart3, Package, Truck, History, Building2, ReceiptText } from "lucide-react";
+import { Box, CircleDollarSign, CreditCard, BarChart3, Package, Truck, History, Building2, ReceiptText, Tags, Archive, ShoppingBag } from "lucide-react";
 import { NavSection } from "../types/navTypes";
 
 export const inventorySection: NavSection = {
@@ -11,6 +11,11 @@ export const inventorySection: NavSection = {
       to: "/inventory/items",
       icon: Package,
       label: "Items"
+    },
+    {
+      to: "/inventory/brands",
+      icon: Tags,
+      label: "Brands & Models"
     },
     {
       to: "/inventory/vendors",
@@ -43,9 +48,20 @@ export const inventorySection: NavSection = {
       label: "Sales Reports"
     },
     {
+      to: "/inventory/machine-parts",
+      icon: Archive,
+      label: "Machine Parts"
+    },
+    {
+      to: "/inventory/engineer-inventory",
+      icon: ShoppingBag,
+      label: "Engineer Inventory"
+    },
+    {
       to: "/inventory/transfers",
       icon: History,
       label: "History"
     }
   ]
 };
+
