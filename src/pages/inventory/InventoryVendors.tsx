@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableHeader,
@@ -20,12 +21,11 @@ import { Vendor } from '@/types/inventory';
 import { useVendors } from '@/contexts/VendorContext';
 import VendorFormDialog from '@/components/inventory/vendors/VendorFormDialog';
 import VendorTable from '@/components/inventory/vendors/VendorTable';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DeleteVendorDialog } from '@/components/inventory/vendors/DeleteVendorDialog';
 import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { DeleteVendorDialog } from '@/components/inventory/vendors/DeleteVendorDialog';
 import { PurchaseHistory } from '@/components/inventory/vendors/PurchaseHistory';
 
 const InventoryVendors = () => {
@@ -35,7 +35,12 @@ const InventoryVendors = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { vendors, loading, error, addVendor, updateVendor, deleteVendor } = useVendors();
+  const { vendors, loading, error, addVendor, updateVendor, deleteVendor, refreshVendors } = useVendors();
+
+  // Refresh vendors on mount
+  useEffect(() => {
+    refreshVendors();
+  }, [refreshVendors]);
 
   // Filter vendors based on search query
   const filteredVendors = vendors.filter(vendor => 
@@ -67,10 +72,6 @@ const InventoryVendors = () => {
     if (selectedVendor) {
       try {
         await deleteVendor(selectedVendor.id);
-        toast({
-          title: "Vendor deleted",
-          description: "The vendor has been deleted successfully.",
-        });
         setDeleteDialogOpen(false);
       } catch (error) {
         toast({
@@ -99,19 +100,14 @@ const InventoryVendors = () => {
     try {
       if (selectedVendor) {
         await updateVendor(selectedVendor.id, data);
-        toast({
-          title: "Vendor updated",
-          description: "The vendor has been updated successfully.",
-        });
       } else {
         await addVendor(data);
-        toast({
-          title: "Vendor added",
-          description: "The vendor has been added successfully.",
-        });
       }
       setFormDialogOpen(false);
+      // Refresh vendor list after save
+      await refreshVendors();
     } catch (error) {
+      console.error("Error saving vendor:", error);
       toast({
         title: "Failed to save",
         description: "There was an error saving the vendor.",

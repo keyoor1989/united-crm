@@ -2,8 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vendor } from '@/types/inventory';
-import { toast } from 'sonner';
-import { dbAdapter } from '@/types/inventory';
+import { toast } from '@/components/ui/use-toast';
 
 interface VendorContextType {
   vendors: Vendor[];
@@ -13,6 +12,7 @@ interface VendorContextType {
   updateVendor: (id: string, vendor: Partial<Vendor>) => Promise<void>;
   deleteVendor: (id: string) => Promise<void>;
   getVendorById: (id: string) => Vendor | undefined;
+  refreshVendors: () => Promise<void>;
 }
 
 const VendorContext = createContext<VendorContextType | undefined>(undefined);
@@ -22,59 +22,95 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    const fetchVendors = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase.from('vendors').select('*');
-        
-        if (error) throw new Error(error.message);
-        
-        // Convert snake_case to camelCase using the adapter
-        const vendorsData: Vendor[] = (data || []).map(vendor => dbAdapter.adaptVendor(vendor));
-        
-        setVendors(vendorsData);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Unknown error occurred'));
-        console.error('Error fetching vendors:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchVendors = async () => {
+    setLoading(true);
+    try {
+      console.log('Fetching vendors...');
+      const { data, error } = await supabase.from('vendors').select('*');
+      
+      if (error) throw new Error(error.message);
+      
+      console.log('Vendors fetched:', data);
+      
+      // Convert snake_case to camelCase
+      const vendorsData: Vendor[] = (data || []).map(vendor => ({
+        id: vendor.id,
+        name: vendor.name,
+        contactPerson: vendor.contact_person || '',
+        email: vendor.email || '',
+        phone: vendor.phone || '',
+        address: vendor.address || '',
+        gstNo: vendor.gst_no || '',
+        createdAt: vendor.created_at || new Date().toISOString()
+      }));
+      
+      setVendors(vendorsData);
+    } catch (err) {
+      console.error('Error fetching vendors:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchVendors();
   }, []);
 
+  const refreshVendors = async () => {
+    await fetchVendors();
+  };
+
   const addVendor = async (vendor: Omit<Vendor, 'id' | 'createdAt'>) => {
     try {
+      console.log('Adding new vendor:', vendor);
       // Convert camelCase to snake_case for database
       const { data, error } = await supabase.from('vendors').insert({
         name: vendor.name,
         contact_person: vendor.contactPerson || '',
-        email: vendor.email,
-        phone: vendor.phone,
-        address: vendor.address,
+        email: vendor.email || '',
+        phone: vendor.phone || '',
+        address: vendor.address || '',
         gst_no: vendor.gstNo || '',
       }).select();
       
       if (error) throw new Error(error.message);
       
       if (data && data.length > 0) {
-        // Use our adapter to convert from DB format to frontend format
-        const newVendor = dbAdapter.adaptVendor(data[0]);
+        // Convert back to our frontend format
+        const newVendor: Vendor = {
+          id: data[0].id,
+          name: data[0].name,
+          contactPerson: data[0].contact_person || '',
+          email: data[0].email || '',
+          phone: data[0].phone || '',
+          address: data[0].address || '',
+          gstNo: data[0].gst_no || '',
+          createdAt: data[0].created_at
+        };
         
         setVendors([...vendors, newVendor]);
-        toast.success('Vendor added successfully');
+        toast({
+          title: "Vendor added",
+          description: "The vendor has been added successfully."
+        });
+        
+        console.log('Vendor added successfully:', newVendor);
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
       console.error('Error adding vendor:', err);
-      toast.error('Failed to add vendor');
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      toast({
+        title: "Failed to add vendor",
+        description: "There was an error adding the vendor.",
+        variant: "destructive",
+      });
     }
   };
 
   const updateVendor = async (id: string, updates: Partial<Vendor>) => {
     try {
+      console.log('Updating vendor:', id, updates);
       // Convert camelCase to snake_case for database
       const updateData: Record<string, any> = {};
       if (updates.name !== undefined) updateData.name = updates.name;
@@ -96,16 +132,26 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         return vendor;
       }));
       
-      toast.success('Vendor updated successfully');
+      toast({
+        title: "Vendor updated",
+        description: "The vendor has been updated successfully."
+      });
+      
+      console.log('Vendor updated successfully');
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
       console.error('Error updating vendor:', err);
-      toast.error('Failed to update vendor');
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      toast({
+        title: "Failed to update vendor",
+        description: "There was an error updating the vendor.",
+        variant: "destructive",
+      });
     }
   };
 
   const deleteVendor = async (id: string) => {
     try {
+      console.log('Deleting vendor:', id);
       const { error } = await supabase.from('vendors').delete().eq('id', id);
       
       if (error) throw new Error(error.message);
@@ -113,11 +159,20 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       // Update local state
       setVendors(vendors.filter(vendor => vendor.id !== id));
       
-      toast.success('Vendor deleted successfully');
+      toast({
+        title: "Vendor deleted",
+        description: "The vendor has been deleted successfully."
+      });
+      
+      console.log('Vendor deleted successfully');
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
       console.error('Error deleting vendor:', err);
-      toast.error('Failed to delete vendor');
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      toast({
+        title: "Failed to delete",
+        description: "There was an error deleting the vendor.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -133,7 +188,8 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       addVendor, 
       updateVendor, 
       deleteVendor,
-      getVendorById
+      getVendorById,
+      refreshVendors
     }}>
       {children}
     </VendorContext.Provider>

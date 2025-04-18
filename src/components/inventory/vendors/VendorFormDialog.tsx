@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -55,27 +55,16 @@ const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
     },
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
-      if (selectedVendor) {
-        form.reset({
-          name: selectedVendor.name,
-          gstNo: selectedVendor.gstNo || "",
-          phone: selectedVendor.phone,
-          email: selectedVendor.email || "",
-          address: selectedVendor.address || "",
-          contactPerson: selectedVendor.contactPerson || "",
-        });
-      } else {
-        form.reset({
-          name: "",
-          gstNo: "",
-          phone: "",
-          email: "",
-          address: "",
-          contactPerson: "",
-        });
-      }
+      form.reset({
+        name: selectedVendor?.name || "",
+        gstNo: selectedVendor?.gstNo || "",
+        phone: selectedVendor?.phone || "",
+        email: selectedVendor?.email || "",
+        address: selectedVendor?.address || "",
+        contactPerson: selectedVendor?.contactPerson || "",
+      });
     }
   }, [selectedVendor, form, open]);
 

@@ -1709,6 +1709,7 @@ export type Database = {
           contact_person: string | null
           created_at: string
           email: string | null
+          gst_no: string | null
           id: string
           name: string
           phone: string | null
@@ -1718,6 +1719,7 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           email?: string | null
+          gst_no?: string | null
           id?: string
           name: string
           phone?: string | null
@@ -1727,6 +1729,7 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           email?: string | null
+          gst_no?: string | null
           id?: string
           name?: string
           phone?: string | null
