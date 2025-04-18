@@ -18,7 +18,7 @@ const Dashboard = () => {
   // Memoize the stats icons to prevent unnecessary rerenders
   const statsIcons = useMemo(() => ({
     customers: <Users className="h-4 w-4 text-muted-foreground" />,
-    revenue: <CircleDollarSign className="h-4 w-4 text-muted-foreground" />,
+    revenue: <DollarSign className="h-4 w-4 text-muted-foreground" />,
     serviceCall: <ClipboardList className="h-4 w-4 text-muted-foreground" />,
     renewals: <BarChart3 className="h-4 w-4 text-muted-foreground" />
   }), []);
