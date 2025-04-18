@@ -186,20 +186,35 @@ export const useAuthProvider = () => {
       console.log('Attempting login for:', email);
       setIsLoading(true);
       
+      // Additional logging for debugging
+      console.log('Attempting Supabase authentication');
+      
       // Try to authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
+      // Log the complete authentication response for debugging
+      console.log('Full authentication response:', { 
+        authData, 
+        authError,
+        user: authData?.user,
+        session: authData?.session
+      });
+      
       if (authError) {
-        console.error('Auth error:', authError);
+        console.error('Detailed Auth Error:', {
+          name: authError.name,
+          message: authError.message,
+          status: authError.status,
+          code: authError.code
+        });
         throw authError;
       }
       
       if (authData.user) {
         console.log('Auth successful, user ID:', authData.user.id);
-        // Navigation will happen after user profile is fetched via the onAuthStateChange handler
         toast({
           title: "Login successful",
           description: "Welcome back!",
@@ -208,10 +223,35 @@ export const useAuthProvider = () => {
       }
     } catch (error) {
       console.error('Login error:', error);
+      
+      let errorMessage = "Failed to login. Please check your credentials.";
+      if (error instanceof Error) {
+        console.error("Detailed error:", error.message);
+        
+        // More specific error messages
+        switch (error.message.toLowerCase()) {
+          case "invalid login credentials":
+            errorMessage = "Incorrect email or password. Please try again.";
+            break;
+          case "user not found":
+            errorMessage = "No account found with this email. Please sign up.";
+            break;
+          case "email not confirmed":
+            errorMessage = "Please confirm your email before logging in.";
+            break;
+          default:
+            errorMessage = error.message;
+        }
+      } else if (typeof error === 'object' && error !== null) {
+        const anyError = error as any;
+        console.error("Detailed error object:", anyError);
+        errorMessage = anyError.message || anyError.error_description || "Login failed";
+      }
+      
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description: errorMessage,
       });
       throw error;
     } finally {
