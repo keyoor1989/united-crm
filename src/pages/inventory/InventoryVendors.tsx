@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Table,
@@ -71,7 +70,6 @@ const InventoryVendors = () => {
         toast({
           title: "Vendor deleted",
           description: "The vendor has been deleted successfully.",
-          variant: "success",
         });
         setDeleteDialogOpen(false);
       } catch (error) {

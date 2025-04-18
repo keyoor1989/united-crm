@@ -52,6 +52,7 @@ import UserManagement from "@/pages/user-management/UserManagement";
 import BranchTransfer from "@/pages/inventory/BranchTransfer";
 import NotFound from "@/pages/NotFound";
 import InventoryVendors from "@/pages/inventory/InventoryVendors";
+import { VendorProvider } from "@/contexts/VendorContext";
 
 const AppRoutes = () => {
   return (
@@ -79,7 +80,7 @@ const AppRoutes = () => {
         <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
         <Route path="/inventory/items" element={<ProtectedRoute><InventoryItems /></ProtectedRoute>} />
         <Route path="/inventory/brands" element={<ProtectedRoute><InventoryBrands /></ProtectedRoute>} />
-        <Route path="/inventory/vendors" element={<ProtectedRoute><InventoryVendors /></ProtectedRoute>} />
+        <Route path="/inventory/vendors" element={<ProtectedRoute><VendorProvider><InventoryVendors /></VendorProvider></ProtectedRoute>} />
         <Route path="/inventory/warehouses" element={<ProtectedRoute><InventoryWarehouses /></ProtectedRoute>} />
         <Route path="/inventory/purchase-entry" element={<ProtectedRoute><InventoryPurchase /></ProtectedRoute>} />
         <Route path="/inventory/issue" element={<ProtectedRoute><InventoryIssue /></ProtectedRoute>} />
@@ -89,7 +90,7 @@ const AppRoutes = () => {
         <Route path="/inventory/cash-purchase" element={<ProtectedRoute><CashPurchase /></ProtectedRoute>} />
         <Route path="/inventory/sales" element={<ProtectedRoute><InventorySales /></ProtectedRoute>} />
         <Route path="/inventory/sales-reports" element={<ProtectedRoute><SalesReports /></ProtectedRoute>} />
-        <Route path="/inventory/vendor-performance" element={<ProtectedRoute><VendorPerformanceDemo /></ProtectedRoute>} />
+        <Route path="/inventory/vendor-performance" element={<ProtectedRoute><VendorProvider><VendorPerformanceDemo /></VendorProvider></ProtectedRoute>} />
         <Route path="/inventory/profit-report" element={<ProtectedRoute><ProfitReport /></ProtectedRoute>} />
         
         <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
