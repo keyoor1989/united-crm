@@ -40,12 +40,14 @@ interface InventoryTableProps {
   searchQuery?: string;
   categoryFilter?: string;
   locationFilter?: string;
+  onAddNew?: () => void;
 }
 
 const InventoryTable = ({ 
   searchQuery = '', 
   categoryFilter = 'all', 
-  locationFilter = 'all' 
+  locationFilter = 'all',
+  onAddNew
 }: InventoryTableProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
@@ -148,7 +150,7 @@ const InventoryTable = ({
             <p className="text-sm text-muted-foreground">No items found</p>
           )}
         </div>
-        <Button onClick={handleAddItem} className="flex items-center gap-1">
+        <Button onClick={onAddNew || handleAddItem} className="flex items-center gap-1">
           <Plus className="h-4 w-4" />
           <span>Add New Item</span>
         </Button>
