@@ -60,11 +60,24 @@ const Login: React.FC = () => {
     } catch (error) {
       console.error("Login failed:", error);
       
-      // More detailed error handling
       let errorMessage = "Failed to login. Please check your credentials.";
       if (error instanceof Error) {
         console.error("Detailed error:", error.message);
-        errorMessage = error.message;
+        
+        // More specific error messages
+        switch (error.message.toLowerCase()) {
+          case "invalid login credentials":
+            errorMessage = "Incorrect email or password. Please try again.";
+            break;
+          case "user not found":
+            errorMessage = "No account found with this email. Please sign up.";
+            break;
+          case "email not confirmed":
+            errorMessage = "Please confirm your email before logging in.";
+            break;
+          default:
+            errorMessage = error.message;
+        }
       } else if (typeof error === 'object' && error !== null) {
         const anyError = error as any;
         console.error("Detailed error object:", anyError);
