@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -38,14 +37,14 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({
   });
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>(undefined);
   const [followUpNotes, setFollowUpNotes] = useState("");
-  const [machinesKey, setMachinesKey] = useState(Date.now()); // For refreshing the machines list
+  const [machinesKey, setMachinesKey] = useState(Date.now());
   const [customerDetails, setCustomerDetails] = useState({
     name: customerName,
     location: customerLocation,
     phone: customerPhone
   });
+  const [isCustomerConverted, setIsCustomerConverted] = useState(false);
 
-  // If customer data props are empty, fetch them from the database
   useEffect(() => {
     if (customerId && (!customerName || !customerLocation || !customerPhone)) {
       fetchCustomerDetails();
@@ -82,9 +81,26 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (customerId) {
+      const checkCustomerStatus = async () => {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('lead_status')
+          .eq('id', customerId)
+          .single();
+          
+        if (!error && data) {
+          setIsCustomerConverted(data.lead_status === 'Converted');
+        }
+      };
+      
+      checkCustomerStatus();
+    }
+  }, [customerId]);
+
   const handleAddMachine = () => {
     setIsAddMachineOpen(true);
-    // Reset form when opening
     setNewMachineData({
       model: "",
       machineType: "copier",
@@ -120,17 +136,14 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({
         description: "The machine has been added successfully."
       });
       
-      // Reset form data
       setNewMachineData({
         model: "",
         machineType: "copier",
         status: "active"
       });
       
-      // Close dialog
       setIsAddMachineOpen(false);
       
-      // Refresh machines list
       setMachinesKey(Date.now());
     } catch (error: any) {
       console.error("Error adding machine:", error);
@@ -168,12 +181,10 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({
       description: "The sales follow-up has been scheduled successfully."
     });
     setIsSalesFollowUpOpen(false);
-    // Refresh the follow-ups list
     setMachinesKey(Date.now());
   };
 
   const onSaveFollowUp = () => {
-    // Implement save logic here
     handleFollowUpAdded();
   };
 
@@ -189,16 +200,21 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">Customer Machines</h3>
-          <Button variant="outline" size="sm" className="gap-1" onClick={handleAddMachine}>
-            <Plus className="h-4 w-4" /> Add Machine
-          </Button>
+          <h3 className="text-lg font-semibold">
+            {isCustomerConverted ? "Customer Machines" : "Machine Interests"}
+          </h3>
+          {isCustomerConverted && (
+            <Button variant="outline" size="sm" className="gap-1" onClick={handleAddMachine}>
+              <Plus className="h-4 w-4" /> Add Machine
+            </Button>
+          )}
         </div>
         <MachinesList 
           key={machinesKey}
           customerId={customerId} 
           onAddMachine={handleAddMachine}
           onScheduleFollowUp={handleScheduleFollowUp}
+          isCustomerConverted={isCustomerConverted}
         />
       </div>
       
@@ -212,7 +228,6 @@ const CustomerMachines: React.FC<CustomerMachinesProps> = ({
         <SalesFollowUpList customerId={customerId} />
       </div>
 
-      {/* Dialogs */}
       <AddMachineDialog 
         open={isAddMachineOpen} 
         isLoading={isLoading}

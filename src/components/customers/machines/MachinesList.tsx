@@ -1,94 +1,115 @@
 
-import React, { useState, useEffect } from "react";
-import { Printer, Plus } from "lucide-react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { MachineItem } from "./MachineItem";
+import { Plus } from "lucide-react";
+import MachineItem from "./MachineItem";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Machine } from "./types";
-import { fetchCustomerMachines } from "./MachineService";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface MachinesListProps {
-  customerId: string;
-  onScheduleFollowUp?: (machine: Machine) => void;
-  onAddMachine?: () => void;
-  machines?: Machine[];
+  customerId?: string;
+  onAddMachine: () => void;
+  onScheduleFollowUp: (machine: Machine) => void;
+  isCustomerConverted?: boolean;
 }
 
-export const MachinesList: React.FC<MachinesListProps> = ({
-  customerId,
+const MachinesList: React.FC<MachinesListProps> = ({ 
+  customerId, 
+  onAddMachine, 
   onScheduleFollowUp,
-  onAddMachine,
-  machines: externalMachines,
+  isCustomerConverted = false
 }) => {
-  const [machines, setMachines] = useState<Machine[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  // Fetch owned machines
+  const { data: ownedMachines = [], isLoading: isLoadingOwned } = useQuery({
+    queryKey: ['customer-machines', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const { data, error } = await supabase
+        .from('customer_machines')
+        .select('*')
+        .eq('customer_id', customerId);
+        
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId
+  });
 
-  useEffect(() => {
-    if (externalMachines) {
-      setMachines(externalMachines);
-      setIsLoading(false);
-      return;
-    }
+  // Fetch machine interests for leads
+  const { data: machineInterests = [], isLoading: isLoadingInterests } = useQuery({
+    queryKey: ['machine-interests', customerId],
+    queryFn: async () => {
+      if (!customerId) return [];
+      const { data, error } = await supabase
+        .from('customer_machine_interests')
+        .select('*')
+        .eq('customer_id', customerId);
+        
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!customerId && !isCustomerConverted
+  });
 
-    const loadMachines = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchCustomerMachines(customerId);
-        setMachines(data);
-      } catch (err: any) {
-        console.error("Error loading machines:", err);
-        setError(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (customerId) {
-      loadMachines();
-    }
-  }, [customerId, externalMachines]);
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
-      </div>
-    );
+  if (isLoadingOwned || isLoadingInterests) {
+    return <div className="p-4">Loading machines...</div>;
   }
 
-  if (error) {
-    return <div className="text-red-500">Error loading machines: {error.message}</div>;
-  }
-
-  if (machines.length === 0) {
+  if (!customerId) {
     return (
-      <div className="flex flex-col items-center justify-center h-60 border rounded-md border-dashed bg-muted/20">
-        <Printer className="h-12 w-12 text-muted-foreground mb-3" />
-        <p className="text-muted-foreground mb-2">No machines added yet</p>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-1"
-          onClick={onAddMachine}
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add First Machine</span>
-        </Button>
+      <div className="p-4 text-center">
+        <p className="text-muted-foreground">Please save customer information first to manage machines.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {machines.map((machine) => (
-        <MachineItem 
-          key={machine.id} 
-          machine={machine} 
-          onScheduleFollowUp={onScheduleFollowUp} 
-        />
-      ))}
+    <div className="space-y-4">
+      {/* Show interests section for leads */}
+      {!isCustomerConverted && machineInterests.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">Interested In</h4>
+          {machineInterests.map((interest) => (
+            <div key={interest.id} className="p-3 border rounded-lg bg-muted/50">
+              <p className="font-medium">{interest.machine_name}</p>
+              {interest.machine_type && (
+                <p className="text-sm text-muted-foreground">{interest.machine_type}</p>
+              )}
+              {interest.notes && (
+                <p className="text-sm mt-1">{interest.notes}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Show owned machines section */}
+      {isCustomerConverted && (
+        <>
+          <div className="flex justify-between items-center">
+            <h4 className="text-sm font-medium">Owned Machines</h4>
+            <Button variant="outline" size="sm" onClick={onAddMachine}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Machine
+            </Button>
+          </div>
+          
+          {ownedMachines.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No machines added yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {ownedMachines.map((machine) => (
+                <MachineItem 
+                  key={machine.id} 
+                  machine={machine}
+                  onScheduleFollowUp={() => onScheduleFollowUp(machine)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

@@ -529,6 +529,44 @@ export type Database = {
           },
         ]
       }
+      customer_machine_interests: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          id: string
+          machine_name: string
+          machine_type: string | null
+          notes: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          machine_name: string
+          machine_type?: string | null
+          notes?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          machine_name?: string
+          machine_type?: string | null
+          notes?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_machine_interests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_machines: {
         Row: {
           created_at: string | null

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
@@ -37,7 +36,7 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
         email: values.email || "",
         location: values.area || "",
         lastContact: "Just now",
-        machines: selectedCustomer?.machines || [],
+        machines: [],
         status: values.leadStatus as any
       };
       
@@ -57,6 +56,20 @@ const CustomerFormComponent: React.FC<CustomerFormComponentProps> = ({ customer:
         });
         
       if (error) throw error;
+      
+      // If there's machine interest, save it
+      if (values.machineInterest && !selectedCustomer) {
+        const { error: interestError } = await supabase
+          .from('customer_machine_interests')
+          .insert({
+            customer_id: customer.id,
+            machine_name: values.machineInterest,
+            machine_type: values.machineType,
+            notes: values.notes
+          });
+          
+        if (interestError) throw interestError;
+      }
       
       // If this is a new customer, notify via Telegram
       if (!selectedCustomer) {
