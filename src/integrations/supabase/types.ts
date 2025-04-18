@@ -1485,6 +1485,56 @@ export type Database = {
         }
         Relationships: []
       }
+      shipment_details: {
+        Row: {
+          additional_details: string | null
+          bus_details: string | null
+          courier_name: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          sale_id: string | null
+          shipment_method: Database["public"]["Enums"]["shipment_method_type"]
+          status: string | null
+          tracking_number: string | null
+          train_details: string | null
+        }
+        Insert: {
+          additional_details?: string | null
+          bus_details?: string | null
+          courier_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          sale_id?: string | null
+          shipment_method: Database["public"]["Enums"]["shipment_method_type"]
+          status?: string | null
+          tracking_number?: string | null
+          train_details?: string | null
+        }
+        Update: {
+          additional_details?: string | null
+          bus_details?: string | null
+          courier_name?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          sale_id?: string | null
+          shipment_method?: Database["public"]["Enums"]["shipment_method_type"]
+          status?: string | null
+          tracking_number?: string | null
+          train_details?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_details_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string
@@ -1769,7 +1819,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      shipment_method_type: "By Hand" | "By Bus" | "By Courier" | "By Train"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1884,6 +1934,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      shipment_method_type: ["By Hand", "By Bus", "By Courier", "By Train"],
+    },
   },
 } as const

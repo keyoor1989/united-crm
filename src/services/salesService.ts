@@ -1,8 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { toast } from "sonner";
-import { ensureShipmentFieldsExist } from "@/utils/supabaseUtils";
+import { ShipmentDetails } from "@/types/shipment";
 
 // Helper function to get next sales number
 async function getNextSalesNumber(): Promise<string> {
@@ -38,9 +37,6 @@ async function getNextSalesNumber(): Promise<string> {
 // Fetch all sales
 export const fetchSales = async (): Promise<SalesItem[]> => {
   try {
-    // First, make sure shipment columns exist
-    await ensureShipmentFieldsExist();
-
     const { data: salesData, error: salesError } = await supabase
       .from('sales')
       .select(`
@@ -50,6 +46,15 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
           quantity,
           unit_price,
           total
+        ),
+        shipment_details (
+          shipment_method,
+          courier_name,
+          tracking_number,
+          bus_details,
+          train_details,
+          additional_details,
+          status
         )
       `);
 
@@ -75,8 +80,8 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
       invoiceNumber: sale.invoice_number,
       dueDate: sale.due_date,
       createdBy: sale.created_by,
-      shipmentMethod: sale.shipment_method,
-      shipmentDetails: sale.shipment_details
+      shipmentMethod: sale.shipment_details?.[0]?.shipment_method || null,
+      shipmentDetails: sale.shipment_details?.[0] || null
     }));
 
     return salesItems;
@@ -89,9 +94,6 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
 // Fetch credit sales only
 export const getCreditSales = async (): Promise<SalesItem[]> => {
   try {
-    // Make sure shipment columns exist
-    await ensureShipmentFieldsExist();
-    
     const { data: salesData, error: salesError } = await supabase
       .from('sales')
       .select(`
@@ -147,9 +149,6 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
   try {
     // Get the next sales number
     const salesNumber = await getNextSalesNumber();
-    
-    // Make sure shipment columns exist
-    await ensureShipmentFieldsExist();
     
     // Create the sale record
     const { data, error } = await supabase
@@ -292,18 +291,20 @@ export const recordPayment = async (payment: any): Promise<boolean> => {
 };
 
 // Update shipment details
-export const updateShipmentDetails = async (saleId: string, shipmentData: any): Promise<boolean> => {
+export const updateShipmentDetails = async (saleId: string, shipmentData: ShipmentDetails): Promise<boolean> => {
   try {
-    // Make sure shipment columns exist
-    await ensureShipmentFieldsExist();
-
     const { error } = await supabase
-      .from('sales')
-      .update({
-        shipment_method: shipmentData.shipmentMethod,
-        shipment_details: shipmentData.shipmentDetails
-      })
-      .eq('id', saleId);
+      .from('shipment_details')
+      .upsert({
+        sale_id: saleId,
+        shipment_method: shipmentData.shipment_method,
+        courier_name: shipmentData.courier_name,
+        tracking_number: shipmentData.tracking_number,
+        bus_details: shipmentData.bus_details,
+        train_details: shipmentData.train_details,
+        additional_details: shipmentData.additional_details,
+        status: 'Pending'
+      });
 
     if (error) {
       console.error("Error updating shipment details:", error);

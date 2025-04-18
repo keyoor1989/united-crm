@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Table,
@@ -43,8 +42,15 @@ export interface SalesItem {
   invoiceNumber: string | null;
   dueDate?: string;
   createdBy?: string;
-  shipmentMethod?: string;
-  shipmentDetails?: string;
+  shipmentMethod?: string | null;
+  shipmentDetails?: {
+    courier_name?: string;
+    tracking_number?: string;
+    bus_details?: string;
+    train_details?: string;
+    additional_details?: string;
+    status?: string;
+  } | null;
 }
 
 interface SalesTableProps {
