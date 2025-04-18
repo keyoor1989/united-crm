@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Barcode, Plus } from "lucide-react";
 import { SalesInventoryItem } from "@/hooks/inventory/useSalesInventoryItems";
 import { formatCurrency } from "@/utils/finance/financeUtils";
+import { WarehouseStockInfo } from './WarehouseStockInfo';
 
 interface CurrentItemType {
   itemName: string;
@@ -102,6 +102,7 @@ export const ItemEntrySection: React.FC<ItemEntrySectionProps> = ({
                   ))}
                 </SelectContent>
               </Select>
+              {currentItem.itemName && <WarehouseStockInfo itemName={currentItem.itemName} />}
             </div>
             
             <div>
