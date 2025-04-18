@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
       <div className="flex items-center gap-2 mb-2">
         <Search className="h-4 w-4 text-muted-foreground" />
         <Input 
-          placeholder="Search by name, phone, city or machine..." 
+          placeholder="Search by phone number..." 
           value={searchTerm}
           onChange={(e) => {
             onSearchChange(e.target.value);
@@ -41,11 +40,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
       </div>
       
       <div className="flex gap-1.5 text-xs text-muted-foreground mb-2">
-        <span className="flex items-center gap-1 font-medium"><Phone className="h-3 w-3" /> Phone</span>
-        <span>•</span>
-        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> City</span>
-        <span>•</span>
-        <span className="flex items-center gap-1"><User className="h-3 w-3" /> Name</span>
+        <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Enter phone number</span>
       </div>
     </div>
   );

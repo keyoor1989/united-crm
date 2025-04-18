@@ -30,6 +30,12 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
     searchCustomers
   } = useCustomerSearch();
 
+  // Handler for when search term changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    searchCustomers(value);
+  };
+
   return (
     <>
       <div className="flex items-end gap-2">
@@ -41,7 +47,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
             id="customerName"
             value={customerName}
             readOnly
-            placeholder="Enter customer name"
+            placeholder="Enter customer name or search"
           />
         </div>
         <Button 
@@ -57,7 +63,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
         <div className="p-3 border rounded-md bg-background">
           <SearchInput 
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={handleSearchChange}
             onSearchClose={onToggleSearch}
             onSearch={searchCustomers}
           />
