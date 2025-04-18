@@ -14,6 +14,22 @@ interface PaymentMethodChartProps {
 export const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ salesData }) => {
   // Process the data to group by payment method
   const chartData = useMemo(() => {
+    // Skip processing if data is empty
+    if (!salesData || salesData.length === 0) {
+      return {
+        labels: [],
+        datasets: [
+          {
+            label: 'No data available',
+            data: [],
+            backgroundColor: [],
+            borderColor: [],
+            borderWidth: 1,
+          }
+        ]
+      };
+    }
+    
     // Group sales by payment method
     const salesByMethod = salesData.reduce((acc, sale) => {
       const method = sale.paymentMethod || 'Unknown';
@@ -89,5 +105,15 @@ export const PaymentMethodChart: React.FC<PaymentMethodChartProps> = ({ salesDat
     }
   };
 
-  return <Pie data={chartData} options={options} />;
+  return (
+    <div className="w-full h-full">
+      {salesData && salesData.length > 0 ? (
+        <Pie data={chartData} options={options} />
+      ) : (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">No sales data available</p>
+        </div>
+      )}
+    </div>
+  );
 };

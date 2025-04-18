@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -86,6 +87,13 @@ const InventorySales = () => {
   const [isShipmentDialogOpen, setIsShipmentDialogOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<SalesItem | null>(null);
   const [activeTab, setActiveTab] = useState("sales");
+  
+  // Load sales data when component mounts or tab changes
+  useEffect(() => {
+    if (activeTab === "analytics" && (!salesData || salesData.length === 0)) {
+      loadSalesData();
+    }
+  }, [activeTab, salesData, loadSalesData]);
 
   // Handle view details
   const handleViewDetails = (sale: SalesItem) => {

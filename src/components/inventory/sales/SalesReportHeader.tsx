@@ -8,15 +8,22 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 interface SalesReportHeaderProps {
   dateRange: DateRange;
   onDateRangeChange: (range: DateRange) => void;
+  onExportReport?: () => void;
 }
 
 export const SalesReportHeader: React.FC<SalesReportHeaderProps> = ({ 
   dateRange,
-  onDateRangeChange
+  onDateRangeChange,
+  onExportReport
 }) => {
   const exportReport = () => {
-    // Logic to export report as CSV or PDF
-    // This is a placeholder for future implementation
+    // If export handler is provided, use it
+    if (onExportReport) {
+      onExportReport();
+      return;
+    }
+    
+    // Fallback if no handler provided
     alert("Export functionality will be implemented in the future");
   };
   

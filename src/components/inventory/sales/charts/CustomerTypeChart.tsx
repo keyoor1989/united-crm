@@ -31,6 +31,22 @@ interface CustomerTypeChartProps {
 export const CustomerTypeChart: React.FC<CustomerTypeChartProps> = ({ salesData }) => {
   // Process the data to group by customer type
   const chartData = useMemo(() => {
+    // Skip processing if data is empty
+    if (!salesData || salesData.length === 0) {
+      return {
+        labels: [],
+        datasets: [
+          {
+            label: 'No data available',
+            data: [],
+            backgroundColor: [],
+            borderColor: [],
+            borderWidth: 1,
+          }
+        ]
+      };
+    }
+    
     // Group sales by customer type
     const salesByType = salesData.reduce((acc, sale) => {
       const customerType = sale.customerType || 'Unknown';
@@ -99,9 +115,28 @@ export const CustomerTypeChart: React.FC<CustomerTypeChartProps> = ({ salesData 
     plugins: {
       legend: {
         position: 'top' as const,
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const label = context.dataset.label || '';
+            const value = context.raw || 0;
+            return label === 'Revenue' ? `${label}: ₹${value.toLocaleString()}` : `${label}: ${value}`;
+          }
+        }
       }
     }
   };
 
-  return <Bar data={chartData} options={options} />;
+  return (
+    <div className="w-full h-full">
+      {salesData && salesData.length > 0 ? (
+        <Bar data={chartData} options={options} />
+      ) : (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground">No sales data available</p>
+        </div>
+      )}
+    </div>
+  );
 };
