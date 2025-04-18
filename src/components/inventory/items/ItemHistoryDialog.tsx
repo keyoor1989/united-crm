@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -34,17 +33,16 @@ interface ItemHistoryDialogProps {
 }
 
 export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryDialogProps) => {
-  // Query for engineer assignments with LIKE query
+  // Query for engineer assignments with exact matching
   const { data: engineerAssignments } = useQuery({
     queryKey: ['engineer_assignments', itemName],
     queryFn: async () => {
       if (!itemName) return [];
       
-      // Use ILIKE for case-insensitive partial matching
       const { data, error } = await supabase
         .from('engineer_inventory')
         .select('*')
-        .or(`item_name.ilike.%${itemName}%,item_name.eq.${itemName}`)
+        .eq('item_name', itemName)  // Use exact match
         .order('assigned_date', { ascending: false });
       
       if (error) {
@@ -57,18 +55,18 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for sales history with improved matching
+  // Query for sales history with exact matching
   const { data: salesHistory, isLoading: isSalesLoading, error: salesError } = useQuery({
     queryKey: ['sales_history', itemName],
     queryFn: async () => {
       if (!itemName) return [];
       console.log('Fetching sales history for item:', itemName);
       
-      // First find all sales_items that match our item name with ILIKE
+      // First find all sales_items that match our item name exactly
       const { data: salesItemsData, error: salesItemsError } = await supabase
         .from('sales_items')
-        .select('id, sale_id, item_name, quantity, unit_price, total')
-        .or(`item_name.ilike.%${itemName}%,item_name.eq.${itemName}`);
+        .select('id, sale_id, item_name, quantity, unit_price, total, category')
+        .eq('item_name', itemName);  // Use exact match
       
       if (salesItemsError) {
         console.error("Error fetching sales items:", salesItemsError);
@@ -80,12 +78,9 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
         return [];
       }
       
-      console.log('Found sales items:', salesItemsData);
-      
       // Extract all sale_ids to fetch the corresponding sales records
       const saleIds = salesItemsData.map(item => item.sale_id);
       
-      // Fetch the sales records
       const { data: salesData, error: salesError } = await supabase
         .from('sales')
         .select('id, date, customer_name, status, payment_status')
@@ -100,11 +95,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       const combinedData = salesItemsData.map(item => {
         const saleRecord = salesData.find(sale => sale.id === item.sale_id);
         return {
-          id: item.id,
-          item_name: item.item_name,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total: item.total,
+          ...item,
           sales: saleRecord || { date: null, customer_name: 'Unknown', status: 'unknown' }
         };
       });
@@ -115,7 +106,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for returns history with improved matching
+  // Query for returns history with exact matching
   const { data: returnsHistory } = useQuery({
     queryKey: ['returns_history', itemName],
     queryFn: async () => {
@@ -123,7 +114,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       const { data, error } = await supabase
         .from('inventory_returns')
         .select('*')
-        .or(`item_name.ilike.%${itemName}%,item_name.eq.${itemName}`)
+        .eq('item_name', itemName)  // Use exact match
         .order('return_date', { ascending: false });
       
       if (error) throw error;
@@ -133,7 +124,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
     enabled: !!itemName
   });
 
-  // Query for purchase history from purchase orders with improved matching
+  // Query for purchase orders with exact matching
   const { data: purchaseHistory } = useQuery({
     queryKey: ['purchase_history', itemName],
     queryFn: async () => {
@@ -141,21 +132,16 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
       const { data, error } = await supabase
         .from('purchase_orders')
         .select('*')
-        .contains('items', [{ item_name: itemName }])
+        .contains('items', [{ item_name: itemName }])  // Exact match in JSON array
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      // Extract relevant purchase information for the specific item
+      // Extract only relevant purchase information for the specific item
       const purchases = data?.map(po => {
         const itemsArray = typeof po.items === 'string' ? JSON.parse(po.items) : po.items;
         const itemDetails = Array.isArray(itemsArray) 
-          ? itemsArray.find((item: any) => {
-              const itemNameMatch = item.item_name === itemName ||
-                                  item.item_name.includes(itemName) ||
-                                  itemName.includes(item.item_name);
-              return itemNameMatch;
-            })
+          ? itemsArray.find((item: any) => item.item_name === itemName)  // Exact match
           : null;
           
         if (!itemDetails) return null;
