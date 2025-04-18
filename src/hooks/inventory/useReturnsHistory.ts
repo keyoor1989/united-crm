@@ -24,31 +24,32 @@ export const useReturnsHistory = (itemName: string | null) => {
           return [];
         }
         
-        console.log('Found item details:', stockItem);
-        
-        // Step 2: Query inventory_returns using both item_id and name matching
-        let query = supabase
-          .from('inventory_returns')
-          .select('*')
-          .order('return_date', { ascending: false });
-          
-        // If we found the item in opening_stock_entries, use its ID for matching
-        if (stockItem?.id) {
-          // Exact match by item_id
-          query = query.eq('item_id', stockItem.id);
-        } else {
-          // Fallback to flexible name matching
-          query = query.ilike('item_name', `%${itemName}%`);
+        if (!stockItem) {
+          console.log('No matching item found in stock entries for:', itemName);
+          return [];
         }
         
-        const { data, error } = await query;
+        console.log('Found item details:', stockItem);
+        
+        // Step 2: Query inventory_returns by exact item_id match only
+        if (!stockItem.id) {
+          console.log('No item ID available for matching, cannot proceed with accurate returns lookup');
+          return [];
+        }
+        
+        // Only query by exact item_id match - no fuzzy text matching
+        const { data, error } = await supabase
+          .from('inventory_returns')
+          .select('*')
+          .eq('item_id', stockItem.id)
+          .order('return_date', { ascending: false });
         
         if (error) {
           console.error('Error fetching returns history:', error);
           return [];
         }
         
-        console.log(`Found ${data?.length || 0} returns records`);
+        console.log(`Found ${data?.length || 0} returns records for item ID ${stockItem.id}`);
         
         return data || [];
       } catch (error) {

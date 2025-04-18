@@ -13,7 +13,7 @@ import {
 import { useReturnsHistory } from '@/hooks/inventory/useReturnsHistory';
 import { format } from 'date-fns';
 import { Skeleton } from "@/components/ui/skeleton";
-import { Package, Undo2 } from "lucide-react";
+import { Undo2, AlertCircle } from "lucide-react";
 
 interface ReturnsHistoryTabProps {
   itemName: string | null;
@@ -89,11 +89,9 @@ export const ReturnsHistoryTab = ({ itemName }: ReturnsHistoryTabProps) => {
                           {return_item.notes}
                         </span>
                       )}
-                      {return_item.item_id && (
-                        <Badge variant="outline" className="w-fit text-xs">
-                          ID: {return_item.item_id}
-                        </Badge>
-                      )}
+                      <Badge variant="outline" className="w-fit text-xs">
+                        ID: {return_item.item_id}
+                      </Badge>
                       {return_item.warehouse_name && (
                         <Badge variant="outline" className="w-fit text-xs">
                           To: {return_item.warehouse_name}
@@ -106,9 +104,13 @@ export const ReturnsHistoryTab = ({ itemName }: ReturnsHistoryTabProps) => {
             ) : (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                  <div className="flex flex-col items-center gap-2 py-4">
+                  <div className="flex flex-col items-center gap-2 py-6">
                     <Undo2 className="h-10 w-10 text-muted-foreground/50" />
-                    <span>No returns history found</span>
+                    <span>No returns history found for this specific item</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <AlertCircle className="h-3 w-3" /> 
+                      Filtering by exact item ID match only
+                    </span>
                   </div>
                 </TableCell>
               </TableRow>
