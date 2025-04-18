@@ -23,7 +23,7 @@ interface UnifiedSalesFormProps {
   onSaveSale: (sale: SalesItem) => void;
 }
 
-export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
+const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
   open,
   onClose,
   productCategories,
@@ -213,7 +213,7 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       toast.error("Please add at least one item");
       return;
     }
-    
+
     const firstItem = items[0];
     const status = isCredit ? "Credit Sale" : "Completed";
     const paymentStatus = isCredit ? "Due" : "Paid";
@@ -231,11 +231,12 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       paymentMethod: paymentMethods.find(method => method.value === paymentMethod)?.label || paymentMethod,
       paymentStatus,
       billGenerated: !isCredit,
-      invoiceNumber: isCredit ? null : `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 100)}`,
+      invoiceNumber: null,
       dueDate: isCredit ? dueDate : undefined,
     };
     
     try {
+      // Deduct inventory first
       const deductionPromises = items.map(item => {
         const inventoryItem = inventoryItems.find(invItem => invItem.id === item.id);
         if (inventoryItem) {
@@ -256,13 +257,16 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
       
       await Promise.all(deductionPromises);
       
-      onSaveSale(newSale);
-      toast.success(`Sale created with ${items.length} items`);
-      onClose();
-      resetForm();
+      // Save the sale
+      const saleId = await onSaveSale(newSale);
+      if (saleId) {
+        toast.success(`Sale created successfully!`);
+        onClose();
+        resetForm();
+      }
     } catch (error) {
-      console.error("Error deducting inventory:", error);
-      toast.error("Failed to update inventory. Please try again.");
+      console.error("Error processing sale:", error);
+      toast.error("Failed to process sale. Please try again.");
     }
   };
 
@@ -364,3 +368,5 @@ export const UnifiedSalesForm: React.FC<UnifiedSalesFormProps> = ({
     </Dialog>
   );
 };
+
+export default UnifiedSalesForm;

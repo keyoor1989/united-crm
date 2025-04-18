@@ -17,6 +17,7 @@ export type SaleRecord = {
   tax_amount: number;
   total_amount: number;
   notes?: string;
+  sales_number?: string;
 };
 
 export type SaleItemRecord = {
@@ -52,6 +53,20 @@ export type CreditTermsRecord = {
   follow_up_date?: string;
   last_follow_up_notes?: string;
 };
+
+// Helper function to get next sales number
+async function getNextSalesNumber(): Promise<string> {
+  const { data, error } = await supabase
+    .rpc('get_next_sales_number');
+    
+  if (error) {
+    console.error('Error getting next sales number:', error);
+    // Fallback format if the sequence fails
+    return `SALE-${new Date().getTime()}`;
+  }
+  
+  return `SALE-${data.toString().padStart(4, '0')}`;
+}
 
 // Fetch all sales
 export const fetchSales = async (): Promise<SalesItem[]> => {
@@ -110,14 +125,16 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
 
 // Add a new sale with items
 export const addSale = async (
-  saleData: Omit<SaleRecord, 'id'>, 
+  saleData: Omit<SaleRecord, 'id' | 'sales_number'>, 
   itemsData: Omit<SaleItemRecord, 'id' | 'sale_id'>[]
 ): Promise<string | null> => {
   try {
+    const salesNumber = await getNextSalesNumber();
+    
     // Insert the sale record
     const { data: sale, error: saleError } = await supabase
       .from('sales')
-      .insert([saleData])
+      .insert([{ ...saleData, sales_number: salesNumber }])
       .select('id')
       .single();
     
