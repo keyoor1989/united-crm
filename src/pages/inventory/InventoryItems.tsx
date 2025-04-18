@@ -32,7 +32,6 @@ const InventoryItems = () => {
           brand: formData.brand,
           compatible_models: formData.compatible_models || [],
           part_number: formData.partNumber,
-          location: formData.location,
           warehouse_id: formData.warehouse_id,
           warehouse_name: formData.warehouse_name
         })

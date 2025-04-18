@@ -39,7 +39,6 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
     quantity: 0,
     minStock: 0,
     purchasePrice: 0,
-    location: "",
     warehouseId: "",
   });
 
@@ -129,7 +128,6 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
       quantity: 0,
       minStock: 0,
       purchasePrice: 0,
-      location: "",
       warehouseId: "",
     });
     onOpenChange(false);
@@ -327,16 +325,6 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
                   )}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="location">Storage Location</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="Enter storage location"
-              />
             </div>
           </div>
 
