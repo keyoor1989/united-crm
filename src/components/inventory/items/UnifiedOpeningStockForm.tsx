@@ -40,6 +40,7 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
     minStock: 0,
     purchasePrice: 0,
     location: "",
+    warehouseId: "",
   });
 
   // Fetch brands
@@ -76,6 +77,21 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
     enabled: !!formData.brand
   });
 
+  // Fetch warehouses
+  const { data: warehouses = [], isLoading: isLoadingWarehouses } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -84,13 +100,23 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
       return;
     }
 
+    if (!formData.warehouseId) {
+      toast.error("Please select a warehouse");
+      return;
+    }
+
     // Find the brand name from the selected brand ID
     const selectedBrand = brands.find(b => b.id === formData.brand);
+    
+    // Find the warehouse name from the selected warehouse ID
+    const selectedWarehouse = warehouses.find(w => w.id === formData.warehouseId);
     
     const submissionData = {
       ...formData,
       brand: selectedBrand?.name || formData.brand,
       compatible_models: formData.modelCompatibility,
+      warehouse_id: formData.warehouseId,
+      warehouse_name: selectedWarehouse?.name || "",
     };
 
     onSubmit(submissionData);
@@ -104,6 +130,7 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
       minStock: 0,
       purchasePrice: 0,
       location: "",
+      warehouseId: "",
     });
     onOpenChange(false);
   };
@@ -277,7 +304,32 @@ const UnifiedOpeningStockForm: React.FC<UnifiedOpeningStockFormProps> = ({
               />
             </div>
 
-            <div className="col-span-2 space-y-2">
+            <div className="space-y-2">
+              <Label htmlFor="warehouse">Warehouse *</Label>
+              <Select
+                value={formData.warehouseId}
+                onValueChange={(value) => setFormData({ ...formData, warehouseId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select warehouse" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isLoadingWarehouses ? (
+                    <SelectItem value="loading" disabled>Loading warehouses...</SelectItem>
+                  ) : warehouses.length > 0 ? (
+                    warehouses.map((warehouse) => (
+                      <SelectItem key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name} ({warehouse.location})
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="no-warehouses" disabled>No warehouses available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="location">Storage Location</Label>
               <Input
                 id="location"

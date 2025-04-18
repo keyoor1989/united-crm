@@ -7,16 +7,45 @@ import UnifiedOpeningStockForm from "@/components/inventory/items/UnifiedOpening
 import { useInventoryItems } from "@/hooks/inventory/useInventoryItems";
 import InventoryTable from "@/components/inventory/InventoryTable";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const InventoryItems = () => {
   const [openItemDialog, setOpenItemDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { items, isLoading } = useInventoryItems(null);
+  const queryClient = useQueryClient();
 
   const handleAddItem = async (formData: any) => {
     try {
       console.log("Adding new item:", formData);
-      // Here you would typically save to your database
+      
+      // Insert the new item into the database
+      const { data, error } = await supabase
+        .from('opening_stock_entries')
+        .insert({
+          part_name: formData.partName,
+          category: formData.category,
+          quantity: formData.quantity,
+          min_stock: formData.minStock,
+          purchase_price: formData.purchasePrice,
+          brand: formData.brand,
+          compatible_models: formData.compatible_models || [],
+          part_number: formData.partNumber,
+          location: formData.location,
+          warehouse_id: formData.warehouse_id,
+          warehouse_name: formData.warehouse_name
+        })
+        .select();
+
+      if (error) {
+        console.error("Error adding item:", error);
+        throw error;
+      }
+
+      // Invalidate queries to refresh the inventory items list
+      queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
+      
       toast.success("Item added successfully");
       setOpenItemDialog(false);
     } catch (error) {
