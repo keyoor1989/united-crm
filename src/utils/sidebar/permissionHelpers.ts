@@ -34,7 +34,7 @@ export const getInitialOpenSections = (
 ) => {
   return [
     (pathname === "/service" || pathname === "/engineer-performance") && hasPermission("service_calls") ? "service" : "",
-    (pathname.startsWith("/inventory") || pathname === "/inventory/branch-transfer") && hasPermission("inventory") ? "inventory" : "",
+    (pathname.startsWith("/inventory") || pathname === "/inventory/branch-transfer" || pathname === "/inventory/purchase-entry") && hasPermission("inventory") ? "inventory" : "",
     (pathname.startsWith("/quotation") || pathname.startsWith("/purchase-order") || 
     pathname === "/quotations" || pathname === "/purchase-orders" || 
     pathname === "/sent-quotations" || pathname === "/sent-orders" || 
