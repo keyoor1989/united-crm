@@ -32,11 +32,32 @@ export const useSalesInventoryItems = () => {
 
       // Map database items to SalesInventoryItem interface
       return data.map((item): SalesInventoryItem => {
+        // Handle compatible_models safely, ensuring it's always an array
+        let compatibleModels: string[] = [];
+        
+        // Check if compatible_models exists and convert it to an array if needed
+        if (item.compatible_models) {
+          // If it's already an array, use it directly
+          if (Array.isArray(item.compatible_models)) {
+            compatibleModels = item.compatible_models;
+          } 
+          // If it's a string (could happen with JSON conversion), try to parse it
+          else if (typeof item.compatible_models === 'string') {
+            try {
+              const parsed = JSON.parse(item.compatible_models);
+              compatibleModels = Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+              // If parsing fails, use empty array
+              compatibleModels = [];
+            }
+          }
+        }
+        
         // Create a display name that includes brand and model information
         let modelInfo = '';
-        if (item.compatible_models && Array.isArray(item.compatible_models)) {
-          modelInfo = item.compatible_models.slice(0, 2).join(', ');
-          if (item.compatible_models.length > 2) {
+        if (compatibleModels.length > 0) {
+          modelInfo = compatibleModels.slice(0, 2).join(', ');
+          if (compatibleModels.length > 2) {
             modelInfo += '...';
           }
         }
@@ -55,7 +76,7 @@ export const useSalesInventoryItems = () => {
           purchase_price: item.purchase_price,
           brand: item.brand,
           part_number: item.part_number,
-          compatible_models: item.compatible_models,
+          compatible_models: compatibleModels,
           display_name: displayName
         };
       });
