@@ -46,24 +46,32 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
         .order('assigned_date', { ascending: false });
       
       if (error) throw error;
+      console.log('Engineer assignments:', data);
       return data;
     },
     enabled: !!itemName
   });
 
   // Query for sales history
-  const { data: salesHistory } = useQuery({
+  const { data: salesHistory, isLoading: isSalesLoading } = useQuery({
     queryKey: ['sales_history', itemName],
     queryFn: async () => {
       if (!itemName) return [];
+      console.log('Fetching sales history for item:', itemName);
+      
       const { data, error } = await supabase
         .from('sales_items')
         .select('*, sales!inner(*)')
         .eq('item_name', itemName)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Error fetching sales history:", error);
+        throw error;
+      }
+      
+      console.log('Sales history data:', data);
+      return data || [];
     },
     enabled: !!itemName
   });
@@ -80,6 +88,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
         .order('return_date', { ascending: false });
       
       if (error) throw error;
+      console.log('Returns history:', data);
       return data;
     },
     enabled: !!itemName
@@ -118,6 +127,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
         };
       }) || [];
       
+      console.log('Purchase history:', purchases);
       return purchases;
     },
     enabled: !!itemName
@@ -226,42 +236,46 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
           <TabsContent value="sales">
             <Card>
               <CardContent className="pt-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Unit Price</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {salesHistory && salesHistory.length > 0 ? (
-                      salesHistory.map((sale) => (
-                        <TableRow key={sale.id}>
-                          <TableCell>{formatDate(sale.sales.date)}</TableCell>
-                          <TableCell>{sale.sales.customer_name}</TableCell>
-                          <TableCell>{sale.quantity}</TableCell>
-                          <TableCell>₹{sale.unit_price}</TableCell>
-                          <TableCell>₹{sale.total}</TableCell>
-                          <TableCell>
-                            <Badge variant={sale.sales.status === 'completed' ? 'success' : 'secondary'}>
-                              {sale.sales.status}
-                            </Badge>
+                {isSalesLoading ? (
+                  <div className="text-center py-4">Loading sales data...</div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Unit Price</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {salesHistory && salesHistory.length > 0 ? (
+                        salesHistory.map((sale) => (
+                          <TableRow key={sale.id}>
+                            <TableCell>{formatDate(sale.sales?.date || '')}</TableCell>
+                            <TableCell>{sale.sales?.customer_name || 'Unknown'}</TableCell>
+                            <TableCell>{sale.quantity}</TableCell>
+                            <TableCell>₹{sale.unit_price}</TableCell>
+                            <TableCell>₹{sale.total}</TableCell>
+                            <TableCell>
+                              <Badge variant={sale.sales?.status === 'completed' ? 'success' : 'secondary'}>
+                                {sale.sales?.status || 'Pending'}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                            No sales history found
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                          No sales history found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
