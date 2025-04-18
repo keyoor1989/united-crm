@@ -36,7 +36,6 @@ import AmcTracker from "@/pages/inventory/AmcTracker";
 import Settings from "@/pages/Settings";
 import SmartAssistant from "@/pages/SmartAssistant";
 import TelegramAdmin from "@/pages/TelegramAdmin";
-// Quotation pages
 import Quotations from "@/pages/sales/Quotations";
 import QuotationForm from "@/pages/sales/QuotationForm";
 import SentQuotations from "@/pages/sales/SentQuotations";
@@ -47,42 +46,36 @@ import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
 import SentOrders from "@/pages/sales/SentOrders";
 import OrderHistory from "@/pages/sales/OrderHistory";
 import TaskDashboard from "@/pages/tasks/TaskDashboard";
-// Inventory Sales pages
 import InventorySales from "@/pages/inventory/InventorySales";
 import CashPurchase from "@/pages/inventory/CashPurchase";
 import SalesReports from "@/pages/inventory/SalesReports";
-// User Management page
 import UserManagement from "@/pages/user-management/UserManagement";
+import BranchTransfer from "@/pages/inventory/BranchTransfer";
 import NotFound from "@/pages/NotFound";
 
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Auth routes without layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/access-denied" element={<AccessDenied />} />
       
-      {/* Task-related routes with TaskProvider */}
       <Route element={<TaskEnabledLayout />}>
         <Route path="/tasks" element={<ProtectedRoute><TaskDashboard /></ProtectedRoute>} />
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       </Route>
       
-      {/* Protected routes with layout but without Task context */}
       <Route element={<Layout />}>
         <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
         <Route path="/customers/follow-ups" element={<ProtectedRoute><CustomerFollowUps /></ProtectedRoute>} />
         <Route path="/customer-form" element={<ProtectedRoute><CustomerForm /></ProtectedRoute>} />
         <Route path="/customer-form/:id" element={<ProtectedRoute><CustomerForm /></ProtectedRoute>} />
         
-        {/* Finance Routes */}
         <Route path="/finance" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />
         <Route path="/finance/cash-register" element={<ProtectedRoute><CashRegister /></ProtectedRoute>} />
         <Route path="/finance/revenue" element={<ProtectedRoute><DepartmentRevenue /></ProtectedRoute>} />
         <Route path="/finance/expenses" element={<ProtectedRoute><DepartmentExpenses /></ProtectedRoute>} />
 
-        {/* Inventory Routes */}
         <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
         <Route path="/inventory/items" element={<ProtectedRoute><InventoryItems /></ProtectedRoute>} />
         <Route path="/inventory/brands" element={<ProtectedRoute><InventoryBrands /></ProtectedRoute>} />
@@ -91,6 +84,7 @@ const AppRoutes = () => {
         <Route path="/inventory/purchase-entry" element={<ProtectedRoute><InventoryPurchase /></ProtectedRoute>} />
         <Route path="/inventory/issue" element={<ProtectedRoute><InventoryIssue /></ProtectedRoute>} />
         <Route path="/inventory/transfers" element={<ProtectedRoute><InventoryHistory /></ProtectedRoute>} />
+        <Route path="/inventory/branch-transfer" element={<ProtectedRoute><BranchTransfer /></ProtectedRoute>} />
         <Route path="/inventory/amc-tracker" element={<ProtectedRoute><AmcTracker /></ProtectedRoute>} />
         <Route path="/inventory/cash-purchase" element={<ProtectedRoute><CashPurchase /></ProtectedRoute>} />
         <Route path="/inventory/sales" element={<ProtectedRoute><InventorySales /></ProtectedRoute>} />
@@ -106,7 +100,6 @@ const AppRoutes = () => {
         <Route path="/engineer/new" element={<ProtectedRoute><EngineerForm /></ProtectedRoute>} />
         <Route path="/engineer-performance" element={<ProtectedRoute><EngineerPerformanceDashboard /></ProtectedRoute>} />
 
-        {/* Quotation Routes */}
         <Route path="/quotations" element={<ProtectedRoute><Quotations /></ProtectedRoute>} />
         <Route path="/quotation-form" element={<ProtectedRoute><QuotationForm /></ProtectedRoute>} />
         <Route path="/sent-quotations" element={<ProtectedRoute><SentQuotations /></ProtectedRoute>} />
@@ -117,17 +110,13 @@ const AppRoutes = () => {
         <Route path="/sent-orders" element={<ProtectedRoute><SentOrders /></ProtectedRoute>} />
         <Route path="/order-history" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
         
-        {/* User Management Route */}
         <Route path="/user-management" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
         
-        {/* Smart Assistant */}
         <Route path="/smart-assistant" element={<ProtectedRoute><SmartAssistant /></ProtectedRoute>} />
 
-        {/* Settings Routes */}
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/telegram-admin" element={<ProtectedRoute><TelegramAdmin /></ProtectedRoute>} />
         
-        {/* 404 catch-all */}
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

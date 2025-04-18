@@ -1,5 +1,5 @@
 
-import { Box, CircleDollarSign, BarChart3, Package, Truck, History, Building2, ReceiptText, Tags, Archive } from "lucide-react";
+import { Box, CircleDollarSign, BarChart3, Package, Truck, History, Building2, ReceiptText, Tags, Archive, ArrowLeftRight } from "lucide-react";
 import { NavSection } from "../types/navTypes";
 
 export const inventorySection: NavSection = {
@@ -51,6 +51,11 @@ export const inventorySection: NavSection = {
       to: "/inventory/transfers",
       icon: History,
       label: "History"
+    },
+    {
+      to: "/inventory/branch-transfer",
+      icon: ArrowLeftRight,
+      label: "Branch Transfer"
     }
   ]
 };
