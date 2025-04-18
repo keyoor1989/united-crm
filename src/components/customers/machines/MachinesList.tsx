@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import MachineItem from "./MachineItem";
+import { MachineItem } from "./MachineItem"; // Changed from default import to named import
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Machine } from "./types";
@@ -64,6 +64,16 @@ const MachinesList: React.FC<MachinesListProps> = ({
     );
   }
 
+  // Transform the database machine objects to match the Machine type
+  const transformedMachines = ownedMachines.map(machine => ({
+    id: machine.id,
+    model: machine.machine_name,
+    serialNumber: machine.machine_serial || 'N/A',
+    installationDate: machine.installation_date || new Date().toISOString(),
+    status: 'active' as const,
+    lastService: machine.last_service || new Date().toISOString(),
+  }));
+
   return (
     <div className="space-y-4">
       {/* Show interests section for leads */}
@@ -95,11 +105,11 @@ const MachinesList: React.FC<MachinesListProps> = ({
             </Button>
           </div>
           
-          {ownedMachines.length === 0 ? (
+          {transformedMachines.length === 0 ? (
             <p className="text-sm text-muted-foreground">No machines added yet.</p>
           ) : (
             <div className="space-y-2">
-              {ownedMachines.map((machine) => (
+              {transformedMachines.map((machine) => (
                 <MachineItem 
                   key={machine.id} 
                   machine={machine}
