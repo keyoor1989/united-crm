@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { SalesItem } from "@/components/inventory/sales/SalesTable";
 import { toast } from "sonner";
+import { ensureShipmentFieldsExist } from "@/utils/supabaseUtils";
 
 // Helper function to get next sales number
 async function getNextSalesNumber(): Promise<string> {
@@ -37,19 +38,8 @@ async function getNextSalesNumber(): Promise<string> {
 // Fetch all sales
 export const fetchSales = async (): Promise<SalesItem[]> => {
   try {
-    // First, add the shipment_method and shipment_details columns if they don't exist
-    const { error: alterTableError } = await supabase.rpc('add_columns_if_not_exist', {
-      _table_name: 'sales',
-      _column_defs: [
-        { column_name: 'shipment_method', column_type: 'text' },
-        { column_name: 'shipment_details', column_type: 'text' }
-      ]
-    });
-
-    if (alterTableError) {
-      console.error("Error adding columns:", alterTableError);
-      // Continue anyway to fetch existing data
-    }
+    // First, make sure shipment columns exist
+    await ensureShipmentFieldsExist();
 
     const { data: salesData, error: salesError } = await supabase
       .from('sales')
@@ -99,6 +89,9 @@ export const fetchSales = async (): Promise<SalesItem[]> => {
 // Fetch credit sales only
 export const getCreditSales = async (): Promise<SalesItem[]> => {
   try {
+    // Make sure shipment columns exist
+    await ensureShipmentFieldsExist();
+    
     const { data: salesData, error: salesError } = await supabase
       .from('sales')
       .select(`
@@ -155,19 +148,8 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
     // Get the next sales number
     const salesNumber = await getNextSalesNumber();
     
-    // Add shipment_method and shipment_details columns if they don't exist
-    const { error: alterTableError } = await supabase.rpc('add_columns_if_not_exist', {
-      _table_name: 'sales',
-      _column_defs: [
-        { column_name: 'shipment_method', column_type: 'text' },
-        { column_name: 'shipment_details', column_type: 'text' }
-      ]
-    });
-
-    if (alterTableError) {
-      console.error("Error adding columns:", alterTableError);
-      // Continue anyway to insert data
-    }
+    // Make sure shipment columns exist
+    await ensureShipmentFieldsExist();
     
     // Create the sale record
     const { data, error } = await supabase
@@ -192,6 +174,7 @@ export async function addSale(sale: any, saleItems: any[] = []): Promise<string 
         shipping_address: sale.shipping_address,
         billing_address: sale.billing_address,
         created_by: sale.created_by || 'Admin', // Default to Admin if not provided
+        notes: sale.notes,
         shipment_method: sale.shipment_method,
         shipment_details: sale.shipment_details
       })
@@ -311,19 +294,8 @@ export const recordPayment = async (payment: any): Promise<boolean> => {
 // Update shipment details
 export const updateShipmentDetails = async (saleId: string, shipmentData: any): Promise<boolean> => {
   try {
-    // Add shipment_method and shipment_details columns if they don't exist
-    const { error: alterTableError } = await supabase.rpc('add_columns_if_not_exist', {
-      _table_name: 'sales',
-      _column_defs: [
-        { column_name: 'shipment_method', column_type: 'text' },
-        { column_name: 'shipment_details', column_type: 'text' }
-      ]
-    });
-
-    if (alterTableError) {
-      console.error("Error adding columns:", alterTableError);
-      // Continue anyway to update data
-    }
+    // Make sure shipment columns exist
+    await ensureShipmentFieldsExist();
 
     const { error } = await supabase
       .from('sales')

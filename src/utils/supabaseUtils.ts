@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function ensureShipmentFieldsExist(): Promise<boolean> {
   try {
-    // Execute SQL to add columns if they don't exist
+    // Execute SQL directly to add columns if they don't exist
     const { error } = await supabase.rpc('add_columns_if_not_exist', {
       _table_name: 'sales',
       _column_defs: [
