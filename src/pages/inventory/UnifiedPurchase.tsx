@@ -99,14 +99,10 @@ const UnifiedPurchase = () => {
       for (const item of items) {
         if (!item.isCustomItem && item.itemId) {
           // Only update inventory for existing items
-          // Note: This RPC call may need adjustment based on your Supabase setup
           const { error: updateError } = await supabase
             .from('opening_stock_entries')
             .update({ 
-              quantity: supabase.rpc('increment', { 
-                row_id: item.itemId,
-                increment_amount: item.quantity 
-              })
+              quantity: item.quantity 
             })
             .eq('id', item.itemId);
 
