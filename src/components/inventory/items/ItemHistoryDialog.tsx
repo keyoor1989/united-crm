@@ -79,6 +79,7 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
                       <TableHead className="text-right">Quantity</TableHead>
                       <TableHead className="text-right">Rate (₹)</TableHead>
                       <TableHead>Invoice No.</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -89,6 +90,13 @@ export const ItemHistoryDialog = ({ open, onOpenChange, itemName }: ItemHistoryD
                         <TableCell className="text-right">{record.quantity}</TableCell>
                         <TableCell className="text-right">₹{record.rate?.toLocaleString()}</TableCell>
                         <TableCell>{record.invoiceNo}</TableCell>
+                        <TableCell>
+                          {record.status && (
+                            <Badge variant={record.status === 'Completed' ? 'success' : 'secondary'}>
+                              {record.status || 'Pending'}
+                            </Badge>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

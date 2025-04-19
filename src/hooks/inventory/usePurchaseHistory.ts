@@ -26,15 +26,12 @@ export const usePurchaseHistory = (itemName: string | null) => {
         
         console.log('Found item details:', stockItem);
         
-        // Step 2: Use both item_id and flexible name matching for maximum coverage
-        let purchaseQuery = supabase
+        // Step 2: Get all purchase orders
+        const { data: purchaseOrders, error: poError } = await supabase
           .from('purchase_orders')
           .select('*')
           .order('created_at', { ascending: false });
           
-        // If we found the item, filter using its ID if present in the items array
-        const { data: purchaseOrders, error: poError } = await purchaseQuery;
-        
         if (poError) {
           console.error('Error fetching purchase orders:', poError);
           return [];
@@ -54,22 +51,22 @@ export const usePurchaseHistory = (itemName: string | null) => {
               
               // Or do flexible name matching
               return (
-                item.item_name && (
-                  item.item_name.toLowerCase().includes(itemName.toLowerCase()) ||
-                  (stockItem?.part_name && item.item_name.toLowerCase().includes(stockItem.part_name.toLowerCase())) ||
-                  (stockItem?.full_item_name && item.item_name.toLowerCase().includes(stockItem.full_item_name.toLowerCase()))
+                item.itemName && (
+                  item.itemName.toLowerCase().includes(itemName.toLowerCase()) ||
+                  (stockItem?.part_name && item.itemName.toLowerCase().includes(stockItem.part_name.toLowerCase())) ||
+                  (stockItem?.full_item_name && item.itemName.toLowerCase().includes(stockItem.full_item_name.toLowerCase()))
                 )
               );
             });
             
             // Map matching items to our desired format
             return matchingItems.map((item: any) => ({
-              id: `${po.id}-${item.item_name}`,
+              id: `${po.id}-${item.itemName || item.item_name}`,
               date: po.created_at,
               vendor: po.vendor_name,
               quantity: item?.quantity || 0,
-              rate: item?.unit_price || 0,
-              invoiceNo: po.po_number,
+              rate: item?.unitPrice || item?.unit_price || 0,
+              invoiceNo: po.po_number || po.invoice_number,
               remarks: po.notes || '',
               status: po.status
             }));
@@ -79,7 +76,7 @@ export const usePurchaseHistory = (itemName: string | null) => {
           }
         }).filter(Boolean) || [];
         
-        console.log(`Found ${purchaseRecords.length} purchase records`);
+        console.log(`Found ${purchaseRecords.length} purchase records for ${itemName}`);
         
         return purchaseRecords;
       } catch (error) {

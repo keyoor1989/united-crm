@@ -124,16 +124,27 @@ const InventoryTable = ({
 
   const actionButtons = (item: InventoryItem) => (
     <div className="flex justify-end gap-2">
-      <Button variant="ghost" size="icon" onClick={() => setSelectedItemForHistory(item)}>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => setSelectedItemForHistory(item)}
+        title="View Item History"
+      >
         <History className="h-4 w-4" />
       </Button>
-      <Button variant="ghost" size="icon" onClick={() => handleEditItem(item)}>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => handleEditItem(item)}
+        title="Edit Item"
+      >
         <Edit className="h-4 w-4" />
       </Button>
       <Button 
         variant="ghost" 
         size="icon" 
         onClick={() => handleDeleteClick(item.id, item.part_name || item.name)}
+        title="Delete Item"
       >
         <Trash2 className="h-4 w-4" />
       </Button>
