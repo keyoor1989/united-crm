@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Vendor } from '@/types/inventory';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface VendorContextType {
   vendors: Vendor[];
@@ -32,7 +31,6 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       
       console.log('Vendors fetched:', data);
       
-      // Convert snake_case to camelCase
       const vendorsData: Vendor[] = (data || []).map(vendor => ({
         id: vendor.id,
         name: vendor.name,
@@ -64,7 +62,6 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const addVendor = async (vendor: Omit<Vendor, 'id' | 'createdAt'>) => {
     try {
       console.log('Adding new vendor:', vendor);
-      // Convert camelCase to snake_case for database
       const { data, error } = await supabase.from('vendors').insert({
         name: vendor.name,
         contact_person: vendor.contactPerson || '',
@@ -77,7 +74,6 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (error) throw new Error(error.message);
       
       if (data && data.length > 0) {
-        // Convert back to our frontend format
         const newVendor: Vendor = {
           id: data[0].id,
           name: data[0].name,
@@ -111,7 +107,6 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const updateVendor = async (id: string, updates: Partial<Vendor>) => {
     try {
       console.log('Updating vendor:', id, updates);
-      // Convert camelCase to snake_case for database
       const updateData: Record<string, any> = {};
       if (updates.name !== undefined) updateData.name = updates.name;
       if (updates.contactPerson !== undefined) updateData.contact_person = updates.contactPerson;
@@ -124,7 +119,6 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       
       if (error) throw new Error(error.message);
       
-      // Update local state
       setVendors(vendors.map(vendor => {
         if (vendor.id === id) {
           return { ...vendor, ...updates };
@@ -156,7 +150,6 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       
       if (error) throw new Error(error.message);
       
-      // Update local state
       setVendors(vendors.filter(vendor => vendor.id !== id));
       
       toast({
