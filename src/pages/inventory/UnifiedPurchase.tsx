@@ -63,6 +63,11 @@ const UnifiedPurchase = () => {
       return;
     }
 
+    if (purchaseType === 'credit' && !dueDate) {
+      toast.error("Please select a due date for credit purchase");
+      return;
+    }
+
     try {
       setIsLoading(true);
 
@@ -91,7 +96,7 @@ const UnifiedPurchase = () => {
         status: purchaseType === 'cash' ? 'Cash Purchase' : 'Credit Purchase',
         notes,
         invoice_number: invoiceNumber,
-        due_date: dueDate,
+        due_date: dueDate || null,
         payment_status: purchaseType === 'cash' ? 'Paid' : 'Due',
         payment_method: purchaseType === 'cash' ? 'Cash' : 'Credit'
       });
@@ -111,7 +116,7 @@ const UnifiedPurchase = () => {
           status: purchaseType === 'cash' ? 'Cash Purchase' : 'Credit Purchase',
           notes: notes,
           invoice_number: invoiceNumber,
-          due_date: dueDate,
+          due_date: dueDate || null,
           payment_status: purchaseType === 'cash' ? 'Paid' : 'Due',
           payment_method: purchaseType === 'cash' ? 'Cash' : 'Credit'
         })
@@ -121,6 +126,8 @@ const UnifiedPurchase = () => {
         console.error("Error details:", error);
         throw error;
       }
+
+      console.log("Purchase saved successfully:", data);
 
       // Update inventory quantities for each purchased item
       for (const item of items) {
@@ -149,24 +156,33 @@ const UnifiedPurchase = () => {
 
           if (updateError) {
             console.error("Error updating inventory:", updateError);
+          } else {
+            console.log(`Updated inventory for item ${item.itemName} to quantity ${newQuantity}`);
           }
         } else if (item.isCustomItem) {
           // For new items, add them to inventory
-          const { error: insertError } = await supabase
+          const newItem = {
+            part_name: item.itemName,
+            category: item.category,
+            quantity: item.quantity,
+            purchase_price: item.unitPrice,
+            min_stock: item.specs?.minStock || 5,
+            brand: item.specs?.brand || "Generic",
+            part_number: item.specs?.partNumber || "",
+            full_item_name: item.itemName
+          };
+          
+          console.log("Adding new item to inventory:", newItem);
+          
+          const { data: insertedItem, error: insertError } = await supabase
             .from('opening_stock_entries')
-            .insert({
-              part_name: item.itemName,
-              category: item.category,
-              quantity: item.quantity,
-              purchase_price: item.unitPrice,
-              min_stock: item.specs?.minStock || 5,
-              brand: item.specs?.brand || "Generic",
-              part_number: item.specs?.partNumber || null,
-              full_item_name: item.itemName
-            });
+            .insert(newItem)
+            .select();
 
           if (insertError) {
             console.error("Error adding new item to inventory:", insertError);
+          } else {
+            console.log("New item added to inventory:", insertedItem);
           }
         }
       }

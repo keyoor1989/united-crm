@@ -75,9 +75,9 @@ export default function UnifiedPurchaseForm({
     minStock: 5
   });
 
-  const filteredItems = inventoryItems.filter((item) =>
+  const filteredItems = inventoryItems?.filter((item) =>
     (item.name || item.part_name || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  ) || [];
 
   useEffect(() => {
     recalculateItemsGst();
@@ -93,6 +93,7 @@ export default function UnifiedPurchaseForm({
   }, [selectedVendorId, vendors]);
 
   const handleAddItem = (inventoryItem: InventoryItem) => {
+    console.log("Adding inventory item:", inventoryItem);
     const basePrice = inventoryItem.purchase_price || inventoryItem.unitCost || 0;
     const quantity = 1;
     let unitPrice = basePrice;
@@ -122,6 +123,7 @@ export default function UnifiedPurchaseForm({
       gstAmount: gstAmount * quantity
     };
 
+    console.log("New purchase item created:", newItem);
     setItems([...items, newItem]);
   };
 
@@ -190,6 +192,7 @@ export default function UnifiedPurchaseForm({
       }
     };
 
+    console.log("Adding custom item:", customItem);
     setItems([...items, customItem]);
     setShowNewItemDialog(false);
   };
@@ -274,8 +277,23 @@ export default function UnifiedPurchaseForm({
       toast.error("Please select a vendor or enter vendor name");
       return;
     }
+    
+    if (!invoiceNumber) {
+      toast.error("Please enter an invoice number");
+      return;
+    }
 
     try {
+      console.log("Submitting purchase with:", {
+        items,
+        selectedVendorId,
+        vendorName,
+        notes,
+        purchaseType,
+        invoiceNumber,
+        dueDate: dueDate || undefined
+      });
+      
       const result = await onSave(
         items, 
         selectedVendorId, 
@@ -283,7 +301,7 @@ export default function UnifiedPurchaseForm({
         notes, 
         purchaseType, 
         invoiceNumber,
-        dueDate
+        dueDate || undefined
       );
       
       if (result) {
@@ -293,10 +311,12 @@ export default function UnifiedPurchaseForm({
         setNotes("");
         setInvoiceNumber("");
         setDueDate("");
+        setSearchTerm("");
         toast.success("Purchase saved successfully!");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting form:", error);
+      toast.error(`Failed to save purchase: ${error.message}`);
     }
   };
 
@@ -306,7 +326,10 @@ export default function UnifiedPurchaseForm({
         <div>
           <Label htmlFor="vendorId">Vendor</Label>
           <div className="flex gap-2">
-            <Select value={selectedVendorId} onValueChange={setSelectedVendorId}>
+            <Select value={selectedVendorId} onValueChange={(value) => {
+              setSelectedVendorId(value);
+              if (value) setVendorName(""); // Clear manual vendor name if vendor is selected
+            }}>
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Select vendor" />
               </SelectTrigger>
@@ -322,8 +345,10 @@ export default function UnifiedPurchaseForm({
               <Input
                 placeholder="Or enter vendor name"
                 value={vendorName}
-                onChange={(e) => setVendorName(e.target.value)}
-                disabled={!!selectedVendorId}
+                onChange={(e) => {
+                  setVendorName(e.target.value);
+                  if (e.target.value) setSelectedVendorId(""); // Clear selected vendor if manual name is entered
+                }}
               />
             </div>
           </div>
@@ -336,6 +361,7 @@ export default function UnifiedPurchaseForm({
             placeholder="Enter invoice number"
             value={invoiceNumber}
             onChange={(e) => setInvoiceNumber(e.target.value)}
+            required
           />
         </div>
       </div>
@@ -349,6 +375,7 @@ export default function UnifiedPurchaseForm({
               id="dueDate"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              required
             />
           </div>
         </div>
