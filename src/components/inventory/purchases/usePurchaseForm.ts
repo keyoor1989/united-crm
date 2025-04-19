@@ -21,22 +21,22 @@ export function usePurchaseForm() {
   ) => {
     if (items.length === 0) {
       toast.error("Please add at least one item to the purchase");
-      return;
+      return null;
     }
 
     if (purchaseType === 'credit' && !dueDate) {
       toast.error("Please select a due date for credit purchase");
-      return;
+      return null;
     }
 
     if (!vendorId && !vendorName) {
       toast.error("Please select a vendor or enter vendor name");
-      return;
+      return null;
     }
     
     if (!invoiceNumber) {
       toast.error("Please enter an invoice number");
-      return;
+      return null;
     }
 
     try {
@@ -58,6 +58,8 @@ export function usePurchaseForm() {
         toast.success("Purchase saved successfully!");
         return result;
       }
+      
+      return null;
     } catch (error: any) {
       console.error("Error submitting form:", error);
       toast.error(`Failed to save purchase: ${error.message}`);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -258,62 +257,36 @@ export default function UnifiedPurchaseForm({
   };
 
   const handleSubmit = async () => {
-    if (items.length === 0) {
-      toast.error("Please add at least one item to the purchase");
-      return;
-    }
-
-    if (purchaseType === 'credit' && !dueDate) {
-      toast.error("Please select a due date for credit purchase");
-      return;
-    }
-
-    if (!selectedVendorId && !vendorName) {
-      toast.error("Please select a vendor or enter vendor name");
-      return;
-    }
+    console.log("Submitting purchase with:", {
+      items,
+      selectedVendorId,
+      vendorName,
+      notes,
+      purchaseType,
+      invoiceNumber,
+      purchaseDate,
+      dueDate
+    });
     
-    if (!invoiceNumber) {
-      toast.error("Please enter an invoice number");
-      return;
-    }
-
-    try {
-      console.log("Submitting purchase with:", {
-        items,
-        selectedVendorId,
-        vendorName,
-        notes,
-        purchaseType,
-        invoiceNumber,
-        purchaseDate,
-        dueDate
-      });
-      
-      const result = await handleSavePurchase(
-        items, 
-        selectedVendorId, 
-        vendorName, 
-        notes, 
-        purchaseType, 
-        invoiceNumber,
-        purchaseDate,
-        dueDate || undefined
-      );
-      
-      if (result) {
-        setItems([]);
-        setSelectedVendorId("");
-        setVendorName("");
-        setNotes("");
-        setInvoiceNumber("");
-        setDueDate("");
-        setSearchTerm("");
-        toast.success("Purchase saved successfully!");
-      }
-    } catch (error: any) {
-      console.error("Error submitting form:", error);
-      toast.error(`Failed to save purchase: ${error.message}`);
+    const result = await handleSavePurchase(
+      items, 
+      selectedVendorId, 
+      vendorName, 
+      notes, 
+      purchaseType, 
+      invoiceNumber,
+      purchaseDate,
+      dueDate || undefined
+    );
+    
+    if (result) {
+      setItems([]);
+      setSelectedVendorId("");
+      setVendorName("");
+      setNotes("");
+      setInvoiceNumber("");
+      setDueDate("");
+      setSearchTerm("");
     }
   };
 
