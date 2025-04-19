@@ -63,6 +63,7 @@ export default function UnifiedPurchaseForm({
     partName: "",
     partNumber: "",
     brand: "",
+    model: "",
     category: categories[0] || "Other",
     quantity: 1,
     purchasePrice: 0,
@@ -134,6 +135,7 @@ export default function UnifiedPurchaseForm({
       partName: "",
       partNumber: "",
       brand: "",
+      model: "",
       category: categories[0] || "Other",
       quantity: 1,
       purchasePrice: 0,
@@ -188,10 +190,10 @@ export default function UnifiedPurchaseForm({
       gstPercent: gstMode === 'no-gst' ? 0 : gstRate,
       gstAmount: gstAmount * newItem.quantity,
       brand: newItem.brand,
-      model: newItem.model || "",
+      model: newItem.model,
       specs: {
         brand: newItem.brand,
-        model: newItem.model || "",
+        model: newItem.model,
         partNumber: newItem.partNumber,
         minStock: newItem.minStock
       }
@@ -595,6 +597,15 @@ export default function UnifiedPurchaseForm({
               </div>
             </div>
             <div className="space-y-4">
+              <div>
+                <Label htmlFor="model">Model</Label>
+                <Input
+                  id="model"
+                  value={newItem.model}
+                  onChange={(e) => setNewItem({...newItem, model: e.target.value})}
+                  placeholder="Enter model (optional)"
+                />
+              </div>
               <div>
                 <Label htmlFor="category">Category</Label>
                 <Select
