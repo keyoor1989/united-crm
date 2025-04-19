@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import UnifiedPurchaseForm from "@/components/inventory/purchases/UnifiedPurchaseForm";
 import PurchaseHeader from "@/components/inventory/purchases/PurchaseHeader";
+import { useQueryClient } from "@tanstack/react-query";
 
 export type GstMode = 'no-gst' | 'exclusive' | 'inclusive';
 
@@ -43,6 +44,7 @@ const UnifiedPurchase = () => {
   
   const { vendors, loading: vendorsLoading } = useVendors();
   const { items: inventoryItems, isLoading: inventoryLoading } = useInventoryItems(null);
+  const queryClient = useQueryClient();
 
   const categories = [...new Set(inventoryItems?.map(item => item.category))];
 
@@ -104,11 +106,25 @@ const UnifiedPurchase = () => {
       // Update inventory quantities for each purchased item
       for (const item of items) {
         if (!item.isCustomItem && item.itemId) {
-          // Only update inventory for existing items
+          // Get current stock entry
+          const { data: currentItem, error: fetchError } = await supabase
+            .from('opening_stock_entries')
+            .select('quantity')
+            .eq('id', item.itemId)
+            .single();
+            
+          if (fetchError) {
+            console.error("Error fetching current inventory:", fetchError);
+            continue;
+          }
+            
+          // Update existing inventory item quantity
+          const newQuantity = (currentItem?.quantity || 0) + item.quantity;
+          
           const { error: updateError } = await supabase
             .from('opening_stock_entries')
             .update({ 
-              quantity: item.quantity 
+              quantity: newQuantity 
             })
             .eq('id', item.itemId);
 
@@ -116,7 +132,7 @@ const UnifiedPurchase = () => {
             console.error("Error updating inventory:", updateError);
           }
         } else if (item.isCustomItem) {
-          // For custom items, add them to inventory
+          // For new items, add them to inventory
           const { error: insertError } = await supabase
             .from('opening_stock_entries')
             .insert({
@@ -124,8 +140,10 @@ const UnifiedPurchase = () => {
               category: item.category,
               quantity: item.quantity,
               purchase_price: item.unitPrice,
-              min_stock: 5, // Default min stock
-              brand: "Generic" // Adding required field
+              min_stock: item.specs?.minStock || 5,
+              brand: item.specs?.brand || "Generic",
+              part_number: item.specs?.partNumber || null,
+              full_item_name: item.itemName
             });
 
           if (insertError) {
@@ -134,6 +152,9 @@ const UnifiedPurchase = () => {
         }
       }
 
+      // Invalidate queries to refresh inventory data
+      queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
+      
       toast.success(`Purchase recorded successfully with ID: ${poNumber}`);
       return data;
     } catch (error: any) {

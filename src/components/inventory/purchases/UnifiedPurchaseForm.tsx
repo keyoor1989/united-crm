@@ -276,7 +276,7 @@ export default function UnifiedPurchaseForm({
     }
 
     try {
-      await onSave(
+      const result = await onSave(
         items, 
         selectedVendorId, 
         vendorName, 
@@ -286,12 +286,15 @@ export default function UnifiedPurchaseForm({
         dueDate
       );
       
-      setItems([]);
-      setSelectedVendorId("");
-      setVendorName("");
-      setNotes("");
-      setInvoiceNumber("");
-      setDueDate("");
+      if (result) {
+        setItems([]);
+        setSelectedVendorId("");
+        setVendorName("");
+        setNotes("");
+        setInvoiceNumber("");
+        setDueDate("");
+        toast.success("Purchase saved successfully!");
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
     }
