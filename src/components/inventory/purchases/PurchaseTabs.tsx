@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -215,6 +216,8 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Item Name</TableHead>
+                    <TableHead>Brand/Model</TableHead>
+                    <TableHead>Description</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead className="text-right">Unit Price</TableHead>
@@ -224,8 +227,12 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
                 <TableBody>
                   {getParsedItems(selectedPurchase.items).map((item: any, index: number) => (
                     <TableRow key={index}>
-                      <TableCell>{item.itemName || item.name}</TableCell>
-                      <TableCell>{item.category || 'N/A'}</TableCell>
+                      <TableCell>{item.itemName || item.name || "N/A"}</TableCell>
+                      <TableCell>
+                        {item.brand ? `${item.brand}${item.model ? ` / ${item.model}` : ""}` : "N/A"}
+                      </TableCell>
+                      <TableCell>{item.description || "N/A"}</TableCell>
+                      <TableCell>{item.category || "N/A"}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
                       <TableCell className="text-right">₹{(item.unitPrice || item.unit_price || 0).toLocaleString()}</TableCell>
                       <TableCell className="text-right">₹{(item.total || (item.quantity * (item.unitPrice || item.unit_price || 0)) || 0).toLocaleString()}</TableCell>
