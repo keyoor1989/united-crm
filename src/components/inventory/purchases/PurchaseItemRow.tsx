@@ -13,6 +13,13 @@ interface PurchaseItemDetails {
   unitPrice?: number;
   unit_price?: number;
   total?: number;
+  specs?: {
+    brand?: string;
+    model?: string;
+    partNumber?: string;
+    minStock?: number;
+    [key: string]: any;
+  };
 }
 
 export const PurchaseItemRow = ({ item }: { item: PurchaseItemDetails }) => {
@@ -21,12 +28,17 @@ export const PurchaseItemRow = ({ item }: { item: PurchaseItemDetails }) => {
   const totalAmount = item.total || (item.quantity * unitPrice) || 0;
   
   const getBrandModel = () => {
-    if (!item.brand && !item.model) return "N/A";
+    // First check for direct properties
+    const brand = item.brand || (item.specs?.brand) || "N/A";
+    const model = item.model || (item.specs?.model) || "";
     
-    let display = [];
-    if (item.brand) display.push(item.brand);
-    if (item.model) display.push(item.model);
-    return display.join(" / ");
+    if (brand === "N/A" && !model) return "N/A";
+    
+    if (model) {
+      return `${brand} / ${model}`;
+    }
+    
+    return brand;
   };
 
   return (

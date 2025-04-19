@@ -114,7 +114,15 @@ export default function UnifiedPurchaseForm({
       category: inventoryItem.category,
       isCustomItem: false,
       gstPercent: gstMode === 'no-gst' ? 0 : gstRate,
-      gstAmount: gstAmount * quantity
+      gstAmount: gstAmount * quantity,
+      brand: inventoryItem.brand || "",
+      model: inventoryItem.model || "",
+      specs: {
+        brand: inventoryItem.brand || "",
+        model: inventoryItem.model || "",
+        partNumber: inventoryItem.part_number || "",
+        minStock: inventoryItem.min_stock || 5
+      }
     };
 
     console.log("New purchase item created:", newItem);
@@ -179,8 +187,11 @@ export default function UnifiedPurchaseForm({
       isCustomItem: true,
       gstPercent: gstMode === 'no-gst' ? 0 : gstRate,
       gstAmount: gstAmount * newItem.quantity,
+      brand: newItem.brand,
+      model: newItem.model || "",
       specs: {
         brand: newItem.brand,
+        model: newItem.model || "",
         partNumber: newItem.partNumber,
         minStock: newItem.minStock
       }

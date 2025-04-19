@@ -21,8 +21,12 @@ export interface PurchaseItem {
   isCustomItem: boolean;
   gstPercent: number;
   gstAmount: number;
+  // Add brand and model properties
+  brand?: string;
+  model?: string;
   specs?: {
     brand?: string;
+    model?: string;
     partNumber?: string;
     minStock?: number;
     [key: string]: any;

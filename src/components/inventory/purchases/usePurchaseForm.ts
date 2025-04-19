@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { purchaseService } from "@/services/purchaseService";
@@ -31,6 +30,13 @@ export function usePurchaseForm() {
       purchaseDate,
       dueDate
     });
+
+    // Log the items with brand and model info to debug
+    console.log("Items being saved with brand/model:", items.map(item => ({
+      name: item.itemName,
+      brand: item.brand || (item.specs?.brand),
+      model: item.model || (item.specs?.model)
+    })));
 
     // Validations
     if (items.length === 0) {

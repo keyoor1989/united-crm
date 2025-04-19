@@ -35,22 +35,27 @@ export const purchaseService = {
       // Generate PO number
       const poNumber = await purchaseOrderService.generatePurchaseOrderNumber();
 
-      console.log("Saving purchase order with data:", {
-        poNumber,
-        vendorId,
-        vendorName,
-        items,
-        subtotal,
-        totalGst,
-        grandTotal,
-        deliveryDate: purchaseDate,
-        status: purchaseType === 'cash' ? 'Cash Purchase' : 'Credit Purchase',
-        notes,
-        invoice_number: invoiceNumber,
-        due_date: dueDate || null,
-        payment_status: purchaseType === 'cash' ? 'Paid' : 'Due',
-        payment_method: purchaseType === 'cash' ? 'Cash' : 'Credit'
+      // Ensure each item has brand/model information correctly structured
+      const processedItems = items.map(item => {
+        // For custom items, the brand is often stored in specs
+        const brand = item.specs?.brand || '';
+        const model = item.specs?.model || '';
+        
+        return {
+          ...item,
+          // Ensure brand is directly available on item object
+          brand: brand,
+          // Ensure model is directly available on item object
+          model: model,
+          specs: {
+            ...item.specs,
+            brand: brand,
+            model: model
+          }
+        };
       });
+
+      console.log("Saving purchase order with processed items:", processedItems);
 
       // Create purchase record
       const { data: purchaseData, error: purchaseError } = await supabase
@@ -59,7 +64,7 @@ export const purchaseService = {
           po_number: poNumber,
           vendor_id: vendorId || null,
           vendor_name: vendorName,
-          items: JSON.stringify(items),
+          items: JSON.stringify(processedItems),
           subtotal,
           total_gst: totalGst,
           grand_total: grandTotal,

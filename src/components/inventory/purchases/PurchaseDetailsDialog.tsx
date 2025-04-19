@@ -37,22 +37,22 @@ export const PurchaseDetailsDialog = ({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Purchase Order Details: {purchase.poNumber}</DialogTitle>
+          <DialogTitle>Purchase Order Details: {purchase.poNumber || purchase.po_number}</DialogTitle>
           <DialogDescription>
-            Detailed breakdown of items in Purchase Order {purchase.poNumber}
+            Detailed breakdown of items in Purchase Order {purchase.poNumber || purchase.po_number}
           </DialogDescription>
         </DialogHeader>
         <div>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <p><strong>Vendor:</strong> {purchase.vendorName}</p>
-              <p><strong>Date:</strong> {formatDate(purchase.createdAt)}</p>
+              <p><strong>Vendor:</strong> {purchase.vendorName || purchase.vendor_name}</p>
+              <p><strong>Date:</strong> {formatDate(purchase.createdAt || purchase.created_at)}</p>
               <p><strong>Status:</strong> {purchase.status}</p>
             </div>
             <div className="text-right">
-              <p><strong>Subtotal:</strong> ₹{purchase.subtotal.toLocaleString()}</p>
-              <p><strong>GST:</strong> ₹{purchase.totalGst.toLocaleString()}</p>
-              <p><strong>Grand Total:</strong> ₹{purchase.grandTotal.toLocaleString()}</p>
+              <p><strong>Subtotal:</strong> ₹{(purchase.subtotal || 0).toLocaleString()}</p>
+              <p><strong>GST:</strong> ₹{(purchase.totalGst || purchase.total_gst || 0).toLocaleString()}</p>
+              <p><strong>Grand Total:</strong> ₹{(purchase.grandTotal || purchase.grand_total || 0).toLocaleString()}</p>
             </div>
           </div>
           <Table>

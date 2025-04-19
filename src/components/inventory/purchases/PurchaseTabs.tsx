@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -79,16 +80,29 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
         items = [itemsData];
       }
       
-      return items.map(item => ({
-        itemName: item.itemName || item.name || '',
-        brand: item.brand || '',
-        model: item.model || '',
-        description: item.description || '',
-        category: item.category || '',
-        quantity: item.quantity || 0,
-        unitPrice: item.unitPrice || item.unit_price || 0,
-        total: item.total || item.totalAmount || (item.quantity * (item.unitPrice || item.unit_price || 0)) || 0
-      }));
+      return items.map(item => {
+        // Extract brand from different possible locations
+        const brand = item.brand || 
+                     (item.specs && item.specs.brand) || 
+                     '';
+                     
+        // Extract model from different possible locations
+        const model = item.model || 
+                     (item.specs && item.specs.model) || 
+                     '';
+        
+        return {
+          itemName: item.itemName || item.name || '',
+          brand: brand,
+          model: model,
+          description: item.description || '',
+          category: item.category || '',
+          quantity: item.quantity || 0,
+          unitPrice: item.unitPrice || item.unit_price || 0,
+          total: item.total || item.totalAmount || (item.quantity * (item.unitPrice || item.unit_price || 0)) || 0,
+          specs: item.specs || {}
+        };
+      });
     } catch (error) {
       console.error("Error parsing items:", error, itemsData);
       return [];
