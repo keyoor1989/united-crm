@@ -5,6 +5,7 @@ import { purchaseService } from "@/services/purchaseService";
 import { PurchaseItem, GstMode } from "@/pages/inventory/UnifiedPurchase";
 import { toast } from "sonner";
 import { generatePurchaseOrderPdf, generateCashMemoPdf } from "@/utils/pdf/purchaseOrderPdfGenerator";
+import { PurchaseOrder } from "@/types/sales";
 
 export function usePurchaseForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -75,11 +76,28 @@ export function usePurchaseForm() {
         // Generate PDF based on purchase type
         try {
           if (result.length > 0) {
+            // Convert DB result to PurchaseOrder format
             const purchaseRecord = result[0];
+            const purchaseOrder: PurchaseOrder = {
+              id: purchaseRecord.id,
+              poNumber: purchaseRecord.po_number,
+              vendorId: purchaseRecord.vendor_id || '',
+              vendorName: purchaseRecord.vendor_name,
+              items: purchaseRecord.items,
+              subtotal: purchaseRecord.subtotal,
+              totalGst: purchaseRecord.total_gst,
+              grandTotal: purchaseRecord.grand_total,
+              createdAt: purchaseRecord.created_at,
+              deliveryDate: purchaseRecord.delivery_date,
+              status: purchaseRecord.status as any,
+              notes: purchaseRecord.notes || '',
+              terms: purchaseRecord.terms || ''
+            };
+            
             if (purchaseType === 'cash') {
-              generateCashMemoPdf(purchaseRecord);
+              generateCashMemoPdf(purchaseOrder);
             } else {
-              generatePurchaseOrderPdf(purchaseRecord);
+              generatePurchaseOrderPdf(purchaseOrder);
             }
             toast.success(`Purchase saved successfully! Opening ${purchaseType === 'cash' ? 'cash memo' : 'purchase order'} PDF.`);
           } else {

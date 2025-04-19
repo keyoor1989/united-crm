@@ -66,11 +66,13 @@ export const createItemsTable = (
   if (alternateRowColors) {
     tableBody.forEach((row, index) => {
       if (index > 0 && index % 2 === 0) {
-        row.forEach(cell => {
+        // For odd rows (index starting at 0), apply a background color
+        row.forEach((cell: any, cellIndex) => {
           if (typeof cell === 'object') {
             cell.fillColor = '#f9f9f9';
           } else {
-            row[tableBody[0].indexOf(cell)] = {
+            // Convert primitive values to objects with fillColor
+            row[cellIndex] = {
               text: cell,
               fillColor: '#f9f9f9'
             };

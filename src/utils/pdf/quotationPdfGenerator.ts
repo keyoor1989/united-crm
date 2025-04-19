@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import { TDocumentDefinitions, Content } from "pdfmake/interfaces";
 import { Quotation, QuotationItem } from "@/types/sales";
@@ -14,6 +15,7 @@ import {
   createSignatureSection
 } from "./sections/contentSections";
 import { createItemsTable } from "./itemsTable";
+import { PurchaseItem } from "@/pages/inventory/UnifiedPurchase";
 
 // Standard terms for quotations
 const standardQuotationTerms = [
@@ -22,6 +24,22 @@ const standardQuotationTerms = [
   'Payment terms: 50% advance, 50% on delivery.',
   'Warranty: 1 year onsite (from installation date).'
 ];
+
+// Helper function to convert QuotationItem[] to PurchaseItem[]
+const convertToPurchaseItems = (items: QuotationItem[]): PurchaseItem[] => {
+  return items.map(item => ({
+    id: item.id,
+    itemId: item.productId,
+    itemName: item.name,
+    category: item.category || 'Other',
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    gstAmount: item.gstAmount || 0,
+    totalAmount: item.total,
+    isCustomItem: item.isCustomItem || false,
+    specs: item.specs || {}
+  }));
+};
 
 // Generate PDF for quotation
 export const generateQuotationPdf = (quotation: Quotation): void => {
@@ -50,6 +68,9 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       console.error("Error parsing items:", error);
       items = [];
     }
+    
+    // Convert QuotationItems to PurchaseItems for the table renderer
+    const purchaseItems = convertToPurchaseItems(items);
     
     // Validate dates
     let createdAtDate = new Date();
@@ -107,13 +128,13 @@ export const generateQuotationPdf = (quotation: Quotation): void => {
       },
       
       // Items Table - Use the new enhanced function with options
-      createItemsTable(items, {
+      createItemsTable(purchaseItems, {
         alternateRowColors: true,
         showItemNumbers: true
       }),
       
       // Total Section with Amount in Words
-      createTotalsSection(quotation.subtotal, quotation.totalGst, quotation.grandTotal),
+      createTotalsSection(quotation.subtotal, quotation.totalGst || 0, quotation.grandTotal),
       
       // Bank Details
       createBankDetailsSection(),

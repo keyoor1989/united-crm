@@ -1,6 +1,6 @@
 
 import { Content, ContentText } from "pdfmake/interfaces";
-import { DetailItem, ContentWithStack, TextWithMargin } from "./types";
+import { DetailItem, ContentWithStack } from "./types";
 
 // Create document details section (date, number, etc.)
 export const createDocumentDetails = (details: DetailItem[]): ContentWithStack => {
@@ -22,9 +22,9 @@ export const createEntityInfoSection = (
   name: string, 
   address?: string
 ): ContentWithStack => {
-  const infoStack: (ContentText | TextWithMargin)[] = [
-    { text: `${label}:`, style: 'sectionTitle', margin: [0, 0, 0, 2] },
-    { text: name, margin: [0, 0, 0, 2] }
+  const infoStack: Content[] = [
+    { text: `${label}:`, style: 'sectionTitle', margin: [0, 0, 0, 2] } as Content,
+    { text: name, margin: [0, 0, 0, 2] } as Content
   ];
   
   if (address) {
@@ -32,12 +32,12 @@ export const createEntityInfoSection = (
       text: address, 
       margin: [0, 0, 0, 10],
       fontSize: 9 
-    } as TextWithMargin);
+    } as Content);
   } else {
     infoStack.push({ 
       text: '', 
       margin: [0, 0, 0, 10]
-    } as TextWithMargin);
+    } as Content);
   }
   
   return { stack: infoStack };

@@ -1,16 +1,17 @@
 
-import { Content } from "pdfmake/interfaces";
+import { Content, Style, ContentText } from "pdfmake/interfaces";
 
-export interface ContentWithStack {
-  stack: Content[];
-}
-
-export interface TextWithMargin {
-  text: string;
+// Extend ContentText to include margin and style properties
+export interface TextWithMargin extends ContentText {
   margin?: [number, number, number, number];
   style?: string;
-  alignment?: string;
+  alignment?: 'left' | 'center' | 'right' | 'justify';
   fontSize?: number;
+}
+
+// Helper interface for stacked content
+export interface ContentWithStack {
+  stack: Content[];
 }
 
 export interface DetailItem {

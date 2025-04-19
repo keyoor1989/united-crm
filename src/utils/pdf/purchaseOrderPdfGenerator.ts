@@ -166,7 +166,7 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
         alignment: 'center'
       },
       {
-        text: `Contact: ${companyInfo.phone}`,
+        text: `Contact: ${companyInfo.contact}`,
         style: 'companyContact',
         alignment: 'center'
       },
@@ -251,34 +251,7 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
       defaultStyle: {
         font: 'Roboto'
       },
-      styles: {
-        ...styles,
-        companyName: {
-          fontSize: 18,
-          bold: true,
-          margin: [0, 5, 0, 2]
-        },
-        companyAddress: {
-          fontSize: 10,
-          margin: [0, 0, 0, 1]
-        },
-        companyContact: {
-          fontSize: 10,
-          margin: [0, 0, 0, 10]
-        },
-        totalLabel: {
-          fontSize: 12,
-          bold: true
-        },
-        totalValue: {
-          fontSize: 12,
-          bold: true
-        },
-        thankYouNote: {
-          fontSize: 10,
-          italics: true
-        }
-      }
+      styles
     };
 
     downloadPdf(docDefinition, `CashMemo_${order.poNumber}.pdf`);
@@ -287,11 +260,6 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
     throw new Error(`Cash memo generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
-
-interface ItemsTableOptions {
-  alternateRowColors?: boolean;
-  showItemNumbers?: boolean;
-}
 
 // Add new function to modify the ItemsTable to support simplified format
 export const createSimplifiedItemsTable = (items: any[], options: ItemsTableOptions = {}) => {
@@ -332,11 +300,13 @@ export const createSimplifiedItemsTable = (items: any[], options: ItemsTableOpti
   if (alternateRowColors) {
     tableBody.forEach((row, index) => {
       if (index > 0 && index % 2 === 0) {
-        row.forEach(cell => {
+        // For odd rows (index starting at 0), apply a background color
+        row.forEach((cell: any, cellIndex) => {
           if (typeof cell === 'object') {
             cell.fillColor = '#f9f9f9';
           } else {
-            row[tableBody[0].indexOf(cell)] = {
+            // Convert primitive values to objects with fillColor
+            row[cellIndex] = {
               text: cell,
               fillColor: '#f9f9f9'
             };
