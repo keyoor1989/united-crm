@@ -69,6 +69,7 @@ const UnifiedPurchase = () => {
             gstRate={gstRate}
             onGstModeChange={setGstMode}
             onGstRateChange={setGstRate}
+            purchaseDate={purchaseDate}
           />
         )}
       </PurchaseTabs>

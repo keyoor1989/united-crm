@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,7 @@ interface UnifiedPurchaseFormProps {
   gstRate: number;
   onGstModeChange: (mode: GstMode) => void;
   onGstRateChange: (rate: number) => void;
+  purchaseDate: string;
 }
 
 export default function UnifiedPurchaseForm({
@@ -45,7 +47,8 @@ export default function UnifiedPurchaseForm({
   gstMode,
   gstRate,
   onGstModeChange,
-  onGstRateChange
+  onGstRateChange,
+  purchaseDate
 }: UnifiedPurchaseFormProps) {
   const { isLoading, handleSavePurchase } = usePurchaseForm();
 
@@ -283,6 +286,7 @@ export default function UnifiedPurchaseForm({
         notes,
         purchaseType,
         invoiceNumber,
+        purchaseDate,
         dueDate: dueDate || undefined
       });
       
@@ -293,6 +297,7 @@ export default function UnifiedPurchaseForm({
         notes, 
         purchaseType, 
         invoiceNumber,
+        purchaseDate,
         dueDate || undefined
       );
       
