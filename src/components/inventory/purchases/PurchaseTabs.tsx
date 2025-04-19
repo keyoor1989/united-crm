@@ -68,6 +68,31 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
     setSelectedPurchase(null);
   };
 
+  // Function to parse items if they are stored as a JSON string
+  const getParsedItems = (itemsData: any): any[] => {
+    if (!itemsData) return [];
+    
+    if (Array.isArray(itemsData)) {
+      return itemsData;
+    }
+    
+    try {
+      // If it's a string, try to parse it as JSON
+      if (typeof itemsData === 'string') {
+        return JSON.parse(itemsData);
+      }
+      
+      // If it's already an object but not an array, wrap it in an array
+      if (typeof itemsData === 'object') {
+        return [itemsData];
+      }
+    } catch (error) {
+      console.error("Error parsing items:", error);
+    }
+    
+    return [];
+  };
+
   return (
     <>
       <Tabs 
@@ -201,13 +226,13 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {selectedPurchase.items?.map((item: any, index: number) => (
+                  {getParsedItems(selectedPurchase.items).map((item: any, index: number) => (
                     <TableRow key={index}>
-                      <TableCell>{item.name}</TableCell>
+                      <TableCell>{item.itemName || item.name}</TableCell>
                       <TableCell>{item.category || 'N/A'}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell className="text-right">₹{item.unitPrice.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">₹{item.total.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">₹{(item.unitPrice || item.unit_price || 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-right">₹{(item.total || (item.quantity * (item.unitPrice || item.unit_price || 0)) || 0).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -219,4 +244,3 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
