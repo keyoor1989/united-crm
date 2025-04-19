@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +24,7 @@ import {
   DialogFooter,
   DialogDescription
 } from "@/components/ui/dialog";
+import { usePurchaseForm } from "./usePurchaseForm";
 
 interface UnifiedPurchaseFormProps {
   vendors: Vendor[];
@@ -57,6 +57,8 @@ export default function UnifiedPurchaseForm({
   onGstModeChange,
   onGstRateChange
 }: UnifiedPurchaseFormProps) {
+  const { isLoading, handleSavePurchase } = usePurchaseForm();
+
   const [items, setItems] = useState<PurchaseItem[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [vendorName, setVendorName] = useState<string>("");
@@ -294,7 +296,7 @@ export default function UnifiedPurchaseForm({
         dueDate: dueDate || undefined
       });
       
-      const result = await onSave(
+      const result = await handleSavePurchase(
         items, 
         selectedVendorId, 
         vendorName, 
