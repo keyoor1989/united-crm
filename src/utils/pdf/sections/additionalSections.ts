@@ -1,6 +1,6 @@
 
-import { Content, ContentText } from "pdfmake/interfaces";
-import { TextWithMargin } from "./types";
+import { Content } from "pdfmake/interfaces";
+import { TextWithMargin, PdfAlignment } from "./types";
 import { PdfMargin } from "../config";
 
 // Create terms and conditions section
@@ -43,7 +43,8 @@ export const createThankYouNote = (message: string): Content => {
   return { 
     text: message, 
     style: 'footer', 
-    margin: [0, 20, 0, 0] 
+    margin: [0, 20, 0, 0], 
+    alignment: 'center' as PdfAlignment
   } as Content;
 };
 
@@ -59,7 +60,7 @@ export const createSignatureSection = (): Content => {
         width: '30%',
         stack: [
           { text: '', margin: [0, 30, 0, 0] } as Content,
-          { text: 'Authorized Signature', style: 'termsList', alignment: 'center' } as Content
+          { text: 'Authorized Signature', style: 'termsList', alignment: 'center' as PdfAlignment } as Content
         ]
       }
     ],

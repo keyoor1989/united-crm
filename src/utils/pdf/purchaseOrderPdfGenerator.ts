@@ -16,6 +16,7 @@ import {
 } from "./sections/contentSections";
 import { createItemsTable } from "./itemsTable";
 import { companyInfo } from "./config/companyInfo";
+import { ItemsTableOptions, PdfAlignment } from "./sections/types";
 
 // Standard terms for purchase orders
 const standardPurchaseOrderTerms = [
@@ -150,7 +151,7 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
       {
         text: 'CASH RECEIPT',
         style: 'header',
-        alignment: 'center',
+        alignment: 'center' as PdfAlignment,
         margin: [0, 0, 0, 10]
       },
       
@@ -158,17 +159,17 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
       {
         text: companyInfo.name,
         style: 'companyName',
-        alignment: 'center'
+        alignment: 'center' as PdfAlignment
       },
       {
         text: companyInfo.address,
         style: 'companyAddress',
-        alignment: 'center'
+        alignment: 'center' as PdfAlignment
       },
       {
         text: `Contact: ${companyInfo.contact}`,
         style: 'companyContact',
-        alignment: 'center'
+        alignment: 'center' as PdfAlignment
       },
       {
         columns: [
@@ -208,7 +209,7 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
           widths: ['*', 'auto'],
           body: [
             [
-              { text: 'Total Amount:', style: 'totalLabel', alignment: 'right' },
+              { text: 'Total Amount:', style: 'totalLabel', alignment: 'right' as PdfAlignment },
               { text: `₹${order.grandTotal.toLocaleString()}`, style: 'totalValue' }
             ]
           ]
@@ -223,13 +224,13 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
           {
             width: '50%',
             text: '_____________________\nReceived By',
-            alignment: 'center',
+            alignment: 'center' as PdfAlignment,
             margin: [0, 40, 0, 0]
           },
           {
             width: '50%',
             text: '_____________________\nAuthorized Signature',
-            alignment: 'center',
+            alignment: 'center' as PdfAlignment,
             margin: [0, 40, 0, 0]
           }
         ]
@@ -238,7 +239,7 @@ export const generateCashMemoPdf = (order: PurchaseOrder): void => {
       // Thank you note
       {
         text: 'Thank you for your business!',
-        alignment: 'center',
+        alignment: 'center' as PdfAlignment,
         margin: [0, 20, 0, 0],
         style: 'thankYouNote'
       }
@@ -268,26 +269,26 @@ export const createSimplifiedItemsTable = (items: any[], options: ItemsTableOpti
   // Create header row
   const headerRow = [
     { text: 'Item', style: 'tableHeader' },
-    { text: 'Qty', style: 'tableHeader', alignment: 'center' },
-    { text: 'Price', style: 'tableHeader', alignment: 'right' },
-    { text: 'Amount', style: 'tableHeader', alignment: 'right' }
+    { text: 'Qty', style: 'tableHeader', alignment: 'center' as PdfAlignment },
+    { text: 'Price', style: 'tableHeader', alignment: 'right' as PdfAlignment },
+    { text: 'Amount', style: 'tableHeader', alignment: 'right' as PdfAlignment }
   ];
   
   if (showItemNumbers) {
-    headerRow.unshift({ text: '#', style: 'tableHeader', alignment: 'center' });
+    headerRow.unshift({ text: '#', style: 'tableHeader', alignment: 'center' as PdfAlignment });
   }
   
   // Create body rows
   const bodyRows = items.map((item, index) => {
     const rowData = [
       item.name || item.description,
-      { text: item.quantity.toString(), alignment: 'center' },
-      { text: `₹${item.unitPrice.toLocaleString()}`, alignment: 'right' },
-      { text: `₹${item.total.toLocaleString()}`, alignment: 'right' }
+      { text: item.quantity.toString(), alignment: 'center' as PdfAlignment },
+      { text: `₹${item.unitPrice.toLocaleString()}`, alignment: 'right' as PdfAlignment },
+      { text: `₹${item.total.toLocaleString()}`, alignment: 'right' as PdfAlignment }
     ];
     
     if (showItemNumbers) {
-      rowData.unshift({ text: (index + 1).toString(), alignment: 'center' });
+      rowData.unshift({ text: (index + 1).toString(), alignment: 'center' as PdfAlignment });
     }
     
     return rowData;

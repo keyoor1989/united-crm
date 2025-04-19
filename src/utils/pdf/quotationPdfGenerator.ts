@@ -16,6 +16,7 @@ import {
 } from "./sections/contentSections";
 import { createItemsTable } from "./itemsTable";
 import { PurchaseItem } from "@/pages/inventory/UnifiedPurchase";
+import { PdfAlignment } from "./sections/types";
 
 // Standard terms for quotations
 const standardQuotationTerms = [
@@ -37,6 +38,7 @@ const convertToPurchaseItems = (items: QuotationItem[]): PurchaseItem[] => {
     gstAmount: item.gstAmount || 0,
     totalAmount: item.total,
     isCustomItem: item.isCustomItem || false,
+    gstPercent: item.gstPercent || 0,
     specs: item.specs || {}
   }));
 };

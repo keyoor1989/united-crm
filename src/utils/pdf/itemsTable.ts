@@ -1,11 +1,7 @@
 
 import { Content } from "pdfmake/interfaces";
 import { PurchaseItem } from "@/pages/inventory/UnifiedPurchase";
-
-interface ItemsTableOptions {
-  alternateRowColors?: boolean;
-  showItemNumbers?: boolean;
-}
+import { ItemsTableOptions } from "./sections/types";
 
 // Create items table for PDF
 export const createItemsTable = (

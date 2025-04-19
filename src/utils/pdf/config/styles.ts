@@ -1,10 +1,13 @@
 
+import { StyleDictionary } from "pdfmake/interfaces";
+import { PdfAlignment } from "../sections/types";
+
 // PDF styling configuration
-export const styles = {
+export const styles: StyleDictionary = {
   header: {
     fontSize: 18,
     bold: true,
-    alignment: 'right',
+    alignment: 'right' as PdfAlignment,
     margin: [0, 0, 0, 10]
   },
   companyName: {
@@ -28,7 +31,7 @@ export const styles = {
     fontSize: 10,
     bold: true,
     fillColor: '#f3f3f3',
-    alignment: 'left'
+    alignment: 'left' as PdfAlignment
   },
   sectionTitle: {
     fontSize: 11,
@@ -37,7 +40,7 @@ export const styles = {
   },
   footer: {
     fontSize: 10,
-    alignment: 'center',
+    alignment: 'center' as PdfAlignment,
     italics: true
   },
   termsHeader: {

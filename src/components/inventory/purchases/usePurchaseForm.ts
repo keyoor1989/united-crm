@@ -5,7 +5,7 @@ import { purchaseService } from "@/services/purchaseService";
 import { PurchaseItem, GstMode } from "@/pages/inventory/UnifiedPurchase";
 import { toast } from "sonner";
 import { generatePurchaseOrderPdf, generateCashMemoPdf } from "@/utils/pdf/purchaseOrderPdfGenerator";
-import { PurchaseOrder } from "@/types/sales";
+import { PurchaseOrder, PurchaseOrderItem } from "@/types/sales";
 
 export function usePurchaseForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -78,17 +78,31 @@ export function usePurchaseForm() {
           if (result.length > 0) {
             // Convert DB result to PurchaseOrder format
             const purchaseRecord = result[0];
+            
+            // Parse items if it's a string or handle as is if already parsed
+            let parsedItems: PurchaseOrderItem[] = [];
+            if (typeof purchaseRecord.items === 'string') {
+              try {
+                parsedItems = JSON.parse(purchaseRecord.items);
+              } catch (e) {
+                console.error("Error parsing items:", e);
+                parsedItems = [];
+              }
+            } else if (Array.isArray(purchaseRecord.items)) {
+              parsedItems = purchaseRecord.items as PurchaseOrderItem[];
+            }
+            
             const purchaseOrder: PurchaseOrder = {
               id: purchaseRecord.id,
               poNumber: purchaseRecord.po_number,
               vendorId: purchaseRecord.vendor_id || '',
               vendorName: purchaseRecord.vendor_name,
-              items: purchaseRecord.items,
+              items: parsedItems || [],
               subtotal: purchaseRecord.subtotal,
               totalGst: purchaseRecord.total_gst,
               grandTotal: purchaseRecord.grand_total,
               createdAt: purchaseRecord.created_at,
-              deliveryDate: purchaseRecord.delivery_date,
+              deliveryDate: purchaseRecord.delivery_date || purchaseRecord.created_at,
               status: purchaseRecord.status as any,
               notes: purchaseRecord.notes || '',
               terms: purchaseRecord.terms || ''
