@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchPurchaseOrders } from "@/services/purchaseOrderService";
-import { useState as useQueryState } from "@/hooks/useState";
 
 interface PurchaseTabsProps {
   children: React.ReactNode;
