@@ -287,7 +287,7 @@ export default function UnifiedPurchaseForm({
         purchaseType,
         invoiceNumber,
         purchaseDate,
-        dueDate: dueDate || undefined
+        dueDate
       });
       
       const result = await handleSavePurchase(

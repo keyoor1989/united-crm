@@ -54,7 +54,6 @@ export function usePurchaseForm() {
       });
 
       if (result) {
-        // Invalidate queries to refresh inventory data
         queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
         toast.success("Purchase saved successfully!");
         return result;
