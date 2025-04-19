@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { GstHandlingSection } from "@/components/inventory/sales/components/GstHandlingSection";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
 
 interface UnifiedPurchaseFormProps {
   vendors: Vendor[];
@@ -366,7 +374,7 @@ export default function UnifiedPurchaseForm({
               className="flex items-center gap-1"
             >
               <PackagePlus className="h-4 w-4" />
-              Add Custom Item
+              Add New Item
             </Button>
           </div>
         </div>
@@ -400,7 +408,7 @@ export default function UnifiedPurchaseForm({
           </div>
         ) : (
           <div className="text-center py-4 text-muted-foreground">
-            No items found. Try a different search term or add a custom item.
+            No items found. Try a different search term or add a new item.
           </div>
         )}
 
@@ -413,7 +421,7 @@ export default function UnifiedPurchaseForm({
                   <div className="flex justify-between items-center mb-2">
                     <div className="font-medium flex items-center gap-2">
                       {item.isCustomItem && (
-                        <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded">Custom</span>
+                        <span className="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded">New Item</span>
                       )}
                       {item.itemName}
                     </div>

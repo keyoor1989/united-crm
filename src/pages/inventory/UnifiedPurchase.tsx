@@ -26,6 +26,12 @@ export interface PurchaseItem {
   isCustomItem: boolean;
   gstPercent: number;
   gstAmount: number;
+  specs?: {
+    brand?: string;
+    partNumber?: string;
+    minStock?: number;
+    [key: string]: any;
+  };
 }
 
 const UnifiedPurchase = () => {
