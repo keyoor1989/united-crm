@@ -1,20 +1,19 @@
 
-import { Content, ContentText } from "pdfmake/interfaces";
-import { PdfMargin } from "../config";
+import { Content } from "pdfmake/interfaces";
 
-// Interface for text with margin
-export interface TextWithMargin extends ContentText {
-  margin?: PdfMargin;
-}
-
-// Type for content objects that have a stack property
 export interface ContentWithStack {
-  stack: (ContentText | TextWithMargin | Content)[];
-  margin?: PdfMargin;
+  stack: Content[];
 }
 
-// Detail object interface
+export interface TextWithMargin {
+  text: string;
+  margin?: [number, number, number, number];
+  style?: string;
+  alignment?: string;
+  fontSize?: number;
+}
+
 export interface DetailItem {
   label: string;
-  value: string;
+  value: string | number;
 }

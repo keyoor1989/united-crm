@@ -305,7 +305,6 @@ export default function UnifiedPurchaseForm({
       setInvoiceNumber("");
       setDueDate("");
       setSearchTerm("");
-      toast.success("Purchase saved successfully!");
     }
   };
 

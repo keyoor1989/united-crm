@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { purchaseService } from "@/services/purchaseService";
 import { PurchaseItem, GstMode } from "@/pages/inventory/UnifiedPurchase";
 import { toast } from "sonner";
+import { generatePurchaseOrderPdf, generateCashMemoPdf } from "@/utils/pdf/purchaseOrderPdfGenerator";
 
 export function usePurchaseForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -68,8 +69,27 @@ export function usePurchaseForm() {
       console.log("Purchase save result:", result);
 
       if (result) {
+        // Invalidate inventory items query to refresh the data
         queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
-        toast.success("Purchase saved successfully!");
+        
+        // Generate PDF based on purchase type
+        try {
+          if (result.length > 0) {
+            const purchaseRecord = result[0];
+            if (purchaseType === 'cash') {
+              generateCashMemoPdf(purchaseRecord);
+            } else {
+              generatePurchaseOrderPdf(purchaseRecord);
+            }
+            toast.success(`Purchase saved successfully! Opening ${purchaseType === 'cash' ? 'cash memo' : 'purchase order'} PDF.`);
+          } else {
+            toast.success("Purchase saved successfully!");
+          }
+        } catch (pdfError) {
+          console.error("Error generating PDF:", pdfError);
+          toast.error("Purchase saved but PDF generation failed");
+        }
+        
         return result;
       }
       

@@ -1,162 +1,112 @@
 
-import { Content, TableCell, TableLayout } from "pdfmake/interfaces";
-import { styles } from "./config"; // Fix the import path
-import { QuotationItem, PurchaseOrderItem, ProductSpecs } from "@/types/sales";
+import { Content } from "pdfmake/interfaces";
+import { PurchaseItem } from "@/pages/inventory/UnifiedPurchase";
 
-// Interface for table options
-export interface ItemsTableOptions {
-  includeGst?: boolean;
+interface ItemsTableOptions {
   alternateRowColors?: boolean;
   showItemNumbers?: boolean;
-  widths?: (string | number)[];
-  headerStyle?: string;
-  rowStyle?: string;
-  evenRowStyle?: string;
 }
 
-// Default options
-const defaultTableOptions: ItemsTableOptions = {
-  includeGst: true,
-  alternateRowColors: true,
-  showItemNumbers: true,
-  widths: [30, '*', 40, 60, 70],
-  headerStyle: 'tableHeader',
-  rowStyle: 'tableRow',
-  evenRowStyle: 'tableRowEven'
-};
-
-// Helper to format item specifications
-export const formatItemSpecs = (specs?: ProductSpecs, description?: string): string => {
-  if (description) return description;
+// Create items table for PDF
+export const createItemsTable = (
+  items: PurchaseItem[] | string, 
+  options: ItemsTableOptions = {}
+): Content => {
+  const { alternateRowColors = false, showItemNumbers = false } = options;
   
-  if (!specs) return '';
-  
-  const details: string[] = [];
-  
-  if (specs.color !== undefined) {
-    details.push(specs.color ? 'Color' : 'B&W');
+  // Parse items if it's a string
+  let parsedItems: PurchaseItem[] = [];
+  if (typeof items === 'string') {
+    try {
+      parsedItems = JSON.parse(items);
+    } catch (error) {
+      console.error("Error parsing items string:", error);
+      parsedItems = [];
+    }
+  } else {
+    parsedItems = items as PurchaseItem[];
   }
   
-  if (specs.speed) {
-    details.push(`${specs.speed} ppm`);
+  // Create header row
+  const headerRow = [
+    { text: 'Item', style: 'tableHeader' },
+    { text: 'Category', style: 'tableHeader' },
+    { text: 'Qty', style: 'tableHeader', alignment: 'center' },
+    { text: 'Unit Price', style: 'tableHeader', alignment: 'right' },
+    { text: 'GST', style: 'tableHeader', alignment: 'right' },
+    { text: 'Amount', style: 'tableHeader', alignment: 'right' }
+  ];
+  
+  if (showItemNumbers) {
+    headerRow.unshift({ text: '#', style: 'tableHeader', alignment: 'center' });
   }
   
-  if (specs.ram) {
-    details.push(`${specs.ram} RAM`);
-  }
+  // Create body rows
+  const bodyRows = parsedItems.map((item, index) => {
+    const rowData = [
+      item.itemName,
+      item.category || '',
+      { text: item.quantity.toString(), alignment: 'center' },
+      { text: `₹${item.unitPrice.toFixed(2)}`, alignment: 'right' },
+      { text: `₹${(item.gstAmount || 0).toFixed(2)}`, alignment: 'right' },
+      { text: `₹${item.totalAmount.toFixed(2)}`, alignment: 'right' }
+    ];
+    
+    if (showItemNumbers) {
+      rowData.unshift({ text: (index + 1).toString(), alignment: 'center' });
+    }
+    
+    return rowData;
+  });
   
-  if (specs.paperTray) {
-    details.push(`Paper Tray: ${specs.paperTray}`);
-  }
+  // Combine header and body
+  const tableBody = [headerRow, ...bodyRows];
   
-  if (specs.duplex !== undefined) {
-    details.push(specs.duplex ? 'Duplex Printing' : 'Single-sided Printing');
-  }
-  
-  if (specs.additionalSpecs) {
-    Object.entries(specs.additionalSpecs).forEach(([key, value]) => {
-      details.push(`${key}: ${value}`);
+  // Apply alternate row coloring if enabled
+  if (alternateRowColors) {
+    tableBody.forEach((row, index) => {
+      if (index > 0 && index % 2 === 0) {
+        row.forEach(cell => {
+          if (typeof cell === 'object') {
+            cell.fillColor = '#f9f9f9';
+          } else {
+            row[tableBody[0].indexOf(cell)] = {
+              text: cell,
+              fillColor: '#f9f9f9'
+            };
+          }
+        });
+      }
     });
   }
   
-  return details.join(', ');
-};
-
-// Function to format currency
-export const formatCurrency = (amount: number): string => {
-  return `₹${amount.toLocaleString()}`;
-};
-
-// Create a default table layout
-export const createDefaultTableLayout = (): TableLayout => {
-  return {
-    hLineWidth: function(i: number, node: any) {
-      return (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5;
-    },
-    vLineWidth: function(i: number, node: any) {
-      return (i === 0 || i === node.table.widths.length) ? 1 : 0.5;
-    },
-    hLineColor: function(i: number) {
-      return (i === 0 || i === 1) ? '#aaaaaa' : '#dddddd';
-    },
-    vLineColor: function(i: number, node: any) {
-      return (i === 0 || i === node.table.widths.length) ? '#aaaaaa' : '#dddddd';
-    }
-  };
-};
-
-// Create table header
-export const createTableHeader = (options: ItemsTableOptions = {}): TableCell[] => {
-  const opts = { ...defaultTableOptions, ...options };
-  
-  return [
-    { text: '#', style: opts.headerStyle },
-    { text: 'Description', style: opts.headerStyle },
-    { text: 'Qty', style: opts.headerStyle },
-    { text: 'Rate (₹)', style: opts.headerStyle },
-    { text: 'Amount (₹)', style: opts.headerStyle }
-  ];
-};
-
-// Create table row for an item
-export const createTableRow = (
-  item: QuotationItem | PurchaseOrderItem, 
-  index: number, 
-  options: ItemsTableOptions = {}
-): TableCell[] => {
-  const opts = { ...defaultTableOptions, ...options };
-  const rowStyle = index % 2 === 0 ? opts.rowStyle : opts.evenRowStyle;
-  
-  return [
-    { 
-      text: opts.showItemNumbers ? (index + 1).toString() : '', 
-      style: rowStyle, 
-      alignment: 'center' 
-    },
-    { 
-      stack: [
-        { text: item.name, style: rowStyle, bold: true },
-        { text: formatItemSpecs(item.specs, item.description), style: rowStyle, fontSize: 8 }
-      ] 
-    },
-    { 
-      text: item.quantity.toString(), 
-      style: rowStyle, 
-      alignment: 'center' 
-    },
-    { 
-      text: formatCurrency(item.unitPrice), 
-      style: rowStyle, 
-      alignment: 'right' 
-    },
-    { 
-      text: formatCurrency(item.total), 
-      style: rowStyle, 
-      alignment: 'right' 
-    }
-  ];
-};
-
-// Create items table for quotations or purchase orders
-export const createItemsTable = (
-  items: (QuotationItem | PurchaseOrderItem)[],
-  options: ItemsTableOptions = {}
-): Content => {
-  // Merge default options with provided options
-  const opts = { ...defaultTableOptions, ...options };
+  const widths = showItemNumbers 
+    ? ['auto', '*', 'auto', 'auto', 'auto', 'auto', 'auto'] 
+    : ['*', 'auto', 'auto', 'auto', 'auto', 'auto'];
   
   return {
     table: {
       headerRows: 1,
-      widths: opts.widths,
-      body: [
-        createTableHeader(opts),
-        ...items.map((item, index) => 
-          createTableRow(item, index, opts)
-        )
-      ]
+      widths,
+      body: tableBody
     },
-    layout: createDefaultTableLayout(),
-    style: 'itemsTable'
+    layout: {
+      hLineWidth: function(i, node) {
+        return (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5;
+      },
+      vLineWidth: function() {
+        return 0;
+      },
+      hLineColor: function(i) {
+        return i === 1 ? 'black' : '#dddddd';
+      },
+      paddingTop: function(i) {
+        return (i === 0) ? 4 : 8;
+      },
+      paddingBottom: function(i, node) {
+        return (i === node.table.body.length - 1) ? 4 : 8;
+      }
+    },
+    margin: [0, 10, 0, 10]
   };
 };
