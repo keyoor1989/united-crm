@@ -1,20 +1,20 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Trash2 } from "lucide-react";
 import { CashPurchaseItemData } from "@/types/sales";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface CashPurchaseItemProps {
   item: CashPurchaseItemData;
-  onUpdate: (updatedItem: CashPurchaseItemData) => void;
+  onUpdate: (item: CashPurchaseItemData) => void;
   onRemove: (id: string) => void;
   categories: string[];
 }
@@ -25,87 +25,89 @@ export const CashPurchaseItem: React.FC<CashPurchaseItemProps> = ({
   onRemove,
   categories,
 }) => {
-  const [localItem, setLocalItem] = useState<CashPurchaseItemData>(item);
+  const handleItemNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdate({
+      ...item,
+      itemName: e.target.value,
+    });
+  };
 
-  const handleInputChange = (field: keyof CashPurchaseItemData, value: any) => {
-    const updatedItem = { ...localItem, [field]: value };
-    
-    // Recalculate total if quantity or price changes
-    if (field === "quantity" || field === "unitPrice") {
-      const quantity = field === "quantity" ? Number(value) : localItem.quantity;
-      const price = field === "unitPrice" ? Number(value) : localItem.unitPrice;
-      updatedItem.totalAmount = quantity * price;
-    }
-    
-    setLocalItem(updatedItem);
-    onUpdate(updatedItem);
+  const handleCategoryChange = (value: string) => {
+    onUpdate({
+      ...item,
+      category: value,
+    });
+  };
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const quantity = parseInt(e.target.value) || 1;
+    onUpdate({
+      ...item,
+      quantity,
+      totalAmount: quantity * item.unitPrice,
+    });
+  };
+
+  const handleUnitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const unitPrice = parseFloat(e.target.value) || 0;
+    onUpdate({
+      ...item,
+      unitPrice,
+      totalAmount: item.quantity * unitPrice,
+    });
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 rounded-md border mb-2">
-      <div className="flex-1 grid grid-cols-12 gap-2 items-center">
-        <div className="col-span-3">
-          <Input
-            placeholder="Item name"
-            value={localItem.itemName}
-            onChange={(e) => handleInputChange("itemName", e.target.value)}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="col-span-2">
-          <Select
-            value={localItem.category}
-            onValueChange={(value) => handleInputChange("category", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="col-span-2">
-          <Input
-            placeholder="Quantity"
-            type="number"
-            min="1"
-            value={localItem.quantity}
-            onChange={(e) => handleInputChange("quantity", Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="col-span-2">
-          <Input
-            placeholder="Price"
-            type="number"
-            min="0"
-            step="0.01"
-            value={localItem.unitPrice}
-            onChange={(e) => handleInputChange("unitPrice", Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
-        
-        <div className="col-span-2">
-          <div className="font-medium">₹{localItem.totalAmount.toFixed(2)}</div>
-        </div>
-        
-        <div className="col-span-1 flex justify-end">
+    <div className="grid grid-cols-12 gap-2 border rounded-md p-2 items-center">
+      <div className="col-span-3">
+        <Input
+          placeholder="Item name"
+          value={item.itemName}
+          onChange={handleItemNameChange}
+        />
+      </div>
+      <div className="col-span-2">
+        <Select value={item.category} onValueChange={handleCategoryChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+            <SelectItem value="Other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="col-span-2">
+        <Input
+          type="number"
+          min="1"
+          value={item.quantity}
+          onChange={handleQuantityChange}
+        />
+      </div>
+      <div className="col-span-2">
+        <Input
+          type="number"
+          min="0"
+          step="0.01"
+          value={item.unitPrice}
+          onChange={handleUnitPriceChange}
+        />
+      </div>
+      <div className="col-span-2">
+        <div className="flex justify-between items-center">
+          <span className="font-medium">₹{item.totalAmount.toFixed(2)}</span>
           <Button
+            type="button"
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={() => onRemove(item.id)}
-            className="h-8 w-8"
           >
-            <X className="h-4 w-4" />
+            <Trash2 className="h-4 w-4 text-red-500" />
           </Button>
         </div>
       </div>

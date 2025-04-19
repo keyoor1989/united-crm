@@ -1,126 +1,102 @@
+import React from 'react';
+import { Route, Routes, BrowserRouter } from 'react-router-dom';
+import InventoryDashboard from './pages/inventory/InventoryDashboard';
+import InventoryItems from './pages/inventory/InventoryItems';
+import InventoryVendors from './pages/inventory/InventoryVendors';
+import InventoryModels from './pages/inventory/InventoryModels';
+import InventoryBrands from './pages/inventory/InventoryBrands';
+import InventoryWarehouses from './pages/inventory/InventoryWarehouses';
+import InventoryAdjustments from './pages/inventory/InventoryAdjustments';
+import InventoryReturns from './pages/inventory/InventoryReturns';
+import InventoryTransfers from './pages/inventory/InventoryTransfers';
+import InventoryPurchase from './pages/inventory/InventoryPurchase';
+import SalesDashboard from './pages/sales/SalesDashboard';
+import SalesQuotations from './pages/sales/SalesQuotations';
+import SalesOrders from './pages/sales/SalesOrders';
+import SalesInvoices from './pages/sales/SalesInvoices';
+import SalesCustomers from './pages/sales/SalesCustomers';
+import SalesReports from './pages/sales/SalesReports';
+import SalesPayments from './pages/sales/SalesPayments';
+import SalesShipments from './pages/sales/SalesShipments';
+import SalesCreditNotes from './pages/sales/SalesCreditNotes';
+import SalesRefunds from './pages/sales/SalesRefunds';
+import AMCDashboard from './pages/amc/AMCDashboard';
+import AMCClients from './pages/amc/AMCClients';
+import AMCMachines from './pages/amc/AMCMachines';
+import AMCContracts from './pages/amc/AMCContracts';
+import AMCBilling from './pages/amc/AMCBilling';
+import AMCReports from './pages/amc/AMCReports';
+import AMCConsumables from './pages/amc/AMCConsumables';
+import SettingsProfile from './pages/settings/SettingsProfile';
+import SettingsUsers from './pages/settings/SettingsUsers';
+import SettingsRoles from './pages/settings/SettingsRoles';
+import SettingsTaxes from './pages/settings/SettingsTaxes';
+import SettingsEmail from './pages/settings/SettingsEmail';
+import SettingsIntegrations from './pages/settings/SettingsIntegrations';
+import SettingsNotifications from './pages/settings/SettingsNotifications';
+import SettingsTemplates from './pages/settings/SettingsTemplates';
+import SettingsDataManagement from './pages/settings/SettingsDataManagement';
+import SettingsAuditLog from './pages/settings/SettingsAuditLog';
+import PurchaseOrders from './pages/sales/PurchaseOrders';
+import SalesPage from './pages/sales/SalesPage';
+import CreditSales from './pages/sales/CreditSales';
+import CashSales from './pages/sales/CashSales';
+import UnifiedPurchase from './pages/inventory/UnifiedPurchase';
 
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-import Layout from "@/components/layout/Layout";
-import TaskEnabledLayout from "@/components/layout/TaskEnabledLayout";
-import Dashboard from "@/pages/Dashboard";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import FinanceDashboard from "@/pages/finance/FinanceDashboard";
-import DepartmentRevenue from "@/pages/finance/DepartmentRevenue";
-import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
-import CashRegister from "@/pages/finance/CashRegister";
-import Service from "@/pages/Service";
-import ServiceCallForm from "@/pages/ServiceCallForm";
-import ServiceBilling from "@/pages/ServiceBilling";
-import CustomerForm from "@/pages/CustomerForm";
-import EngineerDetail from "@/pages/EngineerDetail";
-import Customers from "@/pages/Customers";
-import AccessDenied from "@/pages/AccessDenied";
-import CustomerFollowUps from "@/pages/customers/CustomerFollowUps";
-import EngineerPerformanceDashboard from "@/pages/EngineerPerformanceDashboard";
-import ServiceInventoryManagement from "@/pages/ServiceInventoryManagement";
-import Inventory from "@/pages/Inventory";
-import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
-import ProfitReport from "@/pages/inventory/ProfitReport";
-import InventoryItems from "@/pages/inventory/InventoryItems";
-import InventoryBrands from "@/pages/inventory/InventoryBrands";
-import InventoryPurchase from "@/pages/inventory/InventoryPurchase";
-import InventoryIssue from "@/pages/inventory/InventoryIssue";
-import InventoryWarehouses from "@/pages/inventory/InventoryWarehouses";
-import InventoryHistory from "@/pages/inventory/InventoryHistory";
-import EngineerForm from "@/pages/EngineerForm";
-import AmcTracker from "@/pages/inventory/AmcTracker";
-import Settings from "@/pages/Settings";
-import SmartAssistant from "@/pages/SmartAssistant";
-import TelegramAdmin from "@/pages/TelegramAdmin";
-import Quotations from "@/pages/sales/Quotations";
-import QuotationForm from "@/pages/sales/QuotationForm";
-import SentQuotations from "@/pages/sales/SentQuotations";
-import QuotationProducts from "@/pages/sales/QuotationProducts";
-import ContractUpload from "@/pages/sales/ContractUpload";
-import PurchaseOrders from "@/pages/sales/PurchaseOrders";
-import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
-import SentOrders from "@/pages/sales/SentOrders";
-import OrderHistory from "@/pages/sales/OrderHistory";
-import TaskDashboard from "@/pages/tasks/TaskDashboard";
-import InventorySales from "@/pages/inventory/InventorySales";
-import CashPurchase from "@/pages/inventory/CashPurchase";
-import SalesReports from "@/pages/inventory/SalesReports";
-import UserManagement from "@/pages/user-management/UserManagement";
-import BranchTransfer from "@/pages/inventory/BranchTransfer";
-import NotFound from "@/pages/NotFound";
-import InventoryVendors from "@/pages/inventory/InventoryVendors";
-import { VendorProvider } from "@/contexts/VendorContext";
-
-const AppRoutes = () => {
+const AppRoutes: React.FC = () => {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/access-denied" element={<AccessDenied />} />
-      
-      <Route element={<TaskEnabledLayout />}>
-        <Route path="/tasks" element={<ProtectedRoute><TaskDashboard /></ProtectedRoute>} />
-        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      </Route>
-      
-      <Route element={<Layout />}>
-        <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-        <Route path="/customers/follow-ups" element={<ProtectedRoute><CustomerFollowUps /></ProtectedRoute>} />
-        <Route path="/customer-form" element={<ProtectedRoute><CustomerForm /></ProtectedRoute>} />
-        <Route path="/customer-form/:id" element={<ProtectedRoute><CustomerForm /></ProtectedRoute>} />
-        
-        <Route path="/finance" element={<ProtectedRoute><FinanceDashboard /></ProtectedRoute>} />
-        <Route path="/finance/cash-register" element={<ProtectedRoute><CashRegister /></ProtectedRoute>} />
-        <Route path="/finance/revenue" element={<ProtectedRoute><DepartmentRevenue /></ProtectedRoute>} />
-        <Route path="/finance/expenses" element={<ProtectedRoute><DepartmentExpenses /></ProtectedRoute>} />
+    <BrowserRouter>
+      <Routes>
+        {/* Inventory Management */}
+        <Route path="/inventory/dashboard" element={<InventoryDashboard />} />
+        <Route path="/inventory/items" element={<InventoryItems />} />
+        <Route path="/inventory/vendors" element={<InventoryVendors />} />
+        <Route path="/inventory/models" element={<InventoryModels />} />
+        <Route path="/inventory/brands" element={<InventoryBrands />} />
+        <Route path="/inventory/warehouses" element={<InventoryWarehouses />} />
+        <Route path="/inventory/adjustments" element={<InventoryAdjustments />} />
+        <Route path="/inventory/returns" element={<InventoryReturns />} />
+        <Route path="/inventory/transfers" element={<InventoryTransfers />} />
+        <Route path="/inventory/purchase" element={<UnifiedPurchase />} />
 
-        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-        <Route path="/inventory/items" element={<ProtectedRoute><InventoryItems /></ProtectedRoute>} />
-        <Route path="/inventory/brands" element={<ProtectedRoute><InventoryBrands /></ProtectedRoute>} />
-        <Route path="/inventory/vendors" element={<ProtectedRoute><VendorProvider><InventoryVendors /></VendorProvider></ProtectedRoute>} />
-        <Route path="/inventory/warehouses" element={<ProtectedRoute><InventoryWarehouses /></ProtectedRoute>} />
-        <Route path="/inventory/purchase-entry" element={<ProtectedRoute><InventoryPurchase /></ProtectedRoute>} />
-        <Route path="/inventory/issue" element={<ProtectedRoute><InventoryIssue /></ProtectedRoute>} />
-        <Route path="/inventory/transfers" element={<ProtectedRoute><InventoryHistory /></ProtectedRoute>} />
-        <Route path="/inventory/branch-transfer" element={<ProtectedRoute><BranchTransfer /></ProtectedRoute>} />
-        <Route path="/inventory/amc-tracker" element={<ProtectedRoute><AmcTracker /></ProtectedRoute>} />
-        <Route path="/inventory/cash-purchase" element={<ProtectedRoute><CashPurchase /></ProtectedRoute>} />
-        <Route path="/inventory/sales" element={<ProtectedRoute><InventorySales /></ProtectedRoute>} />
-        <Route path="/inventory/sales-reports" element={<ProtectedRoute><SalesReports /></ProtectedRoute>} />
-        <Route path="/inventory/vendor-performance" element={<ProtectedRoute><VendorProvider><VendorPerformanceDemo /></VendorProvider></ProtectedRoute>} />
-        <Route path="/inventory/profit-report" element={<ProtectedRoute><ProfitReport /></ProtectedRoute>} />
-        
-        <Route path="/service" element={<ProtectedRoute><Service /></ProtectedRoute>} />
-        <Route path="/service-call-form" element={<ProtectedRoute><ServiceCallForm /></ProtectedRoute>} />
-        <Route path="/service-billing" element={<ProtectedRoute><ServiceBilling /></ProtectedRoute>} />
-        <Route path="/service-inventory" element={<ProtectedRoute><ServiceInventoryManagement /></ProtectedRoute>} />
-        <Route path="/engineer/:id" element={<ProtectedRoute><EngineerDetail /></ProtectedRoute>} />
-        <Route path="/engineer/new" element={<ProtectedRoute><EngineerForm /></ProtectedRoute>} />
-        <Route path="/engineer-performance" element={<ProtectedRoute><EngineerPerformanceDashboard /></ProtectedRoute>} />
+        {/* Sales Management */}
+        <Route path="/sales/dashboard" element={<SalesDashboard />} />
+        <Route path="/sales/salespage" element={<SalesPage />} />
+        <Route path="/sales/quotations" element={<SalesQuotations />} />
+        <Route path="/sales/orders" element={<SalesOrders />} />
+        <Route path="/sales/invoices" element={<SalesInvoices />} />
+        <Route path="/sales/customers" element={<SalesCustomers />} />
+        <Route path="/sales/reports" element={<SalesReports />} />
+        <Route path="/sales/payments" element={<SalesPayments />} />
+        <Route path="/sales/shipments" element={<SalesShipments />} />
+        <Route path="/sales/credit-notes" element={<SalesCreditNotes />} />
+        <Route path="/sales/refunds" element={<SalesRefunds />} />
+	      <Route path="/sales/purchase-orders" element={<PurchaseOrders />} />
+        <Route path="/sales/credit-sales" element={<CreditSales />} />
+        <Route path="/sales/cash-sales" element={<CashSales />} />
 
-        <Route path="/quotations" element={<ProtectedRoute><Quotations /></ProtectedRoute>} />
-        <Route path="/quotation-form" element={<ProtectedRoute><QuotationForm /></ProtectedRoute>} />
-        <Route path="/sent-quotations" element={<ProtectedRoute><SentQuotations /></ProtectedRoute>} />
-        <Route path="/quotation-products" element={<ProtectedRoute><QuotationProducts /></ProtectedRoute>} />
-        <Route path="/contract-upload" element={<ProtectedRoute><ContractUpload /></ProtectedRoute>} />
-        <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
-        <Route path="/purchase-order-form" element={<ProtectedRoute><PurchaseOrderForm /></ProtectedRoute>} />
-        <Route path="/sent-orders" element={<ProtectedRoute><SentOrders /></ProtectedRoute>} />
-        <Route path="/order-history" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
-        
-        <Route path="/user-management" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} />
-        
-        <Route path="/smart-assistant" element={<ProtectedRoute><SmartAssistant /></ProtectedRoute>} />
+        {/* AMC Management */}
+        <Route path="/amc/dashboard" element={<AMCDashboard />} />
+        <Route path="/amc/clients" element={<AMCClients />} />
+        <Route path="/amc/machines" element={<AMCMachines />} />
+        <Route path="/amc/contracts" element={<AMCContracts />} />
+        <Route path="/amc/billing" element={<AMCBilling />} />
+        <Route path="/amc/reports" element={<AMCReports />} />
+        <Route path="/amc/consumables" element={<AMCConsumables />} />
 
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/telegram-admin" element={<ProtectedRoute><TelegramAdmin /></ProtectedRoute>} />
-        
-        <Route path="*" element={<NotFound />} />
-      </Route>
-    </Routes>
+        {/* Settings */}
+        <Route path="/settings/profile" element={<SettingsProfile />} />
+        <Route path="/settings/users" element={<SettingsUsers />} />
+        <Route path="/settings/roles" element={<SettingsRoles />} />
+        <Route path="/settings/taxes" element={<SettingsTaxes />} />
+        <Route path="/settings/email" element={<SettingsEmail />} />
+        <Route path="/settings/integrations" element={<SettingsIntegrations />} />
+        <Route path="/settings/notifications" element={<SettingsNotifications />} />
+        <Route path="/settings/templates" element={<SettingsTemplates />} />
+        <Route path="/settings/data-management" element={<SettingsDataManagement />} />
+        <Route path="/settings/audit-log" element={<SettingsAuditLog />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
