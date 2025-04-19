@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Eye } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { fetchPurchaseOrders } from "@/services/purchaseOrderService";
 
 export function PurchaseTabs({ children }: { children: React.ReactNode }) {
@@ -26,7 +25,6 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
   
-  // Fetch purchase history when the tab is activated
   React.useEffect(() => {
     if (activeTab === "purchase-history") {
       loadPurchaseHistory();
@@ -46,7 +44,6 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
     }
   };
   
-  // Filter purchases based on search query
   const filteredPurchases = purchases.filter(purchase => 
     purchase.vendorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     purchase.poNumber?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -68,7 +65,6 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
     setSelectedPurchase(null);
   };
 
-  // Function to parse items if they are stored as a JSON string
   const getParsedItems = (itemsData: any): any[] => {
     if (!itemsData) return [];
     
@@ -77,12 +73,10 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
     }
     
     try {
-      // If it's a string, try to parse it as JSON
       if (typeof itemsData === 'string') {
         return JSON.parse(itemsData);
       }
       
-      // If it's already an object but not an array, wrap it in an array
       if (typeof itemsData === 'object') {
         return [itemsData];
       }
@@ -195,11 +189,13 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
         </TabsContent>
       </Tabs>
 
-      {/* Purchase Details Dialog */}
       <Dialog open={!!selectedPurchase} onOpenChange={closePurchaseDetailsDialog}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Purchase Order Details: {selectedPurchase?.poNumber}</DialogTitle>
+            <DialogDescription>
+              Detailed breakdown of items in Purchase Order {selectedPurchase?.poNumber}
+            </DialogDescription>
           </DialogHeader>
           {selectedPurchase && (
             <div>
