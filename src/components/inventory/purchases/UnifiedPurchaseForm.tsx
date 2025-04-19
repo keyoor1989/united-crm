@@ -30,15 +30,6 @@ interface UnifiedPurchaseFormProps {
   vendors: Vendor[];
   inventoryItems: InventoryItem[];
   categories: string[];
-  onSave: (
-    items: PurchaseItem[], 
-    vendorId: string, 
-    vendorName: string, 
-    notes: string,
-    purchaseType: 'cash' | 'credit',
-    invoiceNumber: string,
-    dueDate?: string
-  ) => Promise<any>;
   purchaseType: 'cash' | 'credit';
   gstMode: GstMode;
   gstRate: number;
@@ -50,7 +41,6 @@ export default function UnifiedPurchaseForm({
   vendors,
   inventoryItems,
   categories,
-  onSave,
   purchaseType,
   gstMode,
   gstRate,

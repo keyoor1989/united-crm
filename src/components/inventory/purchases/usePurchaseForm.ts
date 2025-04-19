@@ -29,7 +29,7 @@ export function usePurchaseForm() {
       return;
     }
 
-    if (!selectedVendorId && !vendorName) {
+    if (!vendorId && !vendorName) {
       toast.error("Please select a vendor or enter vendor name");
       return;
     }

@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Helmet } from "react-helmet";
 import { useVendors } from "@/contexts/VendorContext";
@@ -53,7 +54,7 @@ const UnifiedPurchase = () => {
       />
 
       <PurchaseTabs>
-        {isLoading || vendorsLoading || inventoryLoading ? (
+        {vendorsLoading || inventoryLoading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
             <span>Loading data...</span>
@@ -68,7 +69,6 @@ const UnifiedPurchase = () => {
             gstRate={gstRate}
             onGstModeChange={setGstMode}
             onGstRateChange={setGstRate}
-            purchaseDate={purchaseDate}
           />
         )}
       </PurchaseTabs>
