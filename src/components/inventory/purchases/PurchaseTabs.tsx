@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,8 +15,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search, Eye } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { fetchPurchaseOrders } from "@/services/purchaseOrderService";
+import { PurchaseDetailsDialog } from "./PurchaseDetailsDialog";
 
 export function PurchaseTabs({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState("purchase-entry");
@@ -190,60 +189,13 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={!!selectedPurchase} onOpenChange={closePurchaseDetailsDialog}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Purchase Order Details: {selectedPurchase?.poNumber}</DialogTitle>
-            <DialogDescription>
-              Detailed breakdown of items in Purchase Order {selectedPurchase?.poNumber}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedPurchase && (
-            <div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <p><strong>Vendor:</strong> {selectedPurchase.vendorName}</p>
-                  <p><strong>Date:</strong> {formatDate(selectedPurchase.createdAt)}</p>
-                  <p><strong>Status:</strong> {selectedPurchase.status}</p>
-                </div>
-                <div className="text-right">
-                  <p><strong>Subtotal:</strong> ₹{selectedPurchase.subtotal.toLocaleString()}</p>
-                  <p><strong>GST:</strong> ₹{selectedPurchase.totalGst.toLocaleString()}</p>
-                  <p><strong>Grand Total:</strong> ₹{selectedPurchase.grandTotal.toLocaleString()}</p>
-                </div>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item Name</TableHead>
-                    <TableHead>Brand/Model</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead className="text-right">Unit Price</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {getParsedItems(selectedPurchase.items).map((item: any, index: number) => (
-                    <TableRow key={index}>
-                      <TableCell>{item.itemName || item.name || "N/A"}</TableCell>
-                      <TableCell>
-                        {item.brand ? `${item.brand}${item.model ? ` / ${item.model}` : ""}` : "N/A"}
-                      </TableCell>
-                      <TableCell>{item.description || "N/A"}</TableCell>
-                      <TableCell>{item.category || "N/A"}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell className="text-right">₹{(item.unitPrice || item.unit_price || 0).toLocaleString()}</TableCell>
-                      <TableCell className="text-right">₹{(item.total || (item.quantity * (item.unitPrice || item.unit_price || 0)) || 0).toLocaleString()}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <PurchaseDetailsDialog
+        purchase={selectedPurchase}
+        open={!!selectedPurchase}
+        onClose={closePurchaseDetailsDialog}
+        formatDate={formatDate}
+        getParsedItems={getParsedItems}
+      />
     </>
   );
 }
