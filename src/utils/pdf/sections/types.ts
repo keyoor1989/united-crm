@@ -1,5 +1,4 @@
-
-import { Content, Style, ContentText } from "pdfmake/interfaces";
+import { Content, ContentText, Style } from "pdfmake/interfaces";
 
 // Define alignment type to match pdfmake expectations
 export type PdfAlignment = 'left' | 'center' | 'right' | 'justify';
@@ -11,6 +10,13 @@ export interface TextWithMargin extends ContentText {
   alignment?: PdfAlignment;
   fontSize?: number;
   fillColor?: string;
+}
+
+// Extend the existing types to support more dynamic cell properties
+export interface PdfTableCell extends ContentText {
+  fillColor?: string;
+  style?: string;
+  alignment?: PdfAlignment;
 }
 
 // Helper interface for stacked content

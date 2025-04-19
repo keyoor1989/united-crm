@@ -1,7 +1,7 @@
-
 import { Content } from "pdfmake/interfaces";
 import { PurchaseItem } from "@/pages/inventory/UnifiedPurchase";
 import { ItemsTableOptions } from "./sections/types";
+import { PdfTableCell } from "./sections/types";
 
 // Create items table for PDF
 export const createItemsTable = (
@@ -63,16 +63,16 @@ export const createItemsTable = (
     tableBody.forEach((row, index) => {
       if (index > 0 && index % 2 === 0) {
         // For odd rows (index starting at 0), apply a background color
-        row.forEach((cell: any) => {
+        row.forEach((cell: any, cellIndex: number) => {
+          // Ensure the cell is converted to a PdfTableCell with fillColor
           if (typeof cell === 'object') {
-            cell.fillColor = '#f9f9f9';
+            (row[cellIndex] as PdfTableCell).fillColor = '#f9f9f9';
           } else {
-            // Convert primitive values to objects with fillColor
-            const cellIndex = row.indexOf(cell);
+            // Convert primitive values to PdfTableCell objects with fillColor
             row[cellIndex] = {
               text: cell,
               fillColor: '#f9f9f9'
-            };
+            } as PdfTableCell;
           }
         });
       }
