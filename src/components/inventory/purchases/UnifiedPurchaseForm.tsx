@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,23 +58,23 @@ export default function UnifiedPurchaseForm({
   const [dueDate, setDueDate] = useState<string>("");
   const [showNewItemDialog, setShowNewItemDialog] = useState(false);
   const [newItem, setNewItem] = useState({
-    itemName: "",
+    partName: "",
+    partNumber: "",
+    brand: "",
     category: categories[0] || "Other",
-    unitPrice: 0,
-    quantity: 1
+    quantity: 1,
+    purchasePrice: 0,
+    minStock: 5
   });
 
-  // Filter inventory items based on search term
   const filteredItems = inventoryItems.filter((item) =>
     (item.name || item.part_name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {
-    // When GST mode changes, recalculate GST for all items
     recalculateItemsGst();
   }, [gstMode, gstRate]);
 
-  // When vendor selection changes, update vendor name field
   useEffect(() => {
     if (selectedVendorId) {
       const selectedVendor = vendors.find(v => v.id === selectedVendorId);
@@ -91,15 +90,12 @@ export default function UnifiedPurchaseForm({
     let unitPrice = basePrice;
     let gstAmount = 0;
     
-    // Calculate GST based on mode
     if (gstMode === 'inclusive') {
-      // For inclusive, the base price already includes GST
       const divisor = 1 + (gstRate / 100);
       const priceWithoutGst = basePrice / divisor;
       unitPrice = priceWithoutGst;
       gstAmount = basePrice - priceWithoutGst;
     } else if (gstMode === 'exclusive') {
-      // For exclusive, add GST on top of base price
       gstAmount = basePrice * (gstRate / 100);
     }
 
@@ -123,21 +119,29 @@ export default function UnifiedPurchaseForm({
 
   const handleOpenNewItemDialog = () => {
     setNewItem({
-      itemName: "",
+      partName: "",
+      partNumber: "",
+      brand: "",
       category: categories[0] || "Other",
-      unitPrice: 0,
-      quantity: 1
+      quantity: 1,
+      purchasePrice: 0,
+      minStock: 5
     });
     setShowNewItemDialog(true);
   };
 
-  const handleAddCustomItem = () => {
-    if (!newItem.itemName.trim()) {
+  const handleAddNewItem = () => {
+    if (!newItem.partName.trim()) {
       toast.error("Item name is required");
       return;
     }
     
-    if (newItem.unitPrice <= 0) {
+    if (!newItem.brand.trim()) {
+      toast.error("Brand is required");
+      return;
+    }
+    
+    if (newItem.purchasePrice <= 0) {
       toast.error("Price must be greater than zero");
       return;
     }
@@ -147,15 +151,14 @@ export default function UnifiedPurchaseForm({
       return;
     }
 
-    let unitPrice = newItem.unitPrice;
+    let unitPrice = newItem.purchasePrice;
     let gstAmount = 0;
     
-    // Calculate GST based on mode
     if (gstMode === 'inclusive') {
       const divisor = 1 + (gstRate / 100);
       const priceWithoutGst = unitPrice / divisor;
       unitPrice = priceWithoutGst;
-      gstAmount = newItem.unitPrice - priceWithoutGst;
+      gstAmount = newItem.purchasePrice - priceWithoutGst;
     } else if (gstMode === 'exclusive') {
       gstAmount = unitPrice * (gstRate / 100);
     }
@@ -164,14 +167,19 @@ export default function UnifiedPurchaseForm({
 
     const customItem: PurchaseItem = {
       id: uuidv4(),
-      itemName: newItem.itemName,
+      itemName: `${newItem.brand} ${newItem.partName}`,
       quantity: newItem.quantity,
       unitPrice: unitPrice,
       totalAmount: totalAmount,
       category: newItem.category,
       isCustomItem: true,
       gstPercent: gstMode === 'no-gst' ? 0 : gstRate,
-      gstAmount: gstAmount * newItem.quantity
+      gstAmount: gstAmount * newItem.quantity,
+      specs: {
+        brand: newItem.brand,
+        partNumber: newItem.partNumber,
+        minStock: newItem.minStock
+      }
     };
 
     setItems([...items, customItem]);
@@ -183,15 +191,12 @@ export default function UnifiedPurchaseForm({
       if (item.id === itemId) {
         const updatedItem = { ...item, [field]: value };
         
-        // Recalculate totals when quantity or unit price changes
         if (field === 'quantity' || field === 'unitPrice') {
           updatedItem.totalAmount = updatedItem.unitPrice * updatedItem.quantity;
           
-          // Recalculate GST
           if (gstMode === 'exclusive') {
             updatedItem.gstAmount = updatedItem.totalAmount * (updatedItem.gstPercent / 100);
           } else if (gstMode === 'inclusive') {
-            // For inclusive GST, the GST is already in the unit price and total
             const divisor = 1 + (updatedItem.gstPercent / 100);
             const amountWithoutGst = updatedItem.totalAmount / divisor;
             updatedItem.gstAmount = updatedItem.totalAmount - amountWithoutGst;
@@ -219,7 +224,6 @@ export default function UnifiedPurchaseForm({
       if (gstMode === 'exclusive') {
         gstAmount = totalAmount * (gstRate / 100);
       } else if (gstMode === 'inclusive') {
-        // For inclusive GST, recalculate the unit price without GST
         const divisor = 1 + (gstRate / 100);
         const amountWithoutGst = totalAmount / divisor;
         gstAmount = totalAmount - amountWithoutGst;
@@ -274,7 +278,6 @@ export default function UnifiedPurchaseForm({
         dueDate
       );
       
-      // Reset form after successful save
       setItems([]);
       setSelectedVendorId("");
       setVendorName("");
@@ -503,42 +506,74 @@ export default function UnifiedPurchaseForm({
         </Button>
       </div>
 
-      {/* Dialog for adding custom items */}
       <Dialog open={showNewItemDialog} onOpenChange={setShowNewItemDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add Custom Item</DialogTitle>
+            <DialogTitle>Add New Inventory Item</DialogTitle>
+            <DialogDescription>
+              Add a new item to your inventory with brand and model details
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="itemName">Item Name</Label>
-              <Input
-                id="itemName"
-                value={newItem.itemName}
-                onChange={(e) => setNewItem({...newItem, itemName: e.target.value})}
-                placeholder="Enter item name"
-              />
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="partName">Item Name</Label>
+                <Input
+                  id="partName"
+                  value={newItem.partName}
+                  onChange={(e) => setNewItem({...newItem, partName: e.target.value})}
+                  placeholder="Enter item name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="brand">Brand</Label>
+                <Input
+                  id="brand"
+                  value={newItem.brand}
+                  onChange={(e) => setNewItem({...newItem, brand: e.target.value})}
+                  placeholder="Enter brand name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="partNumber">Part Number</Label>
+                <Input
+                  id="partNumber"
+                  value={newItem.partNumber}
+                  onChange={(e) => setNewItem({...newItem, partNumber: e.target.value})}
+                  placeholder="Enter part number (optional)"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="category">Category</Label>
-              <Select
-                value={newItem.category}
-                onValueChange={(value) => setNewItem({...newItem, category: value})}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select
+                  value={newItem.category}
+                  onValueChange={(value) => setNewItem({...newItem, category: value})}
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="purchasePrice">Purchase Price</Label>
+                <Input
+                  id="purchasePrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newItem.purchasePrice}
+                  onChange={(e) => setNewItem({...newItem, purchasePrice: parseFloat(e.target.value) || 0})}
+                />
+              </div>
               <div>
                 <Label htmlFor="quantity">Quantity</Label>
                 <Input
@@ -550,14 +585,13 @@ export default function UnifiedPurchaseForm({
                 />
               </div>
               <div>
-                <Label htmlFor="unitPrice">Unit Price</Label>
+                <Label htmlFor="minStock">Minimum Stock</Label>
                 <Input
-                  id="unitPrice"
+                  id="minStock"
                   type="number"
                   min="0"
-                  step="0.01"
-                  value={newItem.unitPrice}
-                  onChange={(e) => setNewItem({...newItem, unitPrice: parseFloat(e.target.value) || 0})}
+                  value={newItem.minStock}
+                  onChange={(e) => setNewItem({...newItem, minStock: parseInt(e.target.value) || 0})}
                 />
               </div>
             </div>
@@ -566,7 +600,7 @@ export default function UnifiedPurchaseForm({
             <Button variant="outline" onClick={() => setShowNewItemDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddCustomItem}>
+            <Button onClick={handleAddNewItem}>
               Add Item
             </Button>
           </DialogFooter>
