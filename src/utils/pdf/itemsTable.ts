@@ -63,11 +63,12 @@ export const createItemsTable = (
     tableBody.forEach((row, index) => {
       if (index > 0 && index % 2 === 0) {
         // For odd rows (index starting at 0), apply a background color
-        row.forEach((cell: any, cellIndex) => {
+        row.forEach((cell: any) => {
           if (typeof cell === 'object') {
             cell.fillColor = '#f9f9f9';
           } else {
             // Convert primitive values to objects with fillColor
+            const cellIndex = row.indexOf(cell);
             row[cellIndex] = {
               text: cell,
               fillColor: '#f9f9f9'

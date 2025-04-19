@@ -89,15 +89,16 @@ export function usePurchaseForm() {
                 parsedItems = [];
               }
             } else if (Array.isArray(purchaseRecord.items)) {
-              parsedItems = purchaseRecord.items as PurchaseOrderItem[];
+              // Cast to unknown first, then to PurchaseOrderItem[] to avoid type errors
+              parsedItems = (purchaseRecord.items as unknown) as PurchaseOrderItem[];
             }
             
             const purchaseOrder: PurchaseOrder = {
               id: purchaseRecord.id,
-              poNumber: purchaseRecord.po_number,
+              poNumber: purchaseRecord.invoice_number || purchaseRecord.po_number,
               vendorId: purchaseRecord.vendor_id || '',
               vendorName: purchaseRecord.vendor_name,
-              items: parsedItems || [],
+              items: parsedItems,
               subtotal: purchaseRecord.subtotal,
               totalGst: purchaseRecord.total_gst,
               grandTotal: purchaseRecord.grand_total,

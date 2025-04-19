@@ -54,7 +54,7 @@ export const styles: StyleDictionary = {
   },
   amountInWords: {
     fontSize: 10,
-    italic: true
+    italics: true
   },
   bankDetailsHeader: {
     fontSize: 11,
