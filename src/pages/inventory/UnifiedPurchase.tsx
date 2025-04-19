@@ -77,7 +77,7 @@ const UnifiedPurchase = () => {
           po_number: poNumber,
           vendor_id: vendorId || null,
           vendor_name: vendorName,
-          items: items,
+          items: JSON.stringify(items),
           subtotal: subtotal,
           total_gst: totalGst,
           grand_total: grandTotal,
@@ -89,8 +89,7 @@ const UnifiedPurchase = () => {
           payment_status: purchaseType === 'cash' ? 'Paid' : 'Due',
           payment_method: purchaseType === 'cash' ? 'Cash' : 'Credit'
         })
-        .select()
-        .single();
+        .select();
 
       if (error) {
         throw error;
@@ -100,6 +99,7 @@ const UnifiedPurchase = () => {
       for (const item of items) {
         if (!item.isCustomItem && item.itemId) {
           // Only update inventory for existing items
+          // Note: This RPC call may need adjustment based on your Supabase setup
           const { error: updateError } = await supabase
             .from('opening_stock_entries')
             .update({ 
@@ -122,7 +122,8 @@ const UnifiedPurchase = () => {
               category: item.category,
               quantity: item.quantity,
               purchase_price: item.unitPrice,
-              min_stock: 5 // Default min stock
+              min_stock: 5, // Default min stock
+              brand: "Generic" // Adding required field
             });
 
           if (insertError) {
