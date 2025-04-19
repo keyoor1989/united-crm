@@ -5,6 +5,7 @@ import UnifiedPurchase from './pages/inventory/UnifiedPurchase';
 import InventoryItems from './pages/inventory/InventoryItems';
 import InventoryVendors from './pages/inventory/InventoryVendors';
 import Layout from './components/layout/Layout';
+import TaskEnabledLayout from './components/layout/TaskEnabledLayout';
 
 // Import customer pages
 import Customers from './pages/Customers';
@@ -66,18 +67,25 @@ import SmartAssistant from './pages/SmartAssistant';
 import TelegramAdmin from './pages/TelegramAdmin';
 import UserManagement from './pages/user-management/UserManagement';
 
-// Import location pages (placeholders as they might not exist yet)
+// Import location pages
 import LocationIndore from './pages/locations/LocationIndore';
 import LocationBhopal from './pages/locations/LocationBhopal';
 import LocationJabalpur from './pages/locations/LocationJabalpur';
 
 const AppRoutes: React.FC = () => {
   return (
-    <Layout>
-      <Routes>
-        {/* Dashboard */}
+    <Routes>
+      {/* Routes that need TaskProvider */}
+      <Route element={<TaskEnabledLayout />}>
+        {/* Dashboard - needs tasks */}
         <Route path="/" element={<Dashboard />} />
         
+        {/* Tasks routes */}
+        <Route path="/tasks" element={<TaskDashboard />} />
+      </Route>
+      
+      {/* Standard routes without task context */}
+      <Route element={<Layout />}>
         {/* Customer Management */}
         <Route path="/customers" element={<Customers />} />
         <Route path="/customer-form" element={<CustomerForm />} />
@@ -132,9 +140,6 @@ const AppRoutes: React.FC = () => {
         <Route path="/reports/customer-followup" element={<CustomerFollowUpReport />} />
         <Route path="/reports/branch-profit" element={<BranchProfitReport />} />
         
-        {/* Tasks */}
-        <Route path="/tasks" element={<TaskDashboard />} />
-        
         {/* Settings & Other */}
         <Route path="/settings" element={<Settings />} />
         <Route path="/smart-assistant" element={<SmartAssistant />} />
@@ -145,8 +150,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/locations/indore" element={<LocationIndore />} />
         <Route path="/locations/bhopal" element={<LocationBhopal />} />
         <Route path="/locations/jabalpur" element={<LocationJabalpur />} />
-      </Routes>
-    </Layout>
+      </Route>
+    </Routes>
   );
 };
 
