@@ -15,7 +15,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PurchaseItemRow } from './PurchaseItemRow';
-import { format } from "date-fns";
 
 interface PurchaseDetailsProps {
   purchase: any;
