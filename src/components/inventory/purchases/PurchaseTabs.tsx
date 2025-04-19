@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,23 +69,33 @@ export function PurchaseTabs({ children }: { children: React.ReactNode }) {
   const getParsedItems = (itemsData: any): any[] => {
     if (!itemsData) return [];
     
-    if (Array.isArray(itemsData)) {
-      return itemsData;
-    }
+    let items = [];
     
     try {
+      // Parse JSON string if needed
       if (typeof itemsData === 'string') {
-        return JSON.parse(itemsData);
+        items = JSON.parse(itemsData);
+      } else if (Array.isArray(itemsData)) {
+        items = itemsData;
+      } else if (typeof itemsData === 'object') {
+        items = [itemsData];
       }
       
-      if (typeof itemsData === 'object') {
-        return [itemsData];
-      }
+      // Ensure each item has the expected properties
+      return items.map(item => ({
+        itemName: item.itemName || item.name || '',
+        brand: item.brand || '',
+        model: item.model || '',
+        description: item.description || '',
+        category: item.category || '',
+        quantity: item.quantity || 0,
+        unitPrice: item.unitPrice || item.unit_price || 0,
+        total: item.total || item.totalAmount || (item.quantity * (item.unitPrice || item.unit_price || 0)) || 0
+      }));
     } catch (error) {
       console.error("Error parsing items:", error);
+      return [];
     }
-    
-    return [];
   };
 
   return (
