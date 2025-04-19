@@ -1,3 +1,4 @@
+
 import { Content } from "pdfmake/interfaces";
 import { PurchaseItem } from "@/pages/inventory/UnifiedPurchase";
 import { ItemsTableOptions } from "./sections/types";
@@ -24,7 +25,7 @@ export const createItemsTable = (
   }
   
   // Create header row
-  const headerRow = [
+  const headerRow: PdfTableCell[] = [
     { text: 'Item', style: 'tableHeader' },
     { text: 'Category', style: 'tableHeader' },
     { text: 'Qty', style: 'tableHeader', alignment: 'center' },
@@ -39,9 +40,9 @@ export const createItemsTable = (
   
   // Create body rows
   const bodyRows = parsedItems.map((item, index) => {
-    const rowData = [
-      item.itemName,
-      item.category || '',
+    const rowData: PdfTableCell[] = [
+      { text: item.itemName },
+      { text: item.category || '' },
       { text: item.quantity.toString(), alignment: 'center' },
       { text: `₹${item.unitPrice.toFixed(2)}`, alignment: 'right' },
       { text: `₹${(item.gstAmount || 0).toFixed(2)}`, alignment: 'right' },
@@ -63,17 +64,11 @@ export const createItemsTable = (
     tableBody.forEach((row, index) => {
       if (index > 0 && index % 2 === 0) {
         // For odd rows (index starting at 0), apply a background color
-        row.forEach((cell: any, cellIndex: number) => {
-          // Ensure the cell is converted to a PdfTableCell with fillColor
-          if (typeof cell === 'object') {
-            (row[cellIndex] as PdfTableCell).fillColor = '#f9f9f9';
-          } else {
-            // Convert primitive values to PdfTableCell objects with fillColor
-            row[cellIndex] = {
-              text: cell,
-              fillColor: '#f9f9f9'
-            } as PdfTableCell;
-          }
+        row.forEach((cell, cellIndex) => {
+          tableBody[index][cellIndex] = {
+            ...cell,
+            fillColor: '#f9f9f9'
+          };
         });
       }
     });
@@ -109,3 +104,4 @@ export const createItemsTable = (
     margin: [0, 10, 0, 10]
   };
 };
+

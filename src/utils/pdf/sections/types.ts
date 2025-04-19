@@ -1,3 +1,4 @@
+
 import { Content, ContentText, Style } from "pdfmake/interfaces";
 
 // Define alignment type to match pdfmake expectations
@@ -13,7 +14,8 @@ export interface TextWithMargin extends ContentText {
 }
 
 // Extend the existing types to support more dynamic cell properties
-export interface PdfTableCell extends ContentText {
+export interface PdfTableCell {
+  text: string | number;
   fillColor?: string;
   style?: string;
   alignment?: PdfAlignment;
@@ -34,3 +36,4 @@ export interface ItemsTableOptions {
   alternateRowColors?: boolean;
   showItemNumbers?: boolean;
 }
+
