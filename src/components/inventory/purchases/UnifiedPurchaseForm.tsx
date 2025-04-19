@@ -535,9 +535,22 @@ export default function UnifiedPurchaseForm({
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={handleSubmit} className="flex items-center gap-2">
-          <Save className="h-4 w-4" />
-          Save Purchase
+        <Button 
+          onClick={handleSubmit} 
+          className="flex items-center gap-2"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-1"></span>
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" />
+              Save Purchase
+            </>
+          )}
         </Button>
       </div>
 
