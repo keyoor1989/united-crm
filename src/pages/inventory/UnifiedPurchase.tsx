@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 import UnifiedPurchaseForm from "@/components/inventory/purchases/UnifiedPurchaseForm";
 import PurchaseHeader from "@/components/inventory/purchases/PurchaseHeader";
 import { useQueryClient } from "@tanstack/react-query";
+import { purchaseOrderService } from "@/services/purchaseOrderService";
 
 export type GstMode = 'no-gst' | 'exclusive' | 'inclusive';
 
@@ -78,6 +79,23 @@ const UnifiedPurchase = () => {
       const randomString = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
       const poNumber = `PO-${year}${month}${day}-${randomString}`;
 
+      console.log("Saving purchase order with data:", {
+        poNumber,
+        vendorId,
+        vendorName,
+        items,
+        subtotal,
+        totalGst,
+        grandTotal,
+        deliveryDate: purchaseDate,
+        status: purchaseType === 'cash' ? 'Cash Purchase' : 'Credit Purchase',
+        notes,
+        invoice_number: invoiceNumber,
+        due_date: dueDate,
+        payment_status: purchaseType === 'cash' ? 'Paid' : 'Due',
+        payment_method: purchaseType === 'cash' ? 'Cash' : 'Credit'
+      });
+
       // Create purchase record in database
       const { data, error } = await supabase
         .from('purchase_orders')
@@ -93,13 +111,14 @@ const UnifiedPurchase = () => {
           status: purchaseType === 'cash' ? 'Cash Purchase' : 'Credit Purchase',
           notes: notes,
           invoice_number: invoiceNumber,
-          due_date: dueDate || null,
+          due_date: dueDate,
           payment_status: purchaseType === 'cash' ? 'Paid' : 'Due',
           payment_method: purchaseType === 'cash' ? 'Cash' : 'Credit'
         })
         .select();
 
       if (error) {
+        console.error("Error details:", error);
         throw error;
       }
 

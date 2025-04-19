@@ -1011,10 +1011,14 @@ export type Database = {
         Row: {
           created_at: string
           delivery_date: string | null
+          due_date: string | null
           grand_total: number
           id: string
+          invoice_number: string | null
           items: Json
           notes: string | null
+          payment_method: string | null
+          payment_status: string | null
           po_number: string
           status: string
           subtotal: number
@@ -1026,10 +1030,14 @@ export type Database = {
         Insert: {
           created_at?: string
           delivery_date?: string | null
+          due_date?: string | null
           grand_total: number
           id?: string
+          invoice_number?: string | null
           items: Json
           notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           po_number: string
           status: string
           subtotal: number
@@ -1041,10 +1049,14 @@ export type Database = {
         Update: {
           created_at?: string
           delivery_date?: string | null
+          due_date?: string | null
           grand_total?: number
           id?: string
+          invoice_number?: string | null
           items?: Json
           notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           po_number?: string
           status?: string
           subtotal?: number
