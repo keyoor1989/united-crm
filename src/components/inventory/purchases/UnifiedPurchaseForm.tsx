@@ -257,16 +257,34 @@ export default function UnifiedPurchaseForm({
   };
 
   const handleSubmit = async () => {
-    console.log("Submitting purchase with:", {
-      items,
+    console.log("Submitting purchase validation:", {
+      itemsCount: items.length,
       selectedVendorId,
       vendorName,
-      notes,
       purchaseType,
-      invoiceNumber,
-      purchaseDate,
-      dueDate
+      dueDate,
+      invoiceNumber
     });
+
+    if (items.length === 0) {
+      toast.error("Please add at least one item to the purchase");
+      return;
+    }
+
+    if (purchaseType === 'credit' && !dueDate) {
+      toast.error("Please select a due date for credit purchase");
+      return;
+    }
+
+    if (!selectedVendorId && !vendorName) {
+      toast.error("Please select a vendor or enter vendor name");
+      return;
+    }
+    
+    if (!invoiceNumber) {
+      toast.error("Please enter an invoice number");
+      return;
+    }
     
     const result = await handleSavePurchase(
       items, 
@@ -287,6 +305,7 @@ export default function UnifiedPurchaseForm({
       setInvoiceNumber("");
       setDueDate("");
       setSearchTerm("");
+      toast.success("Purchase saved successfully!");
     }
   };
 

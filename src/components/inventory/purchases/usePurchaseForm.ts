@@ -19,6 +19,18 @@ export function usePurchaseForm() {
     purchaseDate: string,
     dueDate?: string
   ) => {
+    console.log("Starting purchase save with data:", {
+      itemsCount: items.length,
+      vendorId,
+      vendorName,
+      notes,
+      purchaseType,
+      invoiceNumber,
+      purchaseDate,
+      dueDate
+    });
+
+    // Validations
     if (items.length === 0) {
       toast.error("Please add at least one item to the purchase");
       return null;
@@ -53,6 +65,8 @@ export function usePurchaseForm() {
         dueDate
       });
 
+      console.log("Purchase save result:", result);
+
       if (result) {
         queryClient.invalidateQueries({ queryKey: ['inventory_items'] });
         toast.success("Purchase saved successfully!");
@@ -61,7 +75,7 @@ export function usePurchaseForm() {
       
       return null;
     } catch (error: any) {
-      console.error("Error submitting form:", error);
+      console.error("Complete error during purchase save:", error);
       toast.error(`Failed to save purchase: ${error.message}`);
       return null;
     } finally {
