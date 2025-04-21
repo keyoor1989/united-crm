@@ -20,6 +20,7 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   const fetchVendors = async () => {
     setLoading(true);
@@ -53,10 +54,10 @@ export const VendorProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   useEffect(() => {
     fetchVendors();
-  }, []);
+  }, [refreshCounter]);
 
   const refreshVendors = async () => {
-    await fetchVendors();
+    setRefreshCounter(prev => prev + 1);
   };
 
   const addVendor = async (vendor: Omit<Vendor, 'id' | 'createdAt'>) => {

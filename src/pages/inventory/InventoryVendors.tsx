@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -37,10 +36,10 @@ const InventoryVendors = () => {
   const { toast } = useToast();
   const { vendors, loading, error, addVendor, updateVendor, deleteVendor, refreshVendors } = useVendors();
 
-  // Refresh vendors on mount
+  // Only refresh vendors once when the component mounts
   useEffect(() => {
     refreshVendors();
-  }, [refreshVendors]);
+  }, []);
 
   // Filter vendors based on search query
   const filteredVendors = vendors.filter(vendor => 
