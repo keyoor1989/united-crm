@@ -124,10 +124,16 @@ const NewTransferDialog = ({
                 <SelectValue placeholder="Select Source Warehouse" />
               </SelectTrigger>
               <SelectContent>
-                {warehouses.map(w =>
-                  <SelectItem key={w.id} value={w.id}>
-                    {w.name} ({w.location})
-                  </SelectItem>
+                {/* Added explicit placeholder option with non-empty string value */}
+                <SelectItem key="source-placeholder" value="" disabled>
+                  Select Source Warehouse
+                </SelectItem>
+                {warehouses.map(w => 
+                  w.id ? (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name} ({w.location})
+                    </SelectItem>
+                  ) : null
                 )}
               </SelectContent>
             </Select>
@@ -142,10 +148,16 @@ const NewTransferDialog = ({
                 <SelectValue placeholder="Select Destination Warehouse" />
               </SelectTrigger>
               <SelectContent>
-                {warehouses.map(w =>
-                  <SelectItem key={w.id} value={w.id}>
-                    {w.name} ({w.location})
-                  </SelectItem>
+                {/* Added explicit placeholder option with non-empty string value */}
+                <SelectItem key="dest-placeholder" value="" disabled>
+                  Select Destination Warehouse
+                </SelectItem>
+                {warehouses.map(w => 
+                  w.id ? (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name} ({w.location})
+                    </SelectItem>
+                  ) : null
                 )}
               </SelectContent>
             </Select>
