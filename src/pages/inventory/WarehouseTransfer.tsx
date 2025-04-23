@@ -49,7 +49,21 @@ const WarehouseTransfer = () => {
         setLoadingWarehouses(false);
         return;
       }
-      setWarehouses(data || []);
+
+      // Transform the data to match the Warehouse interface
+      const transformedWarehouses: Warehouse[] = data.map(warehouse => ({
+        id: warehouse.id,
+        name: warehouse.name,
+        code: warehouse.code,
+        location: warehouse.location,
+        address: warehouse.address,
+        contactPerson: warehouse.contact_person,
+        contactPhone: warehouse.contact_phone,
+        isActive: warehouse.is_active,
+        createdAt: warehouse.created_at
+      }));
+      
+      setWarehouses(transformedWarehouses);
       setLoadingWarehouses(false);
     };
     fetchWarehouses();
