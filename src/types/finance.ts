@@ -1,4 +1,3 @@
-
 export interface CashEntry {
   id: string;
   date: string;
@@ -6,11 +5,14 @@ export interface CashEntry {
   department: string;
   category: string;
   description: string;
-  paymentMethod: string;
-  enteredBy: string;
+  payment_method: string;
+  entered_by: string;
   type: 'Income' | 'Expense';
   reference?: string;
   branch?: string;
+  po_number?: string;
+  invoice_number?: string;
+  created_at?: string;
 }
 
 export interface Revenue {

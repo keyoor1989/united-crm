@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format, isWithinInterval, parseISO } from "date-fns";
 import { 
@@ -6,7 +5,6 @@ import {
   ArrowUp,
   Download
 } from "lucide-react";
-import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,8 +41,8 @@ const CashRegister = () => {
   const [currentEntry, setCurrentEntry] = useState<Partial<CashEntry>>({
     date: format(new Date(), "yyyy-MM-dd"),
     type: "Income",
-    paymentMethod: "Cash",
-    enteredBy: "Current User"
+    payment_method: "Cash",
+    entered_by: "Current User"
   });
 
   // Loading indicator for fetch and add entry
@@ -64,7 +62,24 @@ const CashRegister = () => {
       .order("date", { ascending: false });
 
     if (!error && Array.isArray(data)) {
-      setEntries(data as CashEntry[]);
+      // Transform the data to match our CashEntry interface
+      const transformedData = data.map(entry => ({
+        id: entry.id,
+        date: entry.date,
+        amount: entry.amount,
+        department: entry.department,
+        category: entry.category,
+        description: entry.description,
+        payment_method: entry.payment_method,
+        entered_by: entry.entered_by,
+        type: entry.type as 'Income' | 'Expense',
+        reference: entry.reference,
+        branch: entry.branch,
+        po_number: entry.po_number,
+        invoice_number: entry.invoice_number,
+        created_at: entry.created_at
+      }));
+      setEntries(transformedData);
     }
     setLoading(false);
   };
@@ -112,8 +127,8 @@ const CashRegister = () => {
     setCurrentEntry({
       date: format(new Date(), "yyyy-MM-dd"),
       type: "Income",
-      paymentMethod: "Cash",
-      enteredBy: "Current User"
+      payment_method: "Cash",
+      entered_by: "Current User"
     });
     setIsDialogOpen(true);
   };
@@ -145,11 +160,15 @@ const CashRegister = () => {
       department: currentEntry.department,
       category: currentEntry.category || "Other",
       description: currentEntry.description,
-      payment_method: "Cash", // Only Cash for now
-      entered_by: currentEntry.enteredBy || "Current User",
+      payment_method: currentEntry.payment_method || "Cash", 
+      entered_by: currentEntry.entered_by || "Current User",
       type: currentEntry.type,
       reference: currentEntry.reference || "",
+      po_number: currentEntry.po_number || null,
+      invoice_number: currentEntry.invoice_number || null,
+      branch: currentEntry.branch || null
     };
+    
     const { error } = await supabase
       .from("cash_entries")
       .insert([insertObj]);
@@ -308,7 +327,7 @@ const CashRegister = () => {
         onClose={handleCloseDialog}
         title="Add Cash Entry"
         onSubmit={handleFormSubmit}
-        loading={loading}
+        isSubmitting={loading}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           <div className="space-y-2">
