@@ -912,6 +912,75 @@ export type Database = {
           },
         ]
       }
+      inventory_transfers: {
+        Row: {
+          approved_by: string | null
+          approved_date: string | null
+          created_at: string
+          destination_branch: string | null
+          destination_type: string
+          destination_warehouse_id: string | null
+          dispatch_date: string | null
+          id: string
+          item_id: string
+          quantity: number
+          received_date: string | null
+          remarks: string | null
+          request_date: string
+          requested_by: string | null
+          source_branch: string | null
+          source_type: string
+          source_warehouse_id: string | null
+          status: string
+          tracking_number: string | null
+          transfer_method: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          approved_date?: string | null
+          created_at?: string
+          destination_branch?: string | null
+          destination_type: string
+          destination_warehouse_id?: string | null
+          dispatch_date?: string | null
+          id?: string
+          item_id: string
+          quantity?: number
+          received_date?: string | null
+          remarks?: string | null
+          request_date?: string
+          requested_by?: string | null
+          source_branch?: string | null
+          source_type: string
+          source_warehouse_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          transfer_method?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          approved_date?: string | null
+          created_at?: string
+          destination_branch?: string | null
+          destination_type?: string
+          destination_warehouse_id?: string | null
+          dispatch_date?: string | null
+          id?: string
+          item_id?: string
+          quantity?: number
+          received_date?: string | null
+          remarks?: string | null
+          request_date?: string
+          requested_by?: string | null
+          source_branch?: string | null
+          source_type?: string
+          source_warehouse_id?: string | null
+          status?: string
+          tracking_number?: string | null
+          transfer_method?: string | null
+        }
+        Relationships: []
+      }
       opening_stock_entries: {
         Row: {
           brand: string

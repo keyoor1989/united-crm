@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -32,88 +33,12 @@ import {
   Truck
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const mockWarehouses = [
   { id: "1", name: "Main Warehouse", code: "MW01", location: "Indore", isActive: true },
   { id: "2", name: "Bhopal Warehouse", code: "BW01", location: "Bhopal", isActive: true },
   { id: "3", name: "Jabalpur Storage", code: "JS01", location: "Jabalpur", isActive: true }
-];
-
-const mockTransfers = [
-  {
-    id: "ST001",
-    itemId: "1",
-    quantity: 5,
-    sourceType: "Branch",
-    sourceBranch: "Indore (HQ)",
-    destinationType: "Branch",
-    destinationBranch: "Bhopal Office",
-    requestDate: "2025-03-15",
-    approvedDate: "2025-03-16",
-    dispatchDate: "2025-03-17",
-    status: "Dispatched",
-    transferMethod: "Courier",
-    trackingNumber: "COUR123456",
-    remarks: "Urgent requirement for service",
-    requestedBy: "Rajesh Kumar",
-    approvedBy: "Amit Sharma",
-    createdAt: "2025-03-15"
-  },
-  {
-    id: "ST002",
-    itemId: "2",
-    quantity: 3,
-    sourceType: "Branch",
-    sourceBranch: "Bhopal Office",
-    destinationType: "Branch",
-    destinationBranch: "Jabalpur Office",
-    requestDate: "2025-03-20",
-    approvedDate: "2025-03-21",
-    dispatchDate: "2025-03-22",
-    status: "Received",
-    transferMethod: "Bus",
-    trackingNumber: "BUS789012",
-    remarks: "Replenishment of low stock",
-    requestedBy: "Vikram Singh",
-    approvedBy: "Pooja Verma",
-    createdAt: "2025-03-20"
-  },
-  {
-    id: "ST003",
-    itemId: "3",
-    quantity: 2,
-    sourceType: "Warehouse",
-    sourceWarehouseId: "1",
-    sourceWarehouseName: "Main Warehouse",
-    destinationType: "Warehouse",
-    destinationWarehouseId: "2",
-    destinationWarehouseName: "Bhopal Warehouse",
-    requestDate: "2025-03-25",
-    approvedDate: "2025-03-26",
-    dispatchDate: "2025-03-27",
-    status: "Approved",
-    transferMethod: "Hand Delivery",
-    remarks: "Stock balancing between warehouses",
-    requestedBy: "Neha Gupta",
-    approvedBy: "Amit Sharma",
-    createdAt: "2025-03-25"
-  },
-  {
-    id: "ST004",
-    itemId: "4",
-    quantity: 10,
-    sourceType: "Warehouse",
-    sourceWarehouseId: "2",
-    sourceWarehouseName: "Bhopal Warehouse",
-    destinationType: "Branch",
-    destinationBranch: "Indore (HQ)",
-    requestDate: "2025-03-30",
-    status: "Requested",
-    transferMethod: "Courier",
-    remarks: "Additional stock for new customer",
-    requestedBy: "Rajesh Kumar",
-    createdAt: "2025-03-30"
-  },
 ];
 
 const mockItems = [
@@ -130,9 +55,12 @@ const InventoryTransfer = () => {
   const [filterSourceType, setFilterSourceType] = useState("all");
   const [filterLocation, setFilterLocation] = useState("all");
   const [showNewTransferDialog, setShowNewTransferDialog] = useState(false);
-  
+
+  const [transfers, setTransfers] = useState<any[]>([]);
+  const [loadingTransfers, setLoadingTransfers] = useState(false);
+
   type LocationType = "Branch" | "Warehouse";
-  
+
   const [transferForm, setTransferForm] = useState({
     itemId: "",
     quantity: 1,
@@ -146,27 +74,46 @@ const InventoryTransfer = () => {
     trackingNumber: "",
     remarks: ""
   });
-  
-  const filteredTransfers = mockTransfers.filter(transfer => {
+
+  // Load all transfers from Supabase
+  useEffect(() => {
+    const fetchTransfers = async () => {
+      setLoadingTransfers(true);
+      const { data, error } = await supabase
+        .from("inventory_transfers")
+        .select("*")
+        .order("request_date", { ascending: false });
+      if (error) {
+        toast.error("Error fetching transfers");
+        setLoadingTransfers(false);
+        return;
+      }
+      setTransfers(data || []);
+      setLoadingTransfers(false);
+    };
+    fetchTransfers();
+  }, []);
+
+  // Filter logic using real transfers
+  const filteredTransfers = transfers.filter(transfer => {
     const searchMatch = 
-      transfer.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.itemId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (transfer.sourceType === "Branch" && transfer.sourceBranch && transfer.sourceBranch.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (transfer.destinationType === "Branch" && transfer.destinationBranch && transfer.destinationBranch.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (transfer.sourceType === "Warehouse" && transfer.sourceWarehouseName && transfer.sourceWarehouseName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (transfer.destinationType === "Warehouse" && transfer.destinationWarehouseName && transfer.destinationWarehouseName.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+      (transfer.id && transfer.id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (transfer.item_id && transfer.item_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (transfer.source_type === "Branch" && transfer.source_branch && transfer.source_branch.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (transfer.destination_type === "Branch" && transfer.destination_branch && transfer.destination_branch.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (transfer.source_type === "Warehouse" && transfer.source_warehouse_id && transfer.source_warehouse_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (transfer.destination_type === "Warehouse" && transfer.destination_warehouse_id && transfer.destination_warehouse_id.toLowerCase().includes(searchQuery.toLowerCase()));
+
     const statusMatch = filterStatus === "all" ? true : transfer.status === filterStatus;
-    
-    const sourceTypeMatch = filterSourceType === "all" ? true : transfer.sourceType === filterSourceType;
-    
+    const sourceTypeMatch = filterSourceType === "all" ? true : transfer.source_type === filterSourceType;
+    // We match location for only id and branches
     const locationMatch = filterLocation === "all" ? true : (
-      (transfer.sourceType === "Branch" && transfer.sourceBranch === filterLocation) ||
-      (transfer.destinationType === "Branch" && transfer.destinationBranch === filterLocation) ||
-      (transfer.sourceType === "Warehouse" && transfer.sourceWarehouseId === filterLocation) ||
-      (transfer.destinationType === "Warehouse" && transfer.destinationWarehouseId === filterLocation)
+      (transfer.source_type === "Branch" && transfer.source_branch === filterLocation) ||
+      (transfer.destination_type === "Branch" && transfer.destination_branch === filterLocation) ||
+      (transfer.source_type === "Warehouse" && transfer.source_warehouse_id === filterLocation) ||
+      (transfer.destination_type === "Warehouse" && transfer.destination_warehouse_id === filterLocation)
     );
-    
+
     return searchMatch && statusMatch && sourceTypeMatch && locationMatch;
   });
 
@@ -176,10 +123,11 @@ const InventoryTransfer = () => {
     { id: "Jabalpur Office", name: "Jabalpur Office", type: "Branch" },
     ...mockWarehouses.map(wh => ({ id: wh.id, name: wh.name, type: "Warehouse" }))
   ];
-  
-  const handleSubmitTransfer = (e: React.FormEvent) => {
+
+  // Handle transfer creation (insert into Supabase)
+  const handleSubmitTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (
       (transferForm.sourceType === transferForm.destinationType) && 
       (
@@ -190,44 +138,83 @@ const InventoryTransfer = () => {
       toast.error("Source and destination cannot be the same!");
       return;
     }
-    
-    console.log("New transfer:", transferForm);
-    toast.success("Transfer request created successfully!");
-    
-    setTransferForm({
-      itemId: "",
-      quantity: 1,
-      sourceType: "Warehouse",
-      sourceBranch: "",
-      sourceWarehouseId: "",
-      destinationType: "Warehouse",
-      destinationBranch: "",
-      destinationWarehouseId: "",
-      transferMethod: "Courier",
-      trackingNumber: "",
-      remarks: ""
+    if (!transferForm.itemId) {
+      toast.error("Please select an item.");
+      return;
+    }
+    if (
+      (transferForm.sourceType === "Branch" && !transferForm.sourceBranch) ||
+      (transferForm.sourceType === "Warehouse" && !transferForm.sourceWarehouseId) ||
+      (transferForm.destinationType === "Branch" && !transferForm.destinationBranch) ||
+      (transferForm.destinationType === "Warehouse" && !transferForm.destinationWarehouseId)
+    ) {
+      toast.error("Please select both source and destination locations.");
+      return;
+    }
+    // Make Supabase insert
+    const { error } = await supabase.from("inventory_transfers").insert({
+      item_id: transferForm.itemId,
+      quantity: transferForm.quantity,
+      source_type: transferForm.sourceType,
+      source_branch: transferForm.sourceType === "Branch" ? transferForm.sourceBranch : null,
+      source_warehouse_id: transferForm.sourceType === "Warehouse" ? transferForm.sourceWarehouseId : null,
+      destination_type: transferForm.destinationType,
+      destination_branch: transferForm.destinationType === "Branch" ? transferForm.destinationBranch : null,
+      destination_warehouse_id: transferForm.destinationType === "Warehouse" ? transferForm.destinationWarehouseId : null,
+      transfer_method: transferForm.transferMethod,
+      tracking_number: transferForm.trackingNumber,
+      remarks: transferForm.remarks,
+      requested_by: "Current User", // You can fetch the real user
+      status: "Requested",
+      request_date: new Date().toISOString()
     });
-    setShowNewTransferDialog(false);
+    if (error) {
+      toast.error("Failed to create transfer: " + error.message);
+    } else {
+      toast.success("Transfer request created successfully!");
+      // Reload transfers
+      const { data } = await supabase
+        .from("inventory_transfers")
+        .select("*")
+        .order("request_date", { ascending: false });
+      setTransfers(data || []);
+      setShowNewTransferDialog(false);
+      setTransferForm({
+        itemId: "",
+        quantity: 1,
+        sourceType: "Warehouse",
+        sourceBranch: "",
+        sourceWarehouseId: "",
+        destinationType: "Warehouse",
+        destinationBranch: "",
+        destinationWarehouseId: "",
+        transferMethod: "Courier",
+        trackingNumber: "",
+        remarks: ""
+      });
+    }
   };
-  
+
   const getSourceLocationName = (transfer: any) => {
-    if (transfer.sourceType === "Branch" && transfer.sourceBranch) {
-      return transfer.sourceBranch;
-    } else if (transfer.sourceType === "Warehouse" && transfer.sourceWarehouseName) {
-      return transfer.sourceWarehouseName;
+    if (transfer.source_type === "Branch" && transfer.source_branch) {
+      return transfer.source_branch;
+    } else if (transfer.source_type === "Warehouse" && transfer.source_warehouse_id) {
+      const wh = mockWarehouses.find(w => w.id === transfer.source_warehouse_id);
+      return wh ? wh.name : transfer.source_warehouse_id;
     }
     return "Unknown";
   };
-  
+
   const getDestinationLocationName = (transfer: any) => {
-    if (transfer.destinationType === "Branch" && transfer.destinationBranch) {
-      return transfer.destinationBranch;
-    } else if (transfer.destinationType === "Warehouse" && transfer.destinationWarehouseName) {
-      return transfer.destinationWarehouseName;
+    if (transfer.destination_type === "Branch" && transfer.destination_branch) {
+      return transfer.destination_branch;
+    } else if (transfer.destination_type === "Warehouse" && transfer.destination_warehouse_id) {
+      const wh = mockWarehouses.find(w => w.id === transfer.destination_warehouse_id);
+      return wh ? wh.name : transfer.destination_warehouse_id;
     }
     return "Unknown";
   };
-  
+
   const getLocationIcon = (type: LocationType) => {
     return type === "Branch" ? <Box className="h-4 w-4" /> : <Warehouse className="h-4 w-4" />;
   };
@@ -238,7 +225,7 @@ const InventoryTransfer = () => {
         <div>
           <h1 className="text-2xl font-bold">Stock Transfers</h1>
           <p className="text-muted-foreground">
-            Manage and track inventory transfers between branches and warehouses
+            Manage and track inventory transfers between branches and warehouses (live from Supabase)
           </p>
         </div>
         <Button className="gap-1" onClick={() => setShowNewTransferDialog(true)}>
@@ -246,7 +233,7 @@ const InventoryTransfer = () => {
           New Transfer Request
         </Button>
       </div>
-      
+
       <div className="flex items-center gap-4 mb-4">
         <div className="relative grow">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -262,19 +249,19 @@ const InventoryTransfer = () => {
           <Filter className="h-4 w-4" />
         </Button>
       </div>
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="transfers">Transfers</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="transfers" className="mt-4">
           <Card>
             <CardHeader>
               <CardTitle>Current Transfers</CardTitle>
               <CardDescription>
-                List of all pending and in-transit stock transfers
+                List of all pending and in-transit stock transfers (Live)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -295,7 +282,6 @@ const InventoryTransfer = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
                 <div>
                   <Label htmlFor="source-type-filter">Filter by Source Type</Label>
                   <Select value={filterSourceType} onValueChange={setFilterSourceType}>
@@ -309,7 +295,6 @@ const InventoryTransfer = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
                 <div>
                   <Label htmlFor="location-filter">Filter by Location</Label>
                   <Select value={filterLocation} onValueChange={setFilterLocation}>
@@ -328,7 +313,6 @@ const InventoryTransfer = () => {
                   </Select>
                 </div>
               </div>
-              
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -343,8 +327,13 @@ const InventoryTransfer = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTransfers.map((transfer) => {
-                    const item = mockItems.find(i => i.id === transfer.itemId);
+                  {loadingTransfers && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center">Loading...</TableCell>
+                    </TableRow>
+                  )}
+                  {!loadingTransfers && filteredTransfers.map((transfer) => {
+                    const item = mockItems.find(i => i.id === transfer.item_id);
                     return (
                       <TableRow key={transfer.id}>
                         <TableCell className="font-medium">{transfer.id}</TableCell>
@@ -354,33 +343,32 @@ const InventoryTransfer = () => {
                               <div>{item.name}</div>
                               <div className="text-xs text-muted-foreground">{item.brand} {item.model}</div>
                             </>
-                          ) : transfer.itemId}
+                          ) : transfer.item_id}
                         </TableCell>
                         <TableCell>{transfer.quantity}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {getLocationIcon(transfer.sourceType as LocationType)}
+                            {getLocationIcon(transfer.source_type as LocationType)}
                             {getSourceLocationName(transfer)}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {getLocationIcon(transfer.destinationType as LocationType)}
+                            {getLocationIcon(transfer.destination_type as LocationType)}
                             {getDestinationLocationName(transfer)}
                           </div>
                         </TableCell>
-                        <TableCell>{new Date(transfer.requestDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(transfer.request_date).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="font-medium">
                             {transfer.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{transfer.transferMethod}</TableCell>
+                        <TableCell>{transfer.transfer_method}</TableCell>
                       </TableRow>
                     );
                   })}
-                  
-                  {filteredTransfers.length === 0 && (
+                  {!loadingTransfers && filteredTransfers.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">
                         No transfers found
@@ -392,13 +380,13 @@ const InventoryTransfer = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="history" className="mt-4">
           <Card>
             <CardHeader>
               <CardTitle>Transfer History</CardTitle>
               <CardDescription>
-                Archived list of all completed and cancelled stock transfers
+                Archived list of all completed and cancelled stock transfers (Live)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -416,8 +404,13 @@ const InventoryTransfer = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockTransfers.map((transfer) => {
-                    const item = mockItems.find(i => i.id === transfer.itemId);
+                  {loadingTransfers && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center">Loading...</TableCell>
+                    </TableRow>
+                  )}
+                  {!loadingTransfers && transfers.map((transfer) => {
+                    const item = mockItems.find(i => i.id === transfer.item_id);
                     return (
                       <TableRow key={transfer.id}>
                         <TableCell className="font-medium">{transfer.id}</TableCell>
@@ -427,28 +420,28 @@ const InventoryTransfer = () => {
                               <div>{item.name}</div>
                               <div className="text-xs text-muted-foreground">{item.brand} {item.model}</div>
                             </>
-                          ) : transfer.itemId}
+                          ) : transfer.item_id}
                         </TableCell>
                         <TableCell>{transfer.quantity}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {getLocationIcon(transfer.sourceType as LocationType)}
+                            {getLocationIcon(transfer.source_type as LocationType)}
                             {getSourceLocationName(transfer)}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
-                            {getLocationIcon(transfer.destinationType as LocationType)}
+                            {getLocationIcon(transfer.destination_type as LocationType)}
                             {getDestinationLocationName(transfer)}
                           </div>
                         </TableCell>
-                        <TableCell>{new Date(transfer.requestDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(transfer.request_date).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">
                             {transfer.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{transfer.transferMethod}</TableCell>
+                        <TableCell>{transfer.transfer_method}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -458,7 +451,7 @@ const InventoryTransfer = () => {
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       <Dialog open={showNewTransferDialog} onOpenChange={setShowNewTransferDialog}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -467,7 +460,6 @@ const InventoryTransfer = () => {
               Create a request to transfer stock between branches and warehouses
             </DialogDescription>
           </DialogHeader>
-          
           <form onSubmit={handleSubmitTransfer} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="transfer-item">Item</Label>
@@ -487,7 +479,6 @@ const InventoryTransfer = () => {
                 </SelectContent>
               </Select>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="transfer-quantity">Quantity</Label>
               <Input
@@ -499,7 +490,6 @@ const InventoryTransfer = () => {
                 required
               />
             </div>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
                 <div className="border rounded-md p-4">
@@ -507,7 +497,6 @@ const InventoryTransfer = () => {
                     <ArrowLeftRight className="h-4 w-4" />
                     Source
                   </h3>
-                  
                   <div className="space-y-2 mb-4">
                     <Label htmlFor="source-type">Source Type</Label>
                     <Select 
@@ -528,7 +517,6 @@ const InventoryTransfer = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
                   {transferForm.sourceType === "Branch" ? (
                     <div className="space-y-2">
                       <Label htmlFor="source-branch">Source Branch</Label>
@@ -568,14 +556,12 @@ const InventoryTransfer = () => {
                   )}
                 </div>
               </div>
-              
               <div className="space-y-4">
                 <div className="border rounded-md p-4">
                   <h3 className="font-medium mb-2 flex items-center gap-2">
                     <ArrowLeftRight className="h-4 w-4" />
                     Destination
                   </h3>
-                  
                   <div className="space-y-2 mb-4">
                     <Label htmlFor="destination-type">Destination Type</Label>
                     <Select 
@@ -596,7 +582,6 @@ const InventoryTransfer = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
                   {transferForm.destinationType === "Branch" ? (
                     <div className="space-y-2">
                       <Label htmlFor="destination-branch">Destination Branch</Label>
@@ -637,7 +622,6 @@ const InventoryTransfer = () => {
                 </div>
               </div>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="transfer-method">Transfer Method</Label>
               <Select 
@@ -655,7 +639,6 @@ const InventoryTransfer = () => {
                 </SelectContent>
               </Select>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="transfer-remarks">Remarks</Label>
               <Input
@@ -665,7 +648,6 @@ const InventoryTransfer = () => {
                 onChange={(e) => setTransferForm({ ...transferForm, remarks: e.target.value })}
               />
             </div>
-            
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowNewTransferDialog(false)}>
                 Cancel
