@@ -12,16 +12,21 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Warehouse } from "@/types/inventory";
 import { Plus, Send, Move, Package } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import ItemSelector from "@/components/inventory/ItemSelector";
 
-// Fetch inventory items from Supabase (opening_stock_entries)
-interface RealItem {
+// Define the structure for inventory items
+interface InventoryItem {
   id: string;
   part_name: string;
   brand: string;
   category: string;
-  model?: string;
+  warehouse_id?: string;
+  warehouse_name?: string;
   part_number?: string;
   compatible_models?: string[] | null;
+  quantity: number;
+  purchase_price: number;
 }
 
 const WarehouseTransfer = () => {
@@ -30,12 +35,10 @@ const WarehouseTransfer = () => {
   const [loadingWarehouses, setLoadingWarehouses] = useState(false);
   const [transfers, setTransfers] = useState<any[]>([]);
   const [loadingTransfers, setLoadingTransfers] = useState(false);
-
-  // Real inventory items
-  const [items, setItems] = useState<RealItem[]>([]);
-  const [loadingItems, setLoadingItems] = useState(false);
-
   const [showDialog, setShowDialog] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+
+  // Form state
   const [form, setForm] = useState({
     itemId: "",
     quantity: 1,
@@ -46,7 +49,25 @@ const WarehouseTransfer = () => {
     remarks: ""
   });
 
-  // Fetch warehouses from Supabase
+  // Fetch inventory items from Supabase (opening_stock_entries)
+  const { data: items = [], isLoading: loadingItems } = useQuery({
+    queryKey: ['warehouseTransferItems'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('opening_stock_entries')
+        .select('*')
+        .order('part_name');
+      
+      if (error) {
+        toast.error("Failed to load items: " + error.message);
+        throw error;
+      }
+      
+      return data as InventoryItem[];
+    }
+  });
+
+  // Fetch warehouse data
   useEffect(() => {
     const fetchWarehouses = async () => {
       setLoadingWarehouses(true);
@@ -55,11 +76,13 @@ const WarehouseTransfer = () => {
         .select("*")
         .eq("is_active", true)
         .order("name");
+      
       if (error) {
         toast.error("Failed to load warehouses: " + error.message);
         setLoadingWarehouses(false);
         return;
       }
+      
       // Transform the data to match the Warehouse interface
       const transformedWarehouses: Warehouse[] = data.map(warehouse => ({
         id: warehouse.id,
@@ -72,65 +95,46 @@ const WarehouseTransfer = () => {
         isActive: warehouse.is_active,
         createdAt: warehouse.created_at
       }));
+      
       setWarehouses(transformedWarehouses);
       setLoadingWarehouses(false);
     };
+    
     fetchWarehouses();
   }, []);
 
-  // Fetch only warehouse-to-warehouse transfers
+  // Fetch warehouse-to-warehouse transfers
   useEffect(() => {
     const fetchTransfers = async () => {
       setLoadingTransfers(true);
+      // Fetch both transfer data and related item details in one query
       const { data, error } = await supabase
         .from("inventory_transfers")
-        .select("*")
+        .select(`
+          *,
+          item:item_id (part_name, brand, category, part_number)
+        `)
         .eq("source_type", "Warehouse")
         .eq("destination_type", "Warehouse")
         .order("request_date", { ascending: false });
+      
       if (error) {
         toast.error("Failed to load transfers: " + error.message);
         setLoadingTransfers(false);
         return;
       }
+      
       setTransfers(data || []);
       setLoadingTransfers(false);
     };
+    
     fetchTransfers();
-  }, []);
-
-  // Fetch items from opening_stock_entries
-  useEffect(() => {
-    const fetchItems = async () => {
-      setLoadingItems(true);
-      const { data, error } = await supabase
-        .from("opening_stock_entries")
-        .select("*")
-        .order("part_name");
-      if (error) {
-        toast.error("Failed to load items: " + error.message);
-        setLoadingItems(false);
-        return;
-      }
-      const transformed: RealItem[] = (data || []).map((item: any) => ({
-        id: item.id,
-        part_name: item.part_name,
-        brand: item.brand,
-        category: item.category,
-        model: Array.isArray(item.compatible_models) && item.compatible_models.length > 0 ? item.compatible_models[0] : "",
-        part_number: item.part_number,
-        compatible_models: item.compatible_models,
-      }));
-      setItems(transformed);
-      setLoadingItems(false);
-    };
-    fetchItems();
   }, []);
 
   // Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.itemId) {
+    if (!selectedItem) {
       toast.error("Please select an item.");
       return;
     }
@@ -142,9 +146,10 @@ const WarehouseTransfer = () => {
       toast.error("Source and destination warehouses cannot be the same!");
       return;
     }
+    
     // Insert transfer
     const { error } = await supabase.from("inventory_transfers").insert({
-      item_id: form.itemId,
+      item_id: selectedItem.id,
       quantity: form.quantity,
       source_type: "Warehouse",
       source_warehouse_id: form.sourceWarehouseId,
@@ -156,19 +161,27 @@ const WarehouseTransfer = () => {
       requested_by: "Current User",
       status: "Requested"
     });
+    
     if (error) {
       toast.error("Failed to create warehouse transfer: " + error.message);
       return;
     }
+    
     toast.success("Warehouse transfer request created!");
+    
     // Reload transfers
     const { data } = await supabase
       .from("inventory_transfers")
-      .select("*")
+      .select(`
+        *,
+        item:item_id (part_name, brand, category, part_number)
+      `)
       .eq("source_type", "Warehouse")
       .eq("destination_type", "Warehouse")
       .order("request_date", { ascending: false });
+    
     setTransfers(data || []);
+    
     // Reset form and close dialog
     setForm({
       itemId: "",
@@ -179,6 +192,7 @@ const WarehouseTransfer = () => {
       trackingNumber: "",
       remarks: ""
     });
+    setSelectedItem(null);
     setShowDialog(false);
   };
 
@@ -186,10 +200,16 @@ const WarehouseTransfer = () => {
   const getWarehouseName = (id: string) => {
     return warehouses.find(w => w.id === id)?.name || id;
   };
+  
   const getWarehouseLocation = (id: string) => {
     return warehouses.find(w => w.id === id)?.location || "";
   };
-  const getItemDetails = (itemId: string) => items.find(i => i.id === itemId);
+
+  // Handle item selection
+  const handleItemSelect = (item: any) => {
+    setSelectedItem(item);
+    setForm({ ...form, itemId: item.id });
+  };
 
   return (
     <div className="container p-6">
@@ -238,21 +258,22 @@ const WarehouseTransfer = () => {
                       <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                     </TableRow>
                   )}
-                  {!loadingTransfers && transfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").map((transfer) => {
-                    const item = getItemDetails(transfer.item_id);
-                    return (
+                  {!loadingTransfers && transfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").map((transfer) => (
                     <TableRow key={transfer.id}>
-                      <TableCell className="font-medium">{transfer.id}</TableCell>
+                      <TableCell className="font-medium">{transfer.id.slice(0, 8)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2 items-center">
                           <Package className="h-4 w-4" />
-                          {item ? (
+                          {transfer.item ? (
                             <>
-                              {item.part_name}
-                              <span className="text-xs text-muted-foreground ml-1">{item.brand}{item.model && ` (${item.model})`}</span>
+                              {transfer.item.part_name}
+                              <span className="text-xs text-muted-foreground ml-1">
+                                {transfer.item.brand}
+                                {transfer.item.part_number && ` (${transfer.item.part_number})`}
+                              </span>
                             </>
                           ) : (
-                            transfer.item_id
+                            "Item not found"
                           )}
                         </div>
                       </TableCell>
@@ -283,8 +304,7 @@ const WarehouseTransfer = () => {
                       </TableCell>
                       <TableCell>{transfer.transfer_method || "-"}</TableCell>
                     </TableRow>
-                  )}
-                  )}
+                  ))}
                   {!loadingTransfers && transfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">No active warehouse transfers</TableCell>
@@ -324,21 +344,22 @@ const WarehouseTransfer = () => {
                       <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                     </TableRow>
                   )}
-                  {!loadingTransfers && transfers.filter(t => t.status === "Received" || t.status === "Cancelled").map((transfer) => {
-                    const item = getItemDetails(transfer.item_id);
-                    return (
+                  {!loadingTransfers && transfers.filter(t => t.status === "Received" || t.status === "Cancelled").map((transfer) => (
                     <TableRow key={transfer.id}>
-                      <TableCell className="font-medium">{transfer.id}</TableCell>
+                      <TableCell className="font-medium">{transfer.id.slice(0, 8)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2 items-center">
                           <Package className="h-4 w-4" />
-                          {item ? (
+                          {transfer.item ? (
                             <>
-                              {item.part_name}
-                              <span className="text-xs text-muted-foreground ml-1">{item.brand}{item.model && ` (${item.model})`}</span>
+                              {transfer.item.part_name}
+                              <span className="text-xs text-muted-foreground ml-1">
+                                {transfer.item.brand}
+                                {transfer.item.part_number && ` (${transfer.item.part_number})`}
+                              </span>
                             </>
                           ) : (
-                            transfer.item_id
+                            "Item not found"
                           )}
                         </div>
                       </TableCell>
@@ -369,8 +390,7 @@ const WarehouseTransfer = () => {
                       </TableCell>
                       <TableCell>{transfer.transfer_method || "-"}</TableCell>
                     </TableRow>
-                  )}
-                  )}
+                  ))}
                   {!loadingTransfers && transfers.filter(t => t.status === "Received" || t.status === "Cancelled").length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">No history transfers</TableCell>
@@ -384,7 +404,7 @@ const WarehouseTransfer = () => {
       </Tabs>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="sm:max-w-[540px]">
+        <DialogContent className="sm:max-w-[740px]">
           <DialogHeader>
             <DialogTitle>New Warehouse Transfer</DialogTitle>
             <DialogDescription>
@@ -392,31 +412,56 @@ const WarehouseTransfer = () => {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Item Selection */}
             <div className="space-y-2">
-              <Label htmlFor="item-id">Item</Label>
-              <Select
-                value={form.itemId}
-                onValueChange={(value) => setForm({ ...form, itemId: value })}
-              >
-                <SelectTrigger id="item-id">
-                  <SelectValue placeholder={loadingItems ? "Loading..." : "Select Item"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {items.map(item => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.part_name} - {item.brand}
-                      {item.model ? ` (${item.model})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="item-id">Select Item to Transfer</Label>
+              {loadingItems ? (
+                <div className="h-12 bg-muted animate-pulse rounded-md"></div>
+              ) : (
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item Name</TableHead>
+                        <TableHead>Brand</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Current Warehouse</TableHead>
+                        <TableHead>Quantity</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-4">No items found.</TableCell>
+                        </TableRow>
+                      ) : (
+                        items.map(item => (
+                          <TableRow 
+                            key={item.id} 
+                            className={selectedItem?.id === item.id ? "bg-muted cursor-pointer" : "cursor-pointer"}
+                            onClick={() => handleItemSelect(item)}
+                          >
+                            <TableCell className="font-medium">{item.part_name}</TableCell>
+                            <TableCell>{item.brand}</TableCell>
+                            <TableCell>{item.category}</TableCell>
+                            <TableCell>{item.warehouse_name || "Not specified"}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="quantity">Quantity</Label>
               <Input
                 id="quantity"
                 type="number"
                 min={1}
+                max={selectedItem?.quantity || 1}
                 value={form.quantity}
                 onChange={e => setForm({ ...form, quantity: parseInt(e.target.value) })}
                 required
@@ -499,7 +544,7 @@ const WarehouseTransfer = () => {
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={!selectedItem}>
                 <Send className="h-4 w-4 mr-2" />
                 Create Transfer Request
               </Button>
@@ -512,4 +557,3 @@ const WarehouseTransfer = () => {
 };
 
 export default WarehouseTransfer;
-
