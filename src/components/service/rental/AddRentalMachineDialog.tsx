@@ -61,6 +61,7 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
   const onSubmit = async (values: FormValues) => {
     try {
       // Insert into amc_machines table with the correct field names
+      // Note: We need to adjust our field names to match what the database expects
       const { error } = await supabase.from('amc_machines').insert({
         model: values.model,
         serial_number: values.serialNumber,
@@ -75,6 +76,7 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
         department: values.department || null,
         machine_type: 'Copier',
         contract_type: 'Rental',
+        contract_id: null, // Adding this field since the database schema expects it
         last_a4_reading: values.initialA4Reading ? parseInt(values.initialA4Reading) : 0,
         last_a3_reading: values.initialA3Reading ? parseInt(values.initialA3Reading) : 0,
         last_reading_date: values.startDate
