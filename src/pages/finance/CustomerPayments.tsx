@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { paymentEntries, paymentMethods } from "@/data/finance";
+import React, { useState, useEffect } from "react";
+import { paymentMethods } from "@/data/finance";
 import EntryTable from "@/components/finance/EntryTable";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
 import { Badge } from "@/components/ui/badge";
@@ -12,22 +12,68 @@ import { format } from "date-fns";
 import { Payment } from "@/types/finance";
 import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { formatCurrency } from "@/utils/finance/financeUtils";
 
 const CustomerPayments = () => {
-  const [entries, setEntries] = useState<Payment[]>(paymentEntries);
+  const [entries, setEntries] = useState<Payment[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<Partial<Payment>>({
     date: format(new Date(), "yyyy-MM-dd"),
     entityType: "Customer",
     receivedBy: "Current User"
   });
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
+  useEffect(() => {
+    fetchPaymentEntries();
+  }, []);
+
+  const fetchPaymentEntries = async () => {
+    setLoading(true);
+    
+    try {
+      // Fetch payments from cash_entries table where type is Income
+      // These represent customer payments (revenue)
+      const { data, error } = await supabase
+        .from("cash_entries")
+        .select("*")
+        .eq("type", "Income")
+        .order("date", { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        // Transform the cash entries into the Payment type format
+        const formattedEntries: Payment[] = data.map(entry => ({
+          id: entry.id,
+          date: entry.date,
+          entityType: "Customer",
+          entityName: entry.description.split(' ')[0] || "Customer", // Extract customer name from description if possible
+          amount: entry.amount,
+          paymentMethod: entry.payment_method,
+          reference: entry.reference || "",
+          description: entry.description,
+          invoiceNumbers: entry.invoice_number ? [entry.invoice_number] : [],
+          receivedBy: entry.entered_by
+        }));
+        
+        setEntries(formattedEntries);
+      }
+    } catch (error: any) {
+      console.error("Error fetching payments:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to load payment data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleOpenDialog = () => {
@@ -43,35 +89,93 @@ const CustomerPayments = () => {
     setIsDialogOpen(false);
   };
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = async () => {
     if (
       !currentEntry.date ||
       !currentEntry.entityType ||
       !currentEntry.entityName ||
       !currentEntry.amount ||
       !currentEntry.paymentMethod ||
-      !currentEntry.reference ||
       !currentEntry.description
     ) {
-      // In a real app, show validation message
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
       return;
     }
 
-    const newEntry: Payment = {
-      id: uuidv4(),
-      date: currentEntry.date,
-      entityType: currentEntry.entityType as 'Customer' | 'Dealer',
-      entityName: currentEntry.entityName,
-      amount: Number(currentEntry.amount),
-      paymentMethod: currentEntry.paymentMethod,
-      reference: currentEntry.reference,
-      description: currentEntry.description,
-      invoiceNumbers: currentEntry.invoiceNumbers,
-      receivedBy: currentEntry.receivedBy || "Current User"
-    };
+    setLoading(true);
 
-    setEntries([newEntry, ...entries]);
-    setIsDialogOpen(false);
+    try {
+      // Insert into cash_entries for tracking payments
+      const insertData = {
+        id: uuidv4(),
+        date: currentEntry.date,
+        amount: Number(currentEntry.amount),
+        type: "Income", // This indicates it's a payment received (revenue)
+        department: currentEntry.entityType === "Customer" ? "Sales" : "Dealer",
+        category: "Payment",
+        description: `${currentEntry.entityName} - ${currentEntry.description}`,
+        payment_method: currentEntry.paymentMethod,
+        reference: currentEntry.reference || "",
+        entered_by: currentEntry.receivedBy || "Current User",
+        invoice_number: currentEntry.invoiceNumbers?.join(", ") || null
+      };
+
+      const { error } = await supabase
+        .from("cash_entries")
+        .insert([insertData]);
+      
+      if (error) throw error;
+
+      // If this payment is for a specific receivable, update the receivable record
+      if (currentEntry.invoiceNumbers && currentEntry.invoiceNumbers.length > 0) {
+        // Update each receivable with this invoice number
+        for (const invoiceNumber of currentEntry.invoiceNumbers) {
+          const { data: receivableData } = await supabase
+            .from("receivables")
+            .select("*")
+            .eq("invoiceNumber", invoiceNumber)
+            .single();
+          
+          if (receivableData) {
+            const newAmountPaid = (receivableData.amountPaid || 0) + Number(currentEntry.amount);
+            const newBalance = receivableData.amount - newAmountPaid;
+            const newStatus = newBalance <= 0 ? "Cleared" : "Partial";
+            
+            await supabase
+              .from("receivables")
+              .update({
+                amountPaid: newAmountPaid,
+                balance: newBalance,
+                status: newStatus,
+                paymentMethod: currentEntry.paymentMethod
+              })
+              .eq("id", receivableData.id);
+          }
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: "Payment entry added successfully.",
+      });
+
+      // Refresh the data
+      fetchPaymentEntries();
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error adding payment:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to add payment entry. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string | number | string[]) => {
@@ -84,11 +188,11 @@ const CustomerPayments = () => {
   // Calculate total payments by type
   const customerTotal = entries
     .filter(entry => entry.entityType === "Customer")
-    .reduce((sum, entry) => sum + entry.amount, 0);
+    .reduce((sum, entry) => sum + Number(entry.amount), 0);
   
   const dealerTotal = entries
     .filter(entry => entry.entityType === "Dealer")
-    .reduce((sum, entry) => sum + entry.amount, 0);
+    .reduce((sum, entry) => sum + Number(entry.amount), 0);
 
   const columns = [
     {
@@ -111,7 +215,7 @@ const CustomerPayments = () => {
     {
       key: "amount",
       header: "Amount",
-      cell: (row: Payment) => formatCurrency(row.amount)
+      cell: (row: Payment) => formatCurrency(Number(row.amount))
     },
     {
       key: "paymentMethod",
@@ -173,6 +277,7 @@ const CustomerPayments = () => {
         data={entries} 
         onAdd={handleOpenDialog}
         addButtonText="Add Payment Entry"
+        isLoading={loading}
       />
 
       <EntryFormDialog
@@ -180,6 +285,7 @@ const CustomerPayments = () => {
         onClose={handleCloseDialog}
         title="Add Payment Entry"
         onSubmit={handleFormSubmit}
+        isSubmitting={loading}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           <div className="space-y-2">
@@ -265,7 +371,7 @@ const CustomerPayments = () => {
               placeholder="e.g. INV-001, INV-002" 
               value={currentEntry.invoiceNumbers?.join(", ") || ""} 
               onChange={(e) => {
-                const invoiceArray = e.target.value.split(",").map(s => s.trim());
+                const invoiceArray = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
                 handleInputChange("invoiceNumbers", invoiceArray);
               }} 
             />

@@ -552,6 +552,7 @@ export type Database = {
           last_follow_up_notes: string | null
           sale_id: string | null
           status: string
+          type: string | null
         }
         Insert: {
           created_at?: string | null
@@ -562,6 +563,7 @@ export type Database = {
           last_follow_up_notes?: string | null
           sale_id?: string | null
           status: string
+          type?: string | null
         }
         Update: {
           created_at?: string | null
@@ -572,6 +574,7 @@ export type Database = {
           last_follow_up_notes?: string | null
           sale_id?: string | null
           status?: string
+          type?: string | null
         }
         Relationships: [
           {
@@ -1130,6 +1133,80 @@ export type Database = {
         }
         Relationships: []
       }
+      payables: {
+        Row: {
+          amount: number
+          amount_paid: number | null
+          balance: number
+          branch: string | null
+          created_at: string
+          department: string | null
+          description: string | null
+          due_date: string
+          id: string
+          invoice_number: string | null
+          last_follow_up: string | null
+          notes: string | null
+          payment_method: string | null
+          po_number: string | null
+          priority: string
+          status: string
+          updated_at: string
+          vendor_id: string | null
+          vendor_name: string
+        }
+        Insert: {
+          amount: number
+          amount_paid?: number | null
+          balance: number
+          branch?: string | null
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          invoice_number?: string | null
+          last_follow_up?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          po_number?: string | null
+          priority?: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name: string
+        }
+        Update: {
+          amount?: number
+          amount_paid?: number | null
+          balance?: number
+          branch?: string | null
+          created_at?: string
+          department?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          invoice_number?: string | null
+          last_follow_up?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          po_number?: string | null
+          priority?: string
+          status?: string
+          updated_at?: string
+          vendor_id?: string | null
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payables_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_orders: {
         Row: {
           created_at: string
@@ -1245,6 +1322,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      receivables: {
+        Row: {
+          amount: number
+          amountpaid: number | null
+          balance: number
+          branch: string | null
+          contactnumber: string | null
+          contactperson: string | null
+          created_at: string
+          customer: string
+          customer_id: string | null
+          date: string
+          department: string | null
+          duedate: string
+          id: string
+          invoicenumber: string
+          lastfollowup: string | null
+          notes: string | null
+          paymentmethod: string | null
+          paymentmode: string | null
+          priority: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          amountpaid?: number | null
+          balance: number
+          branch?: string | null
+          contactnumber?: string | null
+          contactperson?: string | null
+          created_at?: string
+          customer: string
+          customer_id?: string | null
+          date: string
+          department?: string | null
+          duedate: string
+          id?: string
+          invoicenumber: string
+          lastfollowup?: string | null
+          notes?: string | null
+          paymentmethod?: string | null
+          paymentmode?: string | null
+          priority?: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          amountpaid?: number | null
+          balance?: number
+          branch?: string | null
+          contactnumber?: string | null
+          contactperson?: string | null
+          created_at?: string
+          customer?: string
+          customer_id?: string | null
+          date?: string
+          department?: string | null
+          duedate?: string
+          id?: string
+          invoicenumber?: string
+          lastfollowup?: string | null
+          notes?: string | null
+          paymentmethod?: string | null
+          paymentmode?: string | null
+          priority?: string
+          status?: string
+        }
+        Relationships: []
       }
       sale_payments: {
         Row: {

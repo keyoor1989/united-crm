@@ -1,17 +1,12 @@
 
-import React, { useState } from "react";
-import { format, addDays, isAfter, isBefore } from "date-fns";
+import React, { useState, useEffect } from "react";
+import { format, addDays, isAfter, isBefore, parseISO } from "date-fns";
 import { 
-  User, 
   CalendarIcon, 
-  DollarSign, 
-  Building, 
-  PieChart, 
-  AlertCircle, 
-  Check,
-  MessageSquare,
+  Download,
   FileText,
-  Download
+  Check,
+  MessageSquare
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { useForm } from "react-hook-form";
@@ -46,10 +41,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import DateRangeFilter from "@/components/finance/DateRangeFilter";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
-import { receivableEntries } from "@/data/finance/receivableEntries";
 import { departments } from "@/data/finance/types";
 import { Receivable } from "@/types/finance";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -57,6 +50,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/components/ui/use-toast";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency } from "@/utils/finance/financeUtils";
 
 const formSchema = z.object({
   customer: z.string().min(2, { message: "Customer name is required" }),
@@ -76,9 +71,10 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const OutstandingReceivables = () => {
-  const [receivables, setReceivables] = useState<Receivable[]>(receivableEntries);
+  const [receivables, setReceivables] = useState<Receivable[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState<string>("");
   const [filterBranch, setFilterBranch] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
@@ -107,6 +103,59 @@ const OutstandingReceivables = () => {
   const watchAmountPaid = form.watch("amountPaid");
   const balance = (watchAmount || 0) - (watchAmountPaid || 0);
 
+  useEffect(() => {
+    fetchReceivables();
+  }, []);
+
+  const fetchReceivables = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('receivables')
+        .select('*')
+        .order('duedate', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        // Transform database column names to match our frontend naming convention
+        const transformedData = data.map(item => ({
+          id: item.id,
+          invoiceNumber: item.invoicenumber,
+          customer: item.customer,
+          date: item.date,
+          dueDate: item.duedate,
+          amount: item.amount,
+          amountPaid: item.amountpaid || 0,
+          balance: item.balance,
+          status: item.status,
+          notes: item.notes || "",
+          contactPerson: item.contactperson || "",
+          contactNumber: item.contactnumber || "",
+          priority: item.priority as 'Low' | 'Medium' | 'High',
+          lastFollowUp: item.lastfollowup || null,
+          paymentMode: item.paymentmode || "",
+          department: item.department || "",
+          branch: item.branch || "",
+          paymentMethod: item.paymentmethod || ""
+        }));
+        
+        setReceivables(transformedData);
+      }
+    } catch (error: any) {
+      console.error("Error fetching receivables:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to load receivables data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const totalOutstanding = receivables
     .filter(r => r.status !== "Cleared")
     .reduce((sum, item) => sum + item.balance, 0);
@@ -120,7 +169,7 @@ const OutstandingReceivables = () => {
     .sort((a, b) => b.balance - a.balance)
     .slice(0, 5);
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     
     const balance = data.amount - data.amountPaid;
@@ -135,67 +184,164 @@ const OutstandingReceivables = () => {
       status = 'Due Soon';
     }
     
-    const newReceivable: Receivable = {
-      id: uuidv4(),
-      invoiceNumber: data.invoiceNumber,
-      customer: data.customer,
-      date: format(new Date(), "yyyy-MM-dd"),
-      dueDate: format(data.dueDate, "yyyy-MM-dd"),
-      amount: data.amount,
-      amountPaid: data.amountPaid,
-      balance,
-      status,
-      notes: data.notes,
-      contactPerson: data.contactPerson,
-      contactNumber: data.contactNumber,
-      priority: data.priority,
-      paymentMode: data.paymentMode,
-      department: data.department,
-      branch: data.branch,
-    };
-    
-    setReceivables((prev) => [newReceivable, ...prev]);
-    form.reset();
-    setIsDialogOpen(false);
-    setIsSubmitting(false);
-    
-    toast({
-      title: "Receivable Added",
-      description: `Successfully added receivable for ${data.customer}`,
-    });
+    try {
+      // Insert into Supabase using column names matching the database schema
+      const { error } = await supabase
+        .from('receivables')
+        .insert({
+          id: uuidv4(),
+          invoicenumber: data.invoiceNumber,
+          customer: data.customer,
+          date: format(new Date(), "yyyy-MM-dd"),
+          duedate: format(data.dueDate, "yyyy-MM-dd"),
+          amount: data.amount,
+          amountpaid: data.amountPaid,
+          balance,
+          status,
+          notes: data.notes,
+          contactperson: data.contactPerson,
+          contactnumber: data.contactNumber,
+          priority: data.priority,
+          paymentmode: data.paymentMode,
+          department: data.department,
+          branch: data.branch
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Receivable Added",
+        description: `Successfully added receivable for ${data.customer}`,
+      });
+      
+      // Refresh the receivables list
+      fetchReceivables();
+      form.reset();
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error("Error adding receivable:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to add receivable. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const markAsPaid = (id: string) => {
-    setReceivables((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            amountPaid: item.amount,
-            balance: 0,
-            status: "Cleared" as const,
-          };
-        }
-        return item;
-      })
-    );
-    
-    toast({
-      title: "Payment Recorded",
-      description: "Receivable has been marked as paid",
-    });
+  const markAsPaid = async (id: string) => {
+    try {
+      const receivable = receivables.find(r => r.id === id);
+      
+      if (!receivable) {
+        throw new Error("Receivable not found");
+      }
+      
+      const { error } = await supabase
+        .from('receivables')
+        .update({
+          amountpaid: receivable.amount,
+          balance: 0,
+          status: "Cleared"
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Also record this payment in cash_entries
+      await supabase
+        .from('cash_entries')
+        .insert({
+          id: uuidv4(),
+          date: format(new Date(), "yyyy-MM-dd"),
+          amount: receivable.balance,
+          type: "Income",
+          category: "Payment",
+          department: receivable.department || "Sales",
+          description: `Payment received for invoice ${receivable.invoiceNumber} from ${receivable.customer}`,
+          payment_method: receivable.paymentMethod || "Cash",
+          entered_by: "System", // Could be replaced with the current user
+          reference: receivable.invoiceNumber,
+          invoice_number: receivable.invoiceNumber
+        });
+      
+      // Update the UI
+      setReceivables(prev =>
+        prev.map(item => {
+          if (item.id === id) {
+            return {
+              ...item,
+              amountPaid: item.amount,
+              balance: 0,
+              status: "Cleared" as const,
+            };
+          }
+          return item;
+        })
+      );
+      
+      toast({
+        title: "Payment Recorded",
+        description: "Receivable has been marked as paid",
+      });
+    } catch (error: any) {
+      console.error("Error marking receivable as paid:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to update payment status. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const sendReminder = (id: string) => {
-    const receivable = receivables.find(r => r.id === id);
-    
-    toast({
-      title: "Reminder Sent",
-      description: `Payment reminder sent to ${receivable?.customer}`,
-    });
+  const sendReminder = async (id: string) => {
+    try {
+      const receivable = receivables.find(r => r.id === id);
+      
+      if (!receivable) {
+        throw new Error("Receivable not found");
+      }
+      
+      // Update the last follow-up date
+      const { error } = await supabase
+        .from('receivables')
+        .update({
+          lastfollowup: format(new Date(), "yyyy-MM-dd")
+        })
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setReceivables(prev =>
+        prev.map(item => {
+          if (item.id === id) {
+            return {
+              ...item,
+              lastFollowUp: format(new Date(), "yyyy-MM-dd")
+            };
+          }
+          return item;
+        })
+      );
+      
+      toast({
+        title: "Reminder Sent",
+        description: `Payment reminder sent to ${receivable.customer}`,
+      });
+    } catch (error: any) {
+      console.error("Error sending reminder:", error.message);
+      toast({
+        title: "Error",
+        description: "Failed to send reminder. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const generateReceipt = (id: string) => {
+    // This function could be expanded to generate a PDF receipt
     toast({
       title: "Receipt Generated",
       description: "Receipt has been generated and is ready to download",
@@ -204,9 +350,22 @@ const OutstandingReceivables = () => {
 
   const filteredReceivables = receivables.filter((receivable) => {
     const receivableDate = new Date(receivable.dueDate);
+    
+    // Ensure proper date comparison by handling string dates
+    let receivableDateObj: Date;
+    try {
+      // Try to parse the date if it's a string
+      receivableDateObj = typeof receivable.dueDate === 'string' 
+        ? parseISO(receivable.dueDate)
+        : receivableDate;
+    } catch (e) {
+      // If parse fails, use the original value
+      receivableDateObj = receivableDate;
+    }
+    
     const filterDateMatch = 
-      (isAfter(receivableDate, startDate) || format(receivableDate, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd")) && 
-      (isBefore(receivableDate, endDate) || format(receivableDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd"));
+      (isAfter(receivableDateObj, startDate) || format(receivableDateObj, "yyyy-MM-dd") === format(startDate, "yyyy-MM-dd")) && 
+      (isBefore(receivableDateObj, endDate) || format(receivableDateObj, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd"));
     
     const departmentMatch = !filterDepartment || filterDepartment === "all" || receivable.department === filterDepartment;
     const branchMatch = !filterBranch || filterBranch === "all" || receivable.branch === filterBranch;
@@ -364,7 +523,13 @@ const OutstandingReceivables = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredReceivables.length > 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-4">
+                  Loading receivables...
+                </TableCell>
+              </TableRow>
+            ) : filteredReceivables.length > 0 ? (
               filteredReceivables.map((receivable) => (
                 <TableRow key={receivable.id}>
                   <TableCell>{new Date(receivable.dueDate).toLocaleDateString()}</TableCell>
