@@ -1,19 +1,14 @@
+
 import React, { useState, useEffect } from "react";
 import { paymentMethods } from "@/data/finance";
-import EntryTable from "@/components/finance/EntryTable";
-import EntryFormDialog from "@/components/finance/EntryFormDialog";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format } from "date-fns";
+import PaymentList from "@/components/finance/PaymentList";
+import PaymentForm from "@/components/finance/PaymentForm";
+import PaymentSummaryCards from "@/components/finance/PaymentSummaryCards";
 import { Payment } from "@/types/finance";
 import { v4 as uuidv4 } from "uuid";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { formatCurrency } from "@/utils/finance/financeUtils";
+import { format } from "date-fns";
 
 // Define a type for the raw data coming from Supabase
 type RawCashEntry = {
@@ -25,7 +20,7 @@ type RawCashEntry = {
   description: string;
   payment_method: string;
   entered_by: string;
-  type: string;
+  type: string; // Accept any string here safely for mapping
   reference?: string;
   branch?: string;
   invoice_number?: string;
@@ -75,10 +70,8 @@ const CustomerPayments = () => {
 
   const fetchPaymentEntries = async () => {
     setLoading(true);
-    
     try {
       // Fetch payments from cash_entries table where type is Income
-      // These represent customer payments (revenue)
       const { data, error } = await supabase
         .from("cash_entries")
         .select("*")
@@ -180,7 +173,7 @@ const CustomerPayments = () => {
             .from("receivables")
             .select("*")
             .eq("invoicenumber", invoiceNumber)
-            .single();
+            .maybeSingle();
           
           if (receivableData) {
             const newAmountPaid = (receivableData.amountpaid || 0) + Number(currentEntry.amount);
@@ -227,60 +220,8 @@ const CustomerPayments = () => {
     });
   };
 
-  // Calculate total payments by type
-  const customerTotal = entries
-    .filter(entry => entry.entityType === "Customer")
-    .reduce((sum, entry) => sum + Number(entry.amount), 0);
-  
-  const dealerTotal = entries
-    .filter(entry => entry.entityType === "Dealer")
-    .reduce((sum, entry) => sum + Number(entry.amount), 0);
-
-  const columns = [
-    {
-      key: "date",
-      header: "Date"
-    },
-    {
-      key: "entityType",
-      header: "Type",
-      cell: (row: Payment) => (
-        <Badge variant={row.entityType === "Customer" ? "default" : "secondary"}>
-          {row.entityType}
-        </Badge>
-      )
-    },
-    {
-      key: "entityName",
-      header: "Name"
-    },
-    {
-      key: "amount",
-      header: "Amount",
-      cell: (row: Payment) => formatCurrency(Number(row.amount))
-    },
-    {
-      key: "paymentMethod",
-      header: "Payment Method"
-    },
-    {
-      key: "reference",
-      header: "Reference"
-    },
-    {
-      key: "description",
-      header: "Description"
-    },
-    {
-      key: "invoiceNumbers",
-      header: "Invoices",
-      cell: (row: Payment) => row.invoiceNumbers?.join(", ") || "-"
-    },
-    {
-      key: "receivedBy",
-      header: "Received By"
-    }
-  ];
+  // Columns for PaymentList (can be customized further if needed)
+  const columns = undefined; // falling back to defaults for PaymentList
 
   return (
     <div className="space-y-6">
@@ -288,159 +229,23 @@ const CustomerPayments = () => {
         <h1 className="text-3xl font-bold">Dealer / Customer Payments</h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Customer Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(customerTotal)}</div>
-            <p className="text-xs text-muted-foreground">
-              {entries.filter(e => e.entityType === "Customer").length} payments received
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Dealer Payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(dealerTotal)}</div>
-            <p className="text-xs text-muted-foreground">
-              {entries.filter(e => e.entityType === "Dealer").length} payments made
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <PaymentSummaryCards entries={entries} />
 
-      <EntryTable 
-        columns={columns} 
-        data={entries} 
-        onAdd={handleOpenDialog}
-        addButtonText="Add Payment Entry"
+      <PaymentList 
+        data={entries}
+        columns={columns}
         isLoading={loading}
+        onAdd={handleOpenDialog}
       />
 
-      <EntryFormDialog
+      <PaymentForm
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
-        title="Add Payment Entry"
         onSubmit={handleFormSubmit}
         isSubmitting={loading}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="date">Date *</Label>
-            <Input 
-              id="date" 
-              type="date" 
-              value={currentEntry.date} 
-              onChange={(e) => handleInputChange("date", e.target.value)} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="entityType">Payment Type *</Label>
-            <Select 
-              value={currentEntry.entityType} 
-              onValueChange={(value) => handleInputChange("entityType", value)}
-            >
-              <SelectTrigger id="entityType">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Customer">Customer Payment</SelectItem>
-                <SelectItem value="Dealer">Dealer Payment</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="entityName">
-              {currentEntry.entityType === "Customer" ? "Customer Name *" : "Dealer Name *"}
-            </Label>
-            <Input 
-              id="entityName" 
-              placeholder={`Enter ${currentEntry.entityType?.toLowerCase() || "entity"} name`} 
-              value={currentEntry.entityName || ""} 
-              onChange={(e) => handleInputChange("entityName", e.target.value)} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount (₹) *</Label>
-            <Input 
-              id="amount" 
-              type="number" 
-              placeholder="Enter amount" 
-              value={currentEntry.amount || ""} 
-              onChange={(e) => handleInputChange("amount", e.target.value)} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="paymentMethod">Payment Method *</Label>
-            <Select 
-              value={currentEntry.paymentMethod} 
-              onValueChange={(value) => handleInputChange("paymentMethod", value)}
-            >
-              <SelectTrigger id="paymentMethod">
-                <SelectValue placeholder="Select payment method" />
-              </SelectTrigger>
-              <SelectContent>
-                {paymentMethods.map((method) => (
-                  <SelectItem key={method} value={method}>{method}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="reference">Reference Number *</Label>
-            <Input 
-              id="reference" 
-              placeholder="Cheque/Transaction reference" 
-              value={currentEntry.reference || ""} 
-              onChange={(e) => handleInputChange("reference", e.target.value)} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="invoiceNumbers">Invoice Numbers (comma separated)</Label>
-            <Input 
-              id="invoiceNumbers" 
-              placeholder="e.g. INV-001, INV-002" 
-              value={currentEntry.invoiceNumbers?.join(", ") || ""} 
-              onChange={(e) => {
-                const invoiceArray = e.target.value.split(",").map(s => s.trim()).filter(Boolean);
-                handleInputChange("invoiceNumbers", invoiceArray);
-              }} 
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="receivedBy">Received By</Label>
-            <Input 
-              id="receivedBy" 
-              placeholder="Who received the payment" 
-              value={currentEntry.receivedBy || ""} 
-              onChange={(e) => handleInputChange("receivedBy", e.target.value)} 
-            />
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="description">Description *</Label>
-            <Textarea 
-              id="description" 
-              placeholder="Enter description" 
-              value={currentEntry.description || ""} 
-              onChange={(e) => handleInputChange("description", e.target.value)} 
-              rows={3}
-            />
-          </div>
-        </div>
-      </EntryFormDialog>
+        currentEntry={currentEntry}
+        onInputChange={handleInputChange}
+      />
     </div>
   );
 };
