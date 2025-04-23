@@ -25,7 +25,7 @@ const AssignmentFields: React.FC<AssignmentFieldsProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Assigned To</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value || (user ? user.id : "not-assigned")}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select user" />
@@ -34,7 +34,7 @@ const AssignmentFields: React.FC<AssignmentFieldsProps> = ({ form }) => {
               <SelectContent>
                 {/* First show the current user */}
                 {user && (
-                  <SelectItem key={user.id} value={user.id}>
+                  <SelectItem key={user.id} value={user.id || "current-user"}>
                     {user.name || user.email} (Me)
                   </SelectItem>
                 )}
@@ -42,7 +42,7 @@ const AssignmentFields: React.FC<AssignmentFieldsProps> = ({ form }) => {
                 {users
                   .filter(u => !user || u.id !== user.id)
                   .map(u => (
-                    <SelectItem key={u.id} value={u.id}>
+                    <SelectItem key={u.id} value={u.id || `user-${u.name}`}>
                       {u.name} ({u.department})
                     </SelectItem>
                   ))}
@@ -59,7 +59,7 @@ const AssignmentFields: React.FC<AssignmentFieldsProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Department</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value || "Sales"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select department" />

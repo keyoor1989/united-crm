@@ -42,7 +42,9 @@ export const UserSelector: React.FC<UserSelectorProps> = ({ value, onValueChange
           <SelectItem value="loading">Loading users...</SelectItem>
         ) : users && users.length > 0 ? (
           users.map(user => (
-            <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+            <SelectItem key={user.id} value={user.id || "no-id"}>
+              {user.name}
+            </SelectItem>
           ))
         ) : (
           <SelectItem value="no-users">No users found</SelectItem>

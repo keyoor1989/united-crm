@@ -125,7 +125,7 @@ const NewTransferDialog = ({
               </SelectTrigger>
               <SelectContent>
                 {/* Added explicit placeholder option with non-empty string value */}
-                <SelectItem key="source-placeholder" value="" disabled>
+                <SelectItem key="source-placeholder" value="placeholder-source" disabled>
                   Select Source Warehouse
                 </SelectItem>
                 {warehouses.map(w => 
@@ -149,7 +149,7 @@ const NewTransferDialog = ({
               </SelectTrigger>
               <SelectContent>
                 {/* Added explicit placeholder option with non-empty string value */}
-                <SelectItem key="dest-placeholder" value="" disabled>
+                <SelectItem key="dest-placeholder" value="placeholder-dest" disabled>
                   Select Destination Warehouse
                 </SelectItem>
                 {warehouses.map(w => 
