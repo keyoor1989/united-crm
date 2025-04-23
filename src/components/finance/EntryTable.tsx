@@ -24,6 +24,7 @@ interface EntryTableProps {
   onEdit?: (item: any) => void;
   onDelete?: (item: any) => void;
   addButtonText?: string;
+  isLoading?: boolean; // Added isLoading prop
 }
 
 const EntryTable: React.FC<EntryTableProps> = ({
@@ -32,7 +33,8 @@ const EntryTable: React.FC<EntryTableProps> = ({
   onAdd,
   onEdit,
   onDelete,
-  addButtonText = "Add Entry"
+  addButtonText = "Add Entry",
+  isLoading = false // Default to false
 }) => {
   return (
     <div className="space-y-4">
@@ -55,7 +57,13 @@ const EntryTable: React.FC<EntryTableProps> = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="text-center py-8">
+                  Loading entries...
+                </TableCell>
+              </TableRow>
+            ) : data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="text-center py-8">
                   No entries found

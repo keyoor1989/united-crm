@@ -16,6 +16,46 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { formatCurrency } from "@/utils/finance/financeUtils";
 
+// Define a type for the raw data coming from Supabase
+type RawCashEntry = {
+  id: string;
+  date: string;
+  amount: number;
+  department: string;
+  category: string;
+  description: string;
+  payment_method: string;
+  entered_by: string;
+  type: 'Income' | 'Expense';
+  reference?: string;
+  branch?: string;
+  invoice_number?: string;
+};
+
+// Define a type for the raw data coming from receivables table
+type RawReceivable = {
+  id: string;
+  customer: string;
+  customer_id: string;
+  invoicenumber: string;
+  date: string;
+  duedate: string;
+  amount: number;
+  amountpaid: number;
+  balance: number;
+  status: string;
+  contactperson?: string;
+  contactnumber?: string;
+  lastfollowup?: string;
+  notes?: string;
+  department?: string;
+  branch?: string;
+  paymentmethod?: string;
+  paymentmode?: string;
+  created_at: string;
+  priority: string;
+};
+
 const CustomerPayments = () => {
   const [entries, setEntries] = useState<Payment[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -49,7 +89,7 @@ const CustomerPayments = () => {
       
       if (data) {
         // Transform the cash entries into the Payment type format
-        const formattedEntries: Payment[] = data.map(entry => ({
+        const formattedEntries: Payment[] = data.map((entry: RawCashEntry) => ({
           id: entry.id,
           date: entry.date,
           entityType: "Customer",
@@ -137,21 +177,21 @@ const CustomerPayments = () => {
           const { data: receivableData } = await supabase
             .from("receivables")
             .select("*")
-            .eq("invoiceNumber", invoiceNumber)
+            .eq("invoicenumber", invoiceNumber)
             .single();
           
           if (receivableData) {
-            const newAmountPaid = (receivableData.amountPaid || 0) + Number(currentEntry.amount);
+            const newAmountPaid = (receivableData.amountpaid || 0) + Number(currentEntry.amount);
             const newBalance = receivableData.amount - newAmountPaid;
             const newStatus = newBalance <= 0 ? "Cleared" : "Partial";
             
             await supabase
               .from("receivables")
               .update({
-                amountPaid: newAmountPaid,
+                amountpaid: newAmountPaid,
                 balance: newBalance,
                 status: newStatus,
-                paymentMethod: currentEntry.paymentMethod
+                paymentmethod: currentEntry.paymentMethod
               })
               .eq("id", receivableData.id);
           }
