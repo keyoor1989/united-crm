@@ -21,7 +21,9 @@ const defaultColumns = [
     key: "entityType",
     header: "Type",
     cell: (row: Payment) => {
-      let variant = "default";
+      // Fix: Use only valid variant types instead of string variables
+      let variant: "default" | "secondary" | "outline" | "destructive" | "success" | "warning" = "default";
+      
       if (row.entityType === "Dealer") variant = "secondary";
       if (row.entityType === "Rental") variant = "outline";
       
