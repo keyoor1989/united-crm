@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { paymentMethods } from "@/data/finance";
 import EntryTable from "@/components/finance/EntryTable";
@@ -26,10 +25,13 @@ type RawCashEntry = {
   description: string;
   payment_method: string;
   entered_by: string;
-  type: 'Income' | 'Expense';
+  type: string;
   reference?: string;
   branch?: string;
   invoice_number?: string;
+  narration?: string;
+  po_number?: string;
+  created_at?: string;
 };
 
 // Define a type for the raw data coming from receivables table
@@ -93,7 +95,7 @@ const CustomerPayments = () => {
           id: entry.id,
           date: entry.date,
           entityType: "Customer",
-          entityName: entry.description.split(' ')[0] || "Customer", // Extract customer name from description if possible
+          entityName: entry.description.split(' ')[0] || "Customer",
           amount: entry.amount,
           paymentMethod: entry.payment_method,
           reference: entry.reference || "",
@@ -154,7 +156,7 @@ const CustomerPayments = () => {
         id: uuidv4(),
         date: currentEntry.date,
         amount: Number(currentEntry.amount),
-        type: "Income", // This indicates it's a payment received (revenue)
+        type: "Income",
         department: currentEntry.entityType === "Customer" ? "Sales" : "Dealer",
         category: "Payment",
         description: `${currentEntry.entityName} - ${currentEntry.description}`,
