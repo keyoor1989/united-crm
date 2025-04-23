@@ -1,4 +1,3 @@
-
 export interface CashEntry {
   id: string;
   date: string;
@@ -113,41 +112,40 @@ export interface RentalMachine {
   serialNumber: string;
   model: string;
   clientName: string;
-  clientId: string;
   location: string;
   startDate: string;
   endDate: string;
   monthlyRent: number;
-  copyLimitA4: number; 
-  copyLimitA3: number;
-  extraCopyChargeA4: number;
-  extraCopyChargeA3: number;
+  copyLimitA4?: number; 
+  copyLimitA3?: number;
+  extraCopyChargeA4?: number;
+  extraCopyChargeA3?: number;
   currentA4Reading: number;
   currentA3Reading: number;
   lastReadingDate: string;
   status: 'Active' | 'Inactive' | 'Maintenance';
   notes?: string;
+  clientId?: string;
+  contractId?: string;
+  customerId?: string;
+  department?: string;
 }
 
-export interface RentalBilling {
+export interface BillingRecord {
   id: string;
-  machineId: string;
-  billingMonth: string;
-  billingDate: string;
-  a4Reading: number;
-  a4Copies: number;
-  a4Limit: number;
-  a4Extra: number;
-  a4ExtraCharge: number;
-  a3Reading: number;
-  a3Copies: number;
-  a3Limit: number;
-  a3Extra: number;
-  a3ExtraCharge: number;
-  baseRent: number;
-  totalCharges: number;
-  paymentStatus: 'Paid' | 'Pending' | 'Partial';
-  invoiceNumber?: string;
+  billing_month: string;
+  bill_date: string;
+  a4_total_copies: number;
+  a4_free_copies: number;
+  a4_extra_copies: number;
+  a4_extra_copy_charge: number;
+  a3_total_copies: number;
+  a3_free_copies: number;
+  a3_extra_copies: number;
+  a3_extra_copy_charge?: number;
+  rent: number;
+  total_bill: number;
+  bill_status: string;
 }
 
 export interface RentalPartsUsage {

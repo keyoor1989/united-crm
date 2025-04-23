@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 
 export const useRentalMachines = () => {
   const [machines, setMachines] = useState<RentalMachine[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
@@ -38,10 +38,13 @@ export const useRentalMachines = () => {
             serialNumber: machine.serial_number,
             model: machine.model,
             clientName: machine.customer_name,
+            clientId: machine.customer_id,
             location: machine.location,
             startDate: machine.start_date,
             endDate: machine.end_date,
             monthlyRent: machine.current_rent,
+            copyLimitA4: machine.copy_limit_a4,
+            copyLimitA3: machine.copy_limit_a3,
             currentA4Reading: machine.last_a4_reading || 0,
             currentA3Reading: machine.last_a3_reading || 0,
             lastReadingDate: machine.last_reading_date || new Date().toISOString(),

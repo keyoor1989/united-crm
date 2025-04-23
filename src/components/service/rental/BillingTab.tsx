@@ -20,11 +20,12 @@ interface BillingRecord {
   a4_total_copies: number;
   a4_free_copies: number;
   a4_extra_copies: number;
+  a4_extra_copy_charge: number;
   a3_total_copies: number;
   a3_free_copies: number;
   a3_extra_copies: number;
+  a3_extra_copy_charge?: number;
   rent: number;
-  extra_copy_charge: number;
   total_bill: number;
   bill_status: string;
 }
@@ -48,7 +49,26 @@ const BillingTab = ({ selectedMachine }: BillingTabProps) => {
         
         if (error) throw error;
         
-        setBillingHistory(data || []);
+        if (data) {
+          // Map to BillingRecord type
+          const mappedBilling = data.map((record): BillingRecord => ({
+            id: record.id,
+            billing_month: record.billing_month,
+            bill_date: record.bill_date,
+            a4_total_copies: record.a4_total_copies,
+            a4_free_copies: record.a4_free_copies,
+            a4_extra_copies: record.a4_extra_copies,
+            a4_extra_copy_charge: record.a4_extra_copy_charge,
+            a3_total_copies: record.a3_total_copies || 0,
+            a3_free_copies: record.a3_free_copies || 0,
+            a3_extra_copies: record.a3_extra_copies || 0,
+            a3_extra_copy_charge: record.a3_extra_copy_charge || 0,
+            rent: record.rent,
+            total_bill: record.total_bill,
+            bill_status: record.bill_status
+          }));
+          setBillingHistory(mappedBilling);
+        }
       } catch (err) {
         console.error('Error fetching billing history:', err);
         setError(err instanceof Error ? err.message : 'Failed to load billing history');
