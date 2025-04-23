@@ -31,7 +31,7 @@ import { Engineer, EngineerStatus, EngineerSkillLevel } from "@/types/service";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function EngineerServiceReport() {
-  const [selectedEngineer, setSelectedEngineer] = useState<string>("");
+  const [selectedEngineer, setSelectedEngineer] = useState<string>("no-selection");
   const [dateRange, setDateRange] = useState<DateRange>({
     from: addDays(new Date(), -30),
     to: new Date(),
@@ -57,7 +57,7 @@ export default function EngineerServiceReport() {
       
       const transformedEngineers: Engineer[] = data.map(eng => {
         return {
-          id: eng.id,
+          id: eng.id || `eng-${Math.random().toString(36).substring(2, 9)}`, // Ensure ID is never empty
           name: eng.name,
           phone: eng.phone,
           email: eng.email,
@@ -107,13 +107,15 @@ export default function EngineerServiceReport() {
                 </SelectTrigger>
                 <SelectContent>
                   {isLoading ? (
-                    <SelectItem value="">Loading...</SelectItem>
-                  ) : (
+                    <SelectItem value="loading">Loading...</SelectItem>
+                  ) : engineers.length > 0 ? (
                     engineers.map((engineer) => (
                       <SelectItem key={engineer.id} value={engineer.id}>
                         {engineer.name}
                       </SelectItem>
                     ))
+                  ) : (
+                    <SelectItem value="no-engineers">No engineers found</SelectItem>
                   )}
                 </SelectContent>
               </Select>
