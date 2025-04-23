@@ -13,13 +13,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Warehouse } from "@/types/inventory";
 import { Plus, Send, Move, Package } from "lucide-react";
 
-// MOCK items only
-const mockItems = [
-  { id: "1", name: "Black Toner", brand: "Kyocera", model: "2554ci" },
-  { id: "2", name: "Drum Unit", brand: "Kyocera", model: "2554ci" },
-  { id: "3", name: "Fuser Unit", brand: "Ricoh", model: "MP2014" },
-  { id: "4", name: "Cyan Toner", brand: "Kyocera", model: "2554ci" }
-];
+// Fetch inventory items from Supabase (opening_stock_entries)
+interface RealItem {
+  id: string;
+  part_name: string;
+  brand: string;
+  category: string;
+  model?: string;
+  part_number?: string;
+  compatible_models?: string[] | null;
+}
 
 const WarehouseTransfer = () => {
   const [activeTab, setActiveTab] = useState("transfers");
@@ -27,6 +30,10 @@ const WarehouseTransfer = () => {
   const [loadingWarehouses, setLoadingWarehouses] = useState(false);
   const [transfers, setTransfers] = useState<any[]>([]);
   const [loadingTransfers, setLoadingTransfers] = useState(false);
+
+  // Real inventory items
+  const [items, setItems] = useState<RealItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
 
   const [showDialog, setShowDialog] = useState(false);
   const [form, setForm] = useState({
@@ -43,13 +50,16 @@ const WarehouseTransfer = () => {
   useEffect(() => {
     const fetchWarehouses = async () => {
       setLoadingWarehouses(true);
-      const { data, error } = await supabase.from("warehouses").select("*").eq("is_active", true).order("name");
+      const { data, error } = await supabase
+        .from("warehouses")
+        .select("*")
+        .eq("is_active", true)
+        .order("name");
       if (error) {
         toast.error("Failed to load warehouses: " + error.message);
         setLoadingWarehouses(false);
         return;
       }
-
       // Transform the data to match the Warehouse interface
       const transformedWarehouses: Warehouse[] = data.map(warehouse => ({
         id: warehouse.id,
@@ -62,7 +72,6 @@ const WarehouseTransfer = () => {
         isActive: warehouse.is_active,
         createdAt: warehouse.created_at
       }));
-      
       setWarehouses(transformedWarehouses);
       setLoadingWarehouses(false);
     };
@@ -88,6 +97,34 @@ const WarehouseTransfer = () => {
       setLoadingTransfers(false);
     };
     fetchTransfers();
+  }, []);
+
+  // Fetch items from opening_stock_entries
+  useEffect(() => {
+    const fetchItems = async () => {
+      setLoadingItems(true);
+      const { data, error } = await supabase
+        .from("opening_stock_entries")
+        .select("*")
+        .order("part_name");
+      if (error) {
+        toast.error("Failed to load items: " + error.message);
+        setLoadingItems(false);
+        return;
+      }
+      const transformed: RealItem[] = (data || []).map((item: any) => ({
+        id: item.id,
+        part_name: item.part_name,
+        brand: item.brand,
+        category: item.category,
+        model: Array.isArray(item.compatible_models) && item.compatible_models.length > 0 ? item.compatible_models[0] : "",
+        part_number: item.part_number,
+        compatible_models: item.compatible_models,
+      }));
+      setItems(transformed);
+      setLoadingItems(false);
+    };
+    fetchItems();
   }, []);
 
   // Submit handler
@@ -152,6 +189,7 @@ const WarehouseTransfer = () => {
   const getWarehouseLocation = (id: string) => {
     return warehouses.find(w => w.id === id)?.location || "";
   };
+  const getItemDetails = (itemId: string) => items.find(i => i.id === itemId);
 
   return (
     <div className="container p-6">
@@ -200,14 +238,22 @@ const WarehouseTransfer = () => {
                       <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                     </TableRow>
                   )}
-                  {!loadingTransfers && transfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").map((transfer) => (
+                  {!loadingTransfers && transfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").map((transfer) => {
+                    const item = getItemDetails(transfer.item_id);
+                    return (
                     <TableRow key={transfer.id}>
                       <TableCell className="font-medium">{transfer.id}</TableCell>
                       <TableCell>
-                        <div className="flex gap-2 items-center"><Package className="h-4 w-4" />{transfer.item_id}
-                        <span className="text-xs text-muted-foreground ml-1">
-                          {mockItems.find(i => i.id === transfer.item_id)?.brand} {mockItems.find(i => i.id === transfer.item_id)?.model}
-                        </span>
+                        <div className="flex gap-2 items-center">
+                          <Package className="h-4 w-4" />
+                          {item ? (
+                            <>
+                              {item.part_name}
+                              <span className="text-xs text-muted-foreground ml-1">{item.brand}{item.model && ` (${item.model})`}</span>
+                            </>
+                          ) : (
+                            transfer.item_id
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{transfer.quantity}</TableCell>
@@ -237,7 +283,8 @@ const WarehouseTransfer = () => {
                       </TableCell>
                       <TableCell>{transfer.transfer_method || "-"}</TableCell>
                     </TableRow>
-                  ))}
+                  )}
+                  )}
                   {!loadingTransfers && transfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">No active warehouse transfers</TableCell>
@@ -277,14 +324,22 @@ const WarehouseTransfer = () => {
                       <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                     </TableRow>
                   )}
-                  {!loadingTransfers && transfers.filter(t => t.status === "Received" || t.status === "Cancelled").map((transfer) => (
+                  {!loadingTransfers && transfers.filter(t => t.status === "Received" || t.status === "Cancelled").map((transfer) => {
+                    const item = getItemDetails(transfer.item_id);
+                    return (
                     <TableRow key={transfer.id}>
                       <TableCell className="font-medium">{transfer.id}</TableCell>
                       <TableCell>
-                        <div className="flex gap-2 items-center"><Package className="h-4 w-4" />{transfer.item_id}
-                        <span className="text-xs text-muted-foreground ml-1">
-                          {mockItems.find(i => i.id === transfer.item_id)?.brand} {mockItems.find(i => i.id === transfer.item_id)?.model}
-                        </span>
+                        <div className="flex gap-2 items-center">
+                          <Package className="h-4 w-4" />
+                          {item ? (
+                            <>
+                              {item.part_name}
+                              <span className="text-xs text-muted-foreground ml-1">{item.brand}{item.model && ` (${item.model})`}</span>
+                            </>
+                          ) : (
+                            transfer.item_id
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{transfer.quantity}</TableCell>
@@ -314,7 +369,8 @@ const WarehouseTransfer = () => {
                       </TableCell>
                       <TableCell>{transfer.transfer_method || "-"}</TableCell>
                     </TableRow>
-                  ))}
+                  )}
+                  )}
                   {!loadingTransfers && transfers.filter(t => t.status === "Received" || t.status === "Cancelled").length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">No history transfers</TableCell>
@@ -343,12 +399,13 @@ const WarehouseTransfer = () => {
                 onValueChange={(value) => setForm({ ...form, itemId: value })}
               >
                 <SelectTrigger id="item-id">
-                  <SelectValue placeholder="Select Item" />
+                  <SelectValue placeholder={loadingItems ? "Loading..." : "Select Item"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockItems.map(item => (
+                  {items.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} - {item.brand} {item.model}
+                      {item.part_name} - {item.brand}
+                      {item.model ? ` (${item.model})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -455,3 +512,4 @@ const WarehouseTransfer = () => {
 };
 
 export default WarehouseTransfer;
+

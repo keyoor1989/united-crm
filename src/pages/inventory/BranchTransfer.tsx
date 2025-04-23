@@ -18,32 +18,16 @@ type Branch = 'Indore (HQ)' | 'Bhopal Office' | 'Jabalpur Office';
 type TransferStatus = 'Requested' | 'Approved' | 'Dispatched' | 'Received' | 'Cancelled';
 type TransferMethod = 'Courier' | 'Hand Delivery' | 'Bus' | 'Railway';
 
-interface BranchTransfer {
+// Real item type
+interface RealItem {
   id: string;
-  itemId: string;
-  itemName: string;
-  quantity: number;
-  sourceBranch: Branch;
-  destinationBranch: Branch;
-  requestDate: string;
-  approvedDate?: string;
-  dispatchDate?: string;
-  receivedDate?: string;
-  status: TransferStatus;
-  transferMethod?: TransferMethod;
-  trackingNumber?: string;
-  remarks?: string;
-  requestedBy: string;
-  approvedBy?: string;
+  part_name: string;
+  brand: string;
+  category: string;
+  model?: string;
+  part_number?: string;
+  compatible_models?: string[] | null;
 }
-
-// Mock inventory items
-const mockItems = [
-  { id: "1", name: "Black Toner", brand: "Kyocera", model: "2554ci" },
-  { id: "2", name: "Drum Unit", brand: "Kyocera", model: "2554ci" },
-  { id: "3", name: "Fuser Unit", brand: "Ricoh", model: "MP2014" },
-  { id: "4", name: "Cyan Toner", brand: "Kyocera", model: "2554ci" }
-];
 
 const BranchTransfer = () => {
   const [activeTab, setActiveTab] = useState("transfers");
@@ -51,11 +35,15 @@ const BranchTransfer = () => {
   const [filterStatus, setFilterStatus] = useState<TransferStatus | "all">("all");
   const [filterBranch, setFilterBranch] = useState<Branch | "all">("all");
   const [showNewTransferDialog, setShowNewTransferDialog] = useState(false);
-  
+
   // Transfers state
   const [transfers, setTransfers] = useState<any[]>([]);
   const [loadingTransfers, setLoadingTransfers] = useState(false);
-  
+
+  // Real inventory items
+  const [items, setItems] = useState<RealItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+
   // New transfer form state
   const [transferForm, setTransferForm] = useState({
     itemId: "",
@@ -66,7 +54,7 @@ const BranchTransfer = () => {
     trackingNumber: "",
     remarks: ""
   });
-  
+
   // Fetch transfers from Supabase
   useEffect(() => {
     const fetchTransfers = async () => {
@@ -76,7 +64,7 @@ const BranchTransfer = () => {
         .select("*")
         .or('source_type.eq.Branch,destination_type.eq.Branch') // Only get transfers involving branches
         .order("request_date", { ascending: false });
-      
+
       if (error) {
         toast.error("Error fetching transfers: " + error.message);
         setLoadingTransfers(false);
@@ -85,48 +73,75 @@ const BranchTransfer = () => {
       setTransfers(data || []);
       setLoadingTransfers(false);
     };
-    
+
     fetchTransfers();
   }, []);
-  
+
+  // Fetch items from opening_stock_entries
+  useEffect(() => {
+    const fetchItems = async () => {
+      setLoadingItems(true);
+      const { data, error } = await supabase
+        .from("opening_stock_entries")
+        .select("*")
+        .order("part_name");
+      if (error) {
+        toast.error("Failed to load items: " + error.message);
+        setLoadingItems(false);
+        return;
+      }
+      const transformed: RealItem[] = (data || []).map((item: any) => ({
+        id: item.id,
+        part_name: item.part_name,
+        brand: item.brand,
+        category: item.category,
+        model: Array.isArray(item.compatible_models) && item.compatible_models.length > 0 ? item.compatible_models[0] : "",
+        part_number: item.part_number,
+        compatible_models: item.compatible_models,
+      }));
+      setItems(transformed);
+      setLoadingItems(false);
+    };
+    fetchItems();
+  }, []);
+
   const filteredTransfers = transfers.filter(transfer => {
     // Search by ID, item, or branch
-    const searchMatch = 
+    const searchMatch =
       transfer.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       transfer.item_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (transfer.source_branch && transfer.source_branch.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (transfer.destination_branch && transfer.destination_branch.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+
     // Filter by status
     const statusMatch = filterStatus === "all" ? true : transfer.status === filterStatus;
-    
+
     // Filter by branch (source or destination)
-    const branchMatch = filterBranch === "all" ? true : 
+    const branchMatch = filterBranch === "all" ? true :
       (transfer.source_branch === filterBranch || transfer.destination_branch === filterBranch);
-    
+
     return searchMatch && statusMatch && branchMatch;
   });
-  
+
   // Handle submitting new transfer to Supabase
   const handleSubmitTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate that source and destination are different
+
     if (transferForm.sourceBranch === transferForm.destinationBranch) {
       toast.error("Source and destination branches cannot be the same!");
       return;
     }
-    
+
     if (!transferForm.itemId) {
       toast.error("Please select an item.");
       return;
     }
-    
+
     if (!transferForm.sourceBranch || !transferForm.destinationBranch) {
       toast.error("Please select both source and destination branches.");
       return;
     }
-    
+
     try {
       const { error } = await supabase.from("inventory_transfers").insert({
         item_id: transferForm.itemId,
@@ -141,21 +156,21 @@ const BranchTransfer = () => {
         requested_by: "Current User", // You can fetch the real user
         status: "Requested"
       });
-      
+
       if (error) {
         toast.error("Failed to create transfer: " + error.message);
       } else {
         toast.success("Branch transfer request created successfully!");
-        
+
         // Reload transfers
         const { data } = await supabase
           .from("inventory_transfers")
           .select("*")
           .or('source_type.eq.Branch,destination_type.eq.Branch')
           .order("request_date", { ascending: false });
-        
+
         setTransfers(data || []);
-        
+
         // Reset form and close dialog
         setTransferForm({
           itemId: "",
@@ -173,7 +188,7 @@ const BranchTransfer = () => {
       console.error("Transfer creation error:", error);
     }
   };
-  
+
   // Get status badge variant
   const getStatusBadgeVariant = (status: TransferStatus) => {
     switch (status) {
@@ -186,6 +201,8 @@ const BranchTransfer = () => {
     }
   };
 
+  const getItemDetails = (itemId: string) => items.find(i => i.id === itemId);
+
   return (
     <div className="container p-6">
       <div className="flex justify-between items-center mb-6">
@@ -195,15 +212,15 @@ const BranchTransfer = () => {
             Manage and track inventory transfers between branches (Live)
           </p>
         </div>
-        <Button 
-          className="gap-1" 
+        <Button
+          className="gap-1"
           onClick={() => setShowNewTransferDialog(true)}
         >
           <Plus className="h-4 w-4" />
           New Transfer Request
         </Button>
       </div>
-      
+
       <div className="flex items-center gap-4 mb-4">
         <div className="relative grow">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -219,13 +236,13 @@ const BranchTransfer = () => {
           <Filter className="h-4 w-4" />
         </Button>
       </div>
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="transfers">Active Transfers</TabsTrigger>
           <TabsTrigger value="history">Transfer History</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="transfers" className="mt-4">
           <Card>
             <CardHeader>
@@ -252,7 +269,7 @@ const BranchTransfer = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="branch-filter">Filter by Branch</Label>
                   <Select value={filterBranch} onValueChange={(value) => setFilterBranch(value as Branch | "all")}>
@@ -268,12 +285,12 @@ const BranchTransfer = () => {
                   </Select>
                 </div>
               </div>
-              
+
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Transfer ID</TableHead>
-                    <TableHead>Item ID</TableHead>
+                    <TableHead>Item</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Source Branch</TableHead>
                     <TableHead>Destination Branch</TableHead>
@@ -288,41 +305,44 @@ const BranchTransfer = () => {
                       <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                     </TableRow>
                   )}
-                  
-                  {!loadingTransfers && filteredTransfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").map((transfer) => (
-                    <TableRow key={transfer.id}>
-                      <TableCell className="font-medium">{transfer.id}</TableCell>
-                      <TableCell>
-                        <div>{transfer.item_id}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {mockItems.find(i => i.id === transfer.item_id)?.brand} 
-                          {" "}
-                          {mockItems.find(i => i.id === transfer.item_id)?.model}
-                        </div>
-                      </TableCell>
-                      <TableCell>{transfer.quantity}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <Building className="h-4 w-4" />
-                          {transfer.source_branch}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <Building className="h-4 w-4" />
-                          {transfer.destination_branch}
-                        </div>
-                      </TableCell>
-                      <TableCell>{new Date(transfer.request_date).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(transfer.status as TransferStatus)}>
-                          {transfer.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{transfer.transfer_method || "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                  
+
+                  {!loadingTransfers && filteredTransfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").map((transfer) => {
+                    const item = getItemDetails(transfer.item_id);
+                    return (
+                      <TableRow key={transfer.id}>
+                        <TableCell className="font-medium">{transfer.id}</TableCell>
+                        <TableCell>
+                          {item ? (
+                            <>
+                              <div>{item.part_name}</div>
+                              <div className="text-xs text-muted-foreground">{item.brand}{item.model && ` (${item.model})`}</div>
+                            </>
+                          ) : transfer.item_id}
+                        </TableCell>
+                        <TableCell>{transfer.quantity}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Building className="h-4 w-4" />
+                            {transfer.source_branch}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Building className="h-4 w-4" />
+                            {transfer.destination_branch}
+                          </div>
+                        </TableCell>
+                        <TableCell>{new Date(transfer.request_date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(transfer.status as TransferStatus)}>
+                            {transfer.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{transfer.transfer_method || "-"}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+
                   {!loadingTransfers && filteredTransfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">
@@ -335,7 +355,7 @@ const BranchTransfer = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="history" className="mt-4">
           <Card>
             <CardHeader>
@@ -349,7 +369,7 @@ const BranchTransfer = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Transfer ID</TableHead>
-                    <TableHead>Item ID</TableHead>
+                    <TableHead>Item</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Source Branch</TableHead>
                     <TableHead>Destination Branch</TableHead>
@@ -364,41 +384,44 @@ const BranchTransfer = () => {
                       <TableCell colSpan={8} className="text-center">Loading...</TableCell>
                     </TableRow>
                   )}
-                  
-                  {!loadingTransfers && filteredTransfers.filter(t => t.status === "Received" || t.status === "Cancelled").map((transfer) => (
-                    <TableRow key={transfer.id}>
-                      <TableCell className="font-medium">{transfer.id}</TableCell>
-                      <TableCell>
-                        <div>{transfer.item_id}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {mockItems.find(i => i.id === transfer.item_id)?.brand} 
-                          {" "}
-                          {mockItems.find(i => i.id === transfer.item_id)?.model}
-                        </div>
-                      </TableCell>
-                      <TableCell>{transfer.quantity}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <Building className="h-4 w-4" />
-                          {transfer.source_branch}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1.5">
-                          <Building className="h-4 w-4" />
-                          {transfer.destination_branch}
-                        </div>
-                      </TableCell>
-                      <TableCell>{new Date(transfer.request_date).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(transfer.status as TransferStatus)}>
-                          {transfer.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{transfer.transfer_method || "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                  
+
+                  {!loadingTransfers && filteredTransfers.filter(t => t.status === "Received" || t.status === "Cancelled").map((transfer) => {
+                    const item = getItemDetails(transfer.item_id);
+                    return (
+                      <TableRow key={transfer.id}>
+                        <TableCell className="font-medium">{transfer.id}</TableCell>
+                        <TableCell>
+                          {item ? (
+                            <>
+                              <div>{item.part_name}</div>
+                              <div className="text-xs text-muted-foreground">{item.brand}{item.model && ` (${item.model})`}</div>
+                            </>
+                          ) : transfer.item_id}
+                        </TableCell>
+                        <TableCell>{transfer.quantity}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Building className="h-4 w-4" />
+                            {transfer.source_branch}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <Building className="h-4 w-4" />
+                            {transfer.destination_branch}
+                          </div>
+                        </TableCell>
+                        <TableCell>{new Date(transfer.request_date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(transfer.status as TransferStatus)}>
+                            {transfer.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{transfer.transfer_method || "-"}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+
                   {!loadingTransfers && filteredTransfers.filter(t => t.status === "Received" || t.status === "Cancelled").length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">
@@ -412,7 +435,7 @@ const BranchTransfer = () => {
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       {/* New Transfer Dialog */}
       <Dialog open={showNewTransferDialog} onOpenChange={setShowNewTransferDialog}>
         <DialogContent className="sm:max-w-[550px]">
@@ -422,27 +445,27 @@ const BranchTransfer = () => {
               Create a request to transfer inventory between branches
             </DialogDescription>
           </DialogHeader>
-          
+
           <form onSubmit={handleSubmitTransfer} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="transfer-item">Item</Label>
-              <Select 
-                value={transferForm.itemId} 
+              <Select
+                value={transferForm.itemId}
                 onValueChange={(value) => setTransferForm({ ...transferForm, itemId: value })}
               >
                 <SelectTrigger id="transfer-item">
-                  <SelectValue placeholder="Select Item" />
+                  <SelectValue placeholder={loadingItems ? "Loading..." : "Select Item"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockItems.map((item) => (
+                  {items.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} - {item.brand} {item.model}
+                      {item.part_name} - {item.brand}{item.model ? ` (${item.model})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="transfer-quantity">Quantity</Label>
               <Input
@@ -454,7 +477,7 @@ const BranchTransfer = () => {
                 required
               />
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
                 <div className="border rounded-md p-4">
@@ -462,11 +485,11 @@ const BranchTransfer = () => {
                     <ArrowLeftRight className="h-4 w-4" />
                     Source
                   </h3>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="source-branch">Source Branch</Label>
-                    <Select 
-                      value={transferForm.sourceBranch} 
+                    <Select
+                      value={transferForm.sourceBranch}
                       onValueChange={(value) => setTransferForm({ ...transferForm, sourceBranch: value as Branch })}
                     >
                       <SelectTrigger id="source-branch">
@@ -481,18 +504,18 @@ const BranchTransfer = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="border rounded-md p-4">
                   <h3 className="font-medium mb-2 flex items-center gap-2">
                     <ArrowLeftRight className="h-4 w-4" />
                     Destination
                   </h3>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="destination-branch">Destination Branch</Label>
-                    <Select 
-                      value={transferForm.destinationBranch} 
+                    <Select
+                      value={transferForm.destinationBranch}
                       onValueChange={(value) => setTransferForm({ ...transferForm, destinationBranch: value as Branch })}
                     >
                       <SelectTrigger id="destination-branch">
@@ -508,11 +531,11 @@ const BranchTransfer = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="transfer-method">Transfer Method</Label>
-              <Select 
-                value={transferForm.transferMethod} 
+              <Select
+                value={transferForm.transferMethod}
                 onValueChange={(value: TransferMethod) => setTransferForm({ ...transferForm, transferMethod: value })}
               >
                 <SelectTrigger id="transfer-method">
@@ -526,7 +549,7 @@ const BranchTransfer = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             {transferForm.transferMethod !== "Hand Delivery" && (
               <div className="space-y-2">
                 <Label htmlFor="tracking-number">Tracking Number (optional)</Label>
@@ -538,7 +561,7 @@ const BranchTransfer = () => {
                 />
               </div>
             )}
-            
+
             <div className="space-y-2">
               <Label htmlFor="remarks">Remarks</Label>
               <Input
@@ -548,7 +571,7 @@ const BranchTransfer = () => {
                 onChange={(e) => setTransferForm({ ...transferForm, remarks: e.target.value })}
               />
             </div>
-            
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowNewTransferDialog(false)}>
                 Cancel
@@ -566,3 +589,4 @@ const BranchTransfer = () => {
 };
 
 export default BranchTransfer;
+
