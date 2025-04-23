@@ -20,11 +20,17 @@ const defaultColumns = [
   {
     key: "entityType",
     header: "Type",
-    cell: (row: Payment) => (
-      <Badge variant={row.entityType === "Customer" ? "default" : "secondary"}>
-        {row.entityType}
-      </Badge>
-    )
+    cell: (row: Payment) => {
+      let variant = "default";
+      if (row.entityType === "Dealer") variant = "secondary";
+      if (row.entityType === "Rental") variant = "outline";
+      
+      return (
+        <Badge variant={variant}>
+          {row.entityType}
+        </Badge>
+      );
+    }
   },
   {
     key: "entityName",

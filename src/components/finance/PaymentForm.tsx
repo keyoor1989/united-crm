@@ -55,12 +55,15 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             <SelectContent>
               <SelectItem value="Customer">Customer Payment</SelectItem>
               <SelectItem value="Dealer">Dealer Payment</SelectItem>
+              <SelectItem value="Rental">Rental Payment</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="entityName">
-            {currentEntry.entityType === "Customer" ? "Customer Name *" : "Dealer Name *"}
+            {currentEntry.entityType === "Customer" ? "Customer Name *" : 
+             currentEntry.entityType === "Dealer" ? "Dealer Name *" : 
+             "Client Name *"}
           </Label>
           <Input 
             id="entityName" 
@@ -105,10 +108,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="invoiceNumbers">Invoice Numbers (comma separated)</Label>
+          <Label htmlFor="invoiceNumbers">Invoice/Contract Numbers</Label>
           <Input 
             id="invoiceNumbers" 
-            placeholder="e.g. INV-001, INV-002" 
+            placeholder="e.g. INV-001, RNT-002" 
             value={currentEntry.invoiceNumbers?.join(", ") || ""} 
             onChange={(e) => {
               const invoiceArray = e.target.value.split(",").map(s => s.trim()).filter(Boolean);

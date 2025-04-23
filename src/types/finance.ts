@@ -74,7 +74,7 @@ export interface Expense {
 export interface Payment {
   id: string;
   date: string;
-  entityType: string;
+  entityType: string; // "Customer", "Dealer", or "Rental"
   entityName: string;
   amount: number;
   paymentMethod: string;
@@ -105,4 +105,61 @@ export interface Receivable {
   department?: string;
   branch?: string;
   paymentMethod?: string;
+}
+
+// Rental machine specific types
+export interface RentalMachine {
+  id: string;
+  serialNumber: string;
+  model: string;
+  clientName: string;
+  clientId: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  monthlyRent: number;
+  copyLimitA4: number; 
+  copyLimitA3: number;
+  extraCopyChargeA4: number;
+  extraCopyChargeA3: number;
+  currentA4Reading: number;
+  currentA3Reading: number;
+  lastReadingDate: string;
+  status: 'Active' | 'Inactive' | 'Maintenance';
+  notes?: string;
+}
+
+export interface RentalBilling {
+  id: string;
+  machineId: string;
+  billingMonth: string;
+  billingDate: string;
+  a4Reading: number;
+  a4Copies: number;
+  a4Limit: number;
+  a4Extra: number;
+  a4ExtraCharge: number;
+  a3Reading: number;
+  a3Copies: number;
+  a3Limit: number;
+  a3Extra: number;
+  a3ExtraCharge: number;
+  baseRent: number;
+  totalCharges: number;
+  paymentStatus: 'Paid' | 'Pending' | 'Partial';
+  invoiceNumber?: string;
+}
+
+export interface RentalPartsUsage {
+  id: string;
+  machineId: string;
+  date: string;
+  partId: string;
+  partName: string;
+  quantity: number;
+  cost: number;
+  replacedAt: number; // Reading when part was replaced
+  expectedLifespan: number; // Expected copies before next replacement
+  technicianName: string;
+  notes?: string;
 }
