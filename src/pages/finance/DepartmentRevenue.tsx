@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { revenueEntries, departments, categories, paymentMethods } from "@/data/finance";
+import React, { useState, useEffect } from "react";
+import { departments, categories, paymentMethods } from "@/data/finance";
 import EntryTable from "@/components/finance/EntryTable";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
 import { Badge } from "@/components/ui/badge";
@@ -9,19 +9,42 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
-import { Revenue } from "@/types/finance";
+import { CashEntry } from "@/types/finance";
 import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
 
 const DepartmentRevenue = () => {
-  const [entries, setEntries] = useState<Revenue[]>(revenueEntries);
+  const [entries, setEntries] = useState<CashEntry[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentEntry, setCurrentEntry] = useState<Partial<Revenue>>({
+  const [currentEntry, setCurrentEntry] = useState<Partial<CashEntry>>({
     date: format(new Date(), "yyyy-MM-dd"),
-    paymentStatus: "Pending"
+    type: "Income",
+    payment_method: "Cash",
+    entered_by: "Current User"
   });
-  
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchEntries();
+    // eslint-disable-next-line
+  }, []);
+
+  const fetchEntries = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("cash_entries")
+      .select("*")
+      .eq("type", "Income")
+      .order("date", { ascending: false });
+
+    if (!error && Array.isArray(data)) {
+      setEntries(data as CashEntry[]);
+    }
+    setLoading(false);
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -34,13 +57,15 @@ const DepartmentRevenue = () => {
   const departmentTotals = departments.map(dept => ({
     name: dept,
     amount: entries.filter(entry => entry.department === dept)
-      .reduce((sum, entry) => sum + entry.amount, 0)
+      .reduce((sum, entry) => sum + Number(entry.amount), 0)
   })).filter(dept => dept.amount > 0);
 
   const handleOpenDialog = () => {
     setCurrentEntry({
       date: format(new Date(), "yyyy-MM-dd"),
-      paymentStatus: "Pending"
+      type: "Income",
+      payment_method: "Cash",
+      entered_by: "Current User"
     });
     setIsDialogOpen(true);
   };
@@ -49,34 +74,46 @@ const DepartmentRevenue = () => {
     setIsDialogOpen(false);
   };
 
-  const handleFormSubmit = () => {
+  const handleFormSubmit = async () => {
     if (
       !currentEntry.date ||
       !currentEntry.department ||
       !currentEntry.category ||
       !currentEntry.amount ||
-      !currentEntry.description ||
-      !currentEntry.paymentStatus
+      !currentEntry.description
     ) {
       // In a real app, show validation message
       return;
     }
 
-    const newEntry: Revenue = {
+    setLoading(true);
+
+    const insertObj = {
       id: uuidv4(),
       date: currentEntry.date,
+      amount: Number(currentEntry.amount),
       department: currentEntry.department,
       category: currentEntry.category,
-      amount: Number(currentEntry.amount),
       description: currentEntry.description,
-      customer: currentEntry.customer,
-      invoiceNumber: currentEntry.invoiceNumber,
-      paymentStatus: currentEntry.paymentStatus as 'Paid' | 'Pending' | 'Partial',
-      paymentMethod: currentEntry.paymentMethod
+      payment_method: currentEntry.payment_method || "Cash",
+      entered_by: currentEntry.entered_by || "Current User",
+      type: "Income",
+      reference: currentEntry.reference || "",
+      po_number: currentEntry.po_number || null,
+      invoice_number: currentEntry.invoice_number || null,
+      branch: currentEntry.branch || null,
+      narration: currentEntry.narration || null
     };
 
-    setEntries([newEntry, ...entries]);
-    setIsDialogOpen(false);
+    const { error } = await supabase
+      .from("cash_entries")
+      .insert([insertObj]);
+    setLoading(false);
+
+    if (!error) {
+      setIsDialogOpen(false);
+      fetchEntries();
+    }
   };
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -102,32 +139,23 @@ const DepartmentRevenue = () => {
     {
       key: "amount",
       header: "Amount",
-      cell: (row: Revenue) => formatCurrency(row.amount)
+      cell: (row: CashEntry) => formatCurrency(Number(row.amount))
     },
     {
-      key: "customer",
-      header: "Customer"
-    },
-    {
-      key: "invoiceNumber",
-      header: "Invoice #"
+      key: "entered_by",
+      header: "Entered By"
     },
     {
       key: "description",
       header: "Description"
     },
     {
-      key: "paymentStatus",
-      header: "Payment Status",
-      cell: (row: Revenue) => (
-        <Badge variant={
-          row.paymentStatus === "Paid" ? "success" : 
-          row.paymentStatus === "Partial" ? "warning" : 
-          "outline"
-        }>
-          {row.paymentStatus}
-        </Badge>
-      )
+      key: "reference",
+      header: "Notes"
+    },
+    {
+      key: "narration",
+      header: "Narration"
     }
   ];
 
@@ -172,6 +200,7 @@ const DepartmentRevenue = () => {
         onClose={handleCloseDialog}
         title="Add Revenue Entry"
         onSubmit={handleFormSubmit}
+        isSubmitting={loading}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           <div className="space-y-2">
@@ -187,7 +216,7 @@ const DepartmentRevenue = () => {
           <div className="space-y-2">
             <Label htmlFor="department">Department *</Label>
             <Select 
-              value={currentEntry.department} 
+              value={currentEntry.department || ""}
               onValueChange={(value) => handleInputChange("department", value)}
             >
               <SelectTrigger id="department">
@@ -204,7 +233,7 @@ const DepartmentRevenue = () => {
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
             <Select 
-              value={currentEntry.category} 
+              value={currentEntry.category || ""}
               onValueChange={(value) => handleInputChange("category", value)}
             >
               <SelectTrigger id="category">
@@ -230,57 +259,23 @@ const DepartmentRevenue = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="customer">Customer</Label>
+            <Label htmlFor="entered_by">Entered By *</Label>
             <Input 
-              id="customer" 
-              placeholder="Customer name" 
-              value={currentEntry.customer || ""} 
-              onChange={(e) => handleInputChange("customer", e.target.value)} 
+              id="entered_by"
+              placeholder="Name"
+              value={currentEntry.entered_by || ""}
+              onChange={(e) => handleInputChange("entered_by", e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="invoiceNumber">Invoice Number</Label>
+            <Label htmlFor="reference">Notes</Label>
             <Input 
-              id="invoiceNumber" 
-              placeholder="Invoice number" 
-              value={currentEntry.invoiceNumber || ""} 
-              onChange={(e) => handleInputChange("invoiceNumber", e.target.value)} 
+              id="reference"
+              placeholder="Reference"
+              value={currentEntry.reference || ""}
+              onChange={(e) => handleInputChange("reference", e.target.value)}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="paymentStatus">Payment Status *</Label>
-            <Select 
-              value={currentEntry.paymentStatus} 
-              onValueChange={(value) => handleInputChange("paymentStatus", value)}
-            >
-              <SelectTrigger id="paymentStatus">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Paid">Paid</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Partial">Partial</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="paymentMethod">Payment Method</Label>
-            <Select 
-              value={currentEntry.paymentMethod} 
-              onValueChange={(value) => handleInputChange("paymentMethod", value)}
-            >
-              <SelectTrigger id="paymentMethod">
-                <SelectValue placeholder="Select payment method" />
-              </SelectTrigger>
-              <SelectContent>
-                {paymentMethods.map((method) => (
-                  <SelectItem key={method} value={method}>{method}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2 md:col-span-2">
@@ -290,7 +285,18 @@ const DepartmentRevenue = () => {
               placeholder="Enter description" 
               value={currentEntry.description || ""} 
               onChange={(e) => handleInputChange("description", e.target.value)} 
-              rows={3}
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="narration">Narration</Label>
+            <Textarea
+              id="narration"
+              placeholder="Enter narration (optional)"
+              value={currentEntry.narration || ""}
+              onChange={(e) => handleInputChange("narration", e.target.value)}
+              rows={2}
             />
           </div>
         </div>
