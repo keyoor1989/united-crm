@@ -23,6 +23,8 @@ const formSchema = z.object({
   copyLimitA4: z.string().optional(),
   copyLimitA3: z.string().optional(),
   department: z.string().optional(),
+  initialA4Reading: z.string().optional(),
+  initialA3Reading: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -51,6 +53,8 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
       copyLimitA4: "",
       copyLimitA3: "",
       department: "",
+      initialA4Reading: "0",
+      initialA3Reading: "0",
     },
   });
 
@@ -71,6 +75,9 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
         department: values.department || null,
         machine_type: 'Copier', // Default value
         contract_type: 'Rental', // Default value
+        last_a4_reading: values.initialA4Reading ? parseInt(values.initialA4Reading) : 0,
+        last_a3_reading: values.initialA3Reading ? parseInt(values.initialA3Reading) : 0,
+        last_reading_date: values.startDate, // Setting the initial reading date to start date
       });
 
       if (error) throw error;
@@ -230,6 +237,36 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
                     <FormLabel>A3 Copy Limit</FormLabel>
                     <FormControl>
                       <Input type="number" placeholder="e.g. 1000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Add the new fields for initial readings */}
+            <div className="grid grid-cols-2 gap-4 border-t pt-4">
+              <FormField
+                control={form.control}
+                name="initialA4Reading"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Initial A4 Reading</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="0" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="initialA3Reading"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Initial A3 Reading</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
