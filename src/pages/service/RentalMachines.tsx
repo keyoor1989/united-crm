@@ -19,6 +19,7 @@ import { InventoryItem } from "@/types/inventory";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { formatCurrency } from "@/utils/finance/financeUtils";
+import AddRentalPartsDialog from "@/components/service/rental/AddRentalPartsDialog";
 
 // Mock data for initial display
 const initialRentalMachines: RentalMachine[] = [
@@ -70,6 +71,7 @@ const RentalMachines = () => {
   const [isAddMachineModalOpen, setIsAddMachineModalOpen] = useState<boolean>(false);
   const [isAddReadingModalOpen, setIsAddReadingModalOpen] = useState<boolean>(false);
   const [selectedMachine, setSelectedMachine] = useState<RentalMachine | null>(null);
+  const [isAddPartsDialogOpen, setIsAddPartsDialogOpen] = useState<boolean>(false);
 
   // Filter machines based on search query
   const filteredMachines = machines.filter(machine => 
@@ -115,6 +117,44 @@ const RentalMachines = () => {
   const handlePrintContract = (machine: RentalMachine) => {
     toast.info(`Preparing to print contract for ${machine.model} (${machine.serialNumber})`);
     // Implement contract printing logic here
+  };
+
+  // Add new handler for parts
+  const handleAddParts = async (partData: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('amc_consumable_usage')
+        .insert({
+          machine_id: partData.machine_id,
+          machine_model: partData.machine_model,
+          machine_type: partData.machine_type,
+          serial_number: partData.serial_number,
+          item_id: partData.item_id,
+          item_name: partData.item_name,
+          quantity: partData.quantity,
+          cost: partData.cost,
+          date: new Date(),
+        });
+
+      if (error) throw error;
+
+      // Update machine readings
+      await supabase
+        .from('amc_machines')
+        .update({
+          last_a4_reading: partData.readings.a4,
+          last_a3_reading: partData.readings.a3,
+          last_reading_date: new Date()
+        })
+        .eq('id', partData.machine_id);
+
+      toast.success("Parts added successfully");
+      setSelectedMachine(null);
+      setIsAddPartsDialogOpen(false);
+    } catch (error) {
+      console.error('Error adding parts:', error);
+      toast.error("Failed to add parts");
+    }
   };
 
   return (
@@ -234,6 +274,17 @@ const RentalMachines = () => {
                               >
                                 <Settings className="h-4 w-4" />
                               </Button>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                onClick={() => {
+                                  setSelectedMachine(machine);
+                                  setIsAddPartsDialogOpen(true);
+                                }}
+                                title="Add Parts"
+                              >
+                                <Settings className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="icon"
@@ -347,6 +398,13 @@ const RentalMachines = () => {
       </Tabs>
 
       {/* TODO: Add modals for adding machine and readings */}
+
+      <AddRentalPartsDialog
+        open={isAddPartsDialogOpen}
+        onOpenChange={setIsAddPartsDialogOpen}
+        machineData={selectedMachine}
+        onPartAdded={handleAddParts}
+      />
     </div>
   );
 };
