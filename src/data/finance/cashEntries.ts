@@ -11,8 +11,8 @@ export const cashEntries: CashEntry[] = [
     department: "Sales",
     category: "Machine Sale",
     description: "Cash payment for Xerox machine",
-    paymentMethod: "Cash",
-    enteredBy: "John Doe",
+    payment_method: "Cash",
+    entered_by: "John Doe",
     type: "Income",
     reference: "INV-001"
   },
@@ -23,8 +23,8 @@ export const cashEntries: CashEntry[] = [
     department: "Administration",
     category: "Office Supplies",
     description: "Stationary purchase",
-    paymentMethod: "Cash",
-    enteredBy: "Jane Smith",
+    payment_method: "Cash",
+    entered_by: "Jane Smith",
     type: "Expense",
     reference: "EXP-001"
   },
@@ -35,8 +35,8 @@ export const cashEntries: CashEntry[] = [
     department: "Service",
     category: "Service Call",
     description: "On-site service payment",
-    paymentMethod: "Cash",
-    enteredBy: "John Doe",
+    payment_method: "Cash",
+    entered_by: "John Doe",
     type: "Income",
     reference: "SRV-001"
   },
@@ -47,8 +47,8 @@ export const cashEntries: CashEntry[] = [
     department: "Service",
     category: "Transport",
     description: "Fuel for service vehicle",
-    paymentMethod: "Cash",
-    enteredBy: "Mike Johnson",
+    payment_method: "Cash",
+    entered_by: "Mike Johnson",
     type: "Expense",
     reference: "EXP-002"
   },
@@ -59,8 +59,8 @@ export const cashEntries: CashEntry[] = [
     department: "Sales",
     category: "AMC Payment",
     description: "AMC quarterly payment",
-    paymentMethod: "Cash",
-    enteredBy: "John Doe",
+    payment_method: "Cash",
+    entered_by: "John Doe",
     type: "Income",
     reference: "AMC-001"
   }
