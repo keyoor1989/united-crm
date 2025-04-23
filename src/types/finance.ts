@@ -100,4 +100,9 @@ export interface Receivable {
   contactPerson?: string;
   contactNumber?: string;
   priority: 'Low' | 'Medium' | 'High';
+  // Adding missing properties that are used in OutstandingReceivables.tsx
+  paymentMode?: string;
+  department?: string;
+  branch?: string;
+  paymentMethod?: string;
 }
