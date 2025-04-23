@@ -101,7 +101,7 @@ const RentalMachines = () => {
     setActiveTab("parts");
   };
   
-  // Handle view billing history
+  // Handle view billing
   const handleViewBilling = (machine: RentalMachine) => {
     setSelectedMachine(machine);
     setActiveTab("billing");
@@ -133,7 +133,10 @@ const RentalMachines = () => {
           item_name: partData.item_name,
           quantity: partData.quantity,
           cost: partData.cost,
-          date: new Date(),
+          date: format(new Date(), 'yyyy-MM-dd'), // Format date as a string
+          customer_id: partData.machine_id.split('-')[0], // Ensure this is a valid UUID
+          customer_name: partData.customer_name || selectedMachine?.clientName,
+          contract_id: selectedMachine?.id,
         });
 
       if (error) throw error;
@@ -144,7 +147,7 @@ const RentalMachines = () => {
         .update({
           last_a4_reading: partData.readings.a4,
           last_a3_reading: partData.readings.a3,
-          last_reading_date: new Date()
+          last_reading_date: format(new Date(), 'yyyy-MM-dd') // Format date as a string
         })
         .eq('id', partData.machine_id);
 
