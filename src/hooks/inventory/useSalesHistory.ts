@@ -11,6 +11,44 @@ export const useSalesHistory = (itemName: string | null) => {
       try {
         console.log('Fetching sales history for item:', itemName);
         
+        // First try to match by customer name directly for customer history view
+        const { data: salesData, error: salesError } = await supabase
+          .from('sales')
+          .select(`
+            id, 
+            date, 
+            customer_name, 
+            status, 
+            payment_status, 
+            total_amount,
+            invoice_number
+          `)
+          .eq('customer_name', itemName);
+        
+        if (salesError) {
+          console.error('Error fetching sales data:', salesError);
+          return [];
+        }
+        
+        if (salesData && salesData.length > 0) {
+          console.log(`Found ${salesData.length} sales records by customer name`);
+          
+          // For customer history view, return formatted sales data
+          return salesData.map(sale => ({
+            id: sale.id,
+            sales: {
+              date: sale.date,
+              customer_name: sale.customer_name,
+              status: sale.status,
+              payment_status: sale.payment_status,
+              total_amount: sale.total_amount,
+              invoice_number: sale.invoice_number
+            },
+            total: sale.total_amount
+          }));
+        }
+        
+        // If no results by customer name, try the original item search approach
         // Step 1: Get the item details from opening_stock_entries
         const { data: stockItem, error: stockError } = await supabase
           .from('opening_stock_entries')
@@ -62,13 +100,13 @@ export const useSalesHistory = (itemName: string | null) => {
           }));
         }
         
-        const { data: salesData, error: salesError } = await supabase
+        const { data: salesData2, error: salesError2 } = await supabase
           .from('sales')
           .select('id, date, customer_name, status, payment_status')
           .in('id', saleIds);
         
-        if (salesError) {
-          console.error('Error fetching sales data:', salesError);
+        if (salesError2) {
+          console.error('Error fetching sales data:', salesError2);
           return salesItems.map(item => ({
             ...item,
             sales: { date: null, customer_name: 'Unknown', status: 'unknown' }
@@ -78,7 +116,7 @@ export const useSalesHistory = (itemName: string | null) => {
         // Step 4: Combine sales items with their corresponding sale details
         return salesItems.map(item => ({
           ...item,
-          sales: salesData?.find(sale => sale.id === item.sale_id) || { 
+          sales: salesData2?.find(sale => sale.id === item.sale_id) || { 
             date: null, 
             customer_name: 'Unknown', 
             status: 'unknown' 
