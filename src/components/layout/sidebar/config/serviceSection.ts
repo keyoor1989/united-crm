@@ -1,9 +1,10 @@
 
-import { BarChart3, HelpingHand, PhoneCall, Settings, Wrench, ClipboardList } from "lucide-react";
-import { SidebarSectionConfig } from "../types/navTypes";
+import { BarChart3, HelpingHand, PhoneCall, Settings, Wrench, ClipboardList, Coins } from "lucide-react";
+import { NavSection } from "../types/navTypes";
 
-const serviceSection: SidebarSectionConfig = {
-  title: "Service",
+export const serviceSection: NavSection = {
+  key: "service",
+  label: "Service",
   icon: Settings,
   items: [
     {
@@ -25,6 +26,11 @@ const serviceSection: SidebarSectionConfig = {
       to: "/service-inventory",
       icon: ClipboardList,
       label: "Inventory Management"
+    },
+    {
+      to: "/rental-machines",
+      icon: Coins,
+      label: "Rental Machines"
     },
     {
       to: "/engineer-performance",

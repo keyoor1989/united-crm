@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import UnifiedPurchase from './pages/inventory/UnifiedPurchase';
@@ -17,6 +18,7 @@ import ServiceCallForm from './pages/ServiceCallForm';
 import ServiceBilling from './pages/ServiceBilling';
 import ServiceInventoryManagement from './pages/ServiceInventoryManagement';
 import EngineerPerformanceDashboard from './pages/EngineerPerformanceDashboard';
+import RentalMachines from './pages/service/RentalMachines'; // Updated import path
 
 // Import sales pages
 import Quotations from './pages/sales/Quotations';
@@ -97,6 +99,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/service-billing" element={<ServiceBilling />} />
         <Route path="/service-inventory" element={<ServiceInventoryManagement />} />
         <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
+        <Route path="/rental-machines" element={<RentalMachines />} /> {/* Moved to service section */}
         
         {/* Sales Management */}
         <Route path="/quotations" element={<Quotations />} />
