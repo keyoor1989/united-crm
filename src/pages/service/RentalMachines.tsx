@@ -11,6 +11,8 @@ import MachinesTab from "@/components/service/rental/MachinesTab";
 import BillingTab from "@/components/service/rental/BillingTab";
 import PartsTab from "@/components/service/rental/PartsTab";
 import AddRentalPartsDialog from "@/components/service/rental/AddRentalPartsDialog";
+import AddRentalMachineDialog from "@/components/service/rental/AddRentalMachineDialog";
+import AddRentalReadingDialog from "@/components/service/rental/AddRentalReadingDialog";
 
 const RentalMachines = () => {
   const [activeTab, setActiveTab] = useState<string>("machines");
@@ -26,7 +28,8 @@ const RentalMachines = () => {
     handleGenerateBilling,
     handlePrintContract,
     isLoading,
-    addRentalParts
+    addRentalParts,
+    refreshData
   } = useRentalMachines();
 
   const handleAddReading = (machine: RentalMachine) => {
@@ -44,9 +47,8 @@ const RentalMachines = () => {
     setIsAddPartsDialogOpen(true);
   };
 
-  // Handle add new machine
   const handleAddMachine = () => {
-    setIsAddMachineModalOpen(false);
+    setIsAddMachineModalOpen(true);
   };
 
   const handlePartAdded = async (data: any) => {
@@ -68,7 +70,7 @@ const RentalMachines = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setIsAddMachineModalOpen(true)}>
+          <Button onClick={handleAddMachine}>
             <Plus className="mr-2 h-4 w-4" /> Add Machine
           </Button>
         </div>
@@ -116,6 +118,20 @@ const RentalMachines = () => {
           <PartsTab selectedMachine={selectedMachine} />
         </TabsContent>
       </Tabs>
+
+      {/* Dialogs */}
+      <AddRentalMachineDialog
+        open={isAddMachineModalOpen}
+        onOpenChange={setIsAddMachineModalOpen}
+        onMachineAdded={refreshData}
+      />
+
+      <AddRentalReadingDialog
+        open={isAddReadingModalOpen}
+        onOpenChange={setIsAddReadingModalOpen}
+        machineData={selectedMachine}
+        onReadingAdded={refreshData}
+      />
 
       <AddRentalPartsDialog
         open={isAddPartsDialogOpen}

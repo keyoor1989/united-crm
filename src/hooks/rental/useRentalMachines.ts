@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { RentalMachine } from '@/types/finance';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,54 +19,54 @@ export const useRentalMachines = () => {
   );
 
   // Fetch rental machines from database
-  useEffect(() => {
-    const fetchRentalMachines = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('amc_machines')
-          .select('*, amc_contracts(*)');
-        
-        if (error) {
-          throw error;
-        }
-
-        if (data) {
-          // Map the database schema to our frontend RentalMachine type
-          const mappedMachines: RentalMachine[] = data.map(machine => ({
-            id: machine.id,
-            serialNumber: machine.serial_number,
-            model: machine.model,
-            clientName: machine.customer_name,
-            clientId: machine.customer_id,
-            location: machine.location,
-            startDate: machine.start_date,
-            endDate: machine.end_date,
-            monthlyRent: machine.current_rent,
-            copyLimitA4: machine.copy_limit_a4,
-            copyLimitA3: machine.copy_limit_a3,
-            currentA4Reading: machine.last_a4_reading || 0,
-            currentA3Reading: machine.last_a3_reading || 0,
-            lastReadingDate: machine.last_reading_date || new Date().toISOString(),
-            status: machine.contract_id ? 'Active' : 'Inactive',
-            contractId: machine.contract_id,
-            customerId: machine.customer_id,
-            department: machine.department || '',
-          }));
-          
-          setMachines(mappedMachines);
-        }
-      } catch (err) {
-        console.error('Error fetching rental machines:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred while fetching rental machines');
-        toast.error('Failed to load rental machines');
-      } finally {
-        setIsLoading(false);
+  const fetchRentalMachines = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('amc_machines')
+        .select('*, amc_contracts(*)');
+      
+      if (error) {
+        throw error;
       }
-    };
 
-    fetchRentalMachines();
+      if (data) {
+        // Map the database schema to our frontend RentalMachine type
+        const mappedMachines: RentalMachine[] = data.map(machine => ({
+          id: machine.id,
+          serialNumber: machine.serial_number,
+          model: machine.model,
+          clientName: machine.customer_name,
+          clientId: machine.customer_id,
+          location: machine.location,
+          startDate: machine.start_date,
+          endDate: machine.end_date,
+          monthlyRent: machine.current_rent,
+          copyLimitA4: machine.copy_limit_a4,
+          copyLimitA3: machine.copy_limit_a3,
+          currentA4Reading: machine.last_a4_reading || 0,
+          currentA3Reading: machine.last_a3_reading || 0,
+          lastReadingDate: machine.last_reading_date || new Date().toISOString(),
+          status: machine.contract_id ? 'Active' : 'Inactive',
+          contractId: machine.contract_id,
+          customerId: machine.customer_id,
+          department: machine.department || '',
+        }));
+        
+        setMachines(mappedMachines);
+      }
+    } catch (err) {
+      console.error('Error fetching rental machines:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred while fetching rental machines');
+      toast.error('Failed to load rental machines');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRentalMachines();
+  }, [fetchRentalMachines]);
 
   const handleGenerateBilling = async (machine: RentalMachine) => {
     try {
@@ -164,6 +164,30 @@ export const useRentalMachines = () => {
     }
   };
 
+  const addRentalMachine = async (machineData: any) => {
+    try {
+      await supabase.from('amc_machines').insert(machineData);
+      await fetchRentalMachines(); // Refresh the list after adding
+      return true;
+    } catch (err) {
+      console.error('Error adding rental machine:', err);
+      toast.error('Failed to add rental machine');
+      return false;
+    }
+  };
+
+  const updateMachineReading = async (machineId: string, readingData: any) => {
+    try {
+      await supabase.from('amc_machines').update(readingData).eq('id', machineId);
+      await fetchRentalMachines(); // Refresh the list after updating
+      return true;
+    } catch (err) {
+      console.error('Error updating machine reading:', err);
+      toast.error('Failed to update reading');
+      return false;
+    }
+  };
+
   return {
     machines,
     setMachines,
@@ -175,6 +199,9 @@ export const useRentalMachines = () => {
     handleGenerateBilling,
     handlePrintContract,
     error,
-    addRentalParts
+    addRentalParts,
+    addRentalMachine,
+    updateMachineReading,
+    refreshData: fetchRentalMachines
   };
 };
