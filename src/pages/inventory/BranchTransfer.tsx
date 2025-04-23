@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Filter, Plus, ArrowLeftRight, Box, Building, Send } from "lucide-react";
+import { Search, Filter, Plus, ArrowLeftRight, Building, Send } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define types for branch transfers
 type Branch = 'Indore (HQ)' | 'Bhopal Office' | 'Jabalpur Office';
@@ -44,78 +45,16 @@ const mockItems = [
   { id: "4", name: "Cyan Toner", brand: "Kyocera", model: "2554ci" }
 ];
 
-// Mock transfer data
-const mockTransfers: BranchTransfer[] = [
-  {
-    id: "BT001",
-    itemId: "1",
-    itemName: "Black Toner",
-    quantity: 5,
-    sourceBranch: "Indore (HQ)",
-    destinationBranch: "Bhopal Office",
-    requestDate: "2025-03-15",
-    approvedDate: "2025-03-16",
-    dispatchDate: "2025-03-17",
-    status: "Dispatched",
-    transferMethod: "Courier",
-    trackingNumber: "COUR123456",
-    remarks: "Urgent requirement for service",
-    requestedBy: "Rajesh Kumar",
-    approvedBy: "Amit Sharma",
-  },
-  {
-    id: "BT002",
-    itemId: "2",
-    itemName: "Drum Unit",
-    quantity: 3,
-    sourceBranch: "Bhopal Office",
-    destinationBranch: "Jabalpur Office",
-    requestDate: "2025-03-20",
-    approvedDate: "2025-03-21",
-    dispatchDate: "2025-03-22",
-    status: "Received",
-    transferMethod: "Bus",
-    trackingNumber: "BUS789012",
-    remarks: "Replenishment of low stock",
-    requestedBy: "Vikram Singh",
-    approvedBy: "Pooja Verma",
-  },
-  {
-    id: "BT003",
-    itemId: "3",
-    itemName: "Fuser Unit",
-    quantity: 2,
-    sourceBranch: "Indore (HQ)",
-    destinationBranch: "Jabalpur Office",
-    requestDate: "2025-03-25",
-    approvedDate: "2025-03-26",
-    status: "Approved",
-    transferMethod: "Hand Delivery",
-    remarks: "Stock balancing between branches",
-    requestedBy: "Neha Gupta",
-    approvedBy: "Amit Sharma",
-  },
-  {
-    id: "BT004",
-    itemId: "4",
-    itemName: "Cyan Toner",
-    quantity: 10,
-    sourceBranch: "Bhopal Office",
-    destinationBranch: "Indore (HQ)",
-    requestDate: "2025-03-30",
-    status: "Requested",
-    transferMethod: "Courier",
-    remarks: "Additional stock for new customer",
-    requestedBy: "Rajesh Kumar",
-  },
-];
-
 const BranchTransfer = () => {
   const [activeTab, setActiveTab] = useState("transfers");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<TransferStatus | "all">("all");
   const [filterBranch, setFilterBranch] = useState<Branch | "all">("all");
   const [showNewTransferDialog, setShowNewTransferDialog] = useState(false);
+  
+  // Transfers state
+  const [transfers, setTransfers] = useState<any[]>([]);
+  const [loadingTransfers, setLoadingTransfers] = useState(false);
   
   // New transfer form state
   const [transferForm, setTransferForm] = useState({
@@ -128,26 +67,48 @@ const BranchTransfer = () => {
     remarks: ""
   });
   
-  const filteredTransfers = mockTransfers.filter(transfer => {
+  // Fetch transfers from Supabase
+  useEffect(() => {
+    const fetchTransfers = async () => {
+      setLoadingTransfers(true);
+      const { data, error } = await supabase
+        .from("inventory_transfers")
+        .select("*")
+        .or('source_type.eq.Branch,destination_type.eq.Branch') // Only get transfers involving branches
+        .order("request_date", { ascending: false });
+      
+      if (error) {
+        toast.error("Error fetching transfers: " + error.message);
+        setLoadingTransfers(false);
+        return;
+      }
+      setTransfers(data || []);
+      setLoadingTransfers(false);
+    };
+    
+    fetchTransfers();
+  }, []);
+  
+  const filteredTransfers = transfers.filter(transfer => {
     // Search by ID, item, or branch
     const searchMatch = 
-      transfer.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.sourceBranch.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transfer.destinationBranch.toLowerCase().includes(searchQuery.toLowerCase());
+      transfer.id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transfer.item_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (transfer.source_branch && transfer.source_branch.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (transfer.destination_branch && transfer.destination_branch.toLowerCase().includes(searchQuery.toLowerCase()));
     
     // Filter by status
     const statusMatch = filterStatus === "all" ? true : transfer.status === filterStatus;
     
     // Filter by branch (source or destination)
     const branchMatch = filterBranch === "all" ? true : 
-      (transfer.sourceBranch === filterBranch || transfer.destinationBranch === filterBranch);
+      (transfer.source_branch === filterBranch || transfer.destination_branch === filterBranch);
     
     return searchMatch && statusMatch && branchMatch;
   });
   
-  // Handle submitting new transfer
-  const handleSubmitTransfer = (e: React.FormEvent) => {
+  // Handle submitting new transfer to Supabase
+  const handleSubmitTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate that source and destination are different
@@ -156,21 +117,61 @@ const BranchTransfer = () => {
       return;
     }
     
-    // In a real app, you would save to database
-    console.log("New transfer:", transferForm);
-    toast.success("Transfer request created successfully!");
+    if (!transferForm.itemId) {
+      toast.error("Please select an item.");
+      return;
+    }
     
-    // Reset form and close dialog
-    setTransferForm({
-      itemId: "",
-      quantity: 1,
-      sourceBranch: "",
-      destinationBranch: "",
-      transferMethod: "Courier",
-      trackingNumber: "",
-      remarks: ""
-    });
-    setShowNewTransferDialog(false);
+    if (!transferForm.sourceBranch || !transferForm.destinationBranch) {
+      toast.error("Please select both source and destination branches.");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.from("inventory_transfers").insert({
+        item_id: transferForm.itemId,
+        quantity: transferForm.quantity,
+        source_type: "Branch",
+        source_branch: transferForm.sourceBranch,
+        destination_type: "Branch",
+        destination_branch: transferForm.destinationBranch,
+        transfer_method: transferForm.transferMethod,
+        tracking_number: transferForm.trackingNumber || null,
+        remarks: transferForm.remarks || null,
+        requested_by: "Current User", // You can fetch the real user
+        status: "Requested"
+      });
+      
+      if (error) {
+        toast.error("Failed to create transfer: " + error.message);
+      } else {
+        toast.success("Branch transfer request created successfully!");
+        
+        // Reload transfers
+        const { data } = await supabase
+          .from("inventory_transfers")
+          .select("*")
+          .or('source_type.eq.Branch,destination_type.eq.Branch')
+          .order("request_date", { ascending: false });
+        
+        setTransfers(data || []);
+        
+        // Reset form and close dialog
+        setTransferForm({
+          itemId: "",
+          quantity: 1,
+          sourceBranch: "",
+          destinationBranch: "",
+          transferMethod: "Courier",
+          trackingNumber: "",
+          remarks: ""
+        });
+        setShowNewTransferDialog(false);
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      console.error("Transfer creation error:", error);
+    }
   };
   
   // Get status badge variant
@@ -191,7 +192,7 @@ const BranchTransfer = () => {
         <div>
           <h1 className="text-2xl font-bold">Branch Transfers</h1>
           <p className="text-muted-foreground">
-            Manage and track inventory transfers between branches
+            Manage and track inventory transfers between branches (Live)
           </p>
         </div>
         <Button 
@@ -272,7 +273,7 @@ const BranchTransfer = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Transfer ID</TableHead>
-                    <TableHead>Item</TableHead>
+                    <TableHead>Item ID</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Source Branch</TableHead>
                     <TableHead>Destination Branch</TableHead>
@@ -282,44 +283,50 @@ const BranchTransfer = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTransfers.map((transfer) => (
+                  {loadingTransfers && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center">Loading...</TableCell>
+                    </TableRow>
+                  )}
+                  
+                  {!loadingTransfers && filteredTransfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").map((transfer) => (
                     <TableRow key={transfer.id}>
                       <TableCell className="font-medium">{transfer.id}</TableCell>
                       <TableCell>
-                        <div>{transfer.itemName}</div>
+                        <div>{transfer.item_id}</div>
                         <div className="text-xs text-muted-foreground">
-                          {mockItems.find(i => i.id === transfer.itemId)?.brand} 
+                          {mockItems.find(i => i.id === transfer.item_id)?.brand} 
                           {" "}
-                          {mockItems.find(i => i.id === transfer.itemId)?.model}
+                          {mockItems.find(i => i.id === transfer.item_id)?.model}
                         </div>
                       </TableCell>
                       <TableCell>{transfer.quantity}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <Building className="h-4 w-4" />
-                          {transfer.sourceBranch}
+                          {transfer.source_branch}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5">
                           <Building className="h-4 w-4" />
-                          {transfer.destinationBranch}
+                          {transfer.destination_branch}
                         </div>
                       </TableCell>
-                      <TableCell>{new Date(transfer.requestDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(transfer.request_date).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Badge variant={getStatusBadgeVariant(transfer.status)}>
+                        <Badge variant={getStatusBadgeVariant(transfer.status as TransferStatus)}>
                           {transfer.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{transfer.transferMethod || "-"}</TableCell>
+                      <TableCell>{transfer.transfer_method || "-"}</TableCell>
                     </TableRow>
                   ))}
                   
-                  {filteredTransfers.length === 0 && (
+                  {!loadingTransfers && filteredTransfers.filter(t => t.status !== "Received" && t.status !== "Cancelled").length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">
-                        No transfers found
+                        No active transfers found
                       </TableCell>
                     </TableRow>
                   )}
@@ -342,7 +349,7 @@ const BranchTransfer = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Transfer ID</TableHead>
-                    <TableHead>Item</TableHead>
+                    <TableHead>Item ID</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Source Branch</TableHead>
                     <TableHead>Destination Branch</TableHead>
@@ -352,42 +359,53 @@ const BranchTransfer = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* We would filter for completed/cancelled transfers in a real app */}
-                  {mockTransfers
-                    .filter(t => t.status === "Received" || t.status === "Cancelled")
-                    .map((transfer) => (
-                      <TableRow key={transfer.id}>
-                        <TableCell className="font-medium">{transfer.id}</TableCell>
-                        <TableCell>
-                          <div>{transfer.itemName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {mockItems.find(i => i.id === transfer.itemId)?.brand} 
-                            {" "}
-                            {mockItems.find(i => i.id === transfer.itemId)?.model}
-                          </div>
-                        </TableCell>
-                        <TableCell>{transfer.quantity}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            <Building className="h-4 w-4" />
-                            {transfer.sourceBranch}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1.5">
-                            <Building className="h-4 w-4" />
-                            {transfer.destinationBranch}
-                          </div>
-                        </TableCell>
-                        <TableCell>{new Date(transfer.requestDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadgeVariant(transfer.status)}>
-                            {transfer.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{transfer.transferMethod || "-"}</TableCell>
-                      </TableRow>
-                    ))}
+                  {loadingTransfers && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center">Loading...</TableCell>
+                    </TableRow>
+                  )}
+                  
+                  {!loadingTransfers && filteredTransfers.filter(t => t.status === "Received" || t.status === "Cancelled").map((transfer) => (
+                    <TableRow key={transfer.id}>
+                      <TableCell className="font-medium">{transfer.id}</TableCell>
+                      <TableCell>
+                        <div>{transfer.item_id}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {mockItems.find(i => i.id === transfer.item_id)?.brand} 
+                          {" "}
+                          {mockItems.find(i => i.id === transfer.item_id)?.model}
+                        </div>
+                      </TableCell>
+                      <TableCell>{transfer.quantity}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Building className="h-4 w-4" />
+                          {transfer.source_branch}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Building className="h-4 w-4" />
+                          {transfer.destination_branch}
+                        </div>
+                      </TableCell>
+                      <TableCell>{new Date(transfer.request_date).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(transfer.status as TransferStatus)}>
+                          {transfer.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{transfer.transfer_method || "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                  
+                  {!loadingTransfers && filteredTransfers.filter(t => t.status === "Received" || t.status === "Cancelled").length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="h-24 text-center">
+                        No completed transfers found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
