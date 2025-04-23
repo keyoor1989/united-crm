@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,8 @@ const formSchema = z.object({
   monthlyRent: z.string().min(1, "Monthly rent is required"),
   copyLimitA4: z.string().optional(),
   copyLimitA3: z.string().optional(),
+  extraA4CopyCharge: z.string().optional(),
+  extraA3CopyCharge: z.string().optional(),
   department: z.string().optional(),
   initialA4Reading: z.string().optional(),
   initialA3Reading: z.string().optional(),
@@ -40,6 +42,8 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
   onOpenChange,
   onMachineAdded,
 }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -52,6 +56,8 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
       monthlyRent: "",
       copyLimitA4: "",
       copyLimitA3: "",
+      extraA4CopyCharge: "0",
+      extraA3CopyCharge: "0",
       department: "",
       initialA4Reading: "0",
       initialA3Reading: "0",
@@ -60,9 +66,33 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
 
   const onSubmit = async (values: FormValues) => {
     try {
-      // Insert into amc_machines table with the correct field names
-      // Note: We need to adjust our field names to match what the database expects
-      const { error } = await supabase.from('amc_machines').insert({
+      setIsSubmitting(true);
+      
+      // First, create a contract record to get a contract_id
+      const { data: contractData, error: contractError } = await supabase.from('amc_contracts').insert({
+        machine_model: values.model,
+        serial_number: values.serialNumber,
+        customer_name: values.clientName,
+        customer_id: values.clientId || null,
+        machine_type: 'Copier',
+        contract_type: 'Rental',
+        start_date: values.startDate,
+        end_date: values.endDate,
+        monthly_rent: parseFloat(values.monthlyRent),
+        copy_limit_a4: values.copyLimitA4 ? parseInt(values.copyLimitA4) : 0,
+        copy_limit_a3: values.copyLimitA3 ? parseInt(values.copyLimitA3) : 0,
+        extra_a4_copy_charge: values.extraA4CopyCharge ? parseFloat(values.extraA4CopyCharge) : 0,
+        extra_a3_copy_charge: values.extraA3CopyCharge ? parseFloat(values.extraA3CopyCharge) : 0,
+        department: values.department || null,
+        location: values.location,
+        status: 'Active',
+        billing_cycle: 'Monthly'
+      }).select('id').single();
+
+      if (contractError) throw contractError;
+      
+      // Then insert into amc_machines table with the contract_id
+      const { error: machineError } = await supabase.from('amc_machines').insert({
         model: values.model,
         serial_number: values.serialNumber,
         customer_name: values.clientName,
@@ -71,18 +101,18 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
         start_date: values.startDate,
         end_date: values.endDate,
         current_rent: parseFloat(values.monthlyRent),
-        copy_limit_a4: values.copyLimitA4 ? parseInt(values.copyLimitA4) : null,
-        copy_limit_a3: values.copyLimitA3 ? parseInt(values.copyLimitA3) : null,
+        copy_limit_a4: values.copyLimitA4 ? parseInt(values.copyLimitA4) : 0,
+        copy_limit_a3: values.copyLimitA3 ? parseInt(values.copyLimitA3) : 0,
         department: values.department || null,
         machine_type: 'Copier',
         contract_type: 'Rental',
-        contract_id: null, // Adding this field since the database schema expects it
+        contract_id: contractData.id, // Using the contract_id from the created contract
         last_a4_reading: values.initialA4Reading ? parseInt(values.initialA4Reading) : 0,
         last_a3_reading: values.initialA3Reading ? parseInt(values.initialA3Reading) : 0,
         last_reading_date: values.startDate
       });
 
-      if (error) throw error;
+      if (machineError) throw machineError;
 
       toast.success("Rental machine added successfully");
       form.reset();
@@ -91,6 +121,8 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
     } catch (err) {
       console.error("Error adding rental machine:", err);
       toast.error("Failed to add rental machine");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -99,6 +131,7 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Rental Machine</DialogTitle>
+          <DialogDescription>Enter machine details including rental terms and initial readings</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -246,7 +279,35 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
               />
             </div>
 
-            {/* Add the new fields for initial readings */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="extraA4CopyCharge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>A4 Per Copy Charge (₹)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="e.g. 0.50" step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="extraA3CopyCharge"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>A3 Per Copy Charge (₹)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="e.g. 1.00" step="0.01" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4 border-t pt-4">
               <FormField
                 control={form.control}
@@ -280,7 +341,9 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
-              <Button type="submit">Add Machine</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Adding..." : "Add Machine"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>
