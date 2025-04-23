@@ -49,6 +49,7 @@ import InventoryHistory from './pages/inventory/InventoryHistory';
 import BranchTransfer from './pages/inventory/BranchTransfer';
 import ProfitReport from './pages/inventory/ProfitReport';
 import AmcTracker from './pages/inventory/AmcTracker';
+import WarehouseTransfer from './pages/inventory/WarehouseTransfer';
 
 // Import reports pages
 import Reports from './pages/Reports';
@@ -130,6 +131,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/inventory/sales-reports" element={<SalesReports />} />
         <Route path="/inventory/transfers" element={<InventoryHistory />} />
         <Route path="/inventory/branch-transfer" element={<BranchTransfer />} />
+        <Route path="/inventory/warehouse-transfer" element={<WarehouseTransfer />} />
         <Route path="/inventory/profit-report" element={<ProfitReport />} />
         <Route path="/inventory/amc-tracker" element={<AmcTracker />} />
         
