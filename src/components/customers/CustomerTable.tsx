@@ -28,6 +28,7 @@ import { CustomerType } from "@/types/customer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { CustomerHistoryDialog } from "./CustomerHistoryDialog";
 
 interface CustomerTableProps {
   customers: CustomerType[];
@@ -46,6 +47,8 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
 }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [historyDialogOpen, setHistoryDialogOpen] = React.useState(false);
+  const [historyCustomer, setHistoryCustomer] = React.useState<CustomerType | null>(null);
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -205,117 +208,130 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   }
 
   return (
-    <Table>
-      <TableHeader className="bg-gray-100">
-        <TableRow>
-          <TableHead className="w-[250px] font-bold text-gray-800">Customer Name</TableHead>
-          <TableHead className="w-[200px] font-bold text-gray-800">Contact</TableHead>
-          <TableHead className="w-[120px] font-bold text-gray-800">Location</TableHead>
-          <TableHead className="w-[180px] font-bold text-gray-800">Machines</TableHead>
-          <TableHead className="w-[120px] font-bold text-gray-800">Status</TableHead>
-          <TableHead className="w-[120px] text-right font-bold text-gray-800">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {customers.map((customer, index) => (
-          <TableRow 
-            key={customer.id}
-            className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-          >
-            <TableCell className="font-medium border-l-4 border-brand-500">
-              <div className="text-base font-semibold text-gray-900">{customer.name}</div>
-              <div className="text-xs text-muted-foreground">Last contact: {customer.lastContact}</div>
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1 text-gray-700">
-                  <Phone className="h-3 w-3 flex-shrink-0 text-gray-500" />
-                  <span className="truncate">{customer.phone}</span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-700">
-                  <Mail className="h-3 w-3 flex-shrink-0 text-gray-500" />
-                  <span className="truncate">{customer.email}</span>
-                </div>
-              </div>
-            </TableCell>
-            <TableCell className="text-gray-700">{customer.location}</TableCell>
-            <TableCell>
-              <div className="flex gap-1 flex-wrap">
-                {customer.machines.length > 1 ? (
-                  <>
-                    <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
-                    <Badge variant="outline" className="bg-slate-50">+{customer.machines.length - 1} more</Badge>
-                  </>
-                ) : customer.machines.length === 1 ? (
-                  <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
-                ) : (
-                  <span className="text-xs text-muted-foreground">No machines</span>
-                )}
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge className={getStatusColor(customer.status)}>{customer.status}</Badge>
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex items-center justify-end gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  title="Call"
-                  onClick={() => onCall(customer.phone)}
-                >
-                  <Phone className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  title="Email"
-                  onClick={() => onEmail(customer.email)}
-                >
-                  <Mail className="h-4 w-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  title="WhatsApp"
-                  onClick={() => onWhatsApp(customer.phone)}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white z-50">
-                    <DropdownMenuItem onClick={() => handleViewDetails(customer.id)}>
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleMachineHistory(customer.id)}>
-                      Machine History
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleCreateQuotation(customer)}>
-                      Create Quotation
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleScheduleService(customer.id)}>
-                      Schedule Service
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      className="text-red-600"
-                      onClick={() => handleDeleteCustomer(customer.id, customer.name)}
-                    >
-                      Delete Customer
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader className="bg-gray-100">
+          <TableRow>
+            <TableHead className="w-[250px] font-bold text-gray-800">Customer Name</TableHead>
+            <TableHead className="w-[200px] font-bold text-gray-800">Contact</TableHead>
+            <TableHead className="w-[120px] font-bold text-gray-800">Location</TableHead>
+            <TableHead className="w-[180px] font-bold text-gray-800">Machines</TableHead>
+            <TableHead className="w-[120px] font-bold text-gray-800">Status</TableHead>
+            <TableHead className="w-[120px] text-right font-bold text-gray-800">Actions</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {customers.map((customer, index) => (
+            <TableRow 
+              key={customer.id}
+              className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+            >
+              <TableCell className="font-medium border-l-4 border-brand-500">
+                <div className="text-base font-semibold text-gray-900">{customer.name}</div>
+                <div className="text-xs text-muted-foreground">Last contact: {customer.lastContact}</div>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1 text-gray-700">
+                    <Phone className="h-3 w-3 flex-shrink-0 text-gray-500" />
+                    <span className="truncate">{customer.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-gray-700">
+                    <Mail className="h-3 w-3 flex-shrink-0 text-gray-500" />
+                    <span className="truncate">{customer.email}</span>
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-gray-700">{customer.location}</TableCell>
+              <TableCell>
+                <div className="flex gap-1 flex-wrap">
+                  {customer.machines.length > 1 ? (
+                    <>
+                      <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
+                      <Badge variant="outline" className="bg-slate-50">+{customer.machines.length - 1} more</Badge>
+                    </>
+                  ) : customer.machines.length === 1 ? (
+                    <Badge variant="outline" className="bg-slate-50">{customer.machines[0]}</Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No machines</span>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge className={getStatusColor(customer.status)}>{customer.status}</Badge>
+              </TableCell>
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    title="Call"
+                    onClick={() => onCall(customer.phone)}
+                  >
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    title="Email"
+                    onClick={() => onEmail(customer.email)}
+                  >
+                    <Mail className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    title="WhatsApp"
+                    onClick={() => onWhatsApp(customer.phone)}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white z-50">
+                      <DropdownMenuItem onClick={() => handleViewDetails(customer.id)}>
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setHistoryCustomer(customer);
+                        setHistoryDialogOpen(true);
+                      }}>
+                        View History
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleMachineHistory(customer.id)}>
+                        Machine History
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleCreateQuotation(customer)}>
+                        Create Quotation
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleScheduleService(customer.id)}>
+                        Schedule Service
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        className="text-red-600"
+                        onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                      >
+                        Delete Customer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <CustomerHistoryDialog
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
+        customer={historyCustomer}
+      />
+    </>
   );
 };
 
