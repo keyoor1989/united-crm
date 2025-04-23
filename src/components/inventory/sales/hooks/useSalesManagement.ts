@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SalesItem } from "../SalesTable";
 import { toast } from "sonner";
 import { 
@@ -18,10 +18,12 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
   const [statusFilter, setStatusFilter] = useState("All");
   const [customerTypeFilter, setCustomerTypeFilter] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState<Error | null>(null);
 
-  // Load sales data from the database
-  const loadSalesData = async (isCreditSalesOnly = false) => {
+  // Load sales data from the database - using useCallback to prevent recreation on every render
+  const loadSalesData = useCallback(async (isCreditSalesOnly = false) => {
     setLoading(true);
+    setLoadingError(null);
     try {
       const data = isCreditSalesOnly 
         ? await getCreditSales() 
@@ -30,10 +32,11 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
     } catch (error) {
       console.error("Error loading sales data:", error);
       toast.error("Failed to load sales data");
+      setLoadingError(error as Error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Load data on component mount if no initial data provided
   useEffect(() => {
@@ -42,7 +45,7 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
     } else {
       setLoading(false);
     }
-  }, [initialData]);
+  }, [initialData, loadSalesData]);
 
   // Filter data based on search query and filters
   const filteredSalesData = salesData.filter((item) => {
@@ -82,42 +85,54 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
 
   // Add a new sale
   const addNewSale = async (sale: SalesItem): Promise<string | null> => {
-    // Get the current user or default to Admin
-    const currentUser = "Admin"; // This would come from your auth context
-    
-    // Convert SalesItem to the format expected by the service
-    const saleRecord = {
-      date: new Date().toISOString(),
-      customer_name: sale.customer,
-      customer_type: sale.customerType,
-      status: sale.status,
-      payment_status: sale.paymentStatus,
-      payment_method: sale.paymentMethod,
-      invoice_number: sale.invoiceNumber,
-      bill_generated: sale.billGenerated,
-      subtotal: sale.total, // For simplicity, assuming total is subtotal
-      tax_amount: 0, // To be implemented
-      total_amount: sale.total,
-      created_by: currentUser, // Add the current user
-      shipment_method: sale.shipmentMethod,
-      shipment_details: sale.shipmentDetails
-    };
+    try {
+      // Get the current user or default to Admin
+      const currentUser = "Admin"; // This would come from your auth context
+      
+      // Convert SalesItem to the format expected by the service
+      const saleRecord = {
+        date: new Date().toISOString(),
+        customer_name: sale.customer,
+        customer_type: sale.customerType,
+        status: sale.status,
+        payment_status: sale.paymentStatus,
+        payment_method: sale.paymentMethod,
+        invoice_number: sale.invoiceNumber,
+        bill_generated: sale.billGenerated,
+        subtotal: sale.total, // For simplicity, assuming total is subtotal
+        tax_amount: 0, // To be implemented
+        total_amount: sale.total,
+        created_by: currentUser, // Add the current user
+        shipment_method: sale.shipmentMethod,
+        shipment_details: sale.shipmentDetails
+      };
 
-    const saleItem = {
-      item_name: sale.itemName,
-      quantity: sale.quantity,
-      unit_price: sale.unitPrice,
-      total: sale.total
-    };
+      const saleItem = {
+        item_name: sale.itemName,
+        quantity: sale.quantity,
+        unit_price: sale.unitPrice,
+        total: sale.total
+      };
 
-    const saleId = await addSale(saleRecord, [saleItem]);
-    
-    // Reload the sales data to include the new sale
-    if (saleId) {
-      loadSalesData();
+      const saleId = await addSale(saleRecord, [saleItem]);
+      
+      // Reload the sales data to include the new sale, but don't cause infinite loops
+      if (saleId) {
+        // Instead of calling loadSalesData directly which could cause rerender loops
+        // Just add the new sale to the salesData state
+        const newSale = {
+          ...sale,
+          id: saleId,
+          date: new Date().toISOString()
+        };
+        setSalesData(prevSales => [...prevSales, newSale]);
+      }
+      
+      return saleId;
+    } catch (error) {
+      toast.error("Failed to add sale: " + (error as Error).message);
+      return null;
     }
-    
-    return saleId;
   };
 
   // Generate bill for a sale
@@ -162,8 +177,16 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
 
     const success = await recordPaymentService(payment);
     if (success) {
-      // Reload the sales data to get the updated payment status
-      loadSalesData();
+      // Update the local state directly instead of calling loadSalesData
+      setSalesData(prev => prev.map(item => {
+        if (item.id === saleId) {
+          return {
+            ...item,
+            paymentStatus: 'Paid'
+          };
+        }
+        return item;
+      }));
       return true;
     }
     return false;
@@ -173,7 +196,17 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
   const updateShipmentDetails = async (saleId: string, shipmentData: any): Promise<boolean> => {
     const success = await updateShipmentDetailsService(saleId, shipmentData);
     if (success) {
-      loadSalesData();
+      // Update local state instead of reloading everything
+      setSalesData(prev => prev.map(item => {
+        if (item.id === saleId) {
+          return {
+            ...item,
+            shipmentMethod: shipmentData.shipment_method,
+            shipmentDetails: shipmentData
+          };
+        }
+        return item;
+      }));
       return true;
     }
     return false;
@@ -223,6 +256,7 @@ export const useSalesManagement = (initialData?: SalesItem[]) => {
     setSalesData,
     filteredSalesData,
     loading,
+    loadingError,
     searchQuery,
     setSearchQuery,
     paymentFilter,

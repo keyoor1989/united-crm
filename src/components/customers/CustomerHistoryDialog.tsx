@@ -1,12 +1,13 @@
 
 import React, { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, ListOrdered, User, MessageSquare, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerType } from "@/types/customer";
+import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   open: boolean;
@@ -20,26 +21,46 @@ export const CustomerHistoryDialog: React.FC<Props> = ({ open, onOpenChange, cus
   const [quotations, setQuotations] = useState<any[]>([]);
   const [serviceCalls, setServiceCalls] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchHistory = async () => {
-      if (!customer?.id) return;
+      if (!customer?.id || !open) return;
+      
       setLoading(true);
+      try {
+        const [salesResponse, quotationsResponse, serviceCallsResponse, notesResponse] = await Promise.all([
+          supabase.from("sales").select("*").eq("customer_id", customer.id).order('date', { ascending: false }),
+          supabase.from("quotations").select("*").eq("customer_id", customer.id).order('created_at', { ascending: false }),
+          supabase.from("service_calls").select("*").eq("customer_id", customer.id).order('created_at', { ascending: false }),
+          supabase.from("customer_notes").select("*").eq("customer_id", customer.id).order('created_at', { ascending: false })
+        ]);
+        
+        if (salesResponse.error) throw salesResponse.error;
+        if (quotationsResponse.error) throw quotationsResponse.error;
+        if (serviceCallsResponse.error) throw serviceCallsResponse.error;
+        if (notesResponse.error) throw notesResponse.error;
 
-      const [{ data: salesData }, { data: quotationsData }, { data: serviceCallsData }, { data: notesData }] = await Promise.all([
-        supabase.from("sales").select("*").eq("customer_id", customer.id).order('date', { ascending: false }),
-        supabase.from("quotations").select("*").eq("customer_id", customer.id).order('created_at', { ascending: false }),
-        supabase.from("service_calls").select("*").eq("customer_id", customer.id).order('created_at', { ascending: false }),
-        supabase.from("customer_notes").select("*").eq("customer_id", customer.id).order('created_at', { ascending: false })
-      ]);
-      setSales(salesData || []);
-      setQuotations(quotationsData || []);
-      setServiceCalls(serviceCallsData || []);
-      setNotes(notesData || []);
-      setLoading(false);
+        setSales(salesResponse.data || []);
+        setQuotations(quotationsResponse.data || []);
+        setServiceCalls(serviceCallsResponse.data || []);
+        setNotes(notesResponse.data || []);
+      } catch (error) {
+        console.error("Error fetching customer history:", error);
+        toast({
+          title: "Error loading history",
+          description: "There was a problem loading customer history. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
     };
-    if (open) fetchHistory();
-  }, [open, customer]);
+
+    if (open) {
+      fetchHistory();
+    }
+  }, [open, customer, toast]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -141,7 +162,7 @@ function HistoryItem({ item, type }: { item: any, type: string }) {
             <span className="font-medium">Sale #</span> {item.sales_number || item.invoice_number || "-"} | <span className="font-medium">Amount:</span> ₹{item.total_amount || 0}
             <div className="text-xs text-muted-foreground">Status: {item.status}, Payment: {item.payment_status}</div>
           </div>
-          <div className="text-xs text-muted-foreground">{new Date(item.date).toLocaleString()}</div>
+          <div className="text-xs text-muted-foreground">{item.date ? new Date(item.date).toLocaleString() : '-'}</div>
         </div>
       );
     case "quotation":
@@ -151,7 +172,7 @@ function HistoryItem({ item, type }: { item: any, type: string }) {
             <span className="font-medium">Quotation #</span> {item.quotation_number || "-"} | <span className="font-medium">Amount:</span> ₹{item.grand_total || 0}
             <div className="text-xs text-muted-foreground">Status: {item.status}</div>
           </div>
-          <div className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString()}</div>
+          <div className="text-xs text-muted-foreground">{item.created_at ? new Date(item.created_at).toLocaleString() : '-'}</div>
         </div>
       );
     case "service":
@@ -161,7 +182,7 @@ function HistoryItem({ item, type }: { item: any, type: string }) {
             <span className="font-medium">Service Call:</span> {item.issue_type} <span className="text-muted-foreground">({item.machine_model})</span>
             <div className="text-xs text-muted-foreground">Status: {item.status}</div>
           </div>
-          <div className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleString()}</div>
+          <div className="text-xs text-muted-foreground">{item.created_at ? new Date(item.created_at).toLocaleString() : '-'}</div>
         </div>
       );
     case "note":
@@ -170,7 +191,7 @@ function HistoryItem({ item, type }: { item: any, type: string }) {
           <div>
             <span className="font-medium">Note:</span> {item.content || "-"}
           </div>
-          <div className="text-xs text-muted-foreground">{item.created_at ? new Date(item.created_at).toLocaleString() : ""}</div>
+          <div className="text-xs text-muted-foreground">{item.created_at ? new Date(item.created_at).toLocaleString() : '-'}</div>
         </div>
       );
     default:

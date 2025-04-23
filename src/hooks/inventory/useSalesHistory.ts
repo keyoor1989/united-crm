@@ -33,10 +33,10 @@ export const useSalesHistory = (itemName: string | null) => {
           
         // If we found the item in opening_stock_entries, use its ID for matching
         if (stockItem?.id) {
-          query.or(`item_id.eq.${stockItem.id},item_name.ilike.%${itemName}%`)
+          query.or(`item_id.eq.${stockItem.id},item_name.ilike.%${itemName}%`);
         } else {
           // Fallback to flexible name matching
-          query.or(`item_name.ilike.%${itemName}%`);
+          query.ilike('item_name', `%${itemName}%`);
         }
         
         const { data: salesItems, error: salesItemsError } = await query;
@@ -89,6 +89,8 @@ export const useSalesHistory = (itemName: string | null) => {
         return [];
       }
     },
-    enabled: !!itemName
+    enabled: !!itemName,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false
   });
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,13 +21,10 @@ import { PaymentMethodChart } from "@/components/inventory/sales/charts/PaymentM
 
 // Payment method data
 import { 
-  CreditCard, 
-  Calendar, 
-  IndianRupee, 
   Wallet, 
+  Calendar, 
   Building2, 
-  CheckSquare,
-  BanknoteIcon
+  CheckSquare
 } from "lucide-react";
 
 const paymentMethods = [
@@ -90,12 +88,23 @@ const InventorySales = () => {
   
   const queryClient = useQueryClient();
 
-  // Load sales data when component mounts or tab changes
+  // Load sales data when component mounts
+  useEffect(() => {
+    // Only load data on initial mount
+    const initialLoad = async () => {
+      await loadSalesData();
+    };
+    
+    initialLoad();
+    // Don't include loadSalesData in dependencies to prevent infinite loops
+  }, []);
+
+  // Only reload data when activeTab changes to "analytics" and we don't have salesData yet
   useEffect(() => {
     if (activeTab === "analytics" && (!salesData || salesData.length === 0)) {
       loadSalesData();
     }
-  }, [activeTab, salesData, loadSalesData]);
+  }, [activeTab, salesData]);
 
   // Handle view details
   const handleViewDetails = (sale: SalesItem) => {
