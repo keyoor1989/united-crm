@@ -27,7 +27,6 @@ import { DateRange } from "react-day-picker";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
 import { Badge } from "@/components/ui/badge";
 
-// Import supabase client
 import { supabase } from "@/integrations/supabase/client";
 
 const cashPurposes = [
@@ -45,15 +44,12 @@ const CashRegister = () => {
     entered_by: "Current User"
   });
 
-  // Loading indicator for fetch and add entry
   const [loading, setLoading] = useState(false);
 
-  // Filter states
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   const [filteredEntries, setFilteredEntries] = useState<CashEntry[]>([]);
 
-  // Fetch data from Supabase
   const fetchEntries = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -62,7 +58,6 @@ const CashRegister = () => {
       .order("date", { ascending: false });
 
     if (!error && Array.isArray(data)) {
-      // Transform the data to match our CashEntry interface
       const transformedData = data.map(entry => ({
         id: entry.id,
         date: entry.date,
@@ -88,11 +83,9 @@ const CashRegister = () => {
     fetchEntries();
   }, []);
 
-  // Apply filters
   useEffect(() => {
     let filtered = [...entries];
     
-    // Date range filter
     if (dateRange?.from && dateRange?.to) {
       filtered = filtered.filter(entry => {
         const entryDate = parseISO(entry.date);
@@ -103,7 +96,6 @@ const CashRegister = () => {
       });
     }
     
-    // Department filter
     if (departmentFilter && departmentFilter !== "all") {
       filtered = filtered.filter(entry => entry.department === departmentFilter);
     }
@@ -137,9 +129,14 @@ const CashRegister = () => {
     setIsDialogOpen(false);
   };
 
-  // Handle Add Cash Entry (insert into supabase)
+  const handleInputChange = (field: string, value: string | number) => {
+    setCurrentEntry({
+      ...currentEntry,
+      [field]: value
+    });
+  };
+
   const handleFormSubmit = async () => {
-    // Required fields check
     if (
       !currentEntry.date ||
       !currentEntry.amount ||
@@ -147,13 +144,11 @@ const CashRegister = () => {
       !currentEntry.type ||
       !currentEntry.description
     ) {
-      // In production app, show a toast
       return;
     }
 
     setLoading(true);
 
-    // Insert into Supabase
     const insertObj = {
       date: currentEntry.date,
       amount: Number(currentEntry.amount),
@@ -166,7 +161,8 @@ const CashRegister = () => {
       reference: currentEntry.reference || "",
       po_number: currentEntry.po_number || null,
       invoice_number: currentEntry.invoice_number || null,
-      branch: currentEntry.branch || null
+      branch: currentEntry.branch || null,
+      narration: currentEntry.narration || null
     };
     
     const { error } = await supabase
@@ -177,16 +173,8 @@ const CashRegister = () => {
 
     if (!error) {
       setIsDialogOpen(false);
-      fetchEntries(); // Refresh list
+      fetchEntries();
     }
-    // else: production me toast ya error dikhayen
-  };
-
-  const handleInputChange = (field: string, value: string | number) => {
-    setCurrentEntry({
-      ...currentEntry,
-      [field]: value
-    });
   };
 
   const handleResetFilters = () => {
@@ -251,7 +239,6 @@ const CashRegister = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -285,7 +272,6 @@ const CashRegister = () => {
         </Card>
       </div>
 
-      {/* Filters */}
       <div className="bg-muted/40 p-4 rounded-lg">
         <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="w-full md:w-auto">
@@ -415,12 +401,12 @@ const CashRegister = () => {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Label htmlFor="narration">Narration (Optional)</Label>
             <Textarea 
-              id="notes" 
-              placeholder="Enter additional notes" 
-              value={currentEntry.reference || ""} 
-              onChange={(e) => handleInputChange("reference", e.target.value)} 
+              id="narration" 
+              placeholder="Enter additional narration details" 
+              value={currentEntry.narration || ""} 
+              onChange={(e) => handleInputChange("narration", e.target.value)} 
               rows={3}
             />
           </div>

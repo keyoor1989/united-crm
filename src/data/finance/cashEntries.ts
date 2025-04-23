@@ -1,8 +1,6 @@
-
 import { CashEntry } from "@/types/finance";
 import { v4 as uuidv4 } from "uuid";
 
-// Cash entries data
 export const cashEntries: CashEntry[] = [
   {
     id: uuidv4(),
@@ -14,7 +12,8 @@ export const cashEntries: CashEntry[] = [
     payment_method: "Cash",
     entered_by: "John Doe",
     type: "Income",
-    reference: "INV-001"
+    reference: "INV-001",
+    narration: "Machine sale to XYZ Company, paid in full"
   },
   {
     id: uuidv4(),
@@ -26,7 +25,8 @@ export const cashEntries: CashEntry[] = [
     payment_method: "Cash",
     entered_by: "Jane Smith",
     type: "Expense",
-    reference: "EXP-001"
+    reference: "EXP-001",
+    narration: "Machine sale to XYZ Company, paid in full"
   },
   {
     id: uuidv4(),
@@ -38,7 +38,8 @@ export const cashEntries: CashEntry[] = [
     payment_method: "Cash",
     entered_by: "John Doe",
     type: "Income",
-    reference: "SRV-001"
+    reference: "SRV-001",
+    narration: "Machine sale to XYZ Company, paid in full"
   },
   {
     id: uuidv4(),
@@ -50,7 +51,8 @@ export const cashEntries: CashEntry[] = [
     payment_method: "Cash",
     entered_by: "Mike Johnson",
     type: "Expense",
-    reference: "EXP-002"
+    reference: "EXP-002",
+    narration: "Machine sale to XYZ Company, paid in full"
   },
   {
     id: uuidv4(),
@@ -62,6 +64,7 @@ export const cashEntries: CashEntry[] = [
     payment_method: "Cash",
     entered_by: "John Doe",
     type: "Income",
-    reference: "AMC-001"
+    reference: "AMC-001",
+    narration: "Machine sale to XYZ Company, paid in full"
   }
 ];

@@ -500,6 +500,7 @@ export type Database = {
           entered_by: string
           id: string
           invoice_number: string | null
+          narration: string | null
           payment_method: string
           po_number: string | null
           reference: string | null
@@ -516,6 +517,7 @@ export type Database = {
           entered_by: string
           id?: string
           invoice_number?: string | null
+          narration?: string | null
           payment_method: string
           po_number?: string | null
           reference?: string | null
@@ -532,6 +534,7 @@ export type Database = {
           entered_by?: string
           id?: string
           invoice_number?: string | null
+          narration?: string | null
           payment_method?: string
           po_number?: string | null
           reference?: string | null
