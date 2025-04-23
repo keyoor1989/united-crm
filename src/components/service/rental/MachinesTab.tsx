@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { FilePlus, Settings, Printer, FileSpreadsheet } from 'lucide-react';
+import { FilePlus, Settings, Printer, FileSpreadsheet, Plus, CircleSlash } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/utils/finance/financeUtils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MachinesTabProps {
   machines: RentalMachine[];
@@ -16,6 +17,7 @@ interface MachinesTabProps {
   onAddParts: (machine: RentalMachine) => void;
   onGenerateBill: (machine: RentalMachine) => void;
   onPrintContract: (machine: RentalMachine) => void;
+  isLoading?: boolean;
 }
 
 const MachinesTab = ({
@@ -24,8 +26,56 @@ const MachinesTab = ({
   onViewParts,
   onAddParts,
   onGenerateBill,
-  onPrintContract
+  onPrintContract,
+  isLoading = false,
 }: MachinesTabProps) => {
+  const formatDateString = (dateStr: string) => {
+    try {
+      return format(new Date(dateStr), "dd/MM/yyyy");
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Rental Machines</CardTitle>
+          <CardDescription>Loading machines...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Serial Number</TableHead>
+                  <TableHead>Model</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Contract Period</TableHead>
+                  <TableHead>Monthly Rent</TableHead>
+                  <TableHead>Last Reading</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3].map((index) => (
+                  <TableRow key={index}>
+                    <TableCell colSpan={9}>
+                      <Skeleton className="h-12 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -63,8 +113,8 @@ const MachinesTab = ({
                     <TableCell>{machine.clientName}</TableCell>
                     <TableCell>{machine.location}</TableCell>
                     <TableCell>
-                      {format(new Date(machine.startDate), "dd/MM/yyyy")} - 
-                      {format(new Date(machine.endDate), "dd/MM/yyyy")}
+                      {formatDateString(machine.startDate)} - 
+                      {formatDateString(machine.endDate)}
                     </TableCell>
                     <TableCell>{formatCurrency(machine.monthlyRent)}</TableCell>
                     <TableCell>
@@ -75,7 +125,7 @@ const MachinesTab = ({
                         A3: {machine.currentA3Reading.toLocaleString()}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {format(new Date(machine.lastReadingDate), "dd/MM/yyyy")}
+                        {machine.lastReadingDate ? formatDateString(machine.lastReadingDate) : 'No readings'}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -110,7 +160,7 @@ const MachinesTab = ({
                           onClick={() => onAddParts(machine)}
                           title="Add Parts"
                         >
-                          <Settings className="h-4 w-4" />
+                          <Plus className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="outline"

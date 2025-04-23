@@ -24,7 +24,9 @@ const RentalMachines = () => {
     searchQuery,
     setSearchQuery,
     handleGenerateBilling,
-    handlePrintContract
+    handlePrintContract,
+    isLoading,
+    addRentalParts
   } = useRentalMachines();
 
   const handleAddReading = (machine: RentalMachine) => {
@@ -45,6 +47,15 @@ const RentalMachines = () => {
   // Handle add new machine
   const handleAddMachine = () => {
     setIsAddMachineModalOpen(false);
+  };
+
+  const handlePartAdded = async (data: any) => {
+    if (selectedMachine) {
+      const success = await addRentalParts(selectedMachine, data);
+      if (success) {
+        setIsAddPartsDialogOpen(false);
+      }
+    }
   };
 
   return (
@@ -93,6 +104,7 @@ const RentalMachines = () => {
             onAddParts={handleAddParts}
             onGenerateBill={handleGenerateBilling}
             onPrintContract={handlePrintContract}
+            isLoading={isLoading}
           />
         </TabsContent>
 
@@ -109,7 +121,7 @@ const RentalMachines = () => {
         open={isAddPartsDialogOpen}
         onOpenChange={setIsAddPartsDialogOpen}
         machineData={selectedMachine}
-        onPartAdded={handleAddParts}
+        onPartAdded={handlePartAdded}
       />
     </div>
   );
