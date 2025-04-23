@@ -488,6 +488,57 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_entries: {
+        Row: {
+          amount: number
+          branch: string | null
+          category: string
+          created_at: string
+          date: string
+          department: string
+          description: string
+          entered_by: string
+          id: string
+          invoice_number: string | null
+          payment_method: string
+          po_number: string | null
+          reference: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          branch?: string | null
+          category: string
+          created_at?: string
+          date: string
+          department: string
+          description: string
+          entered_by: string
+          id?: string
+          invoice_number?: string | null
+          payment_method: string
+          po_number?: string | null
+          reference?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          branch?: string | null
+          category?: string
+          created_at?: string
+          date?: string
+          department?: string
+          description?: string
+          entered_by?: string
+          id?: string
+          invoice_number?: string | null
+          payment_method?: string
+          po_number?: string | null
+          reference?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
       credit_terms: {
         Row: {
           created_at: string | null

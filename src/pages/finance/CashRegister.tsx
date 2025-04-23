@@ -1,12 +1,10 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format, isWithinInterval, parseISO } from "date-fns";
 import { 
   ArrowDown,
   ArrowUp,
-  Calendar,
-  Download,
-  Filter
+  Download
 } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,11 +23,14 @@ import { Textarea } from "@/components/ui/textarea";
 import DateRangeFilter from "@/components/finance/DateRangeFilter";
 import EntryFormDialog from "@/components/finance/EntryFormDialog";
 import EntryTable from "@/components/finance/EntryTable";
-import { cashEntries, departments, categories, paymentMethods } from "@/data/finance";
+import { departments, categories } from "@/data/finance";
 import { CashEntry } from "@/types/finance";
 import { DateRange } from "react-day-picker";
 import { exportToCsv, exportToPdf } from "@/utils/exportUtils";
 import { Badge } from "@/components/ui/badge";
+
+// Import supabase client
+import { supabase } from "@/integrations/supabase/client";
 
 const cashPurposes = [
   "Sales Payment", "Service Payment", "Utility Bills", "Office Supplies", 
@@ -37,7 +38,7 @@ const cashPurposes = [
 ];
 
 const CashRegister = () => {
-  const [entries, setEntries] = useState<CashEntry[]>(cashEntries);
+  const [entries, setEntries] = useState<CashEntry[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentEntry, setCurrentEntry] = useState<Partial<CashEntry>>({
     date: format(new Date(), "yyyy-MM-dd"),
@@ -45,14 +46,35 @@ const CashRegister = () => {
     paymentMethod: "Cash",
     enteredBy: "Current User"
   });
-  
+
+  // Loading indicator for fetch and add entry
+  const [loading, setLoading] = useState(false);
+
   // Filter states
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
-  const [filteredEntries, setFilteredEntries] = useState<CashEntry[]>(entries);
+  const [filteredEntries, setFilteredEntries] = useState<CashEntry[]>([]);
+
+  // Fetch data from Supabase
+  const fetchEntries = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("cash_entries")
+      .select("*")
+      .order("date", { ascending: false });
+
+    if (!error && Array.isArray(data)) {
+      setEntries(data as CashEntry[]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchEntries();
+  }, []);
 
   // Apply filters
-  React.useEffect(() => {
+  useEffect(() => {
     let filtered = [...entries];
     
     // Date range filter
@@ -73,7 +95,7 @@ const CashRegister = () => {
     
     setFilteredEntries(filtered);
   }, [entries, dateRange, departmentFilter]);
-  
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -82,8 +104,8 @@ const CashRegister = () => {
     }).format(amount);
   };
 
-  const totalIncome = filteredEntries.filter(entry => entry.type === "Income").reduce((sum, entry) => sum + entry.amount, 0);
-  const totalExpense = filteredEntries.filter(entry => entry.type === "Expense").reduce((sum, entry) => sum + entry.amount, 0);
+  const totalIncome = filteredEntries.filter(entry => entry.type === "Income").reduce((sum, entry) => sum + Number(entry.amount), 0);
+  const totalExpense = filteredEntries.filter(entry => entry.type === "Expense").reduce((sum, entry) => sum + Number(entry.amount), 0);
   const balance = totalIncome - totalExpense;
 
   const handleOpenDialog = () => {
@@ -100,7 +122,9 @@ const CashRegister = () => {
     setIsDialogOpen(false);
   };
 
-  const handleFormSubmit = () => {
+  // Handle Add Cash Entry (insert into supabase)
+  const handleFormSubmit = async () => {
+    // Required fields check
     if (
       !currentEntry.date ||
       !currentEntry.amount ||
@@ -108,25 +132,35 @@ const CashRegister = () => {
       !currentEntry.type ||
       !currentEntry.description
     ) {
-      // In a real app, show validation message
+      // In production app, show a toast
       return;
     }
 
-    const newEntry: CashEntry = {
-      id: uuidv4(),
+    setLoading(true);
+
+    // Insert into Supabase
+    const insertObj = {
       date: currentEntry.date,
       amount: Number(currentEntry.amount),
       department: currentEntry.department,
       category: currentEntry.category || "Other",
       description: currentEntry.description,
-      paymentMethod: "Cash", // Fixed to Cash only
-      enteredBy: currentEntry.enteredBy || "Current User",
+      payment_method: "Cash", // Only Cash for now
+      entered_by: currentEntry.enteredBy || "Current User",
       type: currentEntry.type,
-      reference: currentEntry.reference
+      reference: currentEntry.reference || "",
     };
+    const { error } = await supabase
+      .from("cash_entries")
+      .insert([insertObj]);
 
-    setEntries([newEntry, ...entries]);
-    setIsDialogOpen(false);
+    setLoading(false);
+
+    if (!error) {
+      setIsDialogOpen(false);
+      fetchEntries(); // Refresh list
+    }
+    // else: production me toast ya error dikhayen
   };
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -166,7 +200,7 @@ const CashRegister = () => {
     {
       key: "amount",
       header: "Amount",
-      cell: (row: CashEntry) => formatCurrency(row.amount)
+      cell: (row: CashEntry) => formatCurrency(Number(row.amount))
     },
     {
       key: "department",
@@ -274,6 +308,7 @@ const CashRegister = () => {
         onClose={handleCloseDialog}
         title="Add Cash Entry"
         onSubmit={handleFormSubmit}
+        loading={loading}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
           <div className="space-y-2">
@@ -319,7 +354,7 @@ const CashRegister = () => {
           <div className="space-y-2">
             <Label htmlFor="department">Department *</Label>
             <Select 
-              value={currentEntry.department} 
+              value={currentEntry.department || ""}
               onValueChange={(value) => handleInputChange("department", value)}
             >
               <SelectTrigger id="department">
@@ -336,7 +371,7 @@ const CashRegister = () => {
           <div className="space-y-2">
             <Label htmlFor="purpose">Purpose *</Label>
             <Select 
-              value={currentEntry.description} 
+              value={currentEntry.description || ""}
               onValueChange={(value) => handleInputChange("description", value)}
             >
               <SelectTrigger id="purpose">
