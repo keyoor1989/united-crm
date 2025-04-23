@@ -39,13 +39,13 @@ export const UserSelector: React.FC<UserSelectorProps> = ({ value, onValueChange
       </SelectTrigger>
       <SelectContent>
         {isLoading ? (
-          <SelectItem value="loading" disabled>Loading users...</SelectItem>
+          <SelectItem value="loading">Loading users...</SelectItem>
         ) : users && users.length > 0 ? (
           users.map(user => (
             <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
           ))
         ) : (
-          <SelectItem value="no-users" disabled>No users found</SelectItem>
+          <SelectItem value="no-users">No users found</SelectItem>
         )}
       </SelectContent>
     </Select>

@@ -18,7 +18,7 @@ const PriorityTypeFields: React.FC<PriorityTypeFieldsProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Priority</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value || "Medium"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
@@ -41,7 +41,7 @@ const PriorityTypeFields: React.FC<PriorityTypeFieldsProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Task Type</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value || "Personal"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select task type" />

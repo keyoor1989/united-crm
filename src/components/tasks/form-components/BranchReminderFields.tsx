@@ -19,7 +19,7 @@ const BranchReminderFields: React.FC<BranchReminderFieldsProps> = ({ form }) => 
         render={({ field }) => (
           <FormItem>
             <FormLabel>Branch</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select onValueChange={field.onChange} defaultValue={field.value || "Indore"}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select branch" />
