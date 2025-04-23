@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@/components/ui/select";
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Warehouse } from "@/types/inventory";
 
 interface InventoryItem {
@@ -63,38 +64,40 @@ const NewTransferDialog = ({
             <div className="h-12 bg-muted animate-pulse rounded-md"></div>
           ) : (
             <div className="border rounded-md">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item Name</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Current Warehouse</TableHead>
-                    <TableHead>Quantity</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.length === 0 ? (
+              <ScrollArea className="h-[300px]">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-4">No items found.</TableCell>
+                      <TableHead>Item Name</TableHead>
+                      <TableHead>Brand</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Current Warehouse</TableHead>
+                      <TableHead>Quantity</TableHead>
                     </TableRow>
-                  ) : (
-                    items.map(item => (
-                      <TableRow 
-                        key={item.id} 
-                        className={selectedItem?.id === item.id ? "bg-muted cursor-pointer" : "cursor-pointer"}
-                        onClick={() => { setSelectedItem(item); setForm((f: any) => ({ ...f, itemId: item.id })); }}
-                      >
-                        <TableCell className="font-medium">{item.part_name}</TableCell>
-                        <TableCell>{item.brand}</TableCell>
-                        <TableCell>{item.category}</TableCell>
-                        <TableCell>{item.warehouse_name || "Not specified"}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {items.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-4">No items found.</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      items.map(item => (
+                        <TableRow 
+                          key={item.id} 
+                          className={selectedItem?.id === item.id ? "bg-muted cursor-pointer" : "cursor-pointer"}
+                          onClick={() => { setSelectedItem(item); setForm((f: any) => ({ ...f, itemId: item.id })); }}
+                        >
+                          <TableCell className="font-medium">{item.part_name}</TableCell>
+                          <TableCell>{item.brand}</TableCell>
+                          <TableCell>{item.category}</TableCell>
+                          <TableCell>{item.warehouse_name || "Not specified"}</TableCell>
+                          <TableCell>{item.quantity}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </div>
           )}
         </div>

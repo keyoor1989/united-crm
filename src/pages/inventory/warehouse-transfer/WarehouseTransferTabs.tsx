@@ -4,7 +4,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import WarehouseTransferTable from "./WarehouseTransferTable";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Warehouse } from "@/types/inventory";
-import { Package, Move } from "lucide-react";
 
 interface WarehouseTransferTabsProps {
   activeTab: string;

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Package, Move } from "lucide-react";
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table";
@@ -22,9 +23,9 @@ const WarehouseTransferTable = ({
   loading,
   emptyMessage = "No records",
 }: WarehouseTransferTableProps) => (
-  <ScrollArea className="w-full max-h-[460px]">
+  <ScrollArea className="w-full h-[400px]">
     <Table>
-      <TableHeader>
+      <TableHeader className="sticky top-0 bg-background z-10">
         <TableRow>
           <TableHead>Transfer ID</TableHead>
           <TableHead>Item</TableHead>
