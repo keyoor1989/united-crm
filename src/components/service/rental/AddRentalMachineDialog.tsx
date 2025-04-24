@@ -56,8 +56,8 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
       monthlyRent: "",
       copyLimitA4: "",
       copyLimitA3: "",
-      extraA4CopyCharge: "0",
-      extraA3CopyCharge: "0",
+      extraA4CopyCharge: "0.5", // Default per copy charge for A4
+      extraA3CopyCharge: "1.0", // Default per copy charge for A3
       department: "",
       initialA4Reading: "0",
       initialA3Reading: "0",
@@ -89,8 +89,15 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
         billing_cycle: 'Monthly'
       }).select('id').single();
 
-      if (contractError) throw contractError;
+      if (contractError) {
+        console.error("Error creating contract:", contractError);
+        throw contractError;
+      }
       
+      if (!contractData || !contractData.id) {
+        throw new Error("Failed to create contract, no ID returned");
+      }
+
       // Then insert into amc_machines table with the contract_id
       const { error: machineError } = await supabase.from('amc_machines').insert({
         model: values.model,
@@ -112,7 +119,10 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
         last_reading_date: values.startDate
       });
 
-      if (machineError) throw machineError;
+      if (machineError) {
+        console.error("Error adding rental machine:", machineError);
+        throw machineError;
+      }
 
       toast.success("Rental machine added successfully");
       form.reset();
