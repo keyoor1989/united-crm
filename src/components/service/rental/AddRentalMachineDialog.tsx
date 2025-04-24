@@ -4,9 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useRentalMachineForm } from "@/hooks/rental/useRentalMachineForm";
-import { MachineInfoSection } from "./form-sections/MachineInfoSection";
-import { ClientInfoSection } from "./form-sections/ClientInfoSection";
-import { RentalTermsSection } from "./form-sections/RentalTermsSection";
+import { BasicDetailsSection } from "./form-sections/BasicDetailsSection";
 import { CopyLimitSection } from "./form-sections/CopyLimitSection";
 import { InitialReadingsSection } from "./form-sections/InitialReadingsSection";
 
@@ -32,9 +30,7 @@ const AddRentalMachineDialog: React.FC<AddRentalMachineDialogProps> = ({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <MachineInfoSection form={form} />
-            <ClientInfoSection form={form} />
-            <RentalTermsSection form={form} />
+            <BasicDetailsSection form={form} />
             <CopyLimitSection form={form} />
             <InitialReadingsSection form={form} />
             
