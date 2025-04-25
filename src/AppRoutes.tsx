@@ -18,7 +18,7 @@ import ServiceCallForm from './pages/ServiceCallForm';
 import ServiceBilling from './pages/ServiceBilling';
 import ServiceInventoryManagement from './pages/ServiceInventoryManagement';
 import EngineerPerformanceDashboard from './pages/EngineerPerformanceDashboard';
-import RentalMachines from './pages/service/RentalMachines'; // Updated import path
+import RentalMachines from './pages/service/RentalMachines';
 
 // Import sales pages
 import Quotations from './pages/sales/Quotations';
@@ -91,6 +91,7 @@ const AppRoutes: React.FC = () => {
         {/* Customer Management */}
         <Route path="/customers" element={<Customers />} />
         <Route path="/customer-form" element={<CustomerForm />} />
+        <Route path="/customer-form/:id" element={<CustomerForm />} />
         <Route path="/customers/follow-ups" element={<CustomerFollowUps />} />
         
         {/* Service Management */}
@@ -99,7 +100,7 @@ const AppRoutes: React.FC = () => {
         <Route path="/service-billing" element={<ServiceBilling />} />
         <Route path="/service-inventory" element={<ServiceInventoryManagement />} />
         <Route path="/engineer-performance" element={<EngineerPerformanceDashboard />} />
-        <Route path="/rental-machines" element={<RentalMachines />} /> {/* Moved to service section */}
+        <Route path="/rental-machines" element={<RentalMachines />} />
         
         {/* Sales Management */}
         <Route path="/quotations" element={<Quotations />} />
