@@ -16,16 +16,46 @@ const SidebarStateInitializer = () => {
   const { setOpen } = useSidebar();
   
   useEffect(() => {
-    // Try to get the sidebar state from localStorage
-    try {
-      const savedState = localStorage.getItem("sidebar-expanded-state");
-      // If we have a saved state, use it
-      if (savedState !== null) {
-        setOpen(savedState === "true");
+    // Enhanced sidebar state initialization
+    const initializeSidebarState = () => {
+      try {
+        // Try to get the sidebar state from localStorage
+        const savedState = localStorage.getItem("sidebar-expanded-state");
+        
+        if (savedState !== null) {
+          // Apply the saved state
+          setOpen(savedState === "true");
+        } else {
+          // If no saved state, set based on screen width
+          const defaultState = window.innerWidth >= 1024;
+          setOpen(defaultState);
+          // Save this initial default state
+          localStorage.setItem("sidebar-expanded-state", String(defaultState));
+        }
+        
+        // Force a layout update to ensure the sidebar is rendered correctly
+        setTimeout(() => {
+          window.dispatchEvent(new Event('resize'));
+        }, 200);
+      } catch (error) {
+        console.error("Failed to initialize sidebar state:", error);
+        // Fallback to responsive default if there's an error
+        setOpen(window.innerWidth >= 1024);
       }
-    } catch (error) {
-      console.error("Failed to initialize sidebar state:", error);
-    }
+    };
+    
+    // Initialize sidebar state on component mount
+    initializeSidebarState();
+    
+    // Handle storage changes from other tabs/windows
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "sidebar-expanded-state" && e.newValue !== null) {
+        setOpen(e.newValue === "true");
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [setOpen]);
   
   return null;
@@ -37,7 +67,18 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const { isAuthenticated } = useAuth();
-  const defaultSidebarOpen = window.innerWidth >= 1024;
+  
+  // Get default sidebar state, with a preference for stored state
+  const getInitialSidebarState = (): boolean => {
+    try {
+      const savedState = localStorage.getItem("sidebar-expanded-state");
+      return savedState !== null ? savedState === "true" : window.innerWidth >= 1024;
+    } catch (error) {
+      return window.innerWidth >= 1024;
+    }
+  };
+  
+  const defaultSidebarOpen = getInitialSidebarState();
   
   useEffect(() => {
     // Add a resize event listener to handle responsive behavior
@@ -53,7 +94,36 @@ const Layout = ({ children }: LayoutProps) => {
       }
     };
     
+    // Force a state check on load to ensure consistency
+    const checkStateConsistency = () => {
+      try {
+        // Check if DOM state matches stored state
+        const savedState = localStorage.getItem("sidebar-expanded-state");
+        if (savedState !== null) {
+          // Find any sidebar elements and check if they match the expected state
+          const sidebarElements = document.querySelectorAll('[data-sidebar="sidebar"]');
+          
+          if (sidebarElements.length > 0) {
+            const shouldBeOpen = savedState === "true";
+            const sidebarState = document.querySelector('[data-state]')?.getAttribute('data-state');
+            const isCurrentlyOpen = sidebarState === "expanded";
+            
+            // If there's a mismatch, trigger a resize event to reconcile
+            if (shouldBeOpen !== isCurrentlyOpen) {
+              window.dispatchEvent(new Event('resize'));
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking state consistency:", error);
+      }
+    };
+    
     window.addEventListener('resize', handleResize);
+    
+    // Initial check after component mounts and DOM is ready
+    setTimeout(checkStateConsistency, 500);
+    
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   

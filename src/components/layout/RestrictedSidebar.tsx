@@ -10,16 +10,24 @@ const RestrictedSidebar = () => {
   const { setOpen } = useSidebar();
   
   useEffect(() => {
-    // If authentication status changes, try to get saved sidebar state
+    // If authentication status changes, restore sidebar state
     if (isAuthenticated) {
       try {
-        // If user logs in, check if there's a saved preference
+        // Use a more consistent approach for getting saved state
         const savedState = localStorage.getItem("sidebar-expanded-state");
         if (savedState !== null) {
+          // Apply the saved state
           setOpen(savedState === "true");
+          
+          // Force a DOM update to ensure the sidebar renders correctly
+          setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+          }, 100);
         }
       } catch (error) {
         console.error("Error restoring sidebar state:", error);
+        // Fallback to default state if there's an error
+        setOpen(window.innerWidth >= 1024);
       }
     }
   }, [isAuthenticated, setOpen]);

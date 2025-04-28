@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { 
   mainNavItems, 
@@ -34,6 +34,27 @@ const AppSidebar = () => {
     location.pathname === path || location.pathname.startsWith(path + "/")
   );
   
+  // Callback for updating sidebar state in localStorage
+  const updateSidebarState = useCallback((isOpen: boolean) => {
+    try {
+      localStorage.setItem("sidebar-expanded-state", String(isOpen));
+      
+      // Optional: Dispatch a custom event to notify other parts of the app
+      const event = new CustomEvent("sidebar-state-changed", { 
+        detail: { isOpen } 
+      });
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error("Error saving sidebar state:", error);
+    }
+  }, []);
+  
+  // Monitor sidebar state changes
+  useEffect(() => {
+    const isOpen = state === "expanded";
+    updateSidebarState(isOpen);
+  }, [state, updateSidebarState]);
+  
   const initialSections = [
     (location.pathname === "/customers" || location.pathname.startsWith("/customer")) ? "customers" : "",
     (location.pathname === "/service" || location.pathname === "/engineer-performance") ? "service" : "",
@@ -61,17 +82,38 @@ const AppSidebar = () => {
   const lastNavItem = mainNavItems[mainNavItems.length - 1];
   const isCollapsed = state === "collapsed";
   
-  // Ensure sidebar state is persisted across sessions
+  // Ensure sidebar state is persisted across sessions and add additional monitor
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "sidebar-expanded-state" && e.newValue !== null) {
-        setOpen(e.newValue === "true");
+    // Additional check to ensure sidebar state is applied on mount
+    try {
+      const savedState = localStorage.getItem("sidebar-expanded-state");
+      
+      if (savedState !== null && ((savedState === "true") !== (state === "expanded"))) {
+        // If there's a mismatch between saved state and current state, fix it
+        setOpen(savedState === "true");
+      }
+    } catch (error) {
+      console.error("Error verifying sidebar state:", error);
+    }
+    
+    // When window gains focus, check if sidebar state needs to be synchronized
+    const handleFocus = () => {
+      try {
+        const savedState = localStorage.getItem("sidebar-expanded-state");
+        if (savedState !== null && ((savedState === "true") !== (state === "expanded"))) {
+          setOpen(savedState === "true");
+        }
+      } catch (error) {
+        console.error("Error in focus handler:", error);
       }
     };
     
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [setOpen]);
+    window.addEventListener("focus", handleFocus);
+    
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [state, setOpen]);
 
   return (
     <SidebarComp>
