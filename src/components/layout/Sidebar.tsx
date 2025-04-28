@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { 
   mainNavItems, 
@@ -28,7 +28,7 @@ import FooterNavItem from "./sidebar/sections/FooterNavItem";
 
 const AppSidebar = () => {
   const location = useLocation();
-  const { state } = useSidebar();
+  const { state, setOpen } = useSidebar();
   const isActive = (path: string) => location.pathname === path;
   const isSectionActive = (paths: string[]) => paths.some(path => 
     location.pathname === path || location.pathname.startsWith(path + "/")
@@ -60,6 +60,18 @@ const AppSidebar = () => {
   // Get the last nav item for the footer
   const lastNavItem = mainNavItems[mainNavItems.length - 1];
   const isCollapsed = state === "collapsed";
+  
+  // Ensure sidebar state is persisted across sessions
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "sidebar-expanded-state" && e.newValue !== null) {
+        setOpen(e.newValue === "true");
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [setOpen]);
 
   return (
     <SidebarComp>

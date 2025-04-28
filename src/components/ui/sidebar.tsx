@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
@@ -23,6 +24,7 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const SIDEBAR_LOCAL_STORAGE_KEY = "sidebar-expanded-state"
 
 type SidebarContext = {
   state: "expanded" | "collapsed"
@@ -68,9 +70,20 @@ const SidebarProvider = React.forwardRef<
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
 
+    // Try to get the stored sidebar state from localStorage
+    const getSavedState = React.useCallback(() => {
+      try {
+        const savedState = localStorage.getItem(SIDEBAR_LOCAL_STORAGE_KEY)
+        return savedState === "false" ? false : defaultOpen
+      } catch (error) {
+        console.error("Failed to read sidebar state from localStorage:", error)
+        return defaultOpen
+      }
+    }, [defaultOpen])
+
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(defaultOpen)
+    const [_open, _setOpen] = React.useState(getSavedState)
     const open = openProp ?? _open
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
@@ -83,9 +96,27 @@ const SidebarProvider = React.forwardRef<
 
         // This sets the cookie to keep the sidebar state.
         document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        
+        // Also store in localStorage for more reliable persistence
+        try {
+          localStorage.setItem(SIDEBAR_LOCAL_STORAGE_KEY, String(openState))
+        } catch (error) {
+          console.error("Failed to save sidebar state to localStorage:", error)
+        }
       },
       [setOpenProp, open]
     )
+
+    // Initialize sidebar state from localStorage on mount
+    React.useEffect(() => {
+      // Skip if we have controlled state
+      if (openProp !== undefined) return
+      
+      const savedState = getSavedState()
+      if (savedState !== _open) {
+        _setOpen(savedState)
+      }
+    }, [openProp, getSavedState, _open])
 
     // Helper to toggle the sidebar.
     const toggleSidebar = React.useCallback(() => {
