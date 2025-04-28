@@ -1,6 +1,8 @@
+
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import TaskEnabledLayout from "@/components/layout/TaskEnabledLayout";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -10,6 +12,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import CustomerForm from "@/pages/CustomerForm";
 import Customers from "@/pages/Customers";
 import Dashboard from "@/pages/Dashboard";
+import TaskDashboard from "@/pages/tasks/TaskDashboard";
 
 const AppRoutes = () => {
   return (
@@ -19,12 +22,12 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/access-denied" element={<AccessDenied />} />
 
-      {/* Protected Routes */}
+      {/* Protected Routes with Tasks */}
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            <Layout />
+            <TaskEnabledLayout />
           </ProtectedRoute>
         }
       >
@@ -32,6 +35,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/customer/:id?" element={<CustomerForm />} />
+        <Route path="/tasks" element={<TaskDashboard />} />
       </Route>
 
       {/* Not Found Route */}

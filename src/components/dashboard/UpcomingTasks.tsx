@@ -12,16 +12,24 @@ interface UpcomingTasksProps {
 }
 
 const UpcomingTasks: React.FC<UpcomingTasksProps> = ({ className }) => {
-  const { tasks } = useTaskContext();
+  // Try to use the task context, but handle the case when it's not available
+  let tasks: Task[] = [];
+  let contextError = false;
   
-  console.log("UpcomingTasks - tasks:", tasks); // Debug log
+  try {
+    const { tasks: contextTasks } = useTaskContext();
+    tasks = contextTasks;
+  } catch (error) {
+    console.warn("TaskContext not available in UpcomingTasks, using empty task list");
+    contextError = true;
+  }
   
   // Get upcoming tasks that are due in the next 7 days and not completed
   const now = new Date();
   const nextWeek = new Date(now);
   nextWeek.setDate(now.getDate() + 7);
   
-  const upcomingTasks = tasks
+  const upcomingTasks = contextError ? [] : tasks
     .filter(task => {
       const dueDate = new Date(task.dueDate);
       return dueDate >= now && dueDate <= nextWeek && task.status !== "Completed";
