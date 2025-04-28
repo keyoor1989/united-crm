@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { User, UserRole, Permission } from "@/types/auth";
 import { rolePermissions } from "@/utils/rbac/rolePermissions";
@@ -28,6 +29,8 @@ export const useAuthProvider = () => {
             } else if (event === 'SIGNED_OUT') {
               setUser(null);
               localStorage.removeItem("currentUser");
+              // Clear any stored sidebar state when logging out
+              localStorage.removeItem("sidebar-expanded-state");
               setIsLoading(false);
             }
           }
@@ -40,7 +43,12 @@ export const useAuthProvider = () => {
           console.log('Session found, fetching user profile');
           await fetchUserProfile(session.user.id);
         } else {
+          console.log('No session found, redirecting to login');
           setIsLoading(false);
+          // Force navigation to login if no session found
+          if (window.location.pathname !== '/login') {
+            navigate('/login');
+          }
         }
 
         return () => {
@@ -49,12 +57,17 @@ export const useAuthProvider = () => {
       } catch (error) {
         console.error("Session check error:", error);
         localStorage.removeItem("currentUser");
+        localStorage.removeItem("sidebar-expanded-state");
         setIsLoading(false);
+        // Force navigation to login page on error
+        if (window.location.pathname !== '/login') {
+          navigate('/login');
+        }
       }
     };
     
     checkSession();
-  }, []);
+  }, [navigate]);
 
   const fetchUserProfile = async (userId: string) => {
     try {
@@ -208,9 +221,14 @@ export const useAuthProvider = () => {
   const logout = async () => {
     try {
       setIsLoading(true);
+      
+      // Clear all auth-related storage before signing out
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("sidebar-expanded-state");
+      
       await supabase.auth.signOut();
       setUser(null);
-      localStorage.removeItem("currentUser");
+      
       navigate("/login");
       toast({
         title: "Logged out",

@@ -41,6 +41,16 @@ const Login: React.FC = () => {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Clear any stored auth data on login page load
+  useEffect(() => {
+    // Clear stored user session data when login page is accessed directly
+    if (window.location.pathname === '/login' && !isAuthenticated) {
+      console.log("Login page: Clearing any stored session data");
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("sidebar-expanded-state");
+    }
+  }, []);
+  
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && !authLoading) {

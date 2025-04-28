@@ -23,6 +23,11 @@ const RestrictedSidebar = () => {
           setTimeout(() => {
             window.dispatchEvent(new Event('resize'));
           }, 100);
+        } else {
+          // If no saved state found, set default based on screen size
+          const defaultState = window.innerWidth >= 1024;
+          setOpen(defaultState);
+          localStorage.setItem("sidebar-expanded-state", String(defaultState));
         }
       } catch (error) {
         console.error("Error restoring sidebar state:", error);
@@ -32,7 +37,11 @@ const RestrictedSidebar = () => {
     }
   }, [isAuthenticated, setOpen]);
   
-  if (!isAuthenticated || !user) return null;
+  // Don't render sidebar if not authenticated
+  if (!isAuthenticated || !user) {
+    console.log("RestrictedSidebar: User not authenticated, not rendering sidebar");
+    return null;
+  }
   
   return <AppSidebar />;
 };

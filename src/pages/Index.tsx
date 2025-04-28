@@ -16,6 +16,27 @@ const Index = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Enforce authentication check
+  useEffect(() => {
+    const checkAuth = async () => {
+      // Double-check session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("Index: No valid session found, redirecting to login");
+        navigate("/login", { replace: true });
+      }
+    };
+    
+    if (!isLoading) {
+      console.log("Index: Auth state determined - Authenticated:", isAuthenticated);
+      
+      if (!isAuthenticated) {
+        checkAuth();
+      }
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
   // Fetch dashboard data
   const { data: dashboardStats } = useQuery({
     queryKey: ['dashboardStats'],
@@ -64,17 +85,6 @@ const Index = () => {
     enabled: isAuthenticated
   });
 
-  useEffect(() => {
-    if (!isLoading) {
-      console.log("Index: Auth state determined - Authenticated:", isAuthenticated);
-      
-      if (!isAuthenticated) {
-        console.log("Index: Not authenticated, redirecting to login");
-        navigate("/login", { replace: true });
-      }
-    }
-  }, [isAuthenticated, isLoading, navigate]);
-
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -84,7 +94,17 @@ const Index = () => {
     );
   }
 
-  return isAuthenticated ? (
+  // Don't render anything if not authenticated - will redirect via useEffect
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Spinner className="h-8 w-8" />
+        <span className="ml-2">Verifying authentication...</span>
+      </div>
+    );
+  }
+
+  return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
@@ -130,7 +150,7 @@ const Index = () => {
         <TopCustomers className="md:col-span-2 lg:col-span-1" />
       </div>
     </div>
-  ) : null;
+  );
 };
 
 export default Index;
