@@ -1,12 +1,15 @@
 
 import React from "react";
-import { Outlet } from "react-router-dom";
 import { TaskProvider } from "@/contexts/TaskContext";
 
-const TaskEnabledLayout = () => {
+interface TaskEnabledLayoutProps {
+  children: React.ReactNode;
+}
+
+const TaskEnabledLayout: React.FC<TaskEnabledLayoutProps> = ({ children }) => {
   return (
     <TaskProvider>
-      <Outlet />
+      {children}
     </TaskProvider>
   );
 };

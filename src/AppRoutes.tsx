@@ -22,20 +22,55 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/access-denied" element={<AccessDenied />} />
 
-      {/* Protected Routes with Tasks */}
+      {/* Protected Routes with Layout and Tasks */}
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            <TaskEnabledLayout />
+            <Layout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Index />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/customer/:id?" element={<CustomerForm />} />
-        <Route path="/tasks" element={<TaskDashboard />} />
+        <Route
+          index
+          element={
+            <TaskEnabledLayout>
+              <Index />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <TaskEnabledLayout>
+              <Dashboard />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <TaskEnabledLayout>
+              <Customers />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="/customer/:id?"
+          element={
+            <TaskEnabledLayout>
+              <CustomerForm />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <TaskEnabledLayout>
+              <TaskDashboard />
+            </TaskEnabledLayout>
+          }
+        />
       </Route>
 
       {/* Not Found Route */}
