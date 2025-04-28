@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -43,12 +44,26 @@ const Login: React.FC = () => {
   
   // Clear any stored auth data on login page load
   useEffect(() => {
-    // Clear stored user session data when login page is accessed directly
-    if (window.location.pathname === '/login' && !isAuthenticated) {
-      console.log("Login page: Clearing any stored session data");
-      localStorage.removeItem("currentUser");
-      localStorage.removeItem("sidebar-expanded-state");
-    }
+    const checkSession = async () => {
+      // Check if there are any stored sessions that might be invalid
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log("Login page: Clearing any stored session data");
+        localStorage.removeItem("currentUser");
+        localStorage.removeItem("sidebar-expanded-state");
+        
+        // Force revalidation of authentication state
+        try {
+          // Clean up any potentially incorrect auth state
+          await supabase.auth.signOut();
+        } catch (error) {
+          console.error("Error during cleanup:", error);
+        }
+      }
+    };
+    
+    checkSession();
   }, []);
   
   // Redirect if already authenticated

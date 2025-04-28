@@ -6,12 +6,12 @@ import { useSidebar } from "@/components/ui/sidebar";
 
 // This component only renders the sidebar if the user is authenticated
 const RestrictedSidebar = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const { setOpen } = useSidebar();
   
   useEffect(() => {
     // If authentication status changes, restore sidebar state
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       try {
         // Use a more consistent approach for getting saved state
         const savedState = localStorage.getItem("sidebar-expanded-state");
@@ -34,8 +34,11 @@ const RestrictedSidebar = () => {
         // Fallback to default state if there's an error
         setOpen(window.innerWidth >= 1024);
       }
+    } else if (!isLoading && !isAuthenticated) {
+      // If not authenticated and not loading, hide sidebar
+      setOpen(false);
     }
-  }, [isAuthenticated, setOpen]);
+  }, [isAuthenticated, isLoading, user, setOpen]);
   
   // Don't render sidebar if not authenticated
   if (!isAuthenticated || !user) {

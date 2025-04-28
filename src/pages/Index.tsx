@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   // Enforce authentication check
   useEffect(() => {
@@ -25,6 +25,7 @@ const Index = () => {
       if (!session) {
         console.log("Index: No valid session found, redirecting to login");
         navigate("/login", { replace: true });
+        return;
       }
     };
     
@@ -41,6 +42,12 @@ const Index = () => {
   const { data: dashboardStats } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: async () => {
+      // First verify authentication is valid
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Authentication required");
+      }
+      
       // Get total customers
       const { count: customersCount } = await supabase
         .from('customers')
@@ -82,7 +89,7 @@ const Index = () => {
         amcRenewals: amcRenewals || 0
       };
     },
-    enabled: isAuthenticated
+    enabled: isAuthenticated && !!user
   });
 
   if (isLoading) {
@@ -95,7 +102,7 @@ const Index = () => {
   }
 
   // Don't render anything if not authenticated - will redirect via useEffect
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Spinner className="h-8 w-8" />
@@ -110,7 +117,7 @@ const Index = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Overview of your business metrics and activities
+            Welcome back, {user?.name || 'User'}
           </p>
         </div>
       </div>

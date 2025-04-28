@@ -32,6 +32,11 @@ export const useAuthProvider = () => {
               // Clear any stored sidebar state when logging out
               localStorage.removeItem("sidebar-expanded-state");
               setIsLoading(false);
+              
+              // Ensure redirection to login page on sign out
+              if (window.location.pathname !== '/login') {
+                navigate('/login');
+              }
             }
           }
         );
@@ -198,6 +203,11 @@ export const useAuthProvider = () => {
       console.log('Attempting login for:', email);
       setIsLoading(true);
       
+      // First, ensure any previous session is properly cleared
+      await supabase.auth.signOut();
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("sidebar-expanded-state");
+      
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -229,7 +239,7 @@ export const useAuthProvider = () => {
       await supabase.auth.signOut();
       setUser(null);
       
-      navigate("/login");
+      navigate("/login", { replace: true });
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",
