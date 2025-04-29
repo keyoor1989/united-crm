@@ -80,7 +80,7 @@ const Customers = () => {
               Follow-ups
             </Button>
           </Link>
-          <Link to="/customer-form">
+          <Link to="/customer">
             <Button className="gap-1 bg-brand-500 hover:bg-brand-600">
               <Plus className="h-4 w-4" />
               Add Customer

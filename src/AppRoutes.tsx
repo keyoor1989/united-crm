@@ -40,7 +40,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/dashboard"
+          path="dashboard"
           element={
             <TaskEnabledLayout>
               <Dashboard />
@@ -48,7 +48,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/customers"
+          path="customers"
           element={
             <TaskEnabledLayout>
               <Customers />
@@ -56,7 +56,7 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/customer/:id?"
+          path="customer/:id?"
           element={
             <TaskEnabledLayout>
               <CustomerForm />
@@ -64,7 +64,15 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="/tasks"
+          path="customer-form"
+          element={
+            <TaskEnabledLayout>
+              <CustomerForm />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="tasks"
           element={
             <TaskEnabledLayout>
               <TaskDashboard />
