@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Table,
@@ -62,11 +63,11 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   };
 
   const handleViewDetails = (customerId: string) => {
-    navigate(`/customer-form/${customerId}`);
+    navigate(`/customer/${customerId}`);
   };
 
   const handleMachineHistory = (customerId: string) => {
-    navigate(`/customer-form/${customerId}`);
+    navigate(`/customer/${customerId}`);
     toast({
       title: "Machine History",
       description: "Navigating to customer machine history",
