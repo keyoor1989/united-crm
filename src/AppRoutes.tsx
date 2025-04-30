@@ -63,13 +63,15 @@ const AppRoutes = () => {
             </TaskEnabledLayout>
           }
         />
+        {/* Add a redirect from customer-form to customer */}
         <Route
           path="customer-form"
-          element={
-            <TaskEnabledLayout>
-              <CustomerForm />
-            </TaskEnabledLayout>
-          }
+          element={<Navigate to="/customer" replace />}
+        />
+        {/* Add a route to handle customer-form with ID parameter */}
+        <Route
+          path="customer-form/:id"
+          element={<Navigate to={window.location.pathname.replace('customer-form', 'customer')} replace />}
         />
         <Route
           path="tasks"
