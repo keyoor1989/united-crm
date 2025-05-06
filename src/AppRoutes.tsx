@@ -34,6 +34,48 @@ import ServiceBilling from "@/pages/ServiceBilling";
 import ServiceInventoryManagement from "@/pages/ServiceInventoryManagement";
 import RentalMachines from "@/pages/service/RentalMachines";
 import UserManagement from "@/pages/user-management/UserManagement";
+import EngineerDetail from "@/pages/EngineerDetail";
+import EngineerForm from "@/pages/EngineerForm";
+import ServiceCallForm from "@/pages/ServiceCallForm";
+import Chat from "@/pages/Chat";
+import ChatAssistant from "@/pages/ChatAssistant";
+import CashRegister from "@/pages/finance/CashRegister";
+import CustomerPayments from "@/pages/finance/CustomerPayments";
+import DepartmentExpenses from "@/pages/finance/DepartmentExpenses";
+import DepartmentRevenue from "@/pages/finance/DepartmentRevenue";
+import DepartmentRevenueNew from "@/pages/finance/DepartmentRevenueNew";
+import OutstandingReceivables from "@/pages/finance/OutstandingReceivables";
+import PendingReceivables from "@/pages/finance/PendingReceivables";
+import InventoryAmcTracker from "@/pages/inventory/AmcTracker";
+import InventoryBranchTransfer from "@/pages/inventory/BranchTransfer";
+import InventoryCashPurchase from "@/pages/inventory/CashPurchase";
+import InventoryAlerts from "@/pages/inventory/InventoryAlerts";
+import InventoryBrands from "@/pages/inventory/InventoryBrands";
+import InventoryHistory from "@/pages/inventory/InventoryHistory";
+import InventoryIssue from "@/pages/inventory/InventoryIssue";
+import InventoryItems from "@/pages/inventory/InventoryItems";
+import InventoryPurchase from "@/pages/inventory/InventoryPurchase";
+import InventoryReturns from "@/pages/inventory/InventoryReturns";
+import InventorySales from "@/pages/inventory/InventorySales";
+import InventoryTransfer from "@/pages/inventory/InventoryTransfer";
+import InventoryVendors from "@/pages/inventory/InventoryVendors";
+import InventoryWarehouses from "@/pages/inventory/InventoryWarehouses";
+import IssueInventory from "@/pages/inventory/IssueInventory";
+import ProfitReport from "@/pages/inventory/ProfitReport";
+import SalesReports from "@/pages/inventory/SalesReports";
+import UnifiedPurchase from "@/pages/inventory/UnifiedPurchase";
+import VendorPerformance from "@/pages/inventory/VendorPerformance";
+import VendorPerformanceDemo from "@/pages/inventory/VendorPerformanceDemo";
+import WarehouseTransfer from "@/pages/inventory/WarehouseTransfer";
+import LocationBhopal from "@/pages/locations/LocationBhopal";
+import LocationIndore from "@/pages/locations/LocationIndore";
+import LocationJabalpur from "@/pages/locations/LocationJabalpur";
+import BranchProfitReport from "@/pages/reports/BranchProfitReport";
+import CustomerFollowUpReport from "@/pages/reports/CustomerFollowUpReport";
+import EngineerServiceReport from "@/pages/reports/EngineerServiceReport";
+import MachineRentalReport from "@/pages/reports/MachineRentalReport";
+import ProductCatalog from "@/pages/sales/ProductCatalog";
+import PurchaseOrderForm from "@/pages/sales/PurchaseOrderForm";
 
 const AppRoutes = () => {
   return (
@@ -156,6 +198,30 @@ const AppRoutes = () => {
             </TaskEnabledLayout>
           }
         />
+        <Route
+          path="engineer/:id"
+          element={
+            <TaskEnabledLayout>
+              <EngineerDetail />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="engineer-form/:id?"
+          element={
+            <TaskEnabledLayout>
+              <EngineerForm />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="service-call-form/:id?"
+          element={
+            <TaskEnabledLayout>
+              <ServiceCallForm />
+            </TaskEnabledLayout>
+          }
+        />
         
         {/* Inventory Routes */}
         <Route
@@ -167,10 +233,170 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="inventory/*"
+          path="inventory/items"
           element={
             <TaskEnabledLayout>
-              <Inventory />
+              <InventoryItems />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/purchase"
+          element={
+            <TaskEnabledLayout>
+              <InventoryPurchase />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/unified-purchase"
+          element={
+            <TaskEnabledLayout>
+              <UnifiedPurchase />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/cash-purchase"
+          element={
+            <TaskEnabledLayout>
+              <InventoryCashPurchase />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/issue"
+          element={
+            <TaskEnabledLayout>
+              <InventoryIssue />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/issue-inventory"
+          element={
+            <TaskEnabledLayout>
+              <IssueInventory />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/returns"
+          element={
+            <TaskEnabledLayout>
+              <InventoryReturns />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/sales"
+          element={
+            <TaskEnabledLayout>
+              <InventorySales />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/sales-reports"
+          element={
+            <TaskEnabledLayout>
+              <SalesReports />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/profit-report"
+          element={
+            <TaskEnabledLayout>
+              <ProfitReport />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/history"
+          element={
+            <TaskEnabledLayout>
+              <InventoryHistory />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/vendors"
+          element={
+            <TaskEnabledLayout>
+              <InventoryVendors />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/vendor-performance"
+          element={
+            <TaskEnabledLayout>
+              <VendorPerformance />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/vendor-performance-demo"
+          element={
+            <TaskEnabledLayout>
+              <VendorPerformanceDemo />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/warehouses"
+          element={
+            <TaskEnabledLayout>
+              <InventoryWarehouses />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/brands"
+          element={
+            <TaskEnabledLayout>
+              <InventoryBrands />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/alerts"
+          element={
+            <TaskEnabledLayout>
+              <InventoryAlerts />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/amc-tracker"
+          element={
+            <TaskEnabledLayout>
+              <InventoryAmcTracker />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/branch-transfer"
+          element={
+            <TaskEnabledLayout>
+              <InventoryBranchTransfer />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/warehouse-transfer"
+          element={
+            <TaskEnabledLayout>
+              <WarehouseTransfer />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="inventory/transfer"
+          element={
+            <TaskEnabledLayout>
+              <InventoryTransfer />
             </TaskEnabledLayout>
           }
         />
@@ -197,6 +423,14 @@ const AppRoutes = () => {
           element={
             <TaskEnabledLayout>
               <PurchaseOrders />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="purchase-order-form"
+          element={
+            <TaskEnabledLayout>
+              <PurchaseOrderForm />
             </TaskEnabledLayout>
           }
         />
@@ -233,6 +467,14 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="product-catalog"
+          element={
+            <TaskEnabledLayout>
+              <ProductCatalog />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
           path="contract-upload"
           element={
             <TaskEnabledLayout>
@@ -251,10 +493,58 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="finance/*"
+          path="finance/cash-register"
           element={
             <TaskEnabledLayout>
-              <FinanceDashboard />
+              <CashRegister />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="finance/customer-payments"
+          element={
+            <TaskEnabledLayout>
+              <CustomerPayments />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="finance/department-expenses"
+          element={
+            <TaskEnabledLayout>
+              <DepartmentExpenses />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="finance/department-revenue"
+          element={
+            <TaskEnabledLayout>
+              <DepartmentRevenue />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="finance/department-revenue-new"
+          element={
+            <TaskEnabledLayout>
+              <DepartmentRevenueNew />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="finance/outstanding-receivables"
+          element={
+            <TaskEnabledLayout>
+              <OutstandingReceivables />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="finance/pending-receivables"
+          element={
+            <TaskEnabledLayout>
+              <PendingReceivables />
             </TaskEnabledLayout>
           }
         />
@@ -269,25 +559,81 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="reports/*"
+          path="reports/branch-profit"
           element={
             <TaskEnabledLayout>
-              <Reports />
+              <BranchProfitReport />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="reports/customer-follow-up"
+          element={
+            <TaskEnabledLayout>
+              <CustomerFollowUpReport />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="reports/engineer-service"
+          element={
+            <TaskEnabledLayout>
+              <EngineerServiceReport />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="reports/machine-rental"
+          element={
+            <TaskEnabledLayout>
+              <MachineRentalReport />
             </TaskEnabledLayout>
           }
         />
         
-        {/* User Management */}
+        {/* Locations Routes */}
         <Route
-          path="user-management"
+          path="locations/bhopal"
           element={
             <TaskEnabledLayout>
-              <UserManagement />
+              <LocationBhopal />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="locations/indore"
+          element={
+            <TaskEnabledLayout>
+              <LocationIndore />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="locations/jabalpur"
+          element={
+            <TaskEnabledLayout>
+              <LocationJabalpur />
             </TaskEnabledLayout>
           }
         />
         
         {/* Communication Routes */}
+        <Route
+          path="chat"
+          element={
+            <TaskEnabledLayout>
+              <Chat />
+            </TaskEnabledLayout>
+          }
+        />
+        <Route
+          path="chat-assistant"
+          element={
+            <TaskEnabledLayout>
+              <ChatAssistant />
+            </TaskEnabledLayout>
+          }
+        />
         <Route
           path="smart-assistant"
           element={
@@ -301,6 +647,16 @@ const AppRoutes = () => {
           element={
             <TaskEnabledLayout>
               <TelegramAdmin />
+            </TaskEnabledLayout>
+          }
+        />
+        
+        {/* User Management Route */}
+        <Route
+          path="user-management"
+          element={
+            <TaskEnabledLayout>
+              <UserManagement />
             </TaskEnabledLayout>
           }
         />
