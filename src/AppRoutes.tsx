@@ -13,6 +13,7 @@ import CustomerForm from "@/pages/CustomerForm";
 import Customers from "@/pages/Customers";
 import Dashboard from "@/pages/Dashboard";
 import TaskDashboard from "@/pages/tasks/TaskDashboard";
+import CustomerFollowUps from "@/pages/customers/CustomerFollowUps";
 
 const AppRoutes = () => {
   return (
@@ -72,6 +73,14 @@ const AppRoutes = () => {
         <Route
           path="customer-form/:id"
           element={<Navigate to={window.location.pathname.replace('customer-form', 'customer')} replace />}
+        />
+        <Route
+          path="customers/follow-ups"
+          element={
+            <TaskEnabledLayout>
+              <CustomerFollowUps />
+            </TaskEnabledLayout>
+          }
         />
         <Route
           path="tasks"

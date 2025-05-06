@@ -18,7 +18,7 @@ export const customersSection: NavSection = {
       label: "Customer List"
     },
     {
-      to: "/customer-form",
+      to: "/customer",
       icon: UserPlus,
       label: "Add Customer"
     },
