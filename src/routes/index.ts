@@ -1,6 +1,5 @@
 
 // Export all route components
-export { AuthRoutes } from './AuthRoutes';
 export { CustomerRoutes } from './CustomerRoutes';
 export { DashboardRoutes } from './DashboardRoutes';
 export { ServiceRoutes } from './ServiceRoutes';

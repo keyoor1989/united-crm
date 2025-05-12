@@ -27,3 +27,25 @@ export const DashboardRoutes = () => {
     </>
   );
 };
+
+// Alternative export for direct use in Routes component
+export const DashboardRoutesElements = [
+  <Route
+    key="index"
+    index
+    element={
+      <TaskEnabledLayout>
+        <Index />
+      </TaskEnabledLayout>
+    }
+  />,
+  <Route
+    key="dashboard"
+    path="dashboard"
+    element={
+      <TaskEnabledLayout>
+        <Dashboard />
+      </TaskEnabledLayout>
+    }
+  />
+];
