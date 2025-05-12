@@ -9,9 +9,9 @@ import NotFound from "@/pages/NotFound";
 export const AuthRoutes = () => {
   return (
     <>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/access-denied" element={<AccessDenied />} />
+      <Route path="login" element={<Login />} />
+      <Route path="register" element={<Register />} />
+      <Route path="access-denied" element={<AccessDenied />} />
       <Route path="*" element={<NotFound />} />
     </>
   );

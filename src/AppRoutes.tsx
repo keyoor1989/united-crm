@@ -22,7 +22,9 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Auth Routes - Public */}
-      <AuthRoutes />
+      <Route>
+        <AuthRoutes />
+      </Route>
 
       {/* Protected Routes with Layout and Tasks */}
       <Route
