@@ -1,7 +1,6 @@
-
 import { ChatOpenAI } from "@langchain/openai";
-import { PromptTemplate } from "@langchain/core/prompts";
-import { StringOutputParser } from "@langchain/core/output_parsers";
+import { PromptTemplate } from "langchain/prompts";
+import { StringOutputParser } from "langchain/output_parsers";
 import { Quotation } from "@/types/sales";
 import { CustomerType } from "@/types/customer";
 

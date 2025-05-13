@@ -1,9 +1,10 @@
+
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   SupabaseContextProvider,
   useSupabase,
-} from "@/integrations/supabase/SupabaseProvider";
+} from "./integrations/supabase/SupabaseProvider"; // Changed import path
 import { Helmet } from "react-helmet";
 import { Toaster } from "sonner";
 import AppRoutes from "./AppRoutes";
