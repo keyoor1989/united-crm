@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 
@@ -11,6 +12,8 @@ if (!rootElement) throw new Error('Failed to find the root element');
 // Create a root with concurrent mode disabled for better initial load performance
 createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );
