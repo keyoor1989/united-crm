@@ -1,19 +1,18 @@
 
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import App from './App.tsx';
-import './index.css';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { Capacitor } from "@capacitor/core";
+import { SplashScreen } from "@capacitor/splash-screen";
+import App from "./App";
+import "./index.css";
 
-// Get the root element
-const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error('Failed to find the root element');
+// Hide splash screen when app is ready (mobile only)
+if (Capacitor.isNativePlatform()) {
+  SplashScreen.hide();
+}
 
-// Create a root with concurrent mode disabled for better initial load performance
-createRoot(rootElement).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>
+    <App />
+  </React.StrictMode>,
 );
