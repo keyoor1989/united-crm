@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import AppRoutes from "./AppRoutes";
 import "./App.css";
 import { App as CapacitorApp } from '@capacitor/app';
-import { usePushNotifications } from './hooks/usePushNotifications';
+import { StatusBar } from '@capacitor/status-bar';
 import { useToast } from './hooks/use-toast';
 
 const queryClient = new QueryClient({
@@ -42,6 +42,18 @@ const App = () => {
       };
       
       initPushNotifications();
+
+      // Initialize StatusBar for native mobile environment
+      const initStatusBar = async () => {
+        try {
+          await StatusBar.setBackgroundColor({ color: '#ffffff' });
+          await StatusBar.setStyle({ style: 'dark' });
+        } catch (error) {
+          console.error("Failed to initialize status bar:", error);
+        }
+      };
+
+      initStatusBar();
     }
     
     // Handle back button in mobile apps

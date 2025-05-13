@@ -12,6 +12,10 @@ const config: CapacitorConfig = {
   plugins: {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"]
+    },
+    StatusBar: {
+      style: "dark",
+      backgroundColor: "#ffffff"
     }
   }
 };
