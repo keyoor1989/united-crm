@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User } from "@/types/auth";
+import { User, UserRole } from "@/types/auth";
 import { supabase } from "./client";
 import { Session } from "@supabase/supabase-js";
 
@@ -67,7 +67,7 @@ export const SupabaseContextProvider = ({ children }: SupabaseProviderProps) => 
                   name: userData.name,
                   email: userData.email,
                   mobile: userData.mobile,
-                  role: userData.role,
+                  role: userData.role as UserRole,
                   branch: userData.branch,
                   isActive: userData.is_active,
                   hasSetPassword: userData.has_set_password,
@@ -82,7 +82,8 @@ export const SupabaseContextProvider = ({ children }: SupabaseProviderProps) => 
                   id: session.user.id,
                   name: session.user.email.split('@')[0],
                   email: session.user.email,
-                  role: "read_only",
+                  mobile: "",  // Add missing required mobile property
+                  role: "read_only" as UserRole,
                   isActive: true,
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString()

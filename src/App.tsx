@@ -50,7 +50,7 @@ function AppContent() {
       initStatusBar();
     }
     
-    const handleAuthStateChange = async (event: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === "SIGNED_OUT") {
         try {
           await supabase.auth.signOut();
@@ -63,12 +63,10 @@ function AppContent() {
           });
         }
       }
-    };
-
-    supabase.auth.onAuthStateChange(handleAuthStateChange);
+    });
 
     return () => {
-      supabase.auth.offAuthStateChange(handleAuthStateChange);
+      subscription.unsubscribe();
     };
   }, [supabase, toast]);
 
