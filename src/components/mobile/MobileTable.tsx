@@ -35,7 +35,7 @@ export function MobileTable<T extends Record<string, any>>({
   isLoading = false,
   noResultsMessage = "No data found",
   onRowClick,
-  keyExtractor = (item: any, index: number) => index
+  keyExtractor = (item: T) => String(Object.values(item)[0] || Math.random())
 }: MobileTableProps<T>) {
   const isMobile = useIsMobile();
 

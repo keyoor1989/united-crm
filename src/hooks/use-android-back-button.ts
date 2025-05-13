@@ -31,49 +31,60 @@ export function useAndroidBackButton(options: BackButtonOptions = {}) {
       return;
     }
     
-    const handleBackButton = App.addListener('backButton', ({ canGoBack }) => {
-      // If a custom action is provided, execute it first
-      if (customAction) {
-        const result = customAction();
-        // If custom action returns true, stop here
-        if (result === true) {
+    const setupListener = async () => {
+      const handleBackButton = await App.addListener('backButton', ({ canGoBack }) => {
+        // If a custom action is provided, execute it first
+        if (customAction) {
+          const result = customAction();
+          // If custom action returns true, stop here
+          if (result === true) {
+            return;
+          }
+        }
+        
+        // Determine if we can go back (use option if provided, otherwise use Capacitor's value)
+        const shouldGoBack = canGoBackOption !== undefined ? canGoBackOption : canGoBack;
+        
+        // If we can go back in history, do so
+        if (shouldGoBack && location.pathname !== '/') {
+          navigate(-1);
           return;
         }
-      }
-      
-      // Determine if we can go back (use option if provided, otherwise use Capacitor's value)
-      const shouldGoBack = canGoBackOption !== undefined ? canGoBackOption : canGoBack;
-      
-      // If we can go back in history, do so
-      if (shouldGoBack && location.pathname !== '/') {
-        navigate(-1);
-        return;
-      }
-      
-      // If on the home route and preventExit is true, show confirmation
-      if (preventExit) {
-        const now = new Date().getTime();
         
-        if (now - lastBackPressTime < DOUBLE_PRESS_DELAY) {
-          // User pressed back twice quickly, exit the app
-          App.exitApp();
+        // If on the home route and preventExit is true, show confirmation
+        if (preventExit) {
+          const now = new Date().getTime();
+          
+          if (now - lastBackPressTime < DOUBLE_PRESS_DELAY) {
+            // User pressed back twice quickly, exit the app
+            App.exitApp();
+          } else {
+            // First press, show message
+            lastBackPressTime = now;
+            toast({
+              title: exitMessage,
+              duration: DOUBLE_PRESS_DELAY,
+            });
+          }
         } else {
-          // First press, show message
-          lastBackPressTime = now;
-          toast({
-            title: exitMessage,
-            duration: DOUBLE_PRESS_DELAY,
-          });
+          // No prevention, exit immediately
+          App.exitApp();
         }
-      } else {
-        // No prevention, exit immediately
-        App.exitApp();
-      }
-    });
+      });
+      
+      return handleBackButton;
+    };
+    
+    // Set up listener and store for cleanup
+    const listenerPromise = setupListener();
     
     // Clean up listener when component unmounts
     return () => {
-      handleBackButton.remove();
+      listenerPromise.then(listener => {
+        listener.remove();
+      }).catch(err => {
+        console.error('Error removing back button listener:', err);
+      });
     };
   }, [navigate, location.pathname, customAction, preventExit, exitMessage, canGoBackOption]);
 

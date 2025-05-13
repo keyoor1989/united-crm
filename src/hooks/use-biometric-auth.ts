@@ -2,20 +2,36 @@
 import { useState, useEffect } from 'react';
 import { isCapacitorEnvironment } from '@/utils/mobileCompatibility';
 import { toast } from '@/hooks/use-toast';
-import { Capacitor } from '@capacitor/core';
 
-// Type declaration for NativeBiometric plugin
-// You'd need to install this plugin: npm install capacitor-native-biometric
-interface BiometricPlugin {
-  isAvailable(): Promise<{ isAvailable: boolean; has?: { face: boolean; fingerprint: boolean; iris: boolean; } }>;
-  verifyIdentity(options?: { reason?: string; title?: string; subtitle?: string; description?: string; }): Promise<{ verified: boolean }>;
+// Updated interface to match the actual plugin API
+interface BiometricPluginResult {
+  isAvailable: boolean;
+  has?: { 
+    face: boolean;
+    fingerprint: boolean;
+    iris: boolean;
+  };
+}
+
+interface BiometricVerifyResult {
+  verified: boolean;
+}
+
+interface BiometricCredentials {
+  username: string;
+  password: string;
+}
+
+interface NativeBiometricPlugin {
+  isAvailable(): Promise<BiometricPluginResult>;
+  verifyIdentity(options?: { reason?: string; title?: string; subtitle?: string; description?: string }): Promise<BiometricVerifyResult>;
   setCredentials(options: { username: string; password: string; server: string }): Promise<void>;
-  getCredentials(options: { server: string }): Promise<{ username: string; password: string; }>;
+  getCredentials(options: { server: string }): Promise<BiometricCredentials>;
   deleteCredentials(options: { server: string }): Promise<void>;
 }
 
 // This will get set once the plugin is imported dynamically
-let NativeBiometric: BiometricPlugin | null = null;
+let NativeBiometric: NativeBiometricPlugin | null = null;
 
 export function useBiometricAuth() {
   const [isAvailable, setIsAvailable] = useState<boolean>(false);
@@ -34,7 +50,7 @@ export function useBiometricAuth() {
         try {
           // Dynamic import of the plugin
           const module = await import('capacitor-native-biometric');
-          NativeBiometric = module.NativeBiometric;
+          NativeBiometric = module.NativeBiometric as NativeBiometricPlugin;
           
           // Check if biometrics is available
           const result = await NativeBiometric.isAvailable();
