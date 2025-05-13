@@ -1,53 +1,46 @@
-
-import React, { useEffect } from "react";
-import { BrowserRouter } from "react-router-dom";
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "@/components/theme-provider";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { VendorProvider } from "@/contexts/VendorContext";
-import { Toaster } from "@/components/ui/toaster";
+import {
+  SupabaseContextProvider,
+  useSupabase,
+} from "@/integrations/supabase/SupabaseProvider";
+import { Helmet } from "react-helmet";
+import { Toaster } from "sonner";
 import AppRoutes from "./AppRoutes";
 import "./App.css";
 import { App as CapacitorApp } from '@capacitor/app';
-import { StatusBar } from '@capacitor/status-bar';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import { useToast } from './hooks/use-toast';
+import { setupMobileEnhancements } from "@/utils/mobileUtils";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
+      retry: 0,
     },
   },
 });
 
-const App = () => {
+function AppContent() {
+  const { user, isLoading, supabase } = useSupabase();
   const { toast } = useToast();
-  
-  // Only use push notifications in native mobile environments
-  const isNative = window.location.href.includes('capacitor://') || window.location.href.includes('localhost');
-  
-  useEffect(() => {
-    if (isNative) {
-      // Initialize push notifications in native environment
-      const initPushNotifications = async () => {
-        try {
-          await import('./hooks/usePushNotifications').then(module => {
-            const { usePushNotifications } = module;
-            usePushNotifications();
-          });
-        } catch (error) {
-          console.error("Failed to initialize push notifications:", error);
-        }
-      };
-      
-      initPushNotifications();
 
+  useEffect(() => {
+    // Initialize mobile enhancements if running in Capacitor
+    setupMobileEnhancements();
+    
+    // Handle app state for mobile
+    if ('capacitor' in window) {
+      // Listen for app state changes in Capacitor
+      CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+        console.info('App state changed. Is active?:', isActive);
+      });
+      
       // Initialize StatusBar for native mobile environment
       const initStatusBar = async () => {
         try {
           await StatusBar.setBackgroundColor({ color: '#ffffff' });
-          await StatusBar.setStyle({ style: 'dark' });
+          await StatusBar.setStyle({ style: Style.Dark });
         } catch (error) {
           console.error("Failed to initialize status bar:", error);
         }
@@ -56,35 +49,52 @@ const App = () => {
       initStatusBar();
     }
     
-    // Handle back button in mobile apps
-    CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-      if (canGoBack) {
-        window.history.back();
-      } else {
-        CapacitorApp.exitApp();
+    const handleAuthStateChange = async (event: any) => {
+      if (event === "SIGNED_OUT") {
+        try {
+          await supabase.auth.signOut();
+          window.location.href = "/login";
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to sign out. Please try again.",
+            variant: "destructive",
+          });
+        }
       }
-    });
+    };
 
-    // Handle app state changes
-    CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-      console.log('App state changed. Is active?:', isActive);
-    });
-  }, []);
+    supabase.auth.onAuthStateChange(handleAuthStateChange);
+
+    return () => {
+      supabase.auth.offAuthStateChange(handleAuthStateChange);
+    };
+  }, [supabase, toast]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <ThemeProvider defaultTheme="light" storageKey="ui-theme">
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <VendorProvider>
-              <AppRoutes />
-              <Toaster />
-            </VendorProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <>
+      <Helmet>
+        <title>United CRM</title>
+        <meta name="description" content="A CRM application" />
+      </Helmet>
+      <Toaster />
+      <AppRoutes />
+    </>
   );
-};
+}
+
+function App() {
+  return (
+    <SupabaseContextProvider>
+      <QueryClientProvider client={queryClient}>
+        <AppContent />
+      </QueryClientProvider>
+    </SupabaseContextProvider>
+  );
+}
 
 export default App;
