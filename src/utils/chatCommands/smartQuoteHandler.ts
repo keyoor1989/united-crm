@@ -1,4 +1,3 @@
-
 import { Message } from "@/components/chat/types/chatTypes";
 import { parseQuotationCommand, generateQuotationPrompt } from "./quotationParser";
 import { products } from "@/data/salesData";
@@ -7,7 +6,7 @@ import { CustomerType } from "@/types/customer";
 import { Quotation } from "@/types/sales";
 import { FileText } from "lucide-react";
 import React from "react";
-import { processQuotationRequest } from "../langchain/quoteProcessor";
+import { processQuotationRequest } from "../quotation/quoteProcessor";
 
 interface QuoteHandlerProps {
   message: string;
