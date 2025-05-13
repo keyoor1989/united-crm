@@ -13,6 +13,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { useToast } from './hooks/use-toast';
 import { setupMobileEnhancements } from "@/utils/mobileUtils";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,7 +91,9 @@ function App() {
   return (
     <SupabaseContextProvider>
       <QueryClientProvider client={queryClient}>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </QueryClientProvider>
     </SupabaseContextProvider>
   );
