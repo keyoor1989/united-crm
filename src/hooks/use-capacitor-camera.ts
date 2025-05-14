@@ -4,33 +4,35 @@ import { Camera, CameraResultType, CameraSource, Photo } from '@capacitor/camera
 import { isCapacitorEnvironment } from '@/utils/mobileCompatibility';
 import { toast } from '@/hooks/use-toast';
 
+// Define the interface to match Capacitor's ImageOptions
 interface CameraOptions {
-  quality?: number; // 0-100
+  quality?: number;
   allowEditing?: boolean;
   source?: CameraSource;
-  resultType?: CameraResultType;
+  resultType: CameraResultType; // Now required to match ImageOptions
   width?: number;
   height?: number;
   promptLabelHeader?: string;
   promptLabelCancel?: string;
 }
 
-export function useCapacitorCamera(defaultOptions?: CameraOptions) {
+export function useCapacitorCamera(defaultOptions?: Partial<CameraOptions>) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Set default options with resultType now required
   const defaultCameraOptions: CameraOptions = {
     quality: 90,
     allowEditing: true,
     source: CameraSource.Prompt,
-    resultType: CameraResultType.Uri,
+    resultType: CameraResultType.Uri, // This is now required
     promptLabelHeader: 'Select Image Source',
     promptLabelCancel: 'Cancel',
     ...defaultOptions
   };
 
-  const takePhoto = useCallback(async (options?: CameraOptions) => {
+  const takePhoto = useCallback(async (options?: Partial<CameraOptions>) => {
     if (!isCapacitorEnvironment()) {
       toast({
         title: "Native Camera Unavailable",
@@ -54,7 +56,7 @@ export function useCapacitorCamera(defaultOptions?: CameraOptions) {
         }
       }
       
-      // Take the picture
+      // Take the picture with merged options, ensuring resultType is always present
       const photo = await Camera.getPhoto({
         ...defaultCameraOptions,
         ...options
