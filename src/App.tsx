@@ -1,6 +1,7 @@
 
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter as Router } from "react-router-dom";
 import {
   SupabaseContextProvider,
   useSupabase,
@@ -91,9 +92,11 @@ function App() {
   return (
     <SupabaseContextProvider>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
+        <Router>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </Router>
       </QueryClientProvider>
     </SupabaseContextProvider>
   );
