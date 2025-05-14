@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { isCapacitorEnvironment } from '@/utils/mobileCompatibility';
 import { toast } from '@/hooks/use-toast';
 
-// Updated interface to match the actual plugin API
+// Define interfaces that accurately match the capacitor-native-biometric plugin
 interface BiometricPluginResult {
   isAvailable: boolean;
   has?: { 
@@ -50,7 +50,8 @@ export function useBiometricAuth() {
         try {
           // Dynamic import of the plugin
           const module = await import('capacitor-native-biometric');
-          NativeBiometric = module.NativeBiometric as NativeBiometricPlugin;
+          // Use type assertion to ensure compatibility
+          NativeBiometric = module.NativeBiometric as unknown as NativeBiometricPlugin;
           
           // Check if biometrics is available
           const result = await NativeBiometric.isAvailable();
